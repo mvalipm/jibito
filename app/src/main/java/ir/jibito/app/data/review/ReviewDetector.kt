@@ -9,6 +9,8 @@ data class NumberToken(
     val value: Long,
     /** شکل اصلی‌اش در متن، مثلاً «1,250,000» */
     val raw: String,
+    /** شماره‌ی این عدد بین «همه‌ی» عددهای متن (برای یادگیری قالب) */
+    val pos: Int = 0,
 )
 
 /** حدس اولیه برای پیامکی که پارسرها نتوانستند بخوانند. کاربر فقط تأیید یا اصلاح می‌کند. */
@@ -48,9 +50,17 @@ object ReviewDetector {
     }
 
     /** عددهای مبلغ‌مانند متن، به ترتیب ظاهر شدن. */
-    fun numbers(text: String): List<NumberToken> {
-        val cleaned = text.replace(datePattern, " ").replace(timePattern, " ")
-        return numberPattern.findAll(cleaned).mapNotNull { m ->
+    /** متن بدون تاریخ و ساعت (تاریخ/ساعت هیچ‌وقت مبلغ نیستند) */
+    internal fun withoutDateTime(text: String): String =
+        text.replace(datePattern, " ‹D› ").replace(timePattern, " ‹T› ")
+
+    /** همه‌ی عددهای متن (بعد از حذف تاریخ و ساعت)، به ترتیب — بدون هیچ فیلتری */
+    internal fun allNumberMatches(text: String): List<MatchResult> =
+        numberPattern.findAll(withoutDateTime(text)).toList()
+
+    /** عددهای مبلغ‌مانند متن، به ترتیب ظاهر شدن. */
+    fun numbers(text: String): List<NumberToken> =
+        allNumberMatches(text).mapIndexedNotNull { index, m ->
             val raw = m.value
             val digits = raw.filter { it in '0'..'9' }
             val grouped = raw.contains(',') || raw.contains('،')
@@ -58,9 +68,21 @@ object ReviewDetector {
                 digits.length < 3 -> null                    // عددهای خیلی کوچک (مثل ۰۷) مبلغ نیستند
                 !grouped && digits.length > 10 -> null       // شماره حساب/کارت
                 digits.length > 13 -> null
-                else -> NumberToken(digits.toLong(), raw)
+                else -> NumberToken(digits.toLong(), raw, index)
             }
-        }.filter { it.value > 0 }.toList()
+        }.filter { it.value > 0 }
+
+    /** علامت کنار یک عدد: «−» ← برداشت، «+» ← واریز، وگرنه null */
+    fun signOf(text: String, raw: String): FlowType? {
+        val at = text.indexOf(raw)
+        if (at < 0) return null
+        val before = text.getOrNull(at - 1)
+        val after = text.getOrNull(at + raw.length)
+        return when {
+            before == '-' || after == '-' -> FlowType.WITHDRAWAL
+            before == '+' || after == '+' -> FlowType.DEPOSIT
+            else -> null
+        }
     }
 
     fun guess(text: String): ReviewGuess {
@@ -75,17 +97,7 @@ object ReviewDetector {
         val amountIndex = nums.indices.firstOrNull { it != balanceIndex && nums[it].raw.contains(',') }
             ?: nums.indices.firstOrNull { it != balanceIndex }
 
-        val signed = amountIndex?.let { i ->
-            val raw = nums[i].raw
-            val at = text.indexOf(raw)
-            val before = text.getOrNull(at - 1)
-            val after = text.getOrNull(at + raw.length)
-            when {
-                before == '-' || after == '-' -> FlowType.WITHDRAWAL
-                before == '+' || after == '+' -> FlowType.DEPOSIT
-                else -> null
-            }
-        }
+        val signed = amountIndex?.let { signOf(text, nums[it].raw) }
         val score = depositWords.entries.sumOf { (w, v) -> if (text.contains(w)) v else 0 } -
             withdrawalWords.entries.sumOf { (w, v) -> if (text.contains(w)) v else 0 }
         val type = signed ?: when {

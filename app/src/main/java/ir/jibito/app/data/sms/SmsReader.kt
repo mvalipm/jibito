@@ -14,7 +14,9 @@ import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.parser.TransactionParser
+import ir.jibito.app.data.review.LearnedTemplate
 import ir.jibito.app.data.review.ReviewDetector
+import ir.jibito.app.data.review.TemplateMatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -60,8 +62,14 @@ class SmsReader(private val context: Context) {
 
     /**
      * @param ignoredSenders سرشماره‌هایی (نرمال‌شده) که کاربر گفته «دیگر نشان نده»
+     * @param adoptedSenders سرشماره‌هایی (نرمال‌شده) که کاربر گفته «مال این بانک است» ← شناسه‌ی بانک
+     * @param templates قالب‌های یادگرفته‌شده، برای هر سرشماره (نرمال‌شده)
      */
-    suspend fun scan(ignoredSenders: Set<String> = emptySet()): ScanResult = withContext(Dispatchers.IO) {
+    suspend fun scan(
+        ignoredSenders: Set<String> = emptySet(),
+        adoptedSenders: Map<String, Int> = emptyMap(),
+        templates: Map<String, List<LearnedTemplate>> = emptyMap(),
+    ): ScanResult = withContext(Dispatchers.IO) {
         val reviewSince = System.currentTimeMillis() - REVIEW_WINDOW_MILLIS
         val candidates = mutableListOf<ReviewCandidate>()
         val raws = HashMap<Long, Raw>()
@@ -89,12 +97,21 @@ class SmsReader(private val context: Context) {
             // سرعت: اول فقط فرستنده چک می‌شود (سریع)؛ متن فقط برای پیامک‌های بانکی پارس می‌شود.
             while (cursor.moveToNext()) {
                 val sender = cursor.getString(addrCol) ?: continue
-                val senderType = SenderClassifier.classify(sender)
+                val normalizedSender = BankDirectory.normalizeSender(sender)
+                // اول بانک‌های رسمی، بعد سرشماره‌هایی که خود کاربر به یک بانک/موسسه نسبت داده
+                val senderType = SenderClassifier.classify(sender).let { t ->
+                    val adopted = adoptedSenders[normalizedSender]
+                    if (t == SenderType.Unknown && adopted != null) {
+                        SenderType.BankSender(BankDirectory.byId(adopted) ?: BankDirectory.OTHER)
+                    } else {
+                        t
+                    }
+                }
                 if (senderType !is SenderType.BankSender) {
                     // فرستنده‌ی ناشناس (نه شخصی): اگر تازه و شبیه تراکنش بود ← صندوق بررسی
                     if (senderType == SenderType.Unknown) {
                         val date = cursor.getLong(dateCol)
-                        if (date >= reviewSince && BankDirectory.normalizeSender(sender) !in ignoredSenders) {
+                        if (date >= reviewSince && normalizedSender !in ignoredSenders) {
                             val body = cursor.getString(bodyCol) ?: continue
                             if (ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body))) {
                                 candidates += ReviewCandidate(cursor.getLong(idCol), sender, body, date, null)
@@ -107,7 +124,9 @@ class SmsReader(private val context: Context) {
                 val body = cursor.getString(bodyCol) ?: continue
                 val raw = Raw(cursor.getLong(idCol), sender, body, cursor.getLong(dateCol), type.bank)
 
+                // اول پارسرهای اپ؛ اگر نشد، قالب‌هایی که کاربر یاد داده
                 val tx = TransactionParser.parse(raw.bank, body)
+                    ?: templates[normalizedSender]?.let { TemplateMatcher.match(SmsTextNormalizer.normalize(body), it) }
                 if (tx != null) {
                     raws[raw.id] = raw
                     txRecords += TxRecord(raw.id, raw.date, raw.bank.id, tx)

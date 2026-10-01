@@ -24,8 +24,10 @@ class SmsReceivedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent) ?: return
-        val fromBank = messages.any { SenderClassifier.classify(it.originatingAddress) is SenderType.BankSender }
-        if (fromBank) SmsSyncWorker.enqueue(context)
+        // بانک‌های رسمی، و فرستنده‌های ناشناس (شاید کاربر آن‌ها را به یک بانک/موسسه نسبت داده باشد).
+        // پیامک شماره‌های شخصی هیچ‌وقت کاری راه نمی‌اندازد.
+        val worthChecking = messages.any { SenderClassifier.classify(it.originatingAddress) != SenderType.Personal }
+        if (worthChecking) SmsSyncWorker.enqueue(context)
     }
 }
 

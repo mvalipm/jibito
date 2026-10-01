@@ -73,5 +73,20 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    /** نسخه‌ی ۶ ← ۷: قالب‌های یادگرفته‌شده‌ی پیامک. (فقط جدول تازه) */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `sms_templates` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sender` TEXT NOT NULL, " +
+                    "`skeleton` TEXT NOT NULL, `numberCount` INTEGER NOT NULL, `amountPos` INTEGER NOT NULL, " +
+                    "`balancePos` INTEGER, `typeMode` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)"
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_sms_templates_sender` ON `sms_templates` (`sender`)")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+    )
 }

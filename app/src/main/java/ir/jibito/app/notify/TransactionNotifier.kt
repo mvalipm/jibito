@@ -66,7 +66,7 @@ class TransactionNotifier(
 
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
         val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
-        val bankName = flow.bankId?.let { id -> BankDirectory.banks.firstOrNull { it.id == id }?.name }
+        val bankName = BankDirectory.byId(flow.bankId)?.name
         val title = if (flow.merchant != null) {
             context.getString(R.string.notif_title_purchase, amount, flow.merchant)
         } else {

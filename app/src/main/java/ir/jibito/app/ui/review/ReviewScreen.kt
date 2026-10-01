@@ -2,6 +2,9 @@ package ir.jibito.app.ui.review
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,7 +48,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.review.NumberToken
 import ir.jibito.app.data.repository.ReviewItem
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
@@ -58,7 +64,12 @@ private val DepositGreen = Color(0xFF1E9E6A)
 @Composable
 fun ReviewScreen(onClose: () -> Unit) {
     val app = LocalContext.current.applicationContext as JibitoApplication
-    val viewModel: ReviewViewModel = viewModel(factory = ReviewViewModel.factory(app.container.reviewRepository))
+    val viewModel: ReviewViewModel = viewModel(
+        factory = ReviewViewModel.factory(
+            app.container.reviewRepository,
+            onLearned = { app.container.transactionRepository.syncFromSms() },
+        )
+    )
     val pending by viewModel.pending.collectAsState()
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -101,7 +112,7 @@ fun ReviewScreen(onClose: () -> Unit) {
             list.isEmpty() -> AllDone(onClose)
             else -> ReviewCard(
                 item = list.first(),
-                onConfirm = { type, amount, balance -> viewModel.confirm(list.first(), type, amount, balance) },
+                onConfirm = { type, amount, balance, bankId -> viewModel.confirm(list.first(), type, amount, balance, bankId) },
                 onDismiss = { ignore -> viewModel.dismiss(list.first(), ignore) },
                 onShare = {
                     val send = Intent(Intent.ACTION_SEND)
@@ -140,7 +151,7 @@ private fun AllDone(onClose: () -> Unit) {
 @Composable
 private fun ReviewCard(
     item: ReviewItem,
-    onConfirm: (FlowType, Long, Long?) -> Unit,
+    onConfirm: (FlowType, NumberToken, NumberToken?, Int?) -> Unit,
     onDismiss: (ignoreSender: Boolean) -> Unit,
     onShare: () -> Unit,
 ) {
@@ -151,6 +162,9 @@ private fun ReviewCard(
     var amountIndex by rememberSaveable(item.smsId) { mutableStateOf(g.amountIndex) }
     var balanceIndex by rememberSaveable(item.smsId) { mutableStateOf(g.balanceIndex) }
     var ignoreSender by rememberSaveable(item.smsId) { mutableStateOf(false) }
+    var bankId by rememberSaveable(item.smsId) { mutableStateOf<Int?>(null) }
+    var pickingBank by rememberSaveable(item.smsId) { mutableStateOf(false) }
+    val needsBank = item.bankName == null
     val factor = if (g.inToman) 10 else 1
 
     Column(
@@ -198,6 +212,21 @@ private fun ReviewCard(
             Text(item.body, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
         }
 
+        // فرستنده‌ی ناشناس: مال کدام بانک/موسسه است؟ (یک بار؛ از این به بعد خودکار شناخته می‌شود)
+        if (needsBank) {
+            SectionTitle(stringResource(R.string.review_which_bank))
+            OutlinedButton(
+                onClick = { pickingBank = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                Text(
+                    BankDirectory.byId(bankId)?.name ?: stringResource(R.string.review_pick_bank),
+                    fontWeight = if (bankId != null) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+
         // نوع
         SectionTitle(stringResource(R.string.review_type))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -231,13 +260,14 @@ private fun ReviewCard(
         Spacer(Modifier.height(22.dp))
         val chosenType = type
         val chosenAmount = amountIndex
+        val ready = chosenType != null && chosenAmount != null && (!needsBank || bankId != null)
         Button(
             onClick = {
                 if (chosenType != null && chosenAmount != null) {
-                    onConfirm(chosenType, g.numbers[chosenAmount].value, balanceIndex?.let { g.numbers[it].value })
+                    onConfirm(chosenType, g.numbers[chosenAmount], balanceIndex?.let { g.numbers[it] }, bankId)
                 }
             },
-            enabled = chosenType != null && chosenAmount != null,
+            enabled = ready,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
@@ -245,6 +275,16 @@ private fun ReviewCard(
         ) {
             Text(stringResource(R.string.review_confirm), fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
+
+        Text(
+            stringResource(R.string.review_learn_hint),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
 
         Spacer(Modifier.height(10.dp))
         OutlinedButton(
@@ -279,6 +319,43 @@ private fun ReviewCard(
             textAlign = TextAlign.Center,
         )
     }
+
+    if (pickingBank) {
+        BankPickerDialog(
+            onPick = {
+                bankId = it
+                pickingBank = false
+            },
+            onDismiss = { pickingBank = false },
+        )
+    }
+}
+
+/** فهرست بانک‌ها و موسسه‌ها + «سایر» */
+@Composable
+private fun BankPickerDialog(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    val options = listOf(BankDirectory.OTHER) + BankDirectory.banks.sortedBy { it.name }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.review_which_bank), fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(Modifier.height(380.dp)) {
+                items(options, key = { it.id }) { bank ->
+                    Text(
+                        bank.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(bank.id) }
+                            .padding(vertical = 12.dp, horizontal = 4.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (bank.id == BankDirectory.OTHER.id) FontWeight.Bold else FontWeight.Normal,
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.budget_dialog_cancel)) } },
+    )
 }
 
 @Composable

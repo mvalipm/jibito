@@ -6,11 +6,14 @@ import ir.jibito.app.data.category.CategorySuggester
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
+import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.SmsTextNormalizer
+import ir.jibito.app.data.review.NumberToken
 import ir.jibito.app.data.review.ReviewDetector
+import ir.jibito.app.data.review.TemplateMatcher
 import ir.jibito.app.data.review.ReviewGuess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -34,8 +37,12 @@ interface ReviewRepository {
 
     suspend fun markAllShown()
 
-    /** «ثبت تراکنش»: مبلغ‌ها همان عددهای داخل پیامک‌اند؛ اگر پیامک تومانی باشد این‌جا ریال می‌شوند. */
-    suspend fun confirm(item: ReviewItem, type: FlowType, amount: Long, balance: Long?)
+    /**
+     * «ثبت تراکنش»: مبلغ‌ها همان عددهای داخل پیامک‌اند؛ اگر پیامک تومانی باشد این‌جا ریال می‌شوند.
+     * علاوه بر ثبت، «قالب» این پیامک یاد گرفته می‌شود تا دفعه‌های بعد خودکار خوانده شود.
+     * @param bankId برای فرستنده‌ی ناشناس: بانک/موسسه‌ای که کاربر انتخاب کرده (BankDirectory.OTHER.id برای «سایر»)
+     */
+    suspend fun confirm(item: ReviewItem, type: FlowType, amount: NumberToken, balance: NumberToken?, bankId: Int?)
 
     /** «تراکنش نیست» — و اگر ignoreSender، پیامک‌های این فرستنده دیگر به صندوق نمی‌آیند. */
     suspend fun dismiss(item: ReviewItem, ignoreSender: Boolean)
@@ -60,34 +67,62 @@ class ReviewRepositoryImpl(
 
     override suspend fun markAllShown() = dao.markAllShown(System.currentTimeMillis())
 
-    override suspend fun confirm(item: ReviewItem, type: FlowType, amount: Long, balance: Long?) {
+    override suspend fun confirm(
+        item: ReviewItem,
+        type: FlowType,
+        amount: NumberToken,
+        balance: NumberToken?,
+        bankId: Int?,
+    ) {
         val now = System.currentTimeMillis()
         val factor = if (item.guess.inToman) 10 else 1
         val row = dao.byId(item.smsId) ?: return
         val text = SmsTextNormalizer.normalize(row.body)
         val merchant = MerchantExtractor.find(text)
+        val normalizedSender = BankDirectory.normalizeSender(row.sender)
+        val finalBankId = row.bankId ?: bankId
         db.withTransaction {
+            // فرستنده‌ی ناشناس ← از این به بعد جزو بانک‌ها/موسسه‌ها
+            if (row.bankId == null && bankId != null) {
+                dao.upsertSenderRule(
+                    SenderRuleEntity(normalizedSender, SenderRuleEntity.ACTION_BANK, bankId, now)
+                )
+            }
+            // یادگیری قالب: پیامک‌های بعدیِ همین فرستنده با همین قالب خودکار خوانده می‌شوند
+            val learned = TemplateMatcher.learn(text, amount, balance, type)
+            dao.insertTemplate(
+                SmsTemplateEntity(
+                    sender = normalizedSender,
+                    skeleton = learned.skeleton,
+                    numberCount = learned.numberCount,
+                    amountPos = learned.amountPos,
+                    balancePos = learned.balancePos,
+                    typeMode = learned.typeMode,
+                    createdAt = now,
+                )
+            )
+
             val flowDao = db.transactionFlowDao()
-            val learned = merchant?.let { flowDao.learnedCategory(it, type.code) }
+            val learnedCategory = merchant?.let { flowDao.learnedCategory(it, type.code) }
             flowDao.insertAll(
                 listOf(
                     TransactionFlowEntity(
                         smsId = row.smsId,
-                        bankId = row.bankId,
+                        bankId = finalBankId,
                         flowType = type.code,
-                        amount = amount * factor,
-                        remainAfter = balance?.times(factor),
+                        amount = amount.value * factor,
+                        remainAfter = balance?.value?.times(factor),
                         dateEpoch = row.dateEpoch,
                         merchant = merchant,
                         suggestedCategory = if (type == FlowType.WITHDRAWAL) CategorySuggester.suggest(merchant) else null,
                         isFailedPurchase = false,
-                        categoryId = learned,
+                        categoryId = learnedCategory,
                         description = null,
                         smsContent = row.body,
                         source = SOURCE_SMS_MANUAL,
                         updatedAt = now,
                         notifiedAt = now, // نوتیفیکیشن «مال چی بود؟» لازم نیست؛ کاربر همین الان در اپ است
-                        isAutoCategorized = learned != null,
+                        isAutoCategorized = learnedCategory != null,
                     )
                 )
             )
@@ -127,7 +162,7 @@ class ReviewRepositoryImpl(
         sender = sender,
         body = body,
         dateMillis = dateEpoch,
-        bankName = bankId?.let { id -> BankDirectory.banks.firstOrNull { it.id == id }?.name },
+        bankName = BankDirectory.byId(bankId)?.name,
         guess = ReviewDetector.guess(SmsTextNormalizer.normalize(body)),
     )
 }

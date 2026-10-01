@@ -2,6 +2,7 @@ package ir.jibito.app.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -47,3 +48,21 @@ data class SenderRuleEntity(
         const val ACTION_BANK = 2
     }
 }
+
+/**
+ * قالب پیامکی که کاربر یک بار از صندوق بررسی ثبت کرده. (از نسخه‌ی ۷ دیتابیس)
+ * پیامک‌های بعدیِ همین فرستنده با همین قالب، خودکار خوانده می‌شوند.
+ */
+@Entity(tableName = "sms_templates", indices = [Index("sender")])
+data class SmsTemplateEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** سرشماره‌ی نرمال‌شده */
+    val sender: String,
+    val skeleton: String,
+    val numberCount: Int,
+    val amountPos: Int,
+    val balancePos: Int?,
+    /** ۱ = واریز، ۲ = برداشت، ۳ = از روی علامت +/− */
+    val typeMode: Int,
+    val createdAt: Long,
+)

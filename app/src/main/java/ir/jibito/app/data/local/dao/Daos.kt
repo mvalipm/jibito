@@ -10,6 +10,7 @@ import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.CategorySpendRow
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
+import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
@@ -197,6 +198,16 @@ interface ReviewDao {
 
     @Query("SELECT sender FROM sender_rules WHERE action = 1")
     suspend fun ignoredSenders(): List<String>
+
+    /** سرشماره‌هایی که کاربر گفته «مال این بانک است» */
+    @Query("SELECT * FROM sender_rules WHERE action = 2")
+    suspend fun bankSenderRules(): List<SenderRuleEntity>
+
+    @Query("SELECT * FROM sms_templates")
+    suspend fun templates(): List<SmsTemplateEntity>
+
+    @Insert
+    suspend fun insertTemplate(template: SmsTemplateEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSenderRule(rule: SenderRuleEntity)

@@ -11,6 +11,7 @@ import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
+import ir.jibito.app.data.review.LearnedTemplate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,7 +60,7 @@ class TransactionRepositoryImpl(
                 val f = row.flow
                 Transaction(
                     id = f.id,
-                    bank = f.bankId?.let { id -> BankDirectory.banks.firstOrNull { it.id == id } },
+                    bank = BankDirectory.byId(f.bankId),
                     body = f.smsContent.orEmpty(),
                     dateMillis = f.dateEpoch,
                     transaction = ParsedTransaction(
@@ -96,7 +97,13 @@ class TransactionRepositoryImpl(
     private suspend fun doSync(): Int {
         ensureDefaultCategories()
         val reviewDao = db.reviewDao()
-        val scan = smsReader.scan(ignoredSenders = reviewDao.ignoredSenders().toSet())
+        val scan = smsReader.scan(
+            ignoredSenders = reviewDao.ignoredSenders().toSet(),
+            adoptedSenders = reviewDao.bankSenderRules().associate { it.sender to (it.bankId ?: BankDirectory.OTHER.id) },
+            templates = reviewDao.templates().groupBy({ it.sender }) {
+                LearnedTemplate(it.skeleton, it.numberCount, it.amountPos, it.balancePos, it.typeMode)
+            },
+        )
         val items = scan.transactions
         val now = System.currentTimeMillis()
 

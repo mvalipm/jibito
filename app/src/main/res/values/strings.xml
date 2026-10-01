@@ -90,4 +90,7 @@
     <string name="review_all_done">همه‌ی پیامک‌ها بررسی شدن!</string>
     <string name="review_back">برگشت</string>
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
+    <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
+    <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
+    <string name="review_learn_hint">جیبیتو قالب این پیامک رو یاد می‌گیره؛ پیامک‌های مشابهِ بعدی خودکار ثبت می‌شن.</string>
 </resources>

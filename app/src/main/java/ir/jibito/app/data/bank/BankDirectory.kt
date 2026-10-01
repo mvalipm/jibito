@@ -64,6 +64,16 @@ object BankDirectory {
         Bank(id = 40, name = "بلوبانک", parserKey = "smart", senders = setOf("999987641")),
     )
 
+    /** برای سرشماره‌هایی که کاربر گفته «بانک نیست ولی مالی است» (کیف پول، موسسه، ...) */
+    val OTHER = Bank(id = 99, name = "سایر (کیف پول/موسسه)", parserKey = "smart", senders = emptySet())
+
+    /** بانک با شناسه؛ OTHER را هم می‌شناسد. */
+    fun byId(id: Int?): Bank? = when (id) {
+        null -> null
+        OTHER.id -> OTHER
+        else -> banks.firstOrNull { it.id == id }
+    }
+
     private val bySender: Map<String, Bank> =
         banks.flatMap { bank -> bank.senders.map { it to bank } }.toMap()
 
