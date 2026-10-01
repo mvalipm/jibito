@@ -1,0 +1,110 @@
+package ir.jibito.app.notify
+
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import ir.jibito.app.MainActivity
+import ir.jibito.app.R
+import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.util.JalaliMonth
+import ir.jibito.app.util.Money
+
+/** سطح هشدار بودجه: ۰ = عادی، ۸۰ = نزدیک سقف، ۱۰۰ = تمام شده. */
+object BudgetLevel {
+    const val WARNING_PERCENT = 80
+
+    fun of(spentRial: Long, budgetRial: Long): Int = when {
+        budgetRial <= 0 -> 0
+        spentRial >= budgetRial -> 100
+        spentRial * 100 >= budgetRial * WARNING_PERCENT -> 80
+        else -> 0
+    }
+}
+
+/**
+ * بعد از هر تراکنش تازه یا هر تغییر دسته صدا زده می‌شود.
+ * اگر خرج یک دسته در این ماه از ۸۰٪ یا ۱۰۰٪ بودجه‌اش رد شد، یک بار (در هر ماه، برای هر سطح) خبر می‌دهد.
+ */
+class BudgetAlerter(
+    private val context: Context,
+    private val db: AppDatabase,
+) {
+    private val dao = db.summaryDao()
+
+    suspend fun check() {
+        val month = JalaliMonth.current()
+        val budgets = dao.budgets().associateBy { it.categoryId }
+        if (budgets.isEmpty()) return
+        val rows = dao.categorySpend(month.startMillis(), month.endMillis())
+
+        for (row in rows) {
+            val budget = budgets[row.categoryId] ?: continue
+            val level = BudgetLevel.of(row.spentRial, budget.monthlyLimitRial)
+            val alreadyAlerted = if (budget.alertedMonthKey == month.key) budget.alertedLevel else 0
+            if (level > alreadyAlerted) {
+                show(row.categoryId, row.name, row.icon, level, row.spentRial, budget.monthlyLimitRial)
+                dao.markAlerted(row.categoryId, month.key, level)
+            }
+        }
+    }
+
+    private fun show(categoryId: Long, name: String, icon: String?, level: Int, spent: Long, limit: Long) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        ensureChannel()
+        val label = listOfNotNull(icon, name).joinToString(" ")
+        val title = if (level >= 100) {
+            context.getString(R.string.budget_alert_over, label)
+        } else {
+            context.getString(R.string.budget_alert_warning, label)
+        }
+        val text = context.getString(R.string.budget_alert_body, Money.toman(spent), Money.toman(limit))
+
+        val openApp = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setContentIntent(openApp)
+            .setAutoCancel(true)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        // یک نوتیفیکیشن ثابت برای هر دسته؛ هشدار ۱۰۰٪ جای هشدار ۸۰٪ را می‌گیرد
+        NotificationManagerCompat.from(context).notify(NOTIFICATION_BASE + categoryId.toInt(), notification)
+    }
+
+    private fun ensureChannel() {
+        if (Build.VERSION.SDK_INT < 26) return
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.budget_channel_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply { description = context.getString(R.string.budget_channel_desc) }
+        )
+    }
+
+    companion object {
+        const val CHANNEL_ID = "budget"
+        private const val NOTIFICATION_BASE = 1_000_000_000
+    }
+}

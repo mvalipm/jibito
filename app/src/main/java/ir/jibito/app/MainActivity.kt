@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
 import ir.jibito.app.ui.permission.SmsPermissionScreen
-import ir.jibito.app.ui.smslist.SmsListScreen
+import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.welcome.WelcomeScreen
 
@@ -95,6 +95,6 @@ private fun JibitoApp() {
                 }
             },
         )
-        Screen.SmsList -> SmsListScreen()
+        Screen.SmsList -> MainScreen()
     }
 }

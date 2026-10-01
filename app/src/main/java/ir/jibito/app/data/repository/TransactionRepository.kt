@@ -31,6 +31,8 @@ interface TransactionRepository {
 class TransactionRepositoryImpl(
     private val db: AppDatabase,
     private val smsReader: SmsReader,
+    /** بعد از تعیین دسته صدا زده می‌شود (برای بررسی هشدار بودجه) */
+    private val onCategoryChanged: suspend () -> Unit = {},
 ) : TransactionRepository {
 
     private val dao = db.transactionFlowDao()
@@ -103,6 +105,7 @@ class TransactionRepositoryImpl(
 
     override suspend fun setCategory(transactionId: Long, categoryId: Long?) {
         dao.setCategory(transactionId, categoryId, System.currentTimeMillis())
+        onCategoryChanged()
     }
 
     private fun TransactionItem.toEntity(id: Long, categoryId: Long?, notifiedAt: Long?, now: Long) = TransactionFlowEntity(

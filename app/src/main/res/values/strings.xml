@@ -43,4 +43,27 @@
     <string name="sheet_clear">بدون دسته</string>
     <string name="sheet_show_sms">متن پیامک</string>
     <string name="sheet_hide_sms">بستن متن پیامک</string>
+    <string name="tab_summary">خلاصه</string>
+    <string name="tab_transactions">تراکنش‌ها</string>
+    <string name="summary_prev_month">ماه قبل</string>
+    <string name="summary_next_month">ماه بعد</string>
+    <string name="summary_spent">خرج %1$s</string>
+    <string name="summary_income">درآمد</string>
+    <string name="summary_uncategorized">بی‌دسته</string>
+    <string name="summary_categories">خرج دسته‌ها</string>
+    <string name="summary_tap_to_budget">برای تعیین بودجه‌ی ماهانه، روی هر دسته بزن</string>
+    <string name="summary_no_budget">بدون بودجه</string>
+    <string name="summary_remaining">%1$s مونده</string>
+    <string name="summary_over_budget">%1$s بیشتر از بودجه</string>
+    <string name="summary_of_budget">از %1$s</string>
+    <string name="budget_dialog_title">بودجه‌ی ماهانه‌ی %1$s</string>
+    <string name="budget_dialog_hint">ماهی چقدر می‌خوای برای این دسته خرج کنی؟ به ۸۰٪ که برسی و وقتی تموم بشه، خبرت می‌کنیم.</string>
+    <string name="budget_dialog_save">ذخیره</string>
+    <string name="budget_dialog_remove">حذف بودجه</string>
+    <string name="budget_dialog_cancel">انصراف</string>
+    <string name="budget_channel_name">هشدار بودجه</string>
+    <string name="budget_channel_desc">وقتی خرج یک دسته به ۸۰٪ بودجه برسه یا ازش رد بشه</string>
+    <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
+    <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
+    <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
 </resources>

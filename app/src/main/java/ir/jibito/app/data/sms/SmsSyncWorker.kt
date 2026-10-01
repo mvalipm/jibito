@@ -41,6 +41,7 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         return try {
             container.transactionRepository.syncFromSms()
             TransactionNotifier(applicationContext, container.database).processRecent()
+            container.budgetAlerter.check()
             Result.success()
         } catch (e: Exception) {
             Result.retry()

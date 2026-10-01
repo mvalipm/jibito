@@ -16,5 +16,20 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /** نسخه‌ی ۲ ← ۳: جدول تازه‌ی بودجه‌ها. (جدول جدید = اضافه کردن؛ چیزی از قبلی‌ها عوض نمی‌شود) */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `budgets` (" +
+                    "`categoryId` INTEGER NOT NULL, " +
+                    "`monthlyLimitRial` INTEGER NOT NULL, " +
+                    "`alertedMonthKey` INTEGER, " +
+                    "`alertedLevel` INTEGER NOT NULL DEFAULT 0, " +
+                    "PRIMARY KEY(`categoryId`), " +
+                    "FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }
