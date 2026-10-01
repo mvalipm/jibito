@@ -9,7 +9,9 @@ import ir.jibito.app.data.category.CategorySuggester
 import ir.jibito.app.data.linking.OtpRecord
 import ir.jibito.app.data.linking.PurchaseLinker
 import ir.jibito.app.data.linking.TxRecord
+import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.ParsedTransaction
+import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.parser.TransactionParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,6 +87,8 @@ class SmsReader(private val context: Context) {
 
         PurchaseLinker.link(txRecords, otpRecords).map { linked ->
             val raw = raws.getValue(linked.record.id)
+            // طرف حساب: اول از پیامک رمز دوم، وگرنه از متن خود پیامک (مثلاً «خرید از فروشگاه ...» یا «انتقال به کارت ...»)
+            val merchant = linked.merchant ?: MerchantExtractor.find(SmsTextNormalizer.normalize(raw.body))
             TransactionItem(
                 id = raw.id,
                 bank = raw.bank,
@@ -92,8 +96,8 @@ class SmsReader(private val context: Context) {
                 body = raw.body,
                 dateMillis = raw.date,
                 transaction = linked.record.tx,
-                merchant = linked.merchant,
-                suggestedCategory = CategorySuggester.suggest(linked.merchant),
+                merchant = merchant,
+                suggestedCategory = CategorySuggester.suggest(merchant),
                 refundDateMillis = linked.refund?.timeMillis,
             )
         }

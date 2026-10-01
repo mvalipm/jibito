@@ -21,6 +21,7 @@ import androidx.room.PrimaryKey
         Index("dateEpoch"),
         Index("categoryId"),
         Index("bankId"),
+        Index("merchant"), // برای یادگیری دسته از روی طرف حساب (از نسخه‌ی ۵)
     ],
     foreignKeys = [
         ForeignKey(
@@ -54,12 +55,15 @@ data class TransactionFlowEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     /** زمان نشان دادن نوتیفیکیشن «دسته‌اش چیه؟» — تا دوبار نشان داده نشود. (از نسخه‌ی ۲ دیتابیس) */
     @ColumnInfo(defaultValue = "NULL") val notifiedAt: Long? = null,
+    /** true یعنی دسته را اپ خودش از روی انتخاب‌های قبلی کاربر گذاشته (از نسخه‌ی ۵ دیتابیس) */
+    @ColumnInfo(defaultValue = "0") val isAutoCategorized: Boolean = false,
 )
 
-/** تراکنش + اسم دسته‌اش (برای نمایش). */
+/** تراکنش + اسم و آیکون دسته‌اش (برای نمایش). */
 data class TransactionWithCategory(
     @Embedded val flow: TransactionFlowEntity,
     @ColumnInfo(name = "categoryName") val categoryName: String?,
+    @ColumnInfo(name = "categoryIcon") val categoryIcon: String?,
 )
 
 /** فقط ستون‌هایی که موقع همگام‌سازی با پیامک‌ها لازم داریم. */
@@ -69,4 +73,5 @@ data class SmsFlowKey(
     val categoryId: Long?,
     val isDeleted: Boolean,
     val notifiedAt: Long?,
+    val isAutoCategorized: Boolean,
 )

@@ -69,4 +69,8 @@
     <string name="sheet_title_income">این پول از کجا اومد؟</string>
     <string name="notif_question_income">این پول از کجا اومد؟</string>
     <string name="summary_income_categories">درآمدها</string>
+    <string name="tx_auto_category">%1$s · خودکار</string>
+    <string name="notif_auto_text">✓ %1$s (خودکار) — اگه درست نیست، بزن و عوضش کن</string>
+    <string name="notif_auto_channel_name">دسته‌بندی خودکار</string>
+    <string name="notif_auto_channel_desc">خبر آرام وقتی جیبیتو خودش دسته‌ی یک تراکنش رو گذاشته</string>
 </resources>

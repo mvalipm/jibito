@@ -22,7 +22,7 @@ import ir.jibito.app.data.local.migration.Migrations
  */
 @Database(
     entities = [TransactionFlowEntity::class, CategoryEntity::class, BudgetEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

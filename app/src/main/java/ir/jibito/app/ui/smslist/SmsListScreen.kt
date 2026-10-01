@@ -253,7 +253,13 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
                     onClick = onClick,
-                    label = { Text(sms.categoryName, fontWeight = FontWeight.Bold) },
+                    label = {
+                        val name = listOfNotNull(sms.categoryIcon, sms.categoryName).joinToString(" ")
+                        Text(
+                            if (sms.isAutoCategorized) stringResource(R.string.tx_auto_category, name) else name,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = colors.primaryContainer,
                         labelColor = colors.onPrimaryContainer,

@@ -52,4 +52,24 @@ class OtpAndCategoryTest {
         assertNull(CategorySuggester.suggest("کارت/حساب …5678"))
         assertNull(CategorySuggester.suggest(null))
     }
+
+    // ---------- طرف حساب از متن خود پیامک برداشت (برای یادگیری) ----------
+
+    private fun merchant(sms: String) =
+        ir.jibito.app.data.parser.MerchantExtractor.find(SmsTextNormalizer.normalize(sms))
+
+    @Test
+    fun `اسم فروشگاه بدون تاریخ و ساعت`() {
+        assertEquals("رفاه", merchant("خرید از فروشگاه رفاه 1405/07/09 12:30\nمبلغ:350,000\nمانده:1,000,000"))
+    }
+
+    @Test
+    fun `انتقال به حساب - همیشه چهار رقم آخر`() {
+        assertEquals("کارت/حساب …0123", merchant("برداشت\nانتقال به حساب 1234567890123\nمبلغ:5,000,000\nمانده:1,000,000"))
+    }
+
+    @Test
+    fun `برداشت از حساب خودم طرف حساب نیست`() {
+        assertNull(merchant("بانک ملت\nبرداشت از 1234567890\nمبلغ:700,000\nمانده:1,300,000"))
+    }
 }

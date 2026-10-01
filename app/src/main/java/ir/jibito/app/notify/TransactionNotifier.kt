@@ -42,9 +42,17 @@ class TransactionNotifier(
         for (flow in recent) {
             when {
                 flow.isFailedPurchase -> manager.cancel(notificationId(flow.id))
-                flow.categoryId == null && flow.notifiedAt == null -> {
+                flow.notifiedAt != null -> Unit
+                // بی‌دسته ← «مال چی بود؟» با دکمه‌ها
+                flow.categoryId == null -> {
                     if (show(flow)) dao.markNotified(flow.id, now)
                 }
+                // اپ خودش دسته گذاشته ← یک خبر آرام: «✓ رفت‌وآمد (خودکار)»؛ برای تغییر، روی آن بزن
+                flow.isAutoCategorized -> {
+                    if (showAutoConfirm(flow)) dao.markNotified(flow.id, now)
+                }
+                // کاربر خودش قبل از نوتیفیکیشن دسته داده ← دیگر لازم نیست
+                else -> dao.markNotified(flow.id, now)
             }
         }
     }
@@ -96,6 +104,53 @@ class TransactionNotifier(
         return true
     }
 
+    private suspend fun showAutoConfirm(flow: TransactionFlowEntity): Boolean {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return false
+        }
+        ensureAutoChannel()
+        val isDeposit = flow.flowType == FlowType.DEPOSIT.code
+        val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
+        val title = listOfNotNull(amount, flow.merchant).joinToString(" · ")
+        val category = flow.categoryId?.let { db.categoryDao().byId(it) }
+            ?.let { listOfNotNull(it.icon, it.name).joinToString(" ") }
+            ?: return false
+        val openApp = PendingIntent.getActivity(
+            context,
+            notificationId(flow.id),
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, AUTO_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(title)
+            .setContentText(context.getString(R.string.notif_auto_text, category))
+            .setContentIntent(openApp)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .setWhen(flow.dateEpoch)
+            .setShowWhen(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(notificationId(flow.id), notification)
+        return true
+    }
+
+    private fun ensureAutoChannel() {
+        if (Build.VERSION.SDK_INT < 26) return
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (manager.getNotificationChannel(AUTO_CHANNEL_ID) != null) return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                AUTO_CHANNEL_ID,
+                context.getString(R.string.notif_auto_channel_name),
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply { description = context.getString(R.string.notif_auto_channel_desc) }
+        )
+    }
+
     /** ۳ دکمه: اول دسته‌ی پیشنهادی (از مقصد خرید)، بعد پرکاربردترین دسته‌های خود کاربر. */
     private suspend fun pickCategories(flow: TransactionFlowEntity): List<CategoryEntity> {
         // برداشت ← دسته‌های خرج، واریز ← دسته‌های درآمد
@@ -120,6 +175,7 @@ class TransactionNotifier(
 
     companion object {
         const val CHANNEL_ID = "transactions"
+        const val AUTO_CHANNEL_ID = "auto_categorized"
         private const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
 
         fun notificationId(transactionId: Long): Int = (transactionId % Int.MAX_VALUE).toInt()

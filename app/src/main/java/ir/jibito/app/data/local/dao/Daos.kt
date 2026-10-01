@@ -18,7 +18,7 @@ interface TransactionFlowDao {
 
     @Query(
         """
-        SELECT t.*, c.name AS categoryName
+        SELECT t.*, c.name AS categoryName, c.icon AS categoryIcon
         FROM transaction_flows t
         LEFT JOIN categories c ON c.id = t.categoryId
         WHERE t.isDeleted = 0
@@ -27,7 +27,7 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt FROM transaction_flows WHERE smsId IS NOT NULL")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized FROM transaction_flows WHERE smsId IS NOT NULL")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */
@@ -37,8 +37,35 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET notifiedAt = :now WHERE id = :id")
     suspend fun markNotified(id: Long, now: Long)
 
-    @Query("UPDATE transaction_flows SET categoryId = :categoryId, updatedAt = :now WHERE id = :id")
+    /** دسته‌ای که خود کاربر انتخاب کرده (دیگر «خودکار» نیست). */
+    @Query("UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 0, updatedAt = :now WHERE id = :id")
     suspend fun setCategory(id: Long, categoryId: Long?, now: Long)
+
+    @Query("SELECT * FROM transaction_flows WHERE id = :id")
+    suspend fun byId(id: Long): TransactionFlowEntity?
+
+    /**
+     * یادگیری: آخرین دسته‌ای که «خود کاربر» برای این طرف حساب انتخاب کرده.
+     * (دسته‌های خودکار حساب نمی‌شوند، تا یک اشتباه خودش را تکرار نکند.)
+     */
+    @Query(
+        """
+        SELECT categoryId FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NOT NULL
+          AND isAutoCategorized = 0 AND isDeleted = 0
+        ORDER BY dateEpoch DESC LIMIT 1
+        """
+    )
+    suspend fun learnedCategory(merchant: String, flowType: Int): Long?
+
+    /** همه‌ی تراکنش‌های بی‌دسته‌ی همین طرف حساب هم همین دسته را (خودکار) می‌گیرند. */
+    @Query(
+        """
+        UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 1, updatedAt = :now
+        WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NULL AND isDeleted = 0
+        """
+    )
+    suspend fun applyToSameMerchant(merchant: String, flowType: Int, categoryId: Long, now: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)
@@ -61,6 +88,9 @@ interface CategoryDao {
 
     @Query("SELECT COUNT(*) FROM categories")
     suspend fun count(): Int
+
+    @Query("SELECT * FROM categories WHERE id = :id")
+    suspend fun byId(id: Long): CategoryEntity?
 
     /** دسته‌ها به ترتیب «بیشترین استفاده»؛ برای انتخاب دکمه‌های نوتیفیکیشن. */
     @Query(

@@ -56,6 +56,8 @@ class TransactionRepositoryImpl(
                     isFailedPurchase = f.isFailedPurchase,
                     categoryId = f.categoryId,
                     categoryName = row.categoryName,
+                    categoryIcon = row.categoryIcon,
+                    isAutoCategorized = f.isAutoCategorized,
                 )
             }
         }
@@ -78,11 +80,17 @@ class TransactionRepositoryImpl(
 
             for (item in items) {
                 val old = existing[item.id]
+                if (old != null && old.categoryId != null) {
+                    // دسته‌ای که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
+                    toUpdate += item.toEntity(old.id, old.categoryId, old.isAutoCategorized, old.notifiedAt, now)
+                    continue
+                }
+                // بی‌دسته: اگر کاربر قبلاً برای همین طرف حساب دسته‌ای انتخاب کرده، همان را خودکار بگذار
+                val learned = item.merchant?.let { dao.learnedCategory(it, item.transaction.type.code) }
                 if (old == null) {
-                    toInsert += item.toEntity(id = 0, categoryId = null, notifiedAt = null, now = now)
+                    toInsert += item.toEntity(0, learned, learned != null, null, now)
                 } else {
-                    // دسته‌ای که کاربر انتخاب کرده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
-                    toUpdate += item.toEntity(id = old.id, categoryId = old.categoryId, notifiedAt = old.notifiedAt, now = now)
+                    toUpdate += item.toEntity(old.id, learned, learned != null, old.notifiedAt, now)
                 }
             }
 
@@ -104,11 +112,25 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun setCategory(transactionId: Long, categoryId: Long?) {
-        dao.setCategory(transactionId, categoryId, System.currentTimeMillis())
+        val now = System.currentTimeMillis()
+        db.withTransaction {
+            dao.setCategory(transactionId, categoryId, now)
+            // یادگیری: بقیه‌ی تراکنش‌های بی‌دسته‌ی همین طرف حساب هم همین دسته را می‌گیرند
+            val row = dao.byId(transactionId)
+            if (row != null && categoryId != null && row.merchant != null) {
+                dao.applyToSameMerchant(row.merchant, row.flowType, categoryId, now)
+            }
+        }
         onCategoryChanged()
     }
 
-    private fun TransactionItem.toEntity(id: Long, categoryId: Long?, notifiedAt: Long?, now: Long) = TransactionFlowEntity(
+    private fun TransactionItem.toEntity(
+        id: Long,
+        categoryId: Long?,
+        isAutoCategorized: Boolean,
+        notifiedAt: Long?,
+        now: Long,
+    ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
         bankId = bank.id,
@@ -126,5 +148,6 @@ class TransactionRepositoryImpl(
         isDeleted = false,
         updatedAt = now,
         notifiedAt = notifiedAt,
+        isAutoCategorized = isAutoCategorized,
     )
 }

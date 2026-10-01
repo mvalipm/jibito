@@ -15,6 +15,9 @@ data class Transaction(
     val isFailedPurchase: Boolean,
     val categoryId: Long?,
     val categoryName: String?,
+    val categoryIcon: String?,
+    /** دسته را اپ خودش (از روی انتخاب‌های قبلی) گذاشته */
+    val isAutoCategorized: Boolean,
 )
 
 /** یک دسته: خرج (برای برداشت) یا درآمد (برای واریز). */
