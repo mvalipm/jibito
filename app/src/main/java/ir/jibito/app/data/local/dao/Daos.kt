@@ -12,6 +12,7 @@ import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
+import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,7 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch FROM transaction_flows WHERE smsId IS NOT NULL")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId FROM transaction_flows WHERE smsId IS NOT NULL")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */
@@ -78,6 +79,36 @@ interface TransactionFlowDao {
 
     @Query("UPDATE transaction_flows SET isDeleted = 1, updatedAt = :now WHERE id IN (:ids)")
     suspend fun softDelete(ids: List<Long>, now: Long)
+
+    /** وضعیت انتقال یک تراکنش (۰ عادی، ۱ انتقال به خودم، ۲ «انتقال نیست»). انتقال به خودم دسته ندارد. */
+    @Query(
+        """
+        UPDATE transaction_flows SET transferState = :state, transferPairId = :pairId,
+               categoryId = CASE WHEN :state = 1 THEN NULL ELSE categoryId END,
+               isAutoCategorized = CASE WHEN :state = 1 THEN 0 ELSE isAutoCategorized END,
+               updatedAt = :now
+        WHERE id = :id
+        """
+    )
+    suspend fun setTransfer(id: Long, state: Int, pairId: Long?, now: Long)
+
+    /** برداشت‌های عادیِ به این مقصد ← انتقال به خودم (بعد از یاد گرفتن کارت خودم) */
+    @Query(
+        """
+        UPDATE transaction_flows SET transferState = 1, categoryId = NULL, isAutoCategorized = 0, updatedAt = :now
+        WHERE merchant = :merchant AND flowType = 2 AND transferState = 0 AND isDeleted = 0
+        """
+    )
+    suspend fun markSelfTransferByMerchant(merchant: String, now: Long): Int
+
+    @Query("SELECT merchant FROM own_accounts")
+    suspend fun ownAccounts(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOwnAccount(account: OwnAccountEntity)
+
+    @Query("DELETE FROM own_accounts WHERE merchant = :merchant")
+    suspend fun deleteOwnAccount(merchant: String)
 }
 
 @Dao
@@ -115,7 +146,7 @@ interface SummaryDao {
     @Query(
         """
         SELECT COALESCE(SUM(amount), 0) FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND flowType = :flowType
+        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
           AND dateEpoch >= :from AND dateEpoch < :to
         """
     )
@@ -128,7 +159,7 @@ interface SummaryDao {
                COALESCE(SUM(t.amount), 0) AS spentRial, b.monthlyLimitRial AS budgetRial
         FROM categories c
         LEFT JOIN transaction_flows t
-          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0
+          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0 AND t.transferState != 1
          AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
         LEFT JOIN budgets b ON b.categoryId = c.id
         WHERE c.isArchived = 0 AND c.flowType = :flowType
@@ -144,7 +175,7 @@ interface SummaryDao {
                COALESCE(SUM(t.amount), 0) AS spentRial, b.monthlyLimitRial AS budgetRial
         FROM categories c
         LEFT JOIN transaction_flows t
-          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0
+          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0 AND t.transferState != 1
          AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
         LEFT JOIN budgets b ON b.categoryId = c.id
         WHERE c.isArchived = 0 AND c.flowType = :flowType

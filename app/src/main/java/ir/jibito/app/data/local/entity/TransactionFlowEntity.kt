@@ -57,7 +57,20 @@ data class TransactionFlowEntity(
     @ColumnInfo(defaultValue = "NULL") val notifiedAt: Long? = null,
     /** true یعنی دسته را اپ خودش از روی انتخاب‌های قبلی کاربر گذاشته (از نسخه‌ی ۵ دیتابیس) */
     @ColumnInfo(defaultValue = "0") val isAutoCategorized: Boolean = false,
-)
+    /**
+     * انتقال بین حساب‌های خود کاربر (از نسخه‌ی ۸ دیتابیس):
+     * ۰ = عادی، ۱ = انتقال به خودم (نه خرج حساب می‌شود نه درآمد)، ۲ = کاربر گفته «انتقال به خودم نیست» (دیگر پیشنهاد نشود)
+     */
+    @ColumnInfo(defaultValue = "0") val transferState: Int = TRANSFER_NONE,
+    /** طرف دیگرِ انتقال (برداشت ↔ واریز)، اگر جفتش پیدا شده باشد */
+    @ColumnInfo(defaultValue = "NULL") val transferPairId: Long? = null,
+) {
+    companion object {
+        const val TRANSFER_NONE = 0
+        const val TRANSFER_SELF = 1
+        const val TRANSFER_REJECTED = 2
+    }
+}
 
 /** تراکنش + اسم و آیکون دسته‌اش (برای نمایش). */
 data class TransactionWithCategory(
@@ -76,4 +89,6 @@ data class SmsFlowKey(
     val isAutoCategorized: Boolean,
     val source: String,
     val dateEpoch: Long,
+    val transferState: Int,
+    val transferPairId: Long?,
 )

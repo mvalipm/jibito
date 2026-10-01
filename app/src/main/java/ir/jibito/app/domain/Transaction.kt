@@ -18,6 +18,16 @@ data class Transaction(
     val categoryIcon: String?,
     /** دسته را اپ خودش (از روی انتخاب‌های قبلی) گذاشته */
     val isAutoCategorized: Boolean,
+    /** انتقال بین حساب‌های خود کاربر: نه خرج حساب می‌شود نه درآمد */
+    val isSelfTransfer: Boolean = false,
+    /** کاربر گفته «انتقال به خودم نیست» ← دیگر پیشنهاد انتقال برایش نمی‌آید */
+    val isTransferRejected: Boolean = false,
+)
+
+/** پیشنهاد: «این برداشت و این واریزِ هم‌مبلغ، انتقال بین حساب‌های خودت بود؟» */
+data class TransferSuggestion(
+    val withdrawal: Transaction,
+    val deposit: Transaction,
 )
 
 /** یک دسته: خرج (برای برداشت) یا درآمد (برای واریز). */

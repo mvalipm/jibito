@@ -42,6 +42,10 @@ class TransactionNotifier(
         for (flow in recent) {
             when {
                 flow.isFailedPurchase -> manager.cancel(notificationId(flow.id))
+                // انتقال به حساب خودم (کارت یادگرفته‌شده) ← سؤال «مال چی بود؟» لازم نیست
+                flow.transferState == TransactionFlowEntity.TRANSFER_SELF -> {
+                    if (flow.notifiedAt == null) dao.markNotified(flow.id, now) else manager.cancel(notificationId(flow.id))
+                }
                 flow.notifiedAt != null -> Unit
                 // بی‌دسته ← «مال چی بود؟» با دکمه‌ها
                 flow.categoryId == null -> {

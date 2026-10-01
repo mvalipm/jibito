@@ -56,6 +56,8 @@ fun CategoryPickerSheet(
     transaction: Transaction,
     categories: List<Category>,
     onPick: (categoryId: Long?) -> Unit,
+    /** علامت زدن/برداشتن «انتقال بین حساب‌های خودم» */
+    onSelfTransfer: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -103,7 +105,25 @@ fun CategoryPickerSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
+
+                // انتقال بین حساب‌های خودم: جدا از دسته‌ها، چون نه خرج است نه درآمد
+                FilterChip(
+                    selected = transaction.isSelfTransfer,
+                    onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
+                    label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF3A6FD8),
+                        selectedLabelColor = Color.White,
+                    ),
+                )
+                Text(
+                    text = stringResource(R.string.sheet_self_transfer_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(16.dp))
 
                 // دسته‌ها
                 FlowRow(

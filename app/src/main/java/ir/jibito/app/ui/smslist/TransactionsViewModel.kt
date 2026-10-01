@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.domain.TransferSuggestion
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -27,9 +28,31 @@ class TransactionsViewModel(
     /** خواندن پیامک‌ها را خود صفحه‌ی اصلی موقع باز شدن اپ شروع می‌کند (MainScreen) */
     val isSyncing: StateFlow<Boolean> = repository.isSyncing
 
-    /** دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود. */
-    fun setCategory(transactionId: Long, categoryId: Long?) {
-        viewModelScope.launch { repository.setCategory(transactionId, categoryId) }
+    /** پیشنهادهای «انتقال بین حساب‌های خودم» */
+    val transferSuggestions: StateFlow<List<TransferSuggestion>> = repository.observeTransferSuggestions()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود.
+     * اگر تراکنش «انتقال به خودم» بود، با انتخاب دسته دیگر انتقال حساب نمی‌شود.
+     */
+    fun setCategory(transaction: Transaction, categoryId: Long?) {
+        viewModelScope.launch {
+            if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
+            repository.setCategory(transaction.id, categoryId)
+        }
+    }
+
+    fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {
+        viewModelScope.launch { repository.setSelfTransfer(transactionId, isSelfTransfer) }
+    }
+
+    fun confirmTransfer(suggestion: TransferSuggestion) {
+        viewModelScope.launch { repository.confirmTransfer(suggestion) }
+    }
+
+    fun rejectTransfer(suggestion: TransferSuggestion) {
+        viewModelScope.launch { repository.rejectTransfer(suggestion) }
     }
 
     companion object {

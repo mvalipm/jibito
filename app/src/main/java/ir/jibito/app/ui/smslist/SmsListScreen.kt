@@ -20,6 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +50,7 @@ import ir.jibito.app.R
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
@@ -60,6 +64,7 @@ fun SmsListScreen() {
     val messages by viewModel.transactions.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val transferSuggestions by viewModel.transferSuggestions.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
@@ -125,6 +130,17 @@ fun SmsListScreen() {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
+                transferSuggestions.firstOrNull()?.let { suggestion ->
+                    item(key = "transfer-suggestion") {
+                        TransferSuggestionCard(
+                            suggestion = suggestion,
+                            total = transferSuggestions.size,
+                            onYes = { viewModel.confirmTransfer(suggestion) },
+                            onNo = { viewModel.rejectTransfer(suggestion) },
+                        )
+                    }
+                }
                 items(list, key = { it.id }) { sms -> SmsCard(sms, onClick = { selectedId = sms.id }) }
             }
         }
@@ -137,7 +153,11 @@ fun SmsListScreen() {
             transaction = selected,
             categories = categories,
             onPick = { categoryId ->
-                viewModel.setCategory(selected.id, categoryId)
+                viewModel.setCategory(selected, categoryId)
+                selectedId = null
+            },
+            onSelfTransfer = { isTransfer ->
+                viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
             },
             onDismiss = { selectedId = null },
@@ -146,6 +166,85 @@ fun SmsListScreen() {
 }
 
 private val DepositGreen = Color(0xFF1E9E6A)
+private val TransferBlue = Color(0xFF3A6FD8)
+
+/** کارت پیشنهاد: «این برداشت و این واریز، انتقال بین حساب‌های خودت بود؟» */
+@Composable
+private fun TransferSuggestionCard(
+    suggestion: TransferSuggestion,
+    total: Int,
+    onYes: () -> Unit,
+    onNo: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val w = suggestion.withdrawal
+    val d = suggestion.deposit
+    val unknown = stringResource(R.string.bank_unknown)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = TransferBlue.copy(alpha = 0.10f)),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("⇄", color = TransferBlue, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    stringResource(R.string.transfer_title),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    color = colors.onSurface,
+                )
+                if (total > 1) {
+                    Text(
+                        Jalali.toPersianDigits(stringResource(R.string.transfer_count, total)),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TransferBlue,
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.transfer_explain),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                Money.toman(w.transaction.amountRial),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = TransferBlue,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.transfer_withdrawal_line, listOfNotNull(w.bank?.name ?: unknown, w.merchant).joinToString(" ← ")) +
+                    "  ·  " + Jalali.format(w.dateMillis),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurface,
+            )
+            Text(
+                stringResource(R.string.transfer_deposit_line, d.bank?.name ?: unknown) + "  ·  " + Jalali.format(d.dateMillis),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurface,
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onYes,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TransferBlue),
+                ) { Text(stringResource(R.string.transfer_yes), fontWeight = FontWeight.Bold) }
+                OutlinedButton(onClick = onNo, shape = RoundedCornerShape(14.dp)) {
+                    Text(stringResource(R.string.transfer_no))
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
@@ -154,13 +253,16 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
     val bankName = sms.bank?.name ?: stringResource(R.string.bank_unknown)
     val isDeposit = t.type == FlowType.DEPOSIT
     val failed = sms.isFailedPurchase
+    val selfTransfer = sms.isSelfTransfer && !failed
     val accent = when {
         failed -> colors.outline
+        selfTransfer -> TransferBlue
         isDeposit -> DepositGreen
         else -> colors.primary
     }
     val title = when {
         failed -> stringResource(R.string.tx_failed_purchase)
+        selfTransfer -> stringResource(R.string.tx_self_transfer)
         sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)
@@ -184,6 +286,7 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                     Text(
                         text = when {
                             failed -> "↺"
+                            selfTransfer -> "⇄"
                             isDeposit -> "↓"
                             else -> "↑"
                         },
@@ -201,7 +304,7 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                         color = colors.onSurface,
                     )
                     Text(
-                        text = if (failed && sms.merchant != null) "${sms.merchant} · ${bankName}" else bankName,
+                        text = if ((failed || selfTransfer) && sms.merchant != null) "${sms.merchant} · ${bankName}" else bankName,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -249,7 +352,18 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                     color = colors.onSurfaceVariant,
                 )
             }
-            if (!failed && sms.categoryName != null) {
+            if (selfTransfer) {
+                Spacer(Modifier.height(10.dp))
+                AssistChip(
+                    onClick = onClick,
+                    label = { Text(stringResource(R.string.tx_self_transfer_chip), fontWeight = FontWeight.Bold) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = TransferBlue.copy(alpha = 0.14f),
+                        labelColor = TransferBlue,
+                    ),
+                    border = null,
+                )
+            } else if (!failed && sms.categoryName != null) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
                     onClick = onClick,

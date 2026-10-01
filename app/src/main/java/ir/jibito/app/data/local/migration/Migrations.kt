@@ -86,7 +86,19 @@ object Migrations {
         }
     }
 
+    /** نسخه‌ی ۷ ← ۸: انتقال بین حساب‌های خود کاربر (دو ستون تازه + جدول کارت‌های خودم) */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `transaction_flows` ADD COLUMN `transferState` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `transaction_flows` ADD COLUMN `transferPairId` INTEGER DEFAULT NULL")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `own_accounts` (" +
+                    "`merchant` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`merchant`))"
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
-        MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+        MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
     )
 }
