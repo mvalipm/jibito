@@ -5,30 +5,46 @@ import android.provider.Telephony
 import ir.jibito.app.data.bank.Bank
 import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.bank.SenderType
+import ir.jibito.app.data.category.CategorySuggester
+import ir.jibito.app.data.linking.OtpRecord
+import ir.jibito.app.data.linking.PurchaseLinker
+import ir.jibito.app.data.linking.TxRecord
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.TransactionParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** یک پیامک بانکی که تراکنش بودنش تأیید شده. */
-data class RawSms(
+/** یک تراکنش آماده‌ی نمایش. */
+data class TransactionItem(
     val id: Long,
+    val bank: Bank,
     val sender: String,
     val body: String,
     val dateMillis: Long,
-    val bank: Bank,
     val transaction: ParsedTransaction,
+    /** مقصد خرید (از پیامک رمز دوم)، مثلاً «اسنپ». */
+    val merchant: String?,
+    /** دسته‌ی پیشنهادی بر اساس مقصد خرید. */
+    val suggestedCategory: String?,
+    /** پر باشد یعنی خرید قبول نشده و پول برگشته؛ این تاریخِ برگشت پول است. */
+    val refundDateMillis: Long?,
 )
 
 /**
- * پیامک‌های صندوق ورودی را می‌خواند و فقط آن‌هایی را برمی‌گرداند
- * که (۱) از سرشماره‌ی یک بانک شناخته‌شده آمده‌اند و (۲) متنشان یک تراکنش واقعی است.
- * پیامک شماره‌های شخصی، فرستنده‌های ناشناس، رمز/کد و تبلیغ بانک‌ها کنار گذاشته می‌شوند.
+ * پیامک‌ها را می‌خواند و به فهرست تراکنش‌ها تبدیل می‌کند:
+ * ۱. فقط پیامک سرشماره‌های بانکی (شخصی و ناشناس کنار گذاشته می‌شوند).
+ * ۲. هر پیامک یا «تراکنش» است، یا «رمز دوم خرید»، یا هیچ‌کدام (کد، تبلیغ...).
+ * ۳. رمز دوم‌ها به برداشت‌ها وصل می‌شوند و برگشت پول‌ها تشخیص داده می‌شود (PurchaseLinker).
  */
 class SmsReader(private val context: Context) {
 
-    suspend fun readBankSms(maxToScan: Int = 3000): List<RawSms> = withContext(Dispatchers.IO) {
-        val result = mutableListOf<RawSms>()
+    private data class Raw(val id: Long, val sender: String, val body: String, val date: Long, val bank: Bank)
+
+    suspend fun readTransactions(maxToScan: Int = 3000): List<TransactionItem> = withContext(Dispatchers.IO) {
+        val raws = HashMap<Long, Raw>()
+        val txRecords = mutableListOf<TxRecord>()
+        val otpRecords = mutableListOf<OtpRecord>()
+
         val projection = arrayOf(
             Telephony.Sms._ID,
             Telephony.Sms.ADDRESS,
@@ -51,20 +67,35 @@ class SmsReader(private val context: Context) {
                 scanned++
                 val body = cursor.getString(bodyCol) ?: continue
                 val sender = cursor.getString(addrCol) ?: continue
-                val type = SenderClassifier.classify(sender)
-                if (type is SenderType.BankSender) {
-                    val parsed = TransactionParser.parse(type.bank, body) ?: continue
-                    result += RawSms(
-                        id = cursor.getLong(idCol),
-                        sender = sender,
-                        body = body,
-                        dateMillis = cursor.getLong(dateCol),
-                        bank = type.bank,
-                        transaction = parsed,
-                    )
+                val type = SenderClassifier.classify(sender) as? SenderType.BankSender ?: continue
+                val raw = Raw(cursor.getLong(idCol), sender, body, cursor.getLong(dateCol), type.bank)
+
+                val tx = TransactionParser.parse(raw.bank, body)
+                if (tx != null) {
+                    raws[raw.id] = raw
+                    txRecords += TxRecord(raw.id, raw.date, raw.bank.id, tx)
+                    continue
+                }
+                val otp = TransactionParser.parseOtp(body)
+                if (otp != null) {
+                    otpRecords += OtpRecord(raw.id, raw.date, raw.bank.id, otp)
                 }
             }
         }
-        result
+
+        PurchaseLinker.link(txRecords, otpRecords).map { linked ->
+            val raw = raws.getValue(linked.record.id)
+            TransactionItem(
+                id = raw.id,
+                bank = raw.bank,
+                sender = raw.sender,
+                body = raw.body,
+                dateMillis = raw.date,
+                transaction = linked.record.tx,
+                merchant = linked.merchant,
+                suggestedCategory = CategorySuggester.suggest(linked.merchant),
+                refundDateMillis = linked.refund?.timeMillis,
+            )
+        }
     }
 }

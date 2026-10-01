@@ -21,8 +21,11 @@ object NonTransactionFilter {
 
     private val balanceWords = listOf("مانده", "موجودی")
 
+    /** آیا این پیامک رمز یک‌بارمصرف / کد است؟ */
+    fun looksLikeOtp(text: String): Boolean = otpPatterns.any { it.containsMatchIn(text) }
+
     fun isNotTransaction(text: String): Boolean {
-        if (otpPatterns.any { it.containsMatchIn(text) }) return true
+        if (looksLikeOtp(text)) return true
         val hasBalance = balanceWords.any { text.contains(it) }
         // تبلیغ و اطلاع‌رسانی معمولاً لینک یا این کلمه‌ها را دارند، ولی «مانده» ندارند
         if (!hasBalance && urlPattern.containsMatchIn(text)) return true

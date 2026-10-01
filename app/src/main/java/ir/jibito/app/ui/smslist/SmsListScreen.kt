@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,11 +38,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.parser.FlowType
-import ir.jibito.app.data.sms.RawSms
+import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
@@ -49,8 +52,8 @@ import ir.jibito.app.util.Money
 fun SmsListScreen() {
     val context = LocalContext.current
     // null یعنی «هنوز در حال خواندن»
-    val messages by produceState<List<RawSms>?>(initialValue = null) {
-        value = SmsReader(context).readBankSms()
+    val messages by produceState<List<TransactionItem>?>(initialValue = null) {
+        value = SmsReader(context).readTransactions()
     }
     val colors = MaterialTheme.colorScheme
 
@@ -107,11 +110,22 @@ fun SmsListScreen() {
 private val DepositGreen = Color(0xFF1E9E6A)
 
 @Composable
-private fun SmsCard(sms: RawSms) {
+private fun SmsCard(sms: TransactionItem) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
     val isDeposit = t.type == FlowType.DEPOSIT
-    val accent = if (isDeposit) DepositGreen else colors.primary
+    val failed = sms.refundDateMillis != null
+    val accent = when {
+        failed -> colors.outline
+        isDeposit -> DepositGreen
+        else -> colors.primary
+    }
+    val title = when {
+        failed -> stringResource(R.string.tx_failed_purchase)
+        sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
+        isDeposit -> stringResource(R.string.tx_deposit)
+        else -> stringResource(R.string.tx_withdrawal)
+    }
     var expanded by rememberSaveable(sms.id) { mutableStateOf(false) }
 
     Card(
@@ -131,7 +145,11 @@ private fun SmsCard(sms: RawSms) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = if (isDeposit) "↓" else "↑",
+                        text = when {
+                            failed -> "↺"
+                            isDeposit -> "↓"
+                            else -> "↑"
+                        },
                         color = accent,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Black,
@@ -140,23 +158,24 @@ private fun SmsCard(sms: RawSms) {
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal),
+                        text = title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = colors.onSurface,
                     )
                     Text(
-                        text = sms.bank.name,
+                        text = if (failed && sms.merchant != null) "${sms.merchant} · ${sms.bank.name}" else sms.bank.name,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = (if (isDeposit) "+" else "−") + Money.toman(t.amountRial),
+                        text = (if (failed) "" else if (isDeposit) "+" else "−") + Money.toman(t.amountRial),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
                         color = accent,
+                        textDecoration = if (failed) TextDecoration.LineThrough else null,
                     )
                     Text(
                         text = Jalali.format(sms.dateMillis),
@@ -165,7 +184,27 @@ private fun SmsCard(sms: RawSms) {
                     )
                 }
             }
-            t.balanceRial?.let { balance ->
+            if (failed) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.tx_refunded),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            if (!failed && sms.suggestedCategory != null) {
+                Spacer(Modifier.height(10.dp))
+                AssistChip(
+                    onClick = {},
+                    label = { Text(stringResource(R.string.tx_suggested_category, sms.suggestedCategory)) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = colors.secondaryContainer,
+                        labelColor = colors.onSecondaryContainer,
+                    ),
+                    border = null,
+                )
+            }
+            t.balanceRial?.takeIf { !failed }?.let { balance ->
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = stringResource(R.string.tx_balance, Money.toman(balance)),

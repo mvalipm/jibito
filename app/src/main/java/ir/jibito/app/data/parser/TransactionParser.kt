@@ -29,4 +29,7 @@ object TransactionParser {
             result
         }
     }
+
+    /** اگر پیامک «رمز دوم» خرید بود، مبلغ و مقصدش را برمی‌گرداند. */
+    fun parseOtp(rawBody: String): PurchaseOtp? = OtpParser.parse(SmsTextNormalizer.normalize(rawBody))
 }
