@@ -59,6 +59,8 @@ fun SmsListScreen() {
     // null یعنی «هنوز چیزی از دیتابیس نیامده»
     val messages by viewModel.transactions.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val categories by viewModel.categories.collectAsState()
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -123,16 +125,30 @@ fun SmsListScreen() {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(list, key = { it.id }) { sms -> SmsCard(sms) }
+                items(list, key = { it.id }) { sms -> SmsCard(sms, onClick = { selectedId = sms.id }) }
             }
         }
+    }
+
+    // برگه‌ی انتخاب دسته (از پایین صفحه)
+    val selected = messages?.firstOrNull { it.id == selectedId }
+    if (selected != null) {
+        CategoryPickerSheet(
+            transaction = selected,
+            categories = categories,
+            onPick = { categoryId ->
+                viewModel.setCategory(selected.id, categoryId)
+                selectedId = null
+            },
+            onDismiss = { selectedId = null },
+        )
     }
 }
 
 private val DepositGreen = Color(0xFF1E9E6A)
 
 @Composable
-private fun SmsCard(sms: Transaction) {
+private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
     val bankName = sms.bank?.name ?: stringResource(R.string.bank_unknown)
@@ -149,12 +165,10 @@ private fun SmsCard(sms: Transaction) {
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)
     }
-    var expanded by rememberSaveable(sms.id) { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -238,7 +252,7 @@ private fun SmsCard(sms: Transaction) {
             if (!failed && sms.categoryName != null) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
-                    onClick = {},
+                    onClick = onClick,
                     label = { Text(sms.categoryName, fontWeight = FontWeight.Bold) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = colors.primaryContainer,
@@ -249,13 +263,19 @@ private fun SmsCard(sms: Transaction) {
             } else if (!failed && sms.suggestedCategory != null) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
-                    onClick = {},
+                    onClick = onClick,
                     label = { Text(stringResource(R.string.tx_suggested_category, sms.suggestedCategory)) },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = colors.secondaryContainer,
                         labelColor = colors.onSecondaryContainer,
                     ),
                     border = null,
+                )
+            } else if (!failed && !isDeposit) {
+                Spacer(Modifier.height(10.dp))
+                AssistChip(
+                    onClick = onClick,
+                    label = { Text(stringResource(R.string.tx_add_category)) },
                 )
             }
             t.balanceRial?.takeIf { !failed }?.let { balance ->
@@ -265,21 +285,6 @@ private fun SmsCard(sms: Transaction) {
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                 )
-            }
-            if (expanded) {
-                Spacer(Modifier.height(10.dp))
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(colors.surfaceVariant, RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = sms.body,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
             }
         }
     }

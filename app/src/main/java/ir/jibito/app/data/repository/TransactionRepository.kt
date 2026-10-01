@@ -8,6 +8,7 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.TransactionItem
+import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.map
  */
 interface TransactionRepository {
     fun observeTransactions(): Flow<List<Transaction>>
+
+    fun observeCategories(): Flow<List<Category>>
 
     /** پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند. */
     suspend fun syncFromSms(): Int
@@ -49,9 +52,15 @@ class TransactionRepositoryImpl(
                     merchant = f.merchant,
                     suggestedCategory = f.suggestedCategory,
                     isFailedPurchase = f.isFailedPurchase,
+                    categoryId = f.categoryId,
                     categoryName = row.categoryName,
                 )
             }
+        }
+
+    override fun observeCategories(): Flow<List<Category>> =
+        db.categoryDao().observeActive().map { rows ->
+            rows.map { Category(id = it.id, name = it.name, icon = it.icon, colorHex = it.colorHex) }
         }
 
     override suspend fun syncFromSms(): Int {

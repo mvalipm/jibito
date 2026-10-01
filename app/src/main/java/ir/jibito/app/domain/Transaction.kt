@@ -13,5 +13,14 @@ data class Transaction(
     val merchant: String?,
     val suggestedCategory: String?,
     val isFailedPurchase: Boolean,
+    val categoryId: Long?,
     val categoryName: String?,
+)
+
+/** یک دسته‌ی خرج. */
+data class Category(
+    val id: Long,
+    val name: String,
+    val icon: String?,
+    val colorHex: String?,
 )

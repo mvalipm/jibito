@@ -37,4 +37,10 @@
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
     <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
     <string name="notif_question">این خرج مال چی بود؟</string>
+    <string name="tx_add_category">+ انتخاب دسته</string>
+    <string name="sheet_title">این خرج مال چی بود؟</string>
+    <string name="sheet_suggested">پیشنهاد</string>
+    <string name="sheet_clear">بدون دسته</string>
+    <string name="sheet_show_sms">متن پیامک</string>
+    <string name="sheet_hide_sms">بستن متن پیامک</string>
 </resources>
