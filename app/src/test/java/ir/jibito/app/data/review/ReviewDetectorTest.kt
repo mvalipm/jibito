@@ -49,6 +49,46 @@ class ReviewDetectorTest {
     }
 
     @Test
+    fun `امتیاز وزن‌دار - کلمه‌ی ضعیف تنها کافی نیست`() {
+        // فقط «خرید» و یک عدد: امتیاز کم ← به صندوق نمی‌رود
+        assertFalse(ReviewDetector.isCandidate(n("سفارش خرید شما شماره 12345 ثبت شد")))
+        // همان متن از فرستنده‌ای که قبلاً رمز پویا فرستاده هم هنوز کم است
+        assertFalse(ReviewDetector.isCandidate(n("سفارش خرید شما شماره 12345 ثبت شد"), ReviewDetector.OTP_SENDER_BONUS))
+    }
+
+    @Test
+    fun `امتیاز وزن‌دار - کارت ماسک‌شده و مبلغ علامت‌دار و تاریخ`() {
+        val sms = n("کارت 6037***1234\n1,500,000-\n1405/07/09\n12:30")
+        // کارت(۱) + سه‌رقمی(۱) + علامت(۲) + ماسک(۲) + تاریخ(۱) + ساعت(۱)
+        assertTrue(ReviewDetector.contentScore(sms) >= ReviewDetector.REVIEW_THRESHOLD)
+        assertTrue(ReviewDetector.isCandidate(sms))
+    }
+
+    @Test
+    fun `امتیاز وزن‌دار - نشانه‌ی فرستنده پیامک بی‌عدد را نجات نمی‌دهد`() {
+        assertEquals(0, ReviewDetector.score(n("واریز حقوق به زودی انجام می‌شود"), ReviewDetector.BANK_SENDER_BONUS))
+        assertEquals(0, ReviewDetector.score(n("رمز پویا: 482915 مبلغ 1,250,000 ریال"), ReviewDetector.OTP_SENDER_BONUS))
+    }
+
+    @Test
+    fun `امتیاز وزن‌دار - مرزی با نشانه‌ی فرستنده بالا می‌رود`() {
+        // انتقال(۱) + ریال(۱) + سه‌رقمی(۱) = ۳
+        val sms = n("انتقال 2,000,000 ریال انجام شد")
+        assertEquals(3, ReviewDetector.contentScore(sms))
+        assertFalse(ReviewDetector.isCandidate(sms))
+        assertTrue(ReviewDetector.isCandidate(sms, ReviewDetector.BANK_SENDER_BONUS))
+    }
+
+    @Test
+    fun `سرشماره‌ی خدماتی`() {
+        assertTrue(ReviewDetector.isServiceNumber("10001234"))
+        assertTrue(ReviewDetector.isServiceNumber("3000456789"))
+        assertFalse(ReviewDetector.isServiceNumber("9121234567"))
+        assertFalse(ReviewDetector.isServiceNumber("bankmellat"))
+        assertFalse(ReviewDetector.isServiceNumber("1000"))
+    }
+
+    @Test
     fun `پوشاندن همه‌ی رقم‌ها برای ارسال`() {
         assertEquals("مبلغ: #,###,### کارت ####", ReviewDetector.mask("مبلغ: 1,250,000 کارت 6037"))
     }

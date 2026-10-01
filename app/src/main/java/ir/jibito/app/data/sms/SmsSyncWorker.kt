@@ -4,7 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -39,6 +44,12 @@ class SmsReceivedReceiver : BroadcastReceiver() {
 class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // بدون اجازه‌ی خواندن پیامک کاری نمی‌شود کرد (مثلاً کاربر هنوز اجازه نداده)
+        if (ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.READ_SMS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return Result.success()
+        }
         val container = (applicationContext as JibitoApplication).container
         return try {
             container.transactionRepository.syncFromSms()
@@ -52,6 +63,18 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     companion object {
         private const val UNIQUE_NAME = "sms-sync"
+        private const val PERIODIC_NAME = "sms-sync-periodic"
+
+        /**
+         * شبکه‌ی ایمنی: هر ۱۵ دقیقه (کمترین فاصله‌ی مجاز اندروید) پیامک‌های تازه خوانده می‌شوند،
+         * حتی اگر گیرنده‌ی پیامک اجرا نشده باشد (مثلاً به خاطر بهینه‌سازی باتری).
+         * KEEP: اگر قبلاً زمان‌بندی شده، دست نمی‌خورد.
+         */
+        fun schedulePeriodic(context: Context) {
+            val request = PeriodicWorkRequestBuilder<SmsSyncWorker>(15, TimeUnit.MINUTES).build()
+            WorkManager.getInstance(context)
+                .enqueueUniquePeriodicWork(PERIODIC_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+        }
 
         fun enqueue(context: Context) {
             val request = OneTimeWorkRequestBuilder<SmsSyncWorker>()

@@ -67,7 +67,8 @@ fun ReviewScreen(onClose: () -> Unit) {
     val viewModel: ReviewViewModel = viewModel(
         factory = ReviewViewModel.factory(
             app.container.reviewRepository,
-            onLearned = { app.container.transactionRepository.syncFromSms() },
+            // قالب تازه یاد گرفته شد ← کل صندوق دوباره خوانده می‌شود تا پیامک‌های قبلی همین فرستنده هم ثبت شوند
+            onLearned = { app.container.transactionRepository.syncFromSms(forceFull = true) },
         )
     )
     val pending by viewModel.pending.collectAsState()

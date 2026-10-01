@@ -11,6 +11,7 @@ import ir.jibito.app.data.linking.OtpRecord
 import ir.jibito.app.data.linking.PurchaseLinker
 import ir.jibito.app.data.linking.TxRecord
 import ir.jibito.app.data.parser.MerchantExtractor
+import ir.jibito.app.data.parser.NonTransactionFilter
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.parser.TransactionParser
@@ -54,6 +55,13 @@ data class ReviewCandidate(
 data class ScanResult(
     val transactions: List<TransactionItem>,
     val reviewCandidates: List<ReviewCandidate>,
+    /** بزرگ‌ترین _id و تاریخ پیامکی که در این اسکن دیده شد (برای اسکن افزایشی بعدی) */
+    val maxSmsId: Long,
+    val maxSmsDate: Long,
+    /** null یعنی اسکن کامل؛ وگرنه فقط پیامک‌های از این زمان به بعد خوانده شده‌اند */
+    val scannedFromDate: Long?,
+    /** سرشماره‌های ناشناسی که رمز پویا فرستاده‌اند (قبلی‌ها + تازه‌ها) */
+    val otpSenders: Set<String>,
 )
 
 class SmsReader(private val context: Context) {
@@ -69,9 +77,25 @@ class SmsReader(private val context: Context) {
         ignoredSenders: Set<String> = emptySet(),
         adoptedSenders: Map<String, Int> = emptyMap(),
         templates: Map<String, List<LearnedTemplate>> = emptyMap(),
+        /** null = اسکن کامل. وگرنه فقط پیامک‌هایی با _id بزرگ‌تر از این (به‌علاوه‌ی حاشیه‌ی زمانی) خوانده می‌شوند */
+        afterSmsId: Long? = null,
+        /** تاریخ آخرین پیامک پردازش‌شده؛ برای حاشیه‌ی زمانی اسکن افزایشی */
+        afterSmsDate: Long = 0L,
+        knownOtpSenders: Set<String> = emptySet(),
     ): ScanResult = withContext(Dispatchers.IO) {
         val reviewSince = System.currentTimeMillis() - REVIEW_WINDOW_MILLIS
         val candidates = mutableListOf<ReviewCandidate>()
+        // فرستنده‌های ناشناس: امتیازشان بعد از خواندن همه حساب می‌شود (چون رمز پویای همان فرستنده ممکن است قدیمی‌تر باشد)
+        val unknownPending = mutableListOf<Pair<ReviewCandidate, Int>>()
+        val otpSenders = HashSet(knownOtpSenders)
+        var maxId = 0L
+        var maxDate = 0L
+
+        // اسکن افزایشی: پیامک‌های تازه (_id بزرگ‌تر)، به‌علاوه‌ی ۱۰ دقیقه‌ی قبل از آخرین پیامک،
+        // تا رمز دوم ↔ برداشت ↔ برگشت پول (که تا ۳ دقیقه فاصله دارند) باز هم به هم وصل شوند.
+        val fromDate = afterSmsId?.let { (afterSmsDate - INCREMENTAL_MARGIN_MILLIS).coerceAtLeast(0) }
+        val selection = if (afterSmsId != null) "${Telephony.Sms._ID} > ? OR ${Telephony.Sms.DATE} >= ?" else null
+        val selectionArgs = if (afterSmsId != null) arrayOf(afterSmsId.toString(), fromDate.toString()) else null
         val raws = HashMap<Long, Raw>()
         val txRecords = mutableListOf<TxRecord>()
         val otpRecords = mutableListOf<OtpRecord>()
@@ -85,8 +109,8 @@ class SmsReader(private val context: Context) {
         context.contentResolver.query(
             Telephony.Sms.Inbox.CONTENT_URI,
             projection,
-            null,
-            null,
+            selection,
+            selectionArgs,
             "${Telephony.Sms.DATE} DESC",
         )?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(Telephony.Sms._ID)
@@ -96,6 +120,10 @@ class SmsReader(private val context: Context) {
             // کل صندوق پیامک خوانده می‌شود (قبلاً فقط ۳۰۰۰ پیامک آخر — برای همین پیامک‌های قدیمی‌تر جا می‌افتادند).
             // سرعت: اول فقط فرستنده چک می‌شود (سریع)؛ متن فقط برای پیامک‌های بانکی پارس می‌شود.
             while (cursor.moveToNext()) {
+                val smsId = cursor.getLong(idCol)
+                if (smsId > maxId) maxId = smsId
+                val smsDate = cursor.getLong(dateCol)
+                if (smsDate > maxDate) maxDate = smsDate
                 val sender = cursor.getString(addrCol) ?: continue
                 val normalizedSender = BankDirectory.normalizeSender(sender)
                 // اول بانک‌های رسمی، بعد سرشماره‌هایی که خود کاربر به یک بانک/موسسه نسبت داده
@@ -110,11 +138,17 @@ class SmsReader(private val context: Context) {
                 if (senderType !is SenderType.BankSender) {
                     // فرستنده‌ی ناشناس (نه شخصی): اگر تازه و شبیه تراکنش بود ← صندوق بررسی
                     if (senderType == SenderType.Unknown) {
-                        val date = cursor.getLong(dateCol)
-                        if (date >= reviewSince && normalizedSender !in ignoredSenders) {
+                        if (smsDate >= reviewSince && normalizedSender !in ignoredSenders) {
                             val body = cursor.getString(bodyCol) ?: continue
-                            if (ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body))) {
-                                candidates += ReviewCandidate(cursor.getLong(idCol), sender, body, date, null)
+                            val text = SmsTextNormalizer.normalize(body)
+                            if (NonTransactionFilter.looksLikeOtp(text)) {
+                                otpSenders += normalizedSender
+                                continue
+                            }
+                            val content = ReviewDetector.contentScore(text)
+                            if (content > 0) {
+                                val serviceBonus = if (ReviewDetector.isServiceNumber(normalizedSender)) ReviewDetector.SERVICE_NUMBER_BONUS else 0
+                                unknownPending += ReviewCandidate(smsId, sender, body, smsDate, null) to (content + serviceBonus)
                             }
                         }
                     }
@@ -122,7 +156,7 @@ class SmsReader(private val context: Context) {
                 }
                 val type = senderType
                 val body = cursor.getString(bodyCol) ?: continue
-                val raw = Raw(cursor.getLong(idCol), sender, body, cursor.getLong(dateCol), type.bank)
+                val raw = Raw(smsId, sender, body, smsDate, type.bank)
 
                 // اول پارسرهای اپ؛ اگر نشد، قالب‌هایی که کاربر یاد داده
                 val tx = TransactionParser.parse(raw.bank, body)
@@ -138,10 +172,18 @@ class SmsReader(private val context: Context) {
                     continue
                 }
                 // فرستنده بانک است ولی متن خوانده نشد: اگر شبیه تراکنش بود ← صندوق بررسی
-                if (raw.date >= reviewSince && ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body))) {
+                if (raw.date >= reviewSince &&
+                    ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body), ReviewDetector.BANK_SENDER_BONUS)
+                ) {
                     candidates += ReviewCandidate(raw.id, sender, body, raw.date, raw.bank.id)
                 }
             }
+        }
+
+        // فرستنده‌ی ناشناس: فقط اگر امتیاز کل به آستانه برسد به صندوق بررسی می‌رود (ثبت خودکار هرگز)
+        for ((candidate, partial) in unknownPending) {
+            val otpBonus = if (BankDirectory.normalizeSender(candidate.sender) in otpSenders) ReviewDetector.OTP_SENDER_BONUS else 0
+            if (partial + otpBonus >= ReviewDetector.REVIEW_THRESHOLD) candidates += candidate
         }
 
         val transactions = PurchaseLinker.link(txRecords, otpRecords).map { linked ->
@@ -160,11 +202,21 @@ class SmsReader(private val context: Context) {
                 refundDateMillis = linked.refund?.timeMillis,
             )
         }
-        ScanResult(transactions, candidates)
+        ScanResult(
+            transactions = transactions,
+            reviewCandidates = candidates,
+            maxSmsId = maxId,
+            maxSmsDate = maxDate,
+            scannedFromDate = fromDate,
+            otpSenders = otpSenders,
+        )
     }
 
     companion object {
         /** فقط پیامک‌های خوانده‌نشده‌ی این مدت اخیر به صندوق بررسی می‌روند (نه کل تاریخچه) */
         const val REVIEW_WINDOW_MILLIS = 30L * 24 * 60 * 60 * 1000
+
+        /** حاشیه‌ی زمانی اسکن افزایشی (بیشتر از پنجره‌ی ۳ دقیقه‌ای اتصال رمز دوم و برگشت پول) */
+        const val INCREMENTAL_MARGIN_MILLIS = 10L * 60 * 1000
     }
 }

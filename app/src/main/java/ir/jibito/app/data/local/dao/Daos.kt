@@ -30,7 +30,7 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source FROM transaction_flows WHERE smsId IS NOT NULL")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch FROM transaction_flows WHERE smsId IS NOT NULL")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */

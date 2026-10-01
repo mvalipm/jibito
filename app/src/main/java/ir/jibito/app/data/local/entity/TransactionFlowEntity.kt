@@ -75,4 +75,5 @@ data class SmsFlowKey(
     val notifiedAt: Long?,
     val isAutoCategorized: Boolean,
     val source: String,
+    val dateEpoch: Long,
 )

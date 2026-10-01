@@ -7,6 +7,7 @@ import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.sms.SmsReader
+import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
@@ -32,8 +33,11 @@ interface TransactionRepository {
 
     fun observeCategories(): Flow<List<Category>>
 
-    /** پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند. */
-    suspend fun syncFromSms(): Int
+    /**
+     * پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند.
+     * معمولاً فقط پیامک‌های تازه خوانده می‌شوند؛ بار اول، روزی یک بار، یا با forceFull کل صندوق.
+     */
+    suspend fun syncFromSms(forceFull: Boolean = false): Int
 
     /** true وقتی خواندن پیامک‌ها در جریان است */
     val isSyncing: StateFlow<Boolean>
@@ -45,6 +49,7 @@ interface TransactionRepository {
 class TransactionRepositoryImpl(
     private val db: AppDatabase,
     private val smsReader: SmsReader,
+    private val syncState: SyncState,
     /** بعد از تعیین دسته صدا زده می‌شود (برای بررسی هشدار بودجه) */
     private val onCategoryChanged: suspend () -> Unit = {},
 ) : TransactionRepository {
@@ -85,19 +90,24 @@ class TransactionRepositoryImpl(
         }
 
     /** اگر هم‌زمان دو جا (مثلاً اپ و کار پس‌زمینه) بخواهند همگام کنند، دومی منتظر اولی می‌ماند. */
-    override suspend fun syncFromSms(): Int = syncMutex.withLock {
+    override suspend fun syncFromSms(forceFull: Boolean): Int = syncMutex.withLock {
         _isSyncing.value = true
         try {
-            doSync()
+            doSync(forceFull)
         } finally {
             _isSyncing.value = false
         }
     }
 
-    private suspend fun doSync(): Int {
+    private suspend fun doSync(forceFull: Boolean): Int {
         ensureDefaultCategories()
         val reviewDao = db.reviewDao()
+        val startedAt = System.currentTimeMillis()
+        val full = forceFull || syncState.needsFullScan(startedAt)
         val scan = smsReader.scan(
+            afterSmsId = if (full) null else syncState.lastSmsId,
+            afterSmsDate = syncState.lastSmsDate,
+            knownOtpSenders = syncState.otpSenders,
             ignoredSenders = reviewDao.ignoredSenders().toSet(),
             adoptedSenders = reviewDao.bankSenderRules().associate { it.sender to (it.bankId ?: BankDirectory.OTHER.id) },
             templates = reviewDao.templates().groupBy({ it.sender }) {
@@ -131,9 +141,12 @@ class TransactionRepositoryImpl(
 
             // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
             // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
+            // در اسکن افزایشی فقط بازه‌ی خوانده‌شده بررسی می‌شود (پیامک‌های قدیمی‌تر اصلاً خوانده نشده‌اند).
             val currentIds = items.mapTo(HashSet()) { it.id }
+            val from = scan.scannedFromDate
             val gone = existing.values
                 .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.smsId !in currentIds }
+                .filter { from == null || (it.dateEpoch >= from && it.smsId <= scan.maxSmsId) }
                 .map { it.id }
 
             if (toInsert.isNotEmpty()) dao.insertAll(toInsert)
@@ -148,6 +161,12 @@ class TransactionRepositoryImpl(
             })
             reviewDao.resolveAlreadyParsed(now)
         }
+        syncState.save(
+            maxId = scan.maxSmsId,
+            maxDate = scan.maxSmsDate,
+            otpSenders = scan.otpSenders,
+            fullScanAt = if (full) startedAt else null,
+        )
         return inserted
     }
 
