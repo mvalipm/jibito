@@ -27,7 +27,25 @@ jobs:
           gradle-version: '8.11.1'
 
       - name: Run tests and build debug APK
-        run: gradle testDebugUnitTest assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest assembleDebug --stacktrace 2>&1 | tee build.log
+
+      # اگر ساخت شکست خورد، خطاهای کامپایل و تست‌های ردشده را به‌صورت خلاصه بالای صفحه‌ی گیت‌هاب نشان می‌دهد
+      - name: Show errors summary
+        if: failure()
+        run: |
+          grep -E "^e: " build.log | head -20 | while IFS= read -r line; do echo "::error::$line"; done
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            [ -f "$f" ] || continue
+            python3 - "$f" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          for tc in ET.parse(sys.argv[1]).getroot().iter('testcase'):
+              for fl in tc.findall('failure'):
+                  msg = (fl.get('message') or '').replace('\n', ' ')[:300]
+                  print(f"::error::TEST FAILED {tc.get('classname')}.{tc.get('name')}: {msg}")
+          PY
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

@@ -30,8 +30,9 @@ object ReviewDetector {
     private val financialWords = listOf(
         "برداشت", "واریز", "خرید", "انتقال", "مانده", "موجودی", "شارژ شد", "کسر", "بستانکار", "بدهکار",
     )
-    private val withdrawalWords = listOf("برداشت", "خرید", "انتقال از", "کسر", "بدهکار", "پرداخت")
-    private val depositWords = listOf("واریز", "انتقال به", "شارژ شد", "بستانکار", "سود")
+    /** وزن کلمه‌ها برای حدس نوع: کلمه‌های قطعی ۲، کلمه‌های مبهم (مثل «خرید» در «برای تکمیل خرید») ۱ */
+    private val withdrawalWords = mapOf("برداشت" to 2, "کسر" to 2, "بدهکار" to 2, "خرید" to 1, "انتقال از" to 1, "پرداخت" to 1)
+    private val depositWords = mapOf("واریز" to 2, "شارژ شد" to 2, "بستانکار" to 2, "انتقال به" to 1, "سود" to 1)
     private val balanceWords = listOf("مانده", "موجودی")
 
     /** تاریخ (۱۴۰۵/۰۷/۰۹) و ساعت (۱۲:۳۰) عدد مبلغ نیستند */
@@ -85,10 +86,12 @@ object ReviewDetector {
                 else -> null
             }
         }
+        val score = depositWords.entries.sumOf { (w, v) -> if (text.contains(w)) v else 0 } -
+            withdrawalWords.entries.sumOf { (w, v) -> if (text.contains(w)) v else 0 }
         val type = signed ?: when {
-            withdrawalWords.any { text.contains(it) } && depositWords.none { text.contains(it) } -> FlowType.WITHDRAWAL
-            depositWords.any { text.contains(it) } && withdrawalWords.none { text.contains(it) } -> FlowType.DEPOSIT
-            else -> null
+            score > 0 -> FlowType.DEPOSIT
+            score < 0 -> FlowType.WITHDRAWAL
+            else -> null // مطمئن نیستیم؛ کاربر انتخاب می‌کند
         }
         val inToman = text.contains("تومان") && !text.contains("ریال")
         return ReviewGuess(nums, amountIndex, balanceIndex, type, inToman)
