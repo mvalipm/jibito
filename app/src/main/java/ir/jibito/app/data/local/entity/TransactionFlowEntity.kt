@@ -74,4 +74,5 @@ data class SmsFlowKey(
     val isDeleted: Boolean,
     val notifiedAt: Long?,
     val isAutoCategorized: Boolean,
+    val source: String,
 )

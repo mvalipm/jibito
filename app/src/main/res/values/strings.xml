@@ -73,4 +73,21 @@
     <string name="notif_auto_text">✓ %1$s (خودکار) — اگه درست نیست، بزن و عوضش کن</string>
     <string name="notif_auto_channel_name">دسته‌بندی خودکار</string>
     <string name="notif_auto_channel_desc">خبر آرام وقتی جیبیتو خودش دسته‌ی یک تراکنش رو گذاشته</string>
+    <string name="review_title">پیامک‌های نیازمند بررسی</string>
+    <string name="review_count">%1$d پیامک</string>
+    <string name="review_later">بعداً</string>
+    <string name="review_explain">این پیامک شبیه تراکنشه ولی جیبیتو نتونست خودکار بخونه‌ش. تا تأییدش نکنی، توی خرج‌ها و بودجه حساب نمی‌شه.</string>
+    <string name="review_unknown_sender">فرستنده‌ی ناشناس</string>
+    <string name="review_type">برداشت بوده یا واریز؟</string>
+    <string name="review_pick_amount">مبلغ کدومه؟ روش بزن</string>
+    <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
+    <string name="review_confirm">ثبت تراکنش</string>
+    <string name="review_not_transaction">تراکنش نیست</string>
+    <string name="review_ignore_sender">پیامک‌های این فرستنده رو دیگه نشون نده</string>
+    <string name="review_share">ارسال برای بهبود اپ</string>
+    <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
+    <string name="review_share_title">ارسال نمونه با…</string>
+    <string name="review_all_done">همه‌ی پیامک‌ها بررسی شدن!</string>
+    <string name="review_back">برگشت</string>
+    <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
 </resources>

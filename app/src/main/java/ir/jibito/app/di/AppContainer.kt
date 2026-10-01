@@ -4,6 +4,8 @@ import android.content.Context
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
+import ir.jibito.app.data.repository.ReviewRepository
+import ir.jibito.app.data.repository.ReviewRepositoryImpl
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.data.repository.TransactionRepositoryImpl
 import ir.jibito.app.data.sms.SmsReader
@@ -26,6 +28,10 @@ class AppContainer(context: Context) {
             smsReader = SmsReader(appContext),
             onCategoryChanged = { budgetAlerter.check() },
         )
+    }
+
+    val reviewRepository: ReviewRepository by lazy {
+        ReviewRepositoryImpl(database, onTransactionAdded = { budgetAlerter.check() })
     }
 
     val budgetRepository: BudgetRepository by lazy {

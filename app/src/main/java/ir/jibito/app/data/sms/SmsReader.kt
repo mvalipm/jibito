@@ -3,6 +3,7 @@ package ir.jibito.app.data.sms
 import android.content.Context
 import android.provider.Telephony
 import ir.jibito.app.data.bank.Bank
+import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.bank.SenderType
 import ir.jibito.app.data.category.CategorySuggester
@@ -13,6 +14,7 @@ import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.parser.TransactionParser
+import ir.jibito.app.data.review.ReviewDetector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,11 +40,30 @@ data class TransactionItem(
  * ۲. هر پیامک یا «تراکنش» است، یا «رمز دوم خرید»، یا هیچ‌کدام (کد، تبلیغ...).
  * ۳. رمز دوم‌ها به برداشت‌ها وصل می‌شوند و برگشت پول‌ها تشخیص داده می‌شود (PurchaseLinker).
  */
+/** پیامکی که شبیه تراکنش است ولی خوانده نشد (برای «صندوق بررسی»). */
+data class ReviewCandidate(
+    val smsId: Long,
+    val sender: String,
+    val body: String,
+    val dateMillis: Long,
+    val bankId: Int?,
+)
+
+data class ScanResult(
+    val transactions: List<TransactionItem>,
+    val reviewCandidates: List<ReviewCandidate>,
+)
+
 class SmsReader(private val context: Context) {
 
     private data class Raw(val id: Long, val sender: String, val body: String, val date: Long, val bank: Bank)
 
-    suspend fun readTransactions(): List<TransactionItem> = withContext(Dispatchers.IO) {
+    /**
+     * @param ignoredSenders سرشماره‌هایی (نرمال‌شده) که کاربر گفته «دیگر نشان نده»
+     */
+    suspend fun scan(ignoredSenders: Set<String> = emptySet()): ScanResult = withContext(Dispatchers.IO) {
+        val reviewSince = System.currentTimeMillis() - REVIEW_WINDOW_MILLIS
+        val candidates = mutableListOf<ReviewCandidate>()
         val raws = HashMap<Long, Raw>()
         val txRecords = mutableListOf<TxRecord>()
         val otpRecords = mutableListOf<OtpRecord>()
@@ -68,7 +89,21 @@ class SmsReader(private val context: Context) {
             // سرعت: اول فقط فرستنده چک می‌شود (سریع)؛ متن فقط برای پیامک‌های بانکی پارس می‌شود.
             while (cursor.moveToNext()) {
                 val sender = cursor.getString(addrCol) ?: continue
-                val type = SenderClassifier.classify(sender) as? SenderType.BankSender ?: continue
+                val senderType = SenderClassifier.classify(sender)
+                if (senderType !is SenderType.BankSender) {
+                    // فرستنده‌ی ناشناس (نه شخصی): اگر تازه و شبیه تراکنش بود ← صندوق بررسی
+                    if (senderType == SenderType.Unknown) {
+                        val date = cursor.getLong(dateCol)
+                        if (date >= reviewSince && BankDirectory.normalizeSender(sender) !in ignoredSenders) {
+                            val body = cursor.getString(bodyCol) ?: continue
+                            if (ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body))) {
+                                candidates += ReviewCandidate(cursor.getLong(idCol), sender, body, date, null)
+                            }
+                        }
+                    }
+                    continue
+                }
+                val type = senderType
                 val body = cursor.getString(bodyCol) ?: continue
                 val raw = Raw(cursor.getLong(idCol), sender, body, cursor.getLong(dateCol), type.bank)
 
@@ -81,11 +116,16 @@ class SmsReader(private val context: Context) {
                 val otp = TransactionParser.parseOtp(body)
                 if (otp != null) {
                     otpRecords += OtpRecord(raw.id, raw.date, raw.bank.id, otp)
+                    continue
+                }
+                // فرستنده بانک است ولی متن خوانده نشد: اگر شبیه تراکنش بود ← صندوق بررسی
+                if (raw.date >= reviewSince && ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body))) {
+                    candidates += ReviewCandidate(raw.id, sender, body, raw.date, raw.bank.id)
                 }
             }
         }
 
-        PurchaseLinker.link(txRecords, otpRecords).map { linked ->
+        val transactions = PurchaseLinker.link(txRecords, otpRecords).map { linked ->
             val raw = raws.getValue(linked.record.id)
             // طرف حساب: اول از پیامک رمز دوم، وگرنه از متن خود پیامک (مثلاً «خرید از فروشگاه ...» یا «انتقال به کارت ...»)
             val merchant = linked.merchant ?: MerchantExtractor.find(SmsTextNormalizer.normalize(raw.body))
@@ -101,5 +141,11 @@ class SmsReader(private val context: Context) {
                 refundDateMillis = linked.refund?.timeMillis,
             )
         }
+        ScanResult(transactions, candidates)
+    }
+
+    companion object {
+        /** فقط پیامک‌های خوانده‌نشده‌ی این مدت اخیر به صندوق بررسی می‌روند (نه کل تاریخچه) */
+        const val REVIEW_WINDOW_MILLIS = 30L * 24 * 60 * 60 * 1000
     }
 }

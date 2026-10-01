@@ -5,7 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import ir.jibito.app.data.local.dao.CategoryDao
+import ir.jibito.app.data.local.dao.ReviewDao
 import ir.jibito.app.data.local.dao.SummaryDao
+import ir.jibito.app.data.local.entity.ReviewSmsEntity
+import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.dao.TransactionFlowDao
 import ir.jibito.app.data.local.entity.CategoryEntity
@@ -21,8 +24,14 @@ import ir.jibito.app.data.local.migration.Migrations
  * - هرگز fallbackToDestructiveMigration (یعنی پاک کردن دیتای کاربر).
  */
 @Database(
-    entities = [TransactionFlowEntity::class, CategoryEntity::class, BudgetEntity::class],
-    version = 5,
+    entities = [
+        TransactionFlowEntity::class,
+        CategoryEntity::class,
+        BudgetEntity::class,
+        ReviewSmsEntity::class,
+        SenderRuleEntity::class,
+    ],
+    version = 6,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionFlowDao(): TransactionFlowDao
     abstract fun categoryDao(): CategoryDao
     abstract fun summaryDao(): SummaryDao
+    abstract fun reviewDao(): ReviewDao
 
     companion object {
         fun build(context: Context): AppDatabase =

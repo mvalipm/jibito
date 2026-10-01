@@ -56,5 +56,22 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    /** نسخه‌ی ۵ ← ۶: «صندوق بررسی» برای پیامک‌های خوانده‌نشده + قانون‌های فرستنده. (فقط جدول تازه) */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `review_sms` (" +
+                    "`smsId` INTEGER NOT NULL, `sender` TEXT NOT NULL, `body` TEXT NOT NULL, " +
+                    "`dateEpoch` INTEGER NOT NULL, `bankId` INTEGER, `status` INTEGER NOT NULL DEFAULT 0, " +
+                    "`autoShownAt` INTEGER, `resolvedAt` INTEGER, PRIMARY KEY(`smsId`))"
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `sender_rules` (" +
+                    "`sender` TEXT NOT NULL, `action` INTEGER NOT NULL, `bankId` INTEGER, " +
+                    "`createdAt` INTEGER NOT NULL, PRIMARY KEY(`sender`))"
+            )
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

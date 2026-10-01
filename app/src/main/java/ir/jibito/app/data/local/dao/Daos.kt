@@ -8,6 +8,8 @@ import androidx.room.Update
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.CategorySpendRow
+import ir.jibito.app.data.local.entity.ReviewSmsEntity
+import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
@@ -27,7 +29,7 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized FROM transaction_flows WHERE smsId IS NOT NULL")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source FROM transaction_flows WHERE smsId IS NOT NULL")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */
@@ -161,4 +163,45 @@ interface SummaryDao {
 
     @Query("UPDATE budgets SET alertedMonthKey = :monthKey, alertedLevel = :level WHERE categoryId = :categoryId")
     suspend fun markAlerted(categoryId: Long, monthKey: Int, level: Int)
+}
+
+@Dao
+interface ReviewDao {
+
+    @Query("SELECT * FROM review_sms WHERE status = 0 ORDER BY dateEpoch DESC")
+    fun observePending(): Flow<List<ReviewSmsEntity>>
+
+    @Query("SELECT COUNT(*) FROM review_sms WHERE status = 0 AND autoShownAt IS NULL")
+    suspend fun countNotYetShown(): Int
+
+    @Query("UPDATE review_sms SET autoShownAt = :now WHERE status = 0 AND autoShownAt IS NULL")
+    suspend fun markAllShown(now: Long)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(items: List<ReviewSmsEntity>)
+
+    @Query("SELECT * FROM review_sms WHERE smsId = :smsId")
+    suspend fun byId(smsId: Long): ReviewSmsEntity?
+
+    @Query("UPDATE review_sms SET status = :status, resolvedAt = :now WHERE smsId = :smsId")
+    suspend fun resolve(smsId: Long, status: Int, now: Long)
+
+    /** پیامکی که حالا (مثلاً بعد از به‌روزرسانی پارسرها) خودکار خوانده شد، دیگر نیاز به بررسی ندارد. */
+    @Query(
+        """
+        UPDATE review_sms SET status = 1, resolvedAt = :now
+        WHERE status = 0 AND smsId IN (SELECT smsId FROM transaction_flows WHERE smsId IS NOT NULL AND isDeleted = 0)
+        """
+    )
+    suspend fun resolveAlreadyParsed(now: Long)
+
+    @Query("SELECT sender FROM sender_rules WHERE action = 1")
+    suspend fun ignoredSenders(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSenderRule(rule: SenderRuleEntity)
+
+    /** پیامک‌های منتظرِ همین فرستنده هم کنار می‌روند */
+    @Query("UPDATE review_sms SET status = 2, resolvedAt = :now WHERE status = 0 AND sender = :rawSender")
+    suspend fun dismissAllFromSender(rawSender: String, now: Long)
 }

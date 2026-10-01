@@ -10,8 +10,18 @@ import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/** منبع تراکنش: خودکار از پیامک، یا تأییدشده توسط کاربر از صندوق بررسی */
+const val SOURCE_SMS_AUTO = "SMS_AUTO"
+const val SOURCE_SMS_MANUAL = "SMS_MANUAL"
 
 /**
  * تنها راه صفحه‌ها برای رسیدن به تراکنش‌ها (قانون سند معماری: ViewModel هرگز مستقیم Room نمی‌بیند).
@@ -23,6 +33,9 @@ interface TransactionRepository {
 
     /** پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند. */
     suspend fun syncFromSms(): Int
+
+    /** true وقتی خواندن پیامک‌ها در جریان است */
+    val isSyncing: StateFlow<Boolean>
 
     /** دسته‌ی یک تراکنش را تعیین می‌کند (null = بدون دسته). */
     suspend fun setCategory(transactionId: Long, categoryId: Long?)
@@ -36,6 +49,9 @@ class TransactionRepositoryImpl(
 ) : TransactionRepository {
 
     private val dao = db.transactionFlowDao()
+    private val syncMutex = Mutex()
+    private val _isSyncing = MutableStateFlow(false)
+    override val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
     override fun observeTransactions(): Flow<List<Transaction>> =
         dao.observeAll().map { rows ->
@@ -67,9 +83,21 @@ class TransactionRepositoryImpl(
             rows.map { Category(id = it.id, name = it.name, icon = it.icon, colorHex = it.colorHex, flowType = it.flowType) }
         }
 
-    override suspend fun syncFromSms(): Int {
+    /** اگر هم‌زمان دو جا (مثلاً اپ و کار پس‌زمینه) بخواهند همگام کنند، دومی منتظر اولی می‌ماند. */
+    override suspend fun syncFromSms(): Int = syncMutex.withLock {
+        _isSyncing.value = true
+        try {
+            doSync()
+        } finally {
+            _isSyncing.value = false
+        }
+    }
+
+    private suspend fun doSync(): Int {
         ensureDefaultCategories()
-        val items = smsReader.readTransactions()
+        val reviewDao = db.reviewDao()
+        val scan = smsReader.scan(ignoredSenders = reviewDao.ignoredSenders().toSet())
+        val items = scan.transactions
         val now = System.currentTimeMillis()
 
         var inserted = 0
@@ -94,14 +122,24 @@ class TransactionRepositoryImpl(
                 }
             }
 
-            // پیامکی که قبلاً تراکنش بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم
+            // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
+            // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
             val currentIds = items.mapTo(HashSet()) { it.id }
-            val gone = existing.values.filter { !it.isDeleted && it.smsId !in currentIds }.map { it.id }
+            val gone = existing.values
+                .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.smsId !in currentIds }
+                .map { it.id }
 
             if (toInsert.isNotEmpty()) dao.insertAll(toInsert)
             if (toUpdate.isNotEmpty()) dao.updateAll(toUpdate)
             gone.chunked(500).forEach { dao.softDelete(it, now) }
             inserted = toInsert.size
+
+            // صندوق بررسی: پیامک‌های تازه‌ی خوانده‌نشده اضافه می‌شوند (تکراری‌ها نادیده)،
+            // و آن‌هایی که حالا خودکار خوانده شده‌اند، دیگر منتظر نمی‌مانند
+            reviewDao.insertAll(scan.reviewCandidates.map {
+                ReviewSmsEntity(smsId = it.smsId, sender = it.sender, body = it.body, dateEpoch = it.dateMillis, bankId = it.bankId)
+            })
+            reviewDao.resolveAlreadyParsed(now)
         }
         return inserted
     }
@@ -144,7 +182,7 @@ class TransactionRepositoryImpl(
         categoryId = categoryId,
         description = null,
         smsContent = body,
-        source = "SMS_AUTO",
+        source = SOURCE_SMS_AUTO,
         isDeleted = false,
         updatedAt = now,
         notifiedAt = notifiedAt,

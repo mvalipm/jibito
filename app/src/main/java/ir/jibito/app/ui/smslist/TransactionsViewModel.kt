@@ -8,10 +8,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,25 +24,8 @@ class TransactionsViewModel(
     val categories: StateFlow<List<Category>> = repository.observeCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
-
-    init {
-        sync()
-    }
-
-    /** پیامک‌ها را دوباره می‌خواند؛ فهرست خودش از دیتابیس به‌روز می‌شود. */
-    fun sync() {
-        if (_isSyncing.value) return
-        viewModelScope.launch {
-            _isSyncing.value = true
-            try {
-                repository.syncFromSms()
-            } finally {
-                _isSyncing.value = false
-            }
-        }
-    }
+    /** خواندن پیامک‌ها را خود صفحه‌ی اصلی موقع باز شدن اپ شروع می‌کند (MainScreen) */
+    val isSyncing: StateFlow<Boolean> = repository.isSyncing
 
     /** دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود. */
     fun setCategory(transactionId: Long, categoryId: Long?) {

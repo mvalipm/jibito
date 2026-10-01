@@ -1,0 +1,55 @@
+package ir.jibito.app.data.review
+
+import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.parser.SmsTextNormalizer
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ReviewDetectorTest {
+
+    private fun n(s: String) = SmsTextNormalizer.normalize(s)
+
+    @Test
+    fun `پیامک شارژ کیف پول - شبیه تراکنش است`() {
+        val sms = n("کاربر عزیز\nحساب شما به مبلغ 5,511,800 تومان شارژ شد؛ برای تکمیل خرید وارد سایت شوید")
+        assertTrue(ReviewDetector.isCandidate(sms))
+        val g = ReviewDetector.guess(sms)
+        assertEquals(5_511_800L, g.numbers[g.amountIndex!!].value)
+        assertEquals(FlowType.DEPOSIT, g.type)
+        assertTrue(g.inToman)
+    }
+
+    @Test
+    fun `قالب ناشناخته با مبلغ و مانده`() {
+        val sms = n("بانک ایکس\nکسر از حساب 1234567890\n۳۵۰,۰۰۰ ریال\nمانده ۱,۲۰۰,۰۰۰\n۱۴۰۵/۰۷/۰۹ ۱۲:۳۰")
+        assertTrue(ReviewDetector.isCandidate(sms))
+        val g = ReviewDetector.guess(sms)
+        // شماره حساب ۱۰ رقمی، تاریخ و ساعت جزو عددها نیستند
+        assertEquals(listOf(1_234_567_890L, 350_000L, 1_200_000L).filter { it != 1_234_567_890L }, g.numbers.map { it.value }.filter { it != 1_234_567_890L })
+        assertEquals(350_000L, g.numbers[g.amountIndex!!].value)
+        assertEquals(1_200_000L, g.numbers[g.balanceIndex!!].value)
+        assertEquals(FlowType.WITHDRAWAL, g.type)
+    }
+
+    @Test
+    fun `منفی کنار عدد یعنی برداشت`() {
+        val g = ReviewDetector.guess(n("انتقال\n8,150,000-\n14:44"))
+        assertEquals(FlowType.WITHDRAWAL, g.type)
+        assertEquals(8_150_000L, g.numbers[g.amountIndex!!].value)
+    }
+
+    @Test
+    fun `رمز و تبلیغ و پیامک بدون کلمه‌ی مالی وارد صندوق نمی‌شوند`() {
+        assertFalse(ReviewDetector.isCandidate(n("رمز پویا: 482915\nمبلغ: 1,250,000")))
+        assertFalse(ReviewDetector.isCandidate(n("جشنواره خرید با 500,000 تومان جایزه\nhttps://x.ir")))
+        assertFalse(ReviewDetector.isCandidate(n("سلام، فردا ساعت 10 جلسه داریم")))
+        assertFalse(ReviewDetector.isCandidate(n("بدهی پیشین: 149532 ریال\nقابل پرداخت: 278000 ریال\nhttps://my.mci.ir/bill")))
+    }
+
+    @Test
+    fun `پوشاندن همه‌ی رقم‌ها برای ارسال`() {
+        assertEquals("مبلغ: #,###,### کارت ####", ReviewDetector.mask("مبلغ: 1,250,000 کارت 6037"))
+    }
+}
