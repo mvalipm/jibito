@@ -112,13 +112,19 @@ private fun SmsCard(sms: RawSms) {
                         .background(colors.primary, RoundedCornerShape(5.dp))
                 )
                 Spacer(Modifier.size(8.dp))
-                Text(
-                    text = sms.sender,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = sms.bank.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                    Text(
+                        text = sms.sender,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
                 Text(
                     text = Jalali.format(sms.dateMillis),
                     style = MaterialTheme.typography.labelMedium,

@@ -2,6 +2,9 @@ package ir.jibito.app.data.sms
 
 import android.content.Context
 import android.provider.Telephony
+import ir.jibito.app.data.bank.Bank
+import ir.jibito.app.data.bank.SenderClassifier
+import ir.jibito.app.data.bank.SenderType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -11,21 +14,17 @@ data class RawSms(
     val sender: String,
     val body: String,
     val dateMillis: Long,
+    val bank: Bank,
 )
 
 /**
  * پیامک‌های صندوق ورودی را می‌خواند و فقط آن‌هایی را برمی‌گرداند
- * که شبیه پیامک بانکی‌اند. (فعلاً با چند کلمه‌ی کلیدی ساده؛
- * در قدم‌های بعد، تشخیص دقیق بر اساس شماره‌ی هر بانک اضافه می‌شود.)
+ * که از سرشماره‌ی یک بانک شناخته‌شده آمده‌اند.
+ * پیامک شماره‌های شخصی و فرستنده‌های ناشناس اصلاً وارد سیستم نمی‌شوند.
  */
 class SmsReader(private val context: Context) {
 
-    private val bankKeywords = listOf(
-        "مبلغ", "برداشت", "واريز", "واریز", "مانده", "موجودي", "موجودی",
-        "خريد", "خرید", "انتقال", "حساب", "كارت", "کارت", "ريال", "ریال",
-    )
-
-    suspend fun readBankSms(maxToScan: Int = 1000): List<RawSms> = withContext(Dispatchers.IO) {
+    suspend fun readBankSms(maxToScan: Int = 3000): List<RawSms> = withContext(Dispatchers.IO) {
         val result = mutableListOf<RawSms>()
         val projection = arrayOf(
             Telephony.Sms._ID,
@@ -48,23 +47,19 @@ class SmsReader(private val context: Context) {
             while (cursor.moveToNext() && scanned < maxToScan) {
                 scanned++
                 val body = cursor.getString(bodyCol) ?: continue
-                if (looksLikeBankSms(body)) {
+                val sender = cursor.getString(addrCol) ?: continue
+                val type = SenderClassifier.classify(sender)
+                if (type is SenderType.BankSender) {
                     result += RawSms(
                         id = cursor.getLong(idCol),
-                        sender = cursor.getString(addrCol) ?: "?",
+                        sender = sender,
                         body = body,
                         dateMillis = cursor.getLong(dateCol),
+                        bank = type.bank,
                     )
                 }
             }
         }
         result
-    }
-
-    /** حداقل دو کلمه‌ی کلیدی بانکی + یک عدد چندرقمی. */
-    private fun looksLikeBankSms(body: String): Boolean {
-        val hits = bankKeywords.count { body.contains(it) }
-        val hasNumber = Regex("[0-9۰-۹][0-9۰-۹,٬،]{3,}").containsMatchIn(body)
-        return hits >= 2 && hasNumber
     }
 }
