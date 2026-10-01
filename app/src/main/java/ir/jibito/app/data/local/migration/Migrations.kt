@@ -2,6 +2,7 @@ package ir.jibito.app.data.local.migration
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import ir.jibito.app.data.local.AppDatabase
 
 /**
  * همه‌ی Migration های دیتابیس، به ترتیب. (سند معماری بخش ۵)
@@ -31,5 +32,21 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /**
+     * نسخه‌ی ۳ ← ۴: دسته‌ها نوع می‌گیرند (خرج یا درآمد).
+     * همه‌ی دسته‌های قبلی «خرج» می‌مانند (پیش‌فرض ۲) و دسته‌های درآمد اضافه می‌شوند.
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE categories ADD COLUMN flowType INTEGER NOT NULL DEFAULT 2")
+            for (c in AppDatabase.INCOME_CATEGORIES) {
+                db.execSQL(
+                    "INSERT INTO categories (name, icon, colorHex, isArchived, flowType) VALUES (?, ?, ?, 0, 1)",
+                    arrayOf<Any?>(c.name, c.icon, c.colorHex),
+                )
+            }
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

@@ -62,9 +62,12 @@ fun CategoryPickerSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
 
+    // برداشت ← دسته‌های خرج؛ واریز ← دسته‌های درآمد
+    val isDeposit = transaction.transaction.type == FlowType.DEPOSIT
+    val matching = categories.filter { it.flowType == transaction.transaction.type.code }
     // پیشنهادی اول، بقیه به ترتیب خودشان
-    val suggested = categories.firstOrNull { it.name == transaction.suggestedCategory }
-    val ordered = listOfNotNull(suggested) + categories.filter { it.id != suggested?.id }
+    val suggested = matching.firstOrNull { it.name == transaction.suggestedCategory }
+    val ordered = listOfNotNull(suggested) + matching.filter { it.id != suggested?.id }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -85,7 +88,7 @@ fun CategoryPickerSheet(
                 val t = transaction.transaction
                 val sign = if (t.type == FlowType.DEPOSIT) "+" else "−"
                 Text(
-                    text = stringResource(R.string.sheet_title),
+                    text = stringResource(if (isDeposit) R.string.sheet_title_income else R.string.sheet_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                     color = colors.onSurface,

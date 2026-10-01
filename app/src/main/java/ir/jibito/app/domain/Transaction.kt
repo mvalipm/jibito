@@ -17,10 +17,12 @@ data class Transaction(
     val categoryName: String?,
 )
 
-/** یک دسته‌ی خرج. */
+/** یک دسته: خرج (برای برداشت) یا درآمد (برای واریز). */
 data class Category(
     val id: Long,
     val name: String,
     val icon: String?,
     val colorHex: String?,
+    /** ۲ = خرج، ۱ = درآمد (همان کدهای FlowType) */
+    val flowType: Int,
 )

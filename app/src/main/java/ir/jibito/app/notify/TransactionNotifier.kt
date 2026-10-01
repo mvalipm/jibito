@@ -21,10 +21,10 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.Money
 
 /**
- * نوتیفیکیشن «این خرج مال چی بود؟» با ۳ دکمه‌ی دسته.
+ * نوتیفیکیشن «این خرج مال چی بود؟» (یا برای واریز: «این پول از کجا اومد؟») با ۳ دکمه‌ی دسته.
  *
  * قانون‌ها:
- * - فقط برای برداشت‌های تازه (حداکثر ۳۰ دقیقه‌ی اخیر) که هنوز دسته ندارند و قبلاً نوتیفیکیشن نگرفته‌اند.
+ * - فقط برای تراکنش‌های تازه (حداکثر ۳۰ دقیقه‌ی اخیر) که هنوز دسته ندارند و قبلاً نوتیفیکیشن نگرفته‌اند.
  * - اگر بعداً معلوم شد خرید ناموفق بوده (پول برگشته)، نوتیفیکیشنش پاک می‌شود.
  */
 class TransactionNotifier(
@@ -42,7 +42,7 @@ class TransactionNotifier(
         for (flow in recent) {
             when {
                 flow.isFailedPurchase -> manager.cancel(notificationId(flow.id))
-                flow.flowType == FlowType.WITHDRAWAL.code && flow.categoryId == null && flow.notifiedAt == null -> {
+                flow.categoryId == null && flow.notifiedAt == null -> {
                     if (show(flow)) dao.markNotified(flow.id, now)
                 }
             }
@@ -56,7 +56,8 @@ class TransactionNotifier(
             return false
         }
 
-        val amount = "−" + Money.toman(flow.amount)
+        val isDeposit = flow.flowType == FlowType.DEPOSIT.code
+        val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
         val bankName = flow.bankId?.let { id -> BankDirectory.banks.firstOrNull { it.id == id }?.name }
         val title = if (flow.merchant != null) {
             context.getString(R.string.notif_title_purchase, amount, flow.merchant)
@@ -74,7 +75,7 @@ class TransactionNotifier(
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
             .setContentTitle(title)
-            .setContentText(context.getString(R.string.notif_question))
+            .setContentText(context.getString(if (isDeposit) R.string.notif_question_income else R.string.notif_question))
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
@@ -97,9 +98,10 @@ class TransactionNotifier(
 
     /** ۳ دکمه: اول دسته‌ی پیشنهادی (از مقصد خرید)، بعد پرکاربردترین دسته‌های خود کاربر. */
     private suspend fun pickCategories(flow: TransactionFlowEntity): List<CategoryEntity> {
-        val byUsage = db.categoryDao().byUsage()
+        // برداشت ← دسته‌های خرج، واریز ← دسته‌های درآمد
+        val byUsage = db.categoryDao().byUsage(flow.flowType)
         val suggested = flow.suggestedCategory?.let { name -> byUsage.firstOrNull { it.name == name } }
-        return (listOfNotNull(suggested) + byUsage.filter { it.name != "سایر" })
+        return (listOfNotNull(suggested) + byUsage.filter { !it.name.startsWith("سایر") })
             .distinctBy { it.id }
             .take(3)
     }

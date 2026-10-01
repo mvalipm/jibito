@@ -62,7 +62,7 @@ class TransactionRepositoryImpl(
 
     override fun observeCategories(): Flow<List<Category>> =
         db.categoryDao().observeActive().map { rows ->
-            rows.map { Category(id = it.id, name = it.name, icon = it.icon, colorHex = it.colorHex) }
+            rows.map { Category(id = it.id, name = it.name, icon = it.icon, colorHex = it.colorHex, flowType = it.flowType) }
         }
 
     override suspend fun syncFromSms(): Int {

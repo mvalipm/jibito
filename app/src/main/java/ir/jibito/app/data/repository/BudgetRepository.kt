@@ -2,6 +2,7 @@ package ir.jibito.app.data.repository
 
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.BudgetEntity
+import ir.jibito.app.data.local.entity.CategorySpendRow
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +15,12 @@ data class MonthSummary(
     val totalIncomeRial: Long,
     /** خرجی که هنوز دسته ندارد */
     val uncategorizedRial: Long,
+    /** دسته‌های خرج (با بودجه) */
     val categories: List<CategorySpend>,
+    /** دسته‌های درآمد؛ فقط آن‌هایی که این ماه مبلغی دارند */
+    val incomeCategories: List<CategorySpend>,
+    /** درآمدی که هنوز دسته ندارد */
+    val uncategorizedIncomeRial: Long,
 )
 
 data class CategorySpend(
@@ -47,20 +53,23 @@ class BudgetRepositoryImpl(
         return combine(
             dao.observeTotal(FlowType.WITHDRAWAL.code, from, to),
             dao.observeTotal(FlowType.DEPOSIT.code, from, to),
-            dao.observeCategorySpend(from, to),
-        ) { spent, income, rows ->
-            val categorized = rows.sumOf { it.spentRial }
+            dao.observeCategorySpend(FlowType.WITHDRAWAL.code, from, to),
+            dao.observeCategorySpend(FlowType.DEPOSIT.code, from, to),
+        ) { spent, income, expenseRows, incomeRows ->
             MonthSummary(
                 month = month,
                 totalSpentRial = spent,
                 totalIncomeRial = income,
-                uncategorizedRial = (spent - categorized).coerceAtLeast(0),
-                categories = rows.map {
-                    CategorySpend(it.categoryId, it.name, it.icon, it.colorHex, it.spentRial, it.budgetRial)
-                },
+                uncategorizedRial = (spent - expenseRows.sumOf { it.spentRial }).coerceAtLeast(0),
+                categories = expenseRows.map { it.toSpend() },
+                incomeCategories = incomeRows.filter { it.spentRial > 0 }.map { it.toSpend() },
+                uncategorizedIncomeRial = (income - incomeRows.sumOf { it.spentRial }).coerceAtLeast(0),
             )
         }
     }
+
+    private fun CategorySpendRow.toSpend() =
+        CategorySpend(categoryId, name, icon, colorHex, spentRial, budgetRial)
 
     override suspend fun setBudget(categoryId: Long, monthlyLimitRial: Long?) {
         if (monthlyLimitRial == null || monthlyLimitRial <= 0) {

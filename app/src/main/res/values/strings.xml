@@ -66,4 +66,7 @@
     <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
     <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
     <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
+    <string name="sheet_title_income">این پول از کجا اومد؟</string>
+    <string name="notif_question_income">این پول از کجا اومد؟</string>
+    <string name="summary_income_categories">درآمدها</string>
 </resources>

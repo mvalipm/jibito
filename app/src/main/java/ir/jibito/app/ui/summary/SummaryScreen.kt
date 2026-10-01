@@ -112,6 +112,23 @@ fun SummaryScreen() {
                 items(s.categories, key = { it.categoryId }) { c ->
                     CategoryRow(c, onClick = { editing = c.categoryId })
                 }
+
+                // درآمدها (بدون بودجه)
+                if (s.incomeCategories.isNotEmpty() || s.uncategorizedIncomeRial > 0) {
+                    item {
+                        Text(
+                            stringResource(R.string.summary_income_categories),
+                            modifier = Modifier.padding(top = 18.dp, start = 4.dp, end = 4.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = colors.onBackground,
+                        )
+                    }
+                    items(s.incomeCategories, key = { "in-" + it.categoryId }) { c -> IncomeRow(c.icon, c.name, c.spentRial) }
+                    if (s.uncategorizedIncomeRial > 0) {
+                        item { IncomeRow("•", stringResource(R.string.summary_uncategorized), s.uncategorizedIncomeRial) }
+                    }
+                }
             }
 
             s.categories.firstOrNull { it.categoryId == editing }?.let { c ->
@@ -300,6 +317,41 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+private val IncomeGreen = Color(0xFF1E9E6A)
+
+@Composable
+private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(colors.surface, RoundedCornerShape(20.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(40.dp)
+                .background(IncomeGreen.copy(alpha = 0.14f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { Text(icon ?: "•", fontSize = 18.sp) }
+        Spacer(Modifier.size(12.dp))
+        Text(
+            name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = colors.onSurface,
+        )
+        Text(
+            "+ " + Money.toman(amountRial),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Black,
+            color = IncomeGreen,
+        )
     }
 }
 

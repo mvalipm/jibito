@@ -67,12 +67,12 @@ interface CategoryDao {
         """
         SELECT c.* FROM categories c
         LEFT JOIN transaction_flows t ON t.categoryId = c.id AND t.isDeleted = 0
-        WHERE c.isArchived = 0
+        WHERE c.isArchived = 0 AND c.flowType = :flowType
         GROUP BY c.id
         ORDER BY COUNT(t.id) DESC, c.id ASC
         """
     )
-    suspend fun byUsage(): List<CategoryEntity>
+    suspend fun byUsage(flowType: Int): List<CategoryEntity>
 }
 
 @Dao
@@ -88,7 +88,7 @@ interface SummaryDao {
     )
     fun observeTotal(flowType: Int, from: Long, to: Long): Flow<Long>
 
-    /** خرج هر دسته در یک بازه + بودجه‌اش. */
+    /** جمع هر دسته (خرج یا درآمد، بسته به flowType) در یک بازه + بودجه‌اش. */
     @Query(
         """
         SELECT c.id AS categoryId, c.name AS name, c.icon AS icon, c.colorHex AS colorHex,
@@ -96,14 +96,14 @@ interface SummaryDao {
         FROM categories c
         LEFT JOIN transaction_flows t
           ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0
-         AND t.flowType = 2 AND t.dateEpoch >= :from AND t.dateEpoch < :to
+         AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
         LEFT JOIN budgets b ON b.categoryId = c.id
-        WHERE c.isArchived = 0
+        WHERE c.isArchived = 0 AND c.flowType = :flowType
         GROUP BY c.id
         ORDER BY spentRial DESC, c.id ASC
         """
     )
-    fun observeCategorySpend(from: Long, to: Long): Flow<List<CategorySpendRow>>
+    fun observeCategorySpend(flowType: Int, from: Long, to: Long): Flow<List<CategorySpendRow>>
 
     @Query(
         """
@@ -112,13 +112,13 @@ interface SummaryDao {
         FROM categories c
         LEFT JOIN transaction_flows t
           ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0
-         AND t.flowType = 2 AND t.dateEpoch >= :from AND t.dateEpoch < :to
+         AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
         LEFT JOIN budgets b ON b.categoryId = c.id
-        WHERE c.isArchived = 0
+        WHERE c.isArchived = 0 AND c.flowType = :flowType
         GROUP BY c.id
         """
     )
-    suspend fun categorySpend(from: Long, to: Long): List<CategorySpendRow>
+    suspend fun categorySpend(flowType: Int, from: Long, to: Long): List<CategorySpendRow>
 
     @Query("SELECT * FROM budgets")
     suspend fun budgets(): List<BudgetEntity>

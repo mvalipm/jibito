@@ -271,7 +271,7 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                     ),
                     border = null,
                 )
-            } else if (!failed && !isDeposit) {
+            } else if (!failed) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
                     onClick = onClick,

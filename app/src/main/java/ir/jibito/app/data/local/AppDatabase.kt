@@ -22,7 +22,7 @@ import ir.jibito.app.data.local.migration.Migrations
  */
 @Database(
     entities = [TransactionFlowEntity::class, CategoryEntity::class, BudgetEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,7 +38,9 @@ abstract class AppDatabase : RoomDatabase() {
                 .build()
 
         /** دسته‌های پیش‌فرض؛ اسم‌ها با پیشنهادهای CategorySuggester یکی‌اند. */
-        val DEFAULT_CATEGORIES = listOf(
+        // «get()» یعنی هر بار ساخته می‌شود؛ تا ترتیب تعریف با INCOME_CATEGORIES (پایین‌تر) مشکلی نسازد
+        val DEFAULT_CATEGORIES: List<CategoryEntity>
+            get() = listOf(
             CategoryEntity(name = "غذا", icon = "🍔", colorHex = "#E4572E"),
             CategoryEntity(name = "سوپرمارکت", icon = "🛒", colorHex = "#F2A541"),
             CategoryEntity(name = "رفت‌وآمد", icon = "🚕", colorHex = "#17BEBB"),
@@ -49,6 +51,17 @@ abstract class AppDatabase : RoomDatabase() {
             CategoryEntity(name = "سفر", icon = "✈", colorHex = "#2E86AB"),
             CategoryEntity(name = "درمان", icon = "💊", colorHex = "#D1495B"),
             CategoryEntity(name = "سایر", icon = "•", colorHex = "#8C8C8C"),
+        ) + INCOME_CATEGORIES
+
+        /** دسته‌های واریز (درآمد). در Migration_3_4 هم همین‌ها برای کاربرهای قبلی اضافه می‌شوند. */
+        val INCOME_CATEGORIES = listOf(
+            CategoryEntity(name = "حقوق", icon = "💼", colorHex = "#1E9E6A", flowType = 1),
+            CategoryEntity(name = "حاصل فروش محصول", icon = "🏷", colorHex = "#2E86AB", flowType = 1),
+            CategoryEntity(name = "قرض گرفتم", icon = "🤝", colorHex = "#8D6A9F", flowType = 1),
+            CategoryEntity(name = "طلبم رو گرفتم", icon = "↩", colorHex = "#17BEBB", flowType = 1),
+            CategoryEntity(name = "سود بانکی", icon = "🏦", colorHex = "#F2A541", flowType = 1),
+            CategoryEntity(name = "هدیه", icon = "🎁", colorHex = "#C73E8B", flowType = 1),
+            CategoryEntity(name = "سایر درآمد", icon = "•", colorHex = "#8C8C8C", flowType = 1),
         )
     }
 }

@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import ir.jibito.app.MainActivity
 import ir.jibito.app.R
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 
@@ -43,7 +44,7 @@ class BudgetAlerter(
         val month = JalaliMonth.current()
         val budgets = dao.budgets().associateBy { it.categoryId }
         if (budgets.isEmpty()) return
-        val rows = dao.categorySpend(month.startMillis(), month.endMillis())
+        val rows = dao.categorySpend(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())
 
         for (row in rows) {
             val budget = budgets[row.categoryId] ?: continue
