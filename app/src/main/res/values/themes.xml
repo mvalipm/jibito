@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Jibito" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/jibito_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <color name="jibito_background">#FFF8F3</color>
+    <color name="jibito_primary">#E4572E</color>
+</resources>

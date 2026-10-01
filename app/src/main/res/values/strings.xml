@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">جیبیتو</string>
+    <string name="welcome_tagline">خرج‌هات خودشون ثبت می‌شن.</string>
+    <string name="welcome_body">پیامک بانک که بیاد، جیبیتو خودش می‌خونه و ثبت می‌کنه. تو فقط با یه لمس می‌گی خرجِ چی بوده.</string>
+    <string name="sample_label">نمونه‌ی یک تراکنش</string>
+    <string name="sample_amount">۲۵۰٬۰۰۰ تومان</string>
+    <string name="sample_source">برداشت از بانک ملت</string>
+    <string name="cat_food">غذا</string>
+    <string name="cat_transport">رفت‌وآمد</string>
+    <string name="cat_shopping">خرید</string>
+    <string name="start_button">شروع کنیم</string>
+</resources>
