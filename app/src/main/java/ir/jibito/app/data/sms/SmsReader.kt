@@ -5,22 +5,25 @@ import android.provider.Telephony
 import ir.jibito.app.data.bank.Bank
 import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.bank.SenderType
+import ir.jibito.app.data.parser.ParsedTransaction
+import ir.jibito.app.data.parser.TransactionParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** یک پیامک خوانده‌شده از صندوق گوشی. */
+/** یک پیامک بانکی که تراکنش بودنش تأیید شده. */
 data class RawSms(
     val id: Long,
     val sender: String,
     val body: String,
     val dateMillis: Long,
     val bank: Bank,
+    val transaction: ParsedTransaction,
 )
 
 /**
  * پیامک‌های صندوق ورودی را می‌خواند و فقط آن‌هایی را برمی‌گرداند
- * که از سرشماره‌ی یک بانک شناخته‌شده آمده‌اند.
- * پیامک شماره‌های شخصی و فرستنده‌های ناشناس اصلاً وارد سیستم نمی‌شوند.
+ * که (۱) از سرشماره‌ی یک بانک شناخته‌شده آمده‌اند و (۲) متنشان یک تراکنش واقعی است.
+ * پیامک شماره‌های شخصی، فرستنده‌های ناشناس، رمز/کد و تبلیغ بانک‌ها کنار گذاشته می‌شوند.
  */
 class SmsReader(private val context: Context) {
 
@@ -50,12 +53,14 @@ class SmsReader(private val context: Context) {
                 val sender = cursor.getString(addrCol) ?: continue
                 val type = SenderClassifier.classify(sender)
                 if (type is SenderType.BankSender) {
+                    val parsed = TransactionParser.parse(type.bank, body) ?: continue
                     result += RawSms(
                         id = cursor.getLong(idCol),
                         sender = sender,
                         body = body,
                         dateMillis = cursor.getLong(dateCol),
                         bank = type.bank,
+                        transaction = parsed,
                     )
                 }
             }

@@ -18,7 +18,10 @@
     <string name="perm_allow">اجازه می‌دم</string>
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
-    <string name="list_title">پیامک‌های بانکی</string>
-    <string name="list_count">%1$d پیامک بانکی پیدا شد</string>
-    <string name="list_empty">هیچ پیامک بانکی‌ای پیدا نشد.</string>
+    <string name="list_title">تراکنش‌ها</string>
+    <string name="list_count">%1$d تراکنش از پیامک‌های بانکی پیدا شد</string>
+    <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
+    <string name="tx_deposit">واریز</string>
+    <string name="tx_withdrawal">برداشت</string>
+    <string name="tx_balance">مانده: %1$s</string>
 </resources>

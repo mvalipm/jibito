@@ -1,6 +1,7 @@
 package ir.jibito.app.ui.smslist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,18 +25,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.sms.RawSms
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.util.Jalali
+import ir.jibito.app.util.Money
 
 @Composable
 fun SmsListScreen() {
@@ -95,48 +104,90 @@ fun SmsListScreen() {
     }
 }
 
+private val DepositGreen = Color(0xFF1E9E6A)
+
 @Composable
 private fun SmsCard(sms: RawSms) {
     val colors = MaterialTheme.colorScheme
+    val t = sms.transaction
+    val isDeposit = t.type == FlowType.DEPOSIT
+    val accent = if (isDeposit) DepositGreen else colors.primary
+    var expanded by rememberSaveable(sms.id) { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    Modifier
-                        .size(10.dp)
-                        .background(colors.primary, RoundedCornerShape(5.dp))
-                )
-                Spacer(Modifier.size(8.dp))
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(accent.copy(alpha = 0.14f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (isDeposit) "↓" else "↑",
+                        color = accent,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+                Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = sms.bank.name,
+                        text = stringResource(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = colors.onSurface,
                     )
                     Text(
-                        text = sms.sender,
+                        text = sms.bank.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = (if (isDeposit) "+" else "−") + Money.toman(t.amountRial),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = accent,
+                    )
+                    Text(
+                        text = Jalali.format(sms.dateMillis),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
+            }
+            t.balanceRial?.let { balance ->
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = Jalali.format(sms.dateMillis),
+                    text = stringResource(R.string.tx_balance, Money.toman(balance)),
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = sms.body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
+            if (expanded) {
+                Spacer(Modifier.height(10.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(colors.surfaceVariant, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = sms.body,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
