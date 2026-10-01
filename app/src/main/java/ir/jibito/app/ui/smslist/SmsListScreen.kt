@@ -23,6 +23,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,20 +42,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
 import ir.jibito.app.data.parser.FlowType
-import ir.jibito.app.data.sms.TransactionItem
-import ir.jibito.app.data.sms.SmsReader
+import ir.jibito.app.JibitoApplication
+import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
 @Composable
 fun SmsListScreen() {
-    val context = LocalContext.current
-    // null یعنی «هنوز در حال خواندن»
-    val messages by produceState<List<TransactionItem>?>(initialValue = null) {
-        value = SmsReader(context).readTransactions()
-    }
+    val app = LocalContext.current.applicationContext as JibitoApplication
+    val viewModel: TransactionsViewModel = viewModel(
+        factory = TransactionsViewModel.factory(app.container.transactionRepository)
+    )
+    // null یعنی «هنوز چیزی از دیتابیس نیامده»
+    val messages by viewModel.transactions.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -70,7 +74,7 @@ fun SmsListScreen() {
                 fontWeight = FontWeight.Black,
                 color = colors.onBackground,
             )
-            messages?.let {
+            messages?.takeIf { it.isNotEmpty() }?.let {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = Jalali.toPersianDigits(stringResource(R.string.list_count, it.size)),
@@ -79,11 +83,21 @@ fun SmsListScreen() {
                     fontWeight = FontWeight.Bold,
                 )
             }
+            if (isSyncing && !messages.isNullOrEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.list_syncing),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
         }
 
         val list = messages
         when {
-            list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(16.dp))
@@ -118,11 +132,12 @@ fun SmsListScreen() {
 private val DepositGreen = Color(0xFF1E9E6A)
 
 @Composable
-private fun SmsCard(sms: TransactionItem) {
+private fun SmsCard(sms: Transaction) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
+    val bankName = sms.bank?.name ?: stringResource(R.string.bank_unknown)
     val isDeposit = t.type == FlowType.DEPOSIT
-    val failed = sms.refundDateMillis != null
+    val failed = sms.isFailedPurchase
     val accent = when {
         failed -> colors.outline
         isDeposit -> DepositGreen
@@ -172,7 +187,7 @@ private fun SmsCard(sms: TransactionItem) {
                         color = colors.onSurface,
                     )
                     Text(
-                        text = if (failed && sms.merchant != null) "${sms.merchant} · ${sms.bank.name}" else sms.bank.name,
+                        text = if (failed && sms.merchant != null) "${sms.merchant} · ${bankName}" else bankName,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )

@@ -1,0 +1,50 @@
+package ir.jibito.app.data.local
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import ir.jibito.app.data.local.dao.CategoryDao
+import ir.jibito.app.data.local.dao.TransactionFlowDao
+import ir.jibito.app.data.local.entity.CategoryEntity
+import ir.jibito.app.data.local.entity.TransactionFlowEntity
+
+/**
+ * دیتابیس اصلی اپ (روی خود گوشی).
+ *
+ * قانون‌های سند معماری بخش ۵ از همین الان:
+ * - exportSchema = true ← فایل JSON هر نسخه در پوشه‌ی app/schemas ذخیره و در گیت نگه داشته می‌شود.
+ * - هر تغییر ساختار جدول‌ها = بالا بردن version + یک Migration جدا و تست‌شده.
+ * - هرگز fallbackToDestructiveMigration (یعنی پاک کردن دیتای کاربر).
+ */
+@Database(
+    entities = [TransactionFlowEntity::class, CategoryEntity::class],
+    version = 1,
+    exportSchema = true,
+)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun transactionFlowDao(): TransactionFlowDao
+    abstract fun categoryDao(): CategoryDao
+
+    companion object {
+        fun build(context: Context): AppDatabase =
+            Room.databaseBuilder(context, AppDatabase::class.java, "jibito.db")
+                // .addMigrations(...)  ← نسخه‌های بعدی این‌جا اضافه می‌شوند
+                .build()
+
+        /** دسته‌های پیش‌فرض؛ اسم‌ها با پیشنهادهای CategorySuggester یکی‌اند. */
+        val DEFAULT_CATEGORIES = listOf(
+            CategoryEntity(name = "غذا", icon = "🍔", colorHex = "#E4572E"),
+            CategoryEntity(name = "سوپرمارکت", icon = "🛒", colorHex = "#F2A541"),
+            CategoryEntity(name = "رفت‌وآمد", icon = "🚕", colorHex = "#17BEBB"),
+            CategoryEntity(name = "سوخت", icon = "⛽", colorHex = "#8D6A9F"),
+            CategoryEntity(name = "خرید", icon = "🛍", colorHex = "#C73E8B"),
+            CategoryEntity(name = "قبض و شارژ", icon = "💡", colorHex = "#3F88C5"),
+            CategoryEntity(name = "سرگرمی", icon = "🎬", colorHex = "#7FB069"),
+            CategoryEntity(name = "سفر", icon = "✈", colorHex = "#2E86AB"),
+            CategoryEntity(name = "درمان", icon = "💊", colorHex = "#D1495B"),
+            CategoryEntity(name = "سایر", icon = "•", colorHex = "#8C8C8C"),
+        )
+    }
+}
