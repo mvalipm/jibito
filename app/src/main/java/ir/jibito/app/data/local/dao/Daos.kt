@@ -212,7 +212,11 @@ interface ReviewDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSenderRule(rule: SenderRuleEntity)
 
-    /** پیامک‌های منتظرِ همین فرستنده هم کنار می‌روند */
-    @Query("UPDATE review_sms SET status = 2, resolvedAt = :now WHERE status = 0 AND sender = :rawSender")
-    suspend fun dismissAllFromSender(rawSender: String, now: Long)
+    /** همه‌ی پیامک‌های منتظر بررسی (یک بار، نه Flow) */
+    @Query("SELECT * FROM review_sms WHERE status = 0")
+    suspend fun pendingList(): List<ReviewSmsEntity>
+
+    /** چند پیامک با هم «تراکنش نیست» می‌شوند */
+    @Query("UPDATE review_sms SET status = 2, resolvedAt = :now WHERE status = 0 AND smsId IN (:smsIds)")
+    suspend fun dismissMany(smsIds: List<Long>, now: Long)
 }

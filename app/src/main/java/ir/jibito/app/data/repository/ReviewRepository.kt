@@ -144,7 +144,13 @@ class ReviewRepositoryImpl(
                         createdAt = now,
                     )
                 )
-                dao.dismissAllFromSender(item.sender, now)
+                // بقیه‌ی پیامک‌های منتظرِ همین سرشماره هم کنار می‌روند.
+                // مقایسه با شکل نرمال‌شده: «+98۲۰۰۰…» و «۲۰۰۰…» یک سرشماره‌اند.
+                val target = BankDirectory.normalizeSender(item.sender)
+                val sameSender = dao.pendingList()
+                    .filter { BankDirectory.normalizeSender(it.sender) == target }
+                    .map { it.smsId }
+                sameSender.chunked(500).forEach { dao.dismissMany(it, now) }
             }
         }
     }

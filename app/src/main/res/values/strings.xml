@@ -83,7 +83,13 @@
     <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
     <string name="review_confirm">ثبت تراکنش</string>
     <string name="review_not_transaction">تراکنش نیست</string>
-    <string name="review_ignore_sender">پیامک‌های این فرستنده رو دیگه نشون نده</string>
+    <string name="review_ignore_sender">این سرشماره اصلاً بانکی نیست</string>
+    <string name="review_ignore_sender_hint">پیامک‌های بعدیِ این سرشماره دیگه به بررسی نمیان.</string>
+    <string name="review_ignore_sender_more">%1$d پیامک دیگه‌ی همین سرشماره هم از صف بررسی حذف می‌شه.</string>
+    <string name="review_position">%1$d از %2$d</string>
+    <string name="review_prev">قبلی</string>
+    <string name="review_next">بعدی</string>
+    <string name="review_swipe_hint">برای دیدن بقیه‌ی پیامک‌ها، به چپ و راست بکشید.</string>
     <string name="review_share">ارسال برای بهبود اپ</string>
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>

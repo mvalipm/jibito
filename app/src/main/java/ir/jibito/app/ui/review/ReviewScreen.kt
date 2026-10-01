@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +58,7 @@ import ir.jibito.app.data.review.NumberToken
 import ir.jibito.app.data.repository.ReviewItem
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import kotlinx.coroutines.launch
 
 private val DepositGreen = Color(0xFF1E9E6A)
 
@@ -111,16 +116,92 @@ fun ReviewScreen(onClose: () -> Unit) {
         when {
             list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             list.isEmpty() -> AllDone(onClose)
-            else -> ReviewCard(
-                item = list.first(),
-                onConfirm = { type, amount, balance, bankId -> viewModel.confirm(list.first(), type, amount, balance, bankId) },
-                onDismiss = { ignore -> viewModel.dismiss(list.first(), ignore) },
-                onShare = {
+            else -> ReviewPager(
+                list = list,
+                onConfirm = { item, type, amount, balance, bankId -> viewModel.confirm(item, type, amount, balance, bankId) },
+                onDismiss = { item, ignore -> viewModel.dismiss(item, ignore) },
+                onShare = { item ->
                     val send = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")
-                        .putExtra(Intent.EXTRA_TEXT, viewModel.shareText(list.first()))
+                        .putExtra(Intent.EXTRA_TEXT, viewModel.shareText(item))
                     context.startActivity(Intent.createChooser(send, context.getString(R.string.review_share_title)))
                 },
+            )
+        }
+    }
+}
+
+/**
+ * پیامک‌های منتظر بررسی، صفحه‌به‌صفحه: با کشیدن به چپ و راست (یا دکمه‌های قبلی/بعدی)
+ * می‌شود بین‌شان رفت و هر کدام را خواست اول تعیین تکلیف کرد.
+ * وقتی یکی تعیین تکلیف شد از فهرست بیرون می‌رود و پیامک بعدی جایش می‌آید.
+ */
+@Composable
+private fun ReviewPager(
+    list: List<ReviewItem>,
+    onConfirm: (ReviewItem, FlowType, NumberToken, NumberToken?, Int?) -> Unit,
+    onDismiss: (ReviewItem, Boolean) -> Unit,
+    onShare: (ReviewItem) -> Unit,
+) {
+    val currentList by rememberUpdatedState(list)
+    val pagerState = rememberPagerState(pageCount = { currentList.size })
+    val scope = rememberCoroutineScope()
+    val colors = MaterialTheme.colorScheme
+
+    Column(Modifier.fillMaxSize()) {
+        if (list.size > 1) {
+            val current = pagerState.currentPage.coerceIn(0, list.size - 1)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // در چیدمان راست‌به‌چپ، «قبلی» سمت راست است
+                TextButton(
+                    onClick = { scope.launch { pagerState.animateScrollToPage(current - 1) } },
+                    enabled = current > 0,
+                ) { Text("→ " + stringResource(R.string.review_prev)) }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        Jalali.toPersianDigits(stringResource(R.string.review_position, current + 1, list.size)),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = colors.onBackground,
+                    )
+                    Text(
+                        stringResource(R.string.review_swipe_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                TextButton(
+                    onClick = { scope.launch { pagerState.animateScrollToPage(current + 1) } },
+                    enabled = current < list.size - 1,
+                ) { Text(stringResource(R.string.review_next) + " ←") }
+            }
+        }
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            key = { index -> currentList.getOrNull(index)?.smsId ?: -index.toLong() },
+            verticalAlignment = Alignment.Top,
+        ) { page ->
+            val item = currentList.getOrNull(page) ?: return@HorizontalPager
+            val target = BankDirectory.normalizeSender(item.sender)
+            val sameSenderOthers = currentList.count {
+                it.smsId != item.smsId && BankDirectory.normalizeSender(it.sender) == target
+            }
+            ReviewCard(
+                item = item,
+                sameSenderOthers = sameSenderOthers,
+                onConfirm = { type, amount, balance, bankId -> onConfirm(item, type, amount, balance, bankId) },
+                onDismiss = { ignore -> onDismiss(item, ignore) },
+                onShare = { onShare(item) },
             )
         }
     }
@@ -152,6 +233,8 @@ private fun AllDone(onClose: () -> Unit) {
 @Composable
 private fun ReviewCard(
     item: ReviewItem,
+    /** چند پیامک منتظرِ دیگر از همین سرشماره هست */
+    sameSenderOthers: Int,
     onConfirm: (FlowType, NumberToken, NumberToken?, Int?) -> Unit,
     onDismiss: (ignoreSender: Boolean) -> Unit,
     onShare: () -> Unit,
@@ -287,7 +370,38 @@ private fun ReviewCard(
             textAlign = TextAlign.Center,
         )
 
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(14.dp))
+        // فرستنده‌ی ناشناس: «این سرشماره اصلاً بانکی نیست» ← همه‌ی پیامک‌هایش با یک لمس کنار می‌روند
+        if (item.bankName == null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.surface, RoundedCornerShape(16.dp))
+                    .clickable { ignoreSender = !ignoreSender }
+                    .padding(end = 12.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = ignoreSender, onCheckedChange = { ignoreSender = it })
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.review_ignore_sender),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                    Text(
+                        if (sameSenderOthers > 0) {
+                            Jalali.toPersianDigits(stringResource(R.string.review_ignore_sender_more, sameSenderOthers))
+                        } else {
+                            stringResource(R.string.review_ignore_sender_hint)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
         OutlinedButton(
             onClick = { onDismiss(ignoreSender) },
             modifier = Modifier
@@ -296,16 +410,6 @@ private fun ReviewCard(
             shape = RoundedCornerShape(18.dp),
         ) {
             Text(stringResource(R.string.review_not_transaction))
-        }
-        if (item.bankName == null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = ignoreSender, onCheckedChange = { ignoreSender = it })
-                Text(
-                    stringResource(R.string.review_ignore_sender),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
         }
 
         Spacer(Modifier.height(6.dp))
