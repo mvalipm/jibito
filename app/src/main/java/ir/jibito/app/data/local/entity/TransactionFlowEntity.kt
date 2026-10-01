@@ -52,6 +52,8 @@ data class TransactionFlowEntity(
     val source: String,
     val isDeleted: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis(),
+    /** زمان نشان دادن نوتیفیکیشن «دسته‌اش چیه؟» — تا دوبار نشان داده نشود. (از نسخه‌ی ۲ دیتابیس) */
+    @ColumnInfo(defaultValue = "NULL") val notifiedAt: Long? = null,
 )
 
 /** تراکنش + اسم دسته‌اش (برای نمایش). */
@@ -66,4 +68,5 @@ data class SmsFlowKey(
     val smsId: Long,
     val categoryId: Long?,
     val isDeleted: Boolean,
+    val notifiedAt: Long?,
 )

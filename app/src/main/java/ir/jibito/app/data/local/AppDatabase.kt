@@ -8,6 +8,7 @@ import ir.jibito.app.data.local.dao.CategoryDao
 import ir.jibito.app.data.local.dao.TransactionFlowDao
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
+import ir.jibito.app.data.local.migration.Migrations
 
 /**
  * دیتابیس اصلی اپ (روی خود گوشی).
@@ -19,7 +20,7 @@ import ir.jibito.app.data.local.entity.TransactionFlowEntity
  */
 @Database(
     entities = [TransactionFlowEntity::class, CategoryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "jibito.db")
-                // .addMigrations(...)  ← نسخه‌های بعدی این‌جا اضافه می‌شوند
+                .addMigrations(*Migrations.ALL) // هر نسخه‌ی جدید فقط این‌جا اضافه می‌شود
                 .build()
 
         /** دسته‌های پیش‌فرض؛ اسم‌ها با پیشنهادهای CategorySuggester یکی‌اند. */

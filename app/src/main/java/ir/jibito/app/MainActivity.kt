@@ -2,6 +2,7 @@ package ir.jibito.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -45,39 +46,52 @@ private enum class Screen { Welcome, Permission, SmsList }
 @Composable
 private fun JibitoApp() {
     val context = LocalContext.current
-    fun hasSmsPermission() = ContextCompat.checkSelfPermission(
-        context, Manifest.permission.READ_SMS
-    ) == PackageManager.PERMISSION_GRANTED
+    fun granted(permission: String) =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
-    var screen by rememberSaveable { mutableStateOf(Screen.Welcome) }
+    /** خواندن پیامک‌های قبلی + باخبر شدن از پیامک تازه — هر دو لازم‌اند. */
+    fun hasSmsPermissions() = granted(Manifest.permission.READ_SMS) && granted(Manifest.permission.RECEIVE_SMS)
+
+    /** همه‌ی اجازه‌هایی که می‌خواهیم؛ نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است. */
+    val wantedPermissions = buildList {
+        add(Manifest.permission.READ_SMS)
+        add(Manifest.permission.RECEIVE_SMS)
+        if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+    }.toTypedArray()
+
+    fun hasAllWanted() = wantedPermissions.all { granted(it) }
+
+    // اگر قبلاً اجازه‌ها داده شده، مستقیم فهرست تراکنش‌ها (مثلاً وقتی از نوتیفیکیشن باز می‌شود)
+    var screen by rememberSaveable { mutableStateOf(if (hasSmsPermissions()) Screen.SmsList else Screen.Welcome) }
     var wasDenied by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        // اگر فقط نوتیفیکیشن رد شد، باز هم ادامه می‌دهیم؛ پیامک‌ها ضروری‌اند
+        if (hasSmsPermissions()) {
             screen = Screen.SmsList
         } else {
             wasDenied = true
         }
     }
 
-    // دکمه‌ی «برگشت» گوشی: از هر صفحه به صفحه‌ی خوش‌آمد
-    BackHandler(enabled = screen != Screen.Welcome) { screen = Screen.Welcome }
+    // دکمه‌ی «برگشت» گوشی: از صفحه‌ی اجازه به خوش‌آمد؛ از فهرست تراکنش‌ها، خروج از اپ (رفتار عادی اندروید)
+    BackHandler(enabled = screen == Screen.Permission) { screen = Screen.Welcome }
 
     when (screen) {
         Screen.Welcome -> WelcomeScreen(
             onStart = {
-                screen = if (hasSmsPermission()) Screen.SmsList else Screen.Permission
+                screen = if (hasAllWanted()) Screen.SmsList else Screen.Permission
             }
         )
         Screen.Permission -> SmsPermissionScreen(
             wasDenied = wasDenied,
             onAllowClick = {
-                if (hasSmsPermission()) {
+                if (hasAllWanted()) {
                     screen = Screen.SmsList
                 } else {
-                    permissionLauncher.launch(Manifest.permission.READ_SMS)
+                    permissionLauncher.launch(wantedPermissions)
                 }
             },
         )

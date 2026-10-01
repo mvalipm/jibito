@@ -235,7 +235,18 @@ private fun SmsCard(sms: Transaction) {
                     color = colors.onSurfaceVariant,
                 )
             }
-            if (!failed && sms.suggestedCategory != null) {
+            if (!failed && sms.categoryName != null) {
+                Spacer(Modifier.height(10.dp))
+                AssistChip(
+                    onClick = {},
+                    label = { Text(sms.categoryName, fontWeight = FontWeight.Bold) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = colors.primaryContainer,
+                        labelColor = colors.onPrimaryContainer,
+                    ),
+                    border = null,
+                )
+            } else if (!failed && sms.suggestedCategory != null) {
                 Spacer(Modifier.height(10.dp))
                 AssistChip(
                     onClick = {},

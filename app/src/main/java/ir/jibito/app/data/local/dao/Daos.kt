@@ -25,8 +25,18 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted FROM transaction_flows WHERE smsId IS NOT NULL")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt FROM transaction_flows WHERE smsId IS NOT NULL")
     suspend fun smsKeys(): List<SmsFlowKey>
+
+    /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */
+    @Query("SELECT * FROM transaction_flows WHERE smsId IS NOT NULL AND isDeleted = 0 AND dateEpoch >= :since")
+    suspend fun recentSmsFlows(since: Long): List<TransactionFlowEntity>
+
+    @Query("UPDATE transaction_flows SET notifiedAt = :now WHERE id = :id")
+    suspend fun markNotified(id: Long, now: Long)
+
+    @Query("UPDATE transaction_flows SET categoryId = :categoryId, updatedAt = :now WHERE id = :id")
+    suspend fun setCategory(id: Long, categoryId: Long?, now: Long)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)
@@ -49,4 +59,16 @@ interface CategoryDao {
 
     @Query("SELECT COUNT(*) FROM categories")
     suspend fun count(): Int
+
+    /** دسته‌ها به ترتیب «بیشترین استفاده»؛ برای انتخاب دکمه‌های نوتیفیکیشن. */
+    @Query(
+        """
+        SELECT c.* FROM categories c
+        LEFT JOIN transaction_flows t ON t.categoryId = c.id AND t.isDeleted = 0
+        WHERE c.isArchived = 0
+        GROUP BY c.id
+        ORDER BY COUNT(t.id) DESC, c.id ASC
+        """
+    )
+    suspend fun byUsage(): List<CategoryEntity>
 }

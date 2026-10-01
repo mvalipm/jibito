@@ -3,6 +3,10 @@
 
     <!-- خواندن پیامک‌های بانکی -->
     <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- باخبر شدن از رسیدن پیامک تازه، حتی وقتی اپ بسته است -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <!-- نوتیفیکیشن «این خرج مال چی بود؟» (اندروید ۱۳ به بعد) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <application
@@ -22,6 +26,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- پیامک تازه -->
+        <receiver
+            android:name=".data.sms.SmsReceivedReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- دکمه‌های دسته در نوتیفیکیشن -->
+        <receiver
+            android:name=".notify.CategoryActionReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

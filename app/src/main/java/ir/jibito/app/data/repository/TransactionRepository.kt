@@ -20,6 +20,9 @@ interface TransactionRepository {
 
     /** پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند. */
     suspend fun syncFromSms(): Int
+
+    /** دسته‌ی یک تراکنش را تعیین می‌کند (null = بدون دسته). */
+    suspend fun setCategory(transactionId: Long, categoryId: Long?)
 }
 
 class TransactionRepositoryImpl(
@@ -65,10 +68,10 @@ class TransactionRepositoryImpl(
             for (item in items) {
                 val old = existing[item.id]
                 if (old == null) {
-                    toInsert += item.toEntity(id = 0, categoryId = null, now = now)
+                    toInsert += item.toEntity(id = 0, categoryId = null, notifiedAt = null, now = now)
                 } else {
                     // دسته‌ای که کاربر انتخاب کرده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
-                    toUpdate += item.toEntity(id = old.id, categoryId = old.categoryId, now = now)
+                    toUpdate += item.toEntity(id = old.id, categoryId = old.categoryId, notifiedAt = old.notifiedAt, now = now)
                 }
             }
 
@@ -89,7 +92,11 @@ class TransactionRepositoryImpl(
         if (categoryDao.count() == 0) categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
     }
 
-    private fun TransactionItem.toEntity(id: Long, categoryId: Long?, now: Long) = TransactionFlowEntity(
+    override suspend fun setCategory(transactionId: Long, categoryId: Long?) {
+        dao.setCategory(transactionId, categoryId, System.currentTimeMillis())
+    }
+
+    private fun TransactionItem.toEntity(id: Long, categoryId: Long?, notifiedAt: Long?, now: Long) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
         bankId = bank.id,
@@ -106,5 +113,6 @@ class TransactionRepositoryImpl(
         source = "SMS_AUTO",
         isDeleted = false,
         updatedAt = now,
+        notifiedAt = notifiedAt,
     )
 }

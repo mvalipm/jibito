@@ -82,6 +82,7 @@ fun SmsPermissionScreen(
                     PromiseRow(stringResource(R.string.perm_promise_offline))
                     PromiseRow(stringResource(R.string.perm_promise_bank_only))
                     PromiseRow(stringResource(R.string.perm_promise_no_send))
+                    PromiseRow(stringResource(R.string.perm_promise_notify))
                 }
             }
 

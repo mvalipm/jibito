@@ -15,6 +15,7 @@
     <string name="perm_promise_offline">همه‌چیز فقط روی گوشی خودت می‌مونه</string>
     <string name="perm_promise_bank_only">فقط پیامک‌های بانکی بررسی می‌شن</string>
     <string name="perm_promise_no_send">هیچ پیامکی جایی فرستاده نمی‌شه</string>
+    <string name="perm_promise_notify">خرج تازه که بیاد، با یه لمس روی نوتیفیکیشن دسته‌شو می‌گی</string>
     <string name="perm_allow">اجازه می‌دم</string>
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
@@ -32,4 +33,8 @@
     <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
     <string name="unit_toman">تومان</string>
     <string name="tx_balance">مانده: %1$s</string>
+    <string name="notif_channel_name">تراکنش‌های تازه</string>
+    <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
+    <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
+    <string name="notif_question">این خرج مال چی بود؟</string>
 </resources>
