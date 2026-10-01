@@ -61,8 +61,21 @@ class PurchaseLinkerTest {
     }
 
     @Test
-    fun `رمز بدون مبلغ فقط با زمان و بانک وصل می‌شود`() {
-        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 777_000)), listOf(otp(1, t0, amount = null)))
+    fun `رمز بدون مبلغ به هیچ برداشتی وصل نمی‌شود`() {
+        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min)), listOf(otp(1, t0, amount = null)))
+        assertNull(result[0].merchant)
+    }
+
+    @Test
+    fun `حتی یک ریال اختلاف یعنی وصل نشدن`() {
+        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 1_250_001)), listOf(otp(1, t0)))
+        assertNull(result[0].merchant)
+    }
+
+    @Test
+    fun `مبلغ تومانی رمز با مبلغ ریالی برداشت برابر حساب می‌شود`() {
+        // رمز: 125,000 تومان (= 1,250,000 ریال بعد از تبدیل در پارسر) ، برداشت: 1,250,000 ریال
+        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 1_250_000)), listOf(otp(1, t0, amount = 1_250_000)))
         assertEquals("اسنپ", result[0].merchant)
     }
 
