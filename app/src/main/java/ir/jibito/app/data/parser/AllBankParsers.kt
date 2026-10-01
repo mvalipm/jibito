@@ -449,6 +449,8 @@ object GenericParser : SmsParser {
         if (minusAmount.matches(l)) l = "برداشت:$l"
         val (k, v) = kv(l, COLON) ?: return@eachLine
         when {
+            // اصلاح نسبت به اپ قدیمی: خط تاریخ (مثل «0709-12:30») به‌خاطر «-» برداشت حساب می‌شد
+            k == "تاریخ" -> Unit
             v.contains("+") || k == "واریز" -> num(v)?.let { type = DEPOSIT; amount = it }
             v.contains("-") || k == "برداشت" -> num(v)?.let { type = WITHDRAWAL; amount = it }
             k.startsWith("مانده") || k.startsWith("موجودی") -> balance = num(v)

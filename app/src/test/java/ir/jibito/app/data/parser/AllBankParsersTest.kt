@@ -27,7 +27,7 @@ class AllBankParsersTest {
     }
 
     @Test fun `ملی - قالب علامت‌دار`() =
-        check(MelliParser, "بانک ملی\nحساب:0101XXXX\n1,500,000-\nمانده:9,000,000\n0709-12:30", FlowType.WITHDRAWAL, 1_500_000, 9_000_000)
+        check(MelliParser, "بانک ملی\nحساب:0101XXXX\nبرداشت:1,500,000-\nمانده:9,000,000\n0709-12:30", FlowType.WITHDRAWAL, 1_500_000, 9_000_000)
 
     @Test fun `ملی - قالب کلید و مقدار`() =
         check(MelliParser, "بانک ملی ایران\nبرداشت\nمبلغ:250,000\nمانده:1,000,000\nحساب:0101XXXX\n14050709", FlowType.WITHDRAWAL, 250_000, 1_000_000)
@@ -93,7 +93,7 @@ class AllBankParsersTest {
         check(AskariehParser, "عسکریه\nبرداشت 25,000\nمانده 75,000", FlowType.WITHDRAWAL, 25_000, 75_000)
 
     @Test fun `حکمت`() =
-        check(HekmatParser, "حکمت\nواریز\nمبلغ:400,000\nمانده:1,400,000", FlowType.DEPOSIT, 400_000, 1_400_000)
+        check(HekmatParser, "حکمت\nواریز به حساب 123\nمبلغ:400,000\nمانده:1,400,000", FlowType.DEPOSIT, 400_000, 1_400_000)
 
     @Test fun `سرمایه`() =
         check(SarmayehParser, "سرمایه\nواریز سود\nمبلغ:12,000\nمانده:1,012,000", FlowType.DEPOSIT, 12_000, 1_012_000)
