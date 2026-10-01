@@ -84,7 +84,15 @@ fun SmsListScreen() {
         val list = messages
         when {
             list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.list_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
             }
             list.isEmpty() -> Box(
                 Modifier.fillMaxSize().padding(32.dp),

@@ -20,6 +20,7 @@
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
     <string name="list_title">تراکنش‌ها</string>
     <string name="list_count">%1$d تراکنش از پیامک‌های بانکی پیدا شد</string>
+    <string name="list_loading">دارم همه‌ی پیامک‌ها رو می‌خونم…</string>
     <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>

@@ -40,7 +40,7 @@ class SmsReader(private val context: Context) {
 
     private data class Raw(val id: Long, val sender: String, val body: String, val date: Long, val bank: Bank)
 
-    suspend fun readTransactions(maxToScan: Int = 3000): List<TransactionItem> = withContext(Dispatchers.IO) {
+    suspend fun readTransactions(): List<TransactionItem> = withContext(Dispatchers.IO) {
         val raws = HashMap<Long, Raw>()
         val txRecords = mutableListOf<TxRecord>()
         val otpRecords = mutableListOf<OtpRecord>()
@@ -62,12 +62,12 @@ class SmsReader(private val context: Context) {
             val addrCol = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
             val bodyCol = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
             val dateCol = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
-            var scanned = 0
-            while (cursor.moveToNext() && scanned < maxToScan) {
-                scanned++
-                val body = cursor.getString(bodyCol) ?: continue
+            // کل صندوق پیامک خوانده می‌شود (قبلاً فقط ۳۰۰۰ پیامک آخر — برای همین پیامک‌های قدیمی‌تر جا می‌افتادند).
+            // سرعت: اول فقط فرستنده چک می‌شود (سریع)؛ متن فقط برای پیامک‌های بانکی پارس می‌شود.
+            while (cursor.moveToNext()) {
                 val sender = cursor.getString(addrCol) ?: continue
                 val type = SenderClassifier.classify(sender) as? SenderType.BankSender ?: continue
+                val body = cursor.getString(bodyCol) ?: continue
                 val raw = Raw(cursor.getLong(idCol), sender, body, cursor.getLong(dateCol), type.bank)
 
                 val tx = TransactionParser.parse(raw.bank, body)
