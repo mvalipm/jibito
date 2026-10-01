@@ -178,13 +178,33 @@ private fun SmsCard(sms: TransactionItem) {
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = (if (failed) "" else if (isDeposit) "+" else "−") + Money.toman(t.amountRial),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = accent,
-                        textDecoration = if (failed) TextDecoration.LineThrough else null,
-                    )
+                    // علامت، عدد و «تومان» سه تکه‌ی جدا هستند تا جهت‌نویسی راست‌به‌چپ جای علامت را جابه‌جا نکند.
+                    // در Row راست‌به‌چپ، اولین تکه سمت راست می‌نشیند: «− ۱۲۵٬۰۰۰ تومان»
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (!failed) {
+                            Text(
+                                text = if (isDeposit) "+" else "−",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = accent,
+                            )
+                            Spacer(Modifier.size(2.dp))
+                        }
+                        Text(
+                            text = Money.tomanNumber(t.amountRial),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = accent,
+                            textDecoration = if (failed) TextDecoration.LineThrough else null,
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = stringResource(R.string.unit_toman),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = accent,
+                        )
+                    }
                     Text(
                         text = Jalali.format(sms.dateMillis),
                         style = MaterialTheme.typography.labelSmall,

@@ -6,9 +6,11 @@ import java.util.Locale
 object Money {
 
     /** مثلاً 81500000 ریال ← «۸٬۱۵۰٬۰۰۰ تومان» */
-    fun toman(rial: Long): String {
-        val toman = rial / 10
-        val grouped = String.format(Locale.US, "%,d", toman).replace(',', '٬')
-        return Jalali.toPersianDigits(grouped) + " تومان"
+    fun toman(rial: Long): String = tomanNumber(rial) + " تومان"
+
+    /** فقط عدد، بدون «تومان»: «۸٬۱۵۰٬۰۰۰» */
+    fun tomanNumber(rial: Long): String {
+        val grouped = String.format(Locale.US, "%,d", rial / 10).replace(',', '٬')
+        return Jalali.toPersianDigits(grouped)
     }
 }

@@ -28,5 +28,6 @@
     <string name="tx_failed_purchase">خرید ناموفق</string>
     <string name="tx_refunded">پول به حسابت برگشت — این مبلغ خرج حساب نمی‌شه.</string>
     <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
+    <string name="unit_toman">تومان</string>
     <string name="tx_balance">مانده: %1$s</string>
 </resources>
