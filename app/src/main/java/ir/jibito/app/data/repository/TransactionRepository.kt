@@ -40,6 +40,8 @@ const val SOURCE_SMS_AUTO = "SMS_AUTO"
 const val SOURCE_SMS_MANUAL = "SMS_MANUAL"
 /** ثبت دستی (نقدی یا تراکنشی که پیامک ندارد) */
 const val SOURCE_MANUAL = "MANUAL"
+/** پیشوند ذخیره‌ی کارمزد انتقال در ستون description */
+const val FEE_PREFIX = "fee:"
 
 /**
  * تنها راه صفحه‌ها برای رسیدن به تراکنش‌ها (قانون سند معماری: ViewModel هرگز مستقیم Room نمی‌بیند).
@@ -138,6 +140,7 @@ class TransactionRepositoryImpl(
                     isSelfTransfer = f.transferState == TransactionFlowEntity.TRANSFER_SELF,
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
                     isManual = f.source == SOURCE_MANUAL,
+                    feeRial = f.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull(),
                 )
             }
         }
@@ -486,7 +489,8 @@ class TransactionRepositoryImpl(
         suggestedCategory = learnedSuggestion ?: suggestedCategory,
         isFailedPurchase = refundDateMillis != null,
         categoryId = categoryId,
-        description = null,
+        // ستون description برای پیامک‌ها: کارمزد انتقال (به ریال)، اگر معلوم باشد
+        description = feeRial?.let { FEE_PREFIX + it },
         smsContent = body,
         source = SOURCE_SMS_AUTO,
         isDeleted = false,

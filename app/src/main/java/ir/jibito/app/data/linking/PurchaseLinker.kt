@@ -29,6 +29,8 @@ data class LinkedTransaction(
     val record: TxRecord,
     val merchant: String? = null,
     val refund: TxRecord? = null,
+    /** کارمزد انتقال (برداشت − مبلغ رمز)، اگر برداشت به رمزِ انتقال وصل شده باشد */
+    val feeRial: Long? = null,
 ) {
     val isFailedPurchase: Boolean get() = refund != null
 }
@@ -44,6 +46,18 @@ data class LinkedTransaction(
  */
 object PurchaseLinker {
 
+    /**
+     * کارمزد انتقال: برداشتِ انتقال می‌تواند کمی بیشتر از مبلغ رمز باشد
+     * (مثلاً رمز ۱۰٬۰۰۰٬۰۰۰ و برداشت ۱۰٬۰۱۱٬۰۰۰ ریال). حداکثر ۰٫۵٪ مبلغ، حداقل سقف ۲۰ هزار و حداکثر ۵۰۰ هزار ریال.
+     * برای خرید این تحمل نیست: مبلغ باید دقیقاً برابر باشد.
+     */
+    fun isTransferFee(grossRial: Long, netRial: Long): Boolean {
+        val fee = grossRial - netRial
+        if (fee <= 0) return false
+        val cap = minOf(500_000L, maxOf(20_000L, grossRial / 200))
+        return fee <= cap
+    }
+
     /** مهلت رمز دوم و مهلت برگشت پول. */
     const val WINDOW_MILLIS: Long = 3 * 60 * 1000L
 
@@ -52,25 +66,29 @@ object PurchaseLinker {
         val usedOtps = HashSet<Long>()
         val usedRefunds = HashSet<Long>()
         val merchantOf = HashMap<Long, String?>()
+        val feeOf = HashMap<Long, Long>()
         val linkedToOtp = HashSet<Long>()
 
         // مرحله‌ی ۱: هر برداشت ← آخرین رمز دوم مناسبِ قبل از آن
         for (w in txs) {
             if (w.tx.type != FlowType.WITHDRAWAL) continue
-            val otp = otps
-                .filter { o ->
-                    o.id !in usedOtps &&
-                        o.bankId == w.bankId &&
-                        o.timeMillis <= w.timeMillis &&
-                        w.timeMillis - o.timeMillis <= WINDOW_MILLIS &&
-                        // مبلغ رمز دوم و برداشت باید دقیقاً برابر باشد؛ رمزِ بدون مبلغ وصل نمی‌شود
-                        o.otp.amountRial != null && o.otp.amountRial == w.tx.amountRial
-                }
-                .maxByOrNull { it.timeMillis }
+            val inWindow = otps.filter { o ->
+                o.id !in usedOtps &&
+                    o.bankId == w.bankId &&
+                    o.timeMillis <= w.timeMillis &&
+                    w.timeMillis - o.timeMillis <= WINDOW_MILLIS &&
+                    o.otp.amountRial != null // رمزِ بدون مبلغ وصل نمی‌شود
+            }
+            // اول: مبلغ دقیقاً برابر (خرید و انتقال)؛ بعد: فقط برای رمزِ انتقال، برداشت = مبلغ + کارمزد
+            val otp = inWindow.filter { it.otp.amountRial == w.tx.amountRial }.maxByOrNull { it.timeMillis }
+                ?: inWindow.filter { it.otp.isTransfer && isTransferFee(w.tx.amountRial, it.otp.amountRial!!) }
+                    .maxByOrNull { it.timeMillis }
                 ?: continue
             usedOtps += otp.id
             linkedToOtp += w.id
             merchantOf[w.id] = otp.otp.merchant
+            val fee = w.tx.amountRial - otp.otp.amountRial!!
+            if (fee > 0) feeOf[w.id] = fee
         }
 
         // مرحله‌ی ۲: خریدِ تأییدشده ← واریز همان مبلغ به همان بانک تا ۳ دقیقه بعد = برگشت پول
@@ -91,7 +109,7 @@ object PurchaseLinker {
 
         return txs
             .filter { it.id !in usedRefunds }
-            .map { LinkedTransaction(it, merchantOf[it.id], refundOf[it.id]) }
+            .map { LinkedTransaction(it, merchantOf[it.id], refundOf[it.id], feeOf[it.id]) }
             .sortedByDescending { it.record.timeMillis }
     }
 }

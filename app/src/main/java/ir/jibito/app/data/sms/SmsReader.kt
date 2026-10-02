@@ -35,6 +35,8 @@ data class TransactionItem(
     val suggestedCategory: String?,
     /** پر باشد یعنی خرید قبول نشده و پول برگشته؛ این تاریخِ برگشت پول است. */
     val refundDateMillis: Long?,
+    /** کارمزد انتقال، اگر از رمز دوم معلوم شده باشد */
+    val feeRial: Long? = null,
 )
 
 /**
@@ -200,6 +202,7 @@ class SmsReader(private val context: Context) {
                 merchant = merchant,
                 suggestedCategory = CategorySuggester.suggest(merchant),
                 refundDateMillis = linked.refund?.timeMillis,
+                feeRial = linked.feeRial,
             )
         }
         ScanResult(

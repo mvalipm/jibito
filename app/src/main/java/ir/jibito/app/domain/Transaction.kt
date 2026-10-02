@@ -24,6 +24,8 @@ data class Transaction(
     val isTransferRejected: Boolean = false,
     /** ثبت دستی (نقدی)، نه از پیامک */
     val isManual: Boolean = false,
+    /** کارمزد انتقال (جزو همین مبلغ) */
+    val feeRial: Long? = null,
 )
 
 /** پیشنهاد: «این برداشت و این واریزِ هم‌مبلغ، انتقال بین حساب‌های خودت بود؟» */

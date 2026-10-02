@@ -7,10 +7,13 @@ package ir.jibito.app.data.parser
 data class PurchaseOtp(
     val amountRial: Long?,
     val merchant: String?,
+    /** رمزِ «انتقال» (کارت‌به‌کارت، پایا، ساتنا) است، نه خرید — برداشتش ممکن است کارمزد هم داشته باشد */
+    val isTransfer: Boolean = false,
 )
 
 object OtpParser {
 
+    private val transferWords = listOf("انتقال", "کارت به کارت", "کارت‌به‌کارت", "پایا", "ساتنا")
     private val amountAfterKey = Regex("مبلغ[\\s:]*([\\d,،]+)")
     private val groupedNumber = Regex("(?:^|[^\\d,،])([1-9]\\d?\\d?([,،]\\d\\d\\d)+)(?=$|[^\\d,،])")
 
@@ -27,6 +30,7 @@ object OtpParser {
 
         // کد فعال‌سازی و ورود نه مبلغ دارد نه مقصد — رمز خرید نیست
         if (amount == null && merchant == null) return null
-        return PurchaseOtp(amount, merchant)
+        val isTransfer = transferWords.any { text.contains(it) }
+        return PurchaseOtp(amount, merchant, isTransfer)
     }
 }

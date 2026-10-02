@@ -426,7 +426,10 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
                         color = colors.onSurface,
                     )
                     Text(
-                        text = if ((failed || selfTransfer) && sms.merchant != null) "${sms.merchant} · ${bankName}" else bankName,
+                        text = listOfNotNull(
+                            if ((failed || selfTransfer) && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
+                            sms.feeRial?.let { stringResource(R.string.tx_fee, Money.toman(it)) },
+                        ).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
