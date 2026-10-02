@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.review.NumberToken
@@ -423,6 +424,8 @@ private fun ReviewCard(
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        // جای خالی زیر محتوا، تا دکمه‌ها زیر نوار شناور گم نشوند
+        Spacer(Modifier.height(LocalBottomBarSpace.current))
     }
 
     if (pickingBank) {

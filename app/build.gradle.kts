@@ -13,8 +13,8 @@ android {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "0.17.0"
+        versionCode = 20
+        versionName = "0.18.0"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود
@@ -65,6 +65,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
+    // پس‌زمینه‌ی شیشه‌ای مات نوار پایین (تار کردن محتوای زیرش)
+    implementation("dev.chrisbanes.haze:haze:1.1.1")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     val roomVersion = "2.6.1"
