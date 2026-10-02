@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.domain.CategoryTree
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,7 +61,6 @@ import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
 
-private val TransferBlue = Color(0xFF3A6FD8)
 
 /**
  * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» — خلوت و سریع:
@@ -166,7 +166,7 @@ fun CategoryPickerSheet(
                         label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
                         shape = RoundedCornerShape(14.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = TransferBlue,
+                            selectedContainerColor = JibitoTheme.colors.transfer,
                             selectedLabelColor = Color.White,
                         ),
                     )

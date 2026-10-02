@@ -12,7 +12,11 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -28,6 +32,29 @@ class TransactionsViewModel(
 
     val categories: StateFlow<List<Category>> = repository.observeCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val onlyUncategorized = MutableStateFlow(false)
+
+    private val _search = MutableStateFlow(TxSearch())
+    /** جست‌وجوی فعلی؛ با رفتن به تب دیگر و برگشتن هم می‌ماند */
+    val search: StateFlow<TxSearch> = _search
+
+    fun setSearch(value: TxSearch) {
+        _search.value = value
+    }
+
+    /** «فقط خرج‌های بی‌دسته» (از «کارهای لازم» در خلاصه) */
+    fun setOnlyUncategorized(value: Boolean) {
+        onlyUncategorized.value = value
+    }
+
+    /** فهرستی که صفحه نشان می‌دهد (فیلترشده و روزبه‌روز)؛ null تا وقتی تراکنش‌ها از دیتابیس نیامده‌اند */
+    val visible: StateFlow<VisibleTransactions?> =
+        combine(repository.observeTransactions(), categories, onlyUncategorized, _search) { all, cats, onlyUncat, search ->
+            visibleTransactions(all, cats, onlyUncat, search)
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** خواندن پیامک‌ها را خود صفحه‌ی اصلی موقع باز شدن اپ شروع می‌کند (MainScreen) */
     val isSyncing: StateFlow<Boolean> = repository.isSyncing

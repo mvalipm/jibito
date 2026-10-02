@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
@@ -67,7 +68,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import ir.jibito.app.data.repository.UndoSnapshot
-import ir.jibito.app.domain.CategoryTree
 import ir.jibito.app.ui.common.rememberHaptics
 import ir.jibito.app.ui.theme.JibitoIcons
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -86,6 +86,9 @@ fun SmsListScreen(
     /** فقط خرج‌های بی‌دسته (از «کارهای لازم» در خلاصه) */
     onlyUncategorized: Boolean = false,
     onClearFilter: () -> Unit = {},
+    /** تراکنشی که برگه‌ی دسته‌اش باید باز شود (از نوتیفیکیشن) */
+    openTransactionId: Long? = null,
+    onOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: TransactionsViewModel = viewModel(
@@ -101,11 +104,20 @@ fun SmsListScreen(
     val displayDepth by app.container.categoryDisplay.depth.collectAsState()
     val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // از نوتیفیکیشن: وقتی تراکنش‌ها آمدند، برگه‌ی دسته‌ی همان تراکنش باز می‌شود
+    LaunchedEffect(openTransactionId, messages) {
+        val id = openTransactionId ?: return@LaunchedEffect
+        val all = messages ?: return@LaunchedEffect
+        if (all.any { it.id == id }) selectedId = id
+        onOpened()
+    }
     val colors = MaterialTheme.colorScheme
 
     var addingManual by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
-    var search by remember { mutableStateOf(TxSearch()) }
+    val search by viewModel.search.collectAsState()
+    val visible by viewModel.visible.collectAsState()
+    LaunchedEffect(onlyUncategorized) { viewModel.setOnlyUncategorized(onlyUncategorized) }
     val bottomSpace = LocalBottomBarSpace.current
 
     // «برگردان» بعد از دسته‌بندی یا حذف، و لرزش کوتاه موقع تأیید
@@ -146,7 +158,7 @@ fun SmsListScreen(
                 // جست‌وجو (تاریخ، مبلغ، اسم)
                 IconButton(
                     onClick = {
-                        if (showSearch) search = TxSearch()
+                        if (showSearch) viewModel.setSearch(TxSearch())
                         showSearch = !showSearch
                     },
                     modifier = Modifier
@@ -202,24 +214,11 @@ fun SmsListScreen(
                 Icon(JibitoIcons.Close, contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
             }
         }
-        val base = if (onlyUncategorized) {
-            messages?.filter {
-                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                    it.transaction.type == FlowType.WITHDRAWAL
-            }
-        } else {
-            messages
-        }
-        val range = search.range()
-        val list = if (search.isActive) base?.filter { search.matches(it, range) } else base
-        // دسته‌هایی مثل پس‌انداز در جمع خرج روز حساب نمی‌شوند (مثل صفحه‌ی خلاصه)
-        val nonSpendIds = remember(categories) {
-            val byId = categories.associateBy { it.id }
-            categories.filter { !it.countsAsSpend || !CategoryTree.rootOf(it, byId).countsAsSpend }.map { it.id }.toSet()
-        }
-        val groups = remember(list, nonSpendIds) { list?.let { groupByDay(it, nonSpendIds) } ?: emptyList() }
+        // فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel و بیرون از رشته‌ی اصلی انجام می‌شود
+        val list = visible?.list
+        val groups = visible?.groups.orEmpty()
         if (showSearch) {
-            SearchPanel(search = search, onChange = { search = it }, results = list)
+            SearchPanel(search = search, onChange = viewModel::setSearch, results = list)
             Spacer(Modifier.height(6.dp))
         }
         when {
@@ -373,8 +372,6 @@ fun SmsListScreen(
     }
 }
 
-private val DepositGreen = Color(0xFF1E9E6A)
-private val TransferBlue = Color(0xFF3A6FD8)
 
 /** کارت پیشنهاد: «این برداشت و این واریز، انتقال بین حساب‌های خودت بود؟» */
 @Composable
@@ -391,11 +388,11 @@ private fun TransferSuggestionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = TransferBlue.copy(alpha = 0.10f)),
+        colors = CardDefaults.cardColors(containerColor = JibitoTheme.colors.transfer.copy(alpha = 0.10f)),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(JibitoIcons.Transfer, contentDescription = null, tint = TransferBlue, modifier = Modifier.size(22.dp))
+                Icon(JibitoIcons.Transfer, contentDescription = null, tint = JibitoTheme.colors.transfer, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.transfer_title),
@@ -409,7 +406,7 @@ private fun TransferSuggestionCard(
                         Jalali.toPersianDigits(stringResource(R.string.transfer_count, total)),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TransferBlue,
+                        color = JibitoTheme.colors.transfer,
                     )
                 }
             }
@@ -424,7 +421,7 @@ private fun TransferSuggestionCard(
                 Money.toman(w.transaction.amountRial),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
-                color = TransferBlue,
+                color = JibitoTheme.colors.transfer,
             )
             Spacer(Modifier.height(6.dp))
             Text(
@@ -444,7 +441,7 @@ private fun TransferSuggestionCard(
                     onClick = onYes,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TransferBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = JibitoTheme.colors.transfer),
                 ) { Text(stringResource(R.string.transfer_yes), fontWeight = FontWeight.Bold) }
                 OutlinedButton(onClick = onNo, shape = RoundedCornerShape(14.dp)) {
                     Text(stringResource(R.string.transfer_no))
@@ -454,10 +451,10 @@ private fun TransferSuggestionCard(
     }
 }
 
-/** جای یک ردیف در سطح مشترک روز: فقط ردیف اول و آخر گوشه‌ی گرد دارند */
-private enum class GroupPosition { Single, First, Middle, Last }
+/** جای یک ردیف در سطح مشترک روز: فقط ردیف اول و آخر گوشه‌ی گرد دارند (internal: برای تست اسکرین‌شات) */
+internal enum class GroupPosition { Single, First, Middle, Last }
 
-private fun groupPosition(index: Int, size: Int): GroupPosition = when {
+internal fun groupPosition(index: Int, size: Int): GroupPosition = when {
     size == 1 -> GroupPosition.Single
     index == 0 -> GroupPosition.First
     index == size - 1 -> GroupPosition.Last
@@ -473,7 +470,7 @@ private fun GroupPosition.shape(radius: Dp = 20.dp): Shape = when (this) {
 
 /** سرتیتر چسبان هر روز: «امروز» … «۴۵۰ هزار تومان خرج» */
 @Composable
-private fun DayHeader(group: DayGroup) {
+internal fun DayHeader(group: DayGroup) {
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier
@@ -506,7 +503,7 @@ private fun DayHeader(group: DayGroup) {
  * رنگ فقط برای پولی است که آمده (سبز)، انتقال به خودم (آبی) یا خرید ناموفق (کم‌رنگ)؛ خرج عادی رنگ متن است.
  */
 @Composable
-private fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: () -> Unit) {
+internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
     val bankName = if (sms.isManual) stringResource(R.string.tx_manual_source) else sms.bank?.name ?: stringResource(R.string.bank_unknown)
@@ -515,14 +512,14 @@ private fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: (
     val selfTransfer = sms.isSelfTransfer && !failed
     val accent = when {
         failed -> colors.outline
-        selfTransfer -> TransferBlue
-        isDeposit -> DepositGreen
+        selfTransfer -> JibitoTheme.colors.transfer
+        isDeposit -> JibitoTheme.colors.income
         else -> colors.primary
     }
     val amountColor = when {
         failed -> colors.outline
-        selfTransfer -> TransferBlue
-        isDeposit -> DepositGreen
+        selfTransfer -> JibitoTheme.colors.transfer
+        isDeposit -> JibitoTheme.colors.income
         else -> colors.onSurface
     }
     val title = when {
@@ -609,8 +606,8 @@ private fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: (
                         Spacer(Modifier.height(6.dp))
                         Pill(
                             stringResource(R.string.tx_self_transfer_chip),
-                            container = TransferBlue.copy(alpha = 0.13f),
-                            content = TransferBlue,
+                            container = JibitoTheme.colors.transfer.copy(alpha = 0.13f),
+                            content = JibitoTheme.colors.transfer,
                             leading = JibitoIcons.Transfer,
                         )
                     }

@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
@@ -74,7 +75,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.common.rememberHaptics
 
-private val DepositGreen = Color(0xFF1E9E6A)
 
 /**
  * «صندوق بررسی»: پیامک‌هایی که شبیه تراکنش‌اند ولی خودکار خوانده نشدند، یکی‌یکی.
@@ -253,7 +253,7 @@ private fun AllDone(onClose: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(JibitoIcons.Check, contentDescription = null, tint = DepositGreen, modifier = Modifier.size(56.dp))
+        Icon(JibitoIcons.Check, contentDescription = null, tint = JibitoTheme.colors.income, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.review_all_done),
@@ -347,7 +347,7 @@ private fun ReviewCard(
         SectionTitle(stringResource(R.string.review_type))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TypeChip(stringResource(R.string.tx_withdrawal), JibitoIcons.ArrowUp, type == FlowType.WITHDRAWAL, colors.primary) { type = FlowType.WITHDRAWAL }
-            TypeChip(stringResource(R.string.tx_deposit), JibitoIcons.ArrowDown, type == FlowType.DEPOSIT, DepositGreen) { type = FlowType.DEPOSIT }
+            TypeChip(stringResource(R.string.tx_deposit), JibitoIcons.ArrowDown, type == FlowType.DEPOSIT, JibitoTheme.colors.income) { type = FlowType.DEPOSIT }
         }
 
         // مبلغ
@@ -361,7 +361,7 @@ private fun ReviewCard(
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (type == FlowType.DEPOSIT) DepositGreen else colors.primary,
+                color = if (type == FlowType.DEPOSIT) JibitoTheme.colors.income else colors.primary,
             )
         }
 

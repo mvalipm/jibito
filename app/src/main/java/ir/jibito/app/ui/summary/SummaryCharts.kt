@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
@@ -141,7 +142,7 @@ fun CategoryDetailSheet(
                     val fraction = (c.spentRial.toFloat() / budget).coerceIn(0f, 1f)
                     val barColor = when (level) {
                         100 -> colors.error
-                        80 -> Color(0xFFF2A541)
+                        80 -> JibitoTheme.colors.warning
                         else -> base
                     }
                     LinearProgressIndicator(

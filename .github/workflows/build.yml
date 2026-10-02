@@ -24,22 +24,31 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # نسخه‌ی Gradle از gradle/wrapper/gradle-wrapper.properties می‌آید (همان نسخه روی هر کامپیوتر)
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.11.1'
 
+      # تست‌ها + ساختن اسکرین‌شات صفحه‌ها (Roborazzi) + APK آزمایشی
       - name: Run tests and build debug APK
         run: |
           set -o pipefail
-          gradle testDebugUnitTest assembleDebug --stacktrace 2>&1 | tee build.log
+          ./gradlew testDebugUnitTest assembleDebug -Proborazzi.test.record=true --stacktrace 2>&1 | tee build.log
+
+      # اسکرین‌شات‌های هر پوسته در حالت روشن و تیره، برای دیدن ظاهر بدون گوشی
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: app/build/outputs/roborazzi/
+          if-no-files-found: ignore
 
       # Android Lint: هر مشکل تازه (که در app/lint-baseline.xml نیست) ساخت را متوقف می‌کند.
       # اگر baseline هنوز نیست، ساخته می‌شود و ساخت ادامه پیدا می‌کند (lint.baselines.continue).
       - name: Lint
         run: |
           set -o pipefail
-          gradle lintDebug -Dlint.baselines.continue=true --stacktrace 2>&1 | tee -a build.log
+          ./gradlew lintDebug -Dlint.baselines.continue=true --stacktrace 2>&1 | tee -a build.log
 
       - name: Upload lint report
         if: always()
@@ -64,7 +73,7 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
             export JIBITO_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
           fi
-          gradle assembleRelease --stacktrace 2>&1 | tee -a build.log
+          ./gradlew assembleRelease --stacktrace 2>&1 | tee -a build.log
           rm -f "$RUNNER_TEMP/release.jks"
 
       # اگر ساخت شکست خورد، خطاهای کامپایل و تست‌های ردشده را به‌صورت خلاصه بالای صفحه‌ی گیت‌هاب نشان می‌دهد

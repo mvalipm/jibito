@@ -2,6 +2,7 @@ package ir.jibito.app
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import java.util.Locale
 import android.content.pm.PackageManager
@@ -57,6 +58,19 @@ class MainActivity : ComponentActivity() {
     /** قفل اپ: true یعنی تا تأیید قفل گوشی، فقط صفحه‌ی قفل دیده می‌شود */
     private var locked by mutableStateOf(false)
 
+    /** تراکنشی که از نوتیفیکیشن خواسته شده و هنوز باز نشده */
+    private var openTransactionId by mutableStateOf<Long?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        readOpenRequest(intent)
+    }
+
+    private fun readOpenRequest(intent: Intent?) {
+        val id = intent?.getLongExtra(EXTRA_TRANSACTION_ID, -1L) ?: -1L
+        if (id > 0) openTransactionId = id
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -64,6 +78,8 @@ class MainActivity : ComponentActivity() {
         val themeSettings = container.themeSettings
         val lockSettings = container.appLockSettings
         refreshLock()
+        // فقط بار اول؛ بعد از چرخاندن گوشی دوباره باز نشود
+        if (savedInstanceState == null) readOpenRequest(intent)
         setContent {
             val style by themeSettings.style.collectAsState()
             val lockEnabled by lockSettings.enabled.collectAsState()
@@ -76,7 +92,12 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     // اپ زیر صفحه‌ی قفل زنده می‌ماند (تا مثلاً جواب انتخاب فایل پشتیبان گم نشود)، ولی دیده و خوانده نمی‌شود
                     Box(Modifier.fillMaxSize()) {
-                        Box(if (locked) Modifier.clearAndSetSemantics { } else Modifier) { JibitoApp() }
+                        Box(if (locked) Modifier.clearAndSetSemantics { } else Modifier) {
+                            JibitoApp(
+                                openTransactionId = openTransactionId,
+                                onOpenHandled = { openTransactionId = null },
+                            )
+                        }
                         if (locked) {
                             LockScreen(onUnlocked = {
                                 AppLockSession.unlocked = true
@@ -116,13 +137,23 @@ class MainActivity : ComponentActivity() {
         }
         locked = settings.enabled.value && !AppLockSession.unlocked
     }
+
+    companion object {
+        const val EXTRA_TRANSACTION_ID = "ir.jibito.app.extra.TRANSACTION_ID"
+
+        /** باز کردن اپ روی یک تراکنش، با برگه‌ی انتخاب دسته (برای لمس نوتیفیکیشن) */
+        fun openTransactionIntent(context: Context, transactionId: Long): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(EXTRA_TRANSACTION_ID, transactionId)
+    }
 }
 
 /** صفحه‌های اپ. (بعداً با Navigation-Compose جایگزین می‌شود.) */
 private enum class Screen { Welcome, Permission, SmsList }
 
 @Composable
-private fun JibitoApp() {
+private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
     val context = LocalContext.current
     fun granted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -173,6 +204,6 @@ private fun JibitoApp() {
                 }
             },
         )
-        Screen.SmsList -> MainScreen()
+        Screen.SmsList -> MainScreen(openTransactionId = openTransactionId, onOpenHandled = onOpenHandled)
     }
 }

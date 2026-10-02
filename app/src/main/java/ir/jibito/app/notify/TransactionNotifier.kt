@@ -80,7 +80,7 @@ class TransactionNotifier(
         val openApp = PendingIntent.getActivity(
             context,
             notificationId(flow.id),
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            MainActivity.openTransactionIntent(context, flow.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -124,7 +124,7 @@ class TransactionNotifier(
         val openApp = PendingIntent.getActivity(
             context,
             notificationId(flow.id),
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            MainActivity.openTransactionIntent(context, flow.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, AUTO_CHANNEL_ID)

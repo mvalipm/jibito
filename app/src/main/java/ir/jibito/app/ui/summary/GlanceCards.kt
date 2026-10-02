@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.notify.BudgetLevel
@@ -64,7 +65,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import ir.jibito.app.ui.theme.JibitoIcons
 
-private val WarnAmber = Color(0xFFF2A541)
 
 /** کمتر از این فاصله بین «خرج» و «زمان» یعنی «طبق برنامه» */
 private const val ON_TRACK_MARGIN = 0.05f
@@ -308,7 +308,7 @@ fun AttentionCard(items: List<AttentionItem>) {
         items.forEach { item ->
             val tint = when (item.tone) {
                 AttentionItem.Tone.DANGER -> colors.error
-                AttentionItem.Tone.WARN -> WarnAmber
+                AttentionItem.Tone.WARN -> JibitoTheme.colors.warning
                 AttentionItem.Tone.NORMAL -> colors.primary
             }
             Row(
@@ -438,7 +438,7 @@ private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted:
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val status = when (level) {
         100 -> colors.error
-        80 -> WarnAmber
+        80 -> JibitoTheme.colors.warning
         else -> null
     }
     Column(

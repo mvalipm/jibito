@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.CategoryTree
@@ -57,7 +58,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import ir.jibito.app.ui.theme.JibitoIcons
 import androidx.compose.foundation.layout.size
 
-private val DepositGreen = Color(0xFF1E9E6A)
 
 /** حداکثر ۱۲ رقم تومان (هزار میلیارد) — جلوی عددهای اشتباهی بزرگ */
 private const val MAX_DIGITS = 12
@@ -91,7 +91,7 @@ fun ManualEntrySheet(
     var yesterday by rememberSaveable { mutableStateOf(false) }
     var quickIds by remember { mutableStateOf<List<Long>>(emptyList()) }
     val type = if (isDeposit) FlowType.DEPOSIT else FlowType.WITHDRAWAL
-    val accent = if (isDeposit) DepositGreen else colors.primary
+    val accent = if (isDeposit) JibitoTheme.colors.income else colors.primary
 
     LaunchedEffect(type) { loadQuick(type.code) { quickIds = it } }
 
@@ -140,7 +140,7 @@ fun ManualEntrySheet(
                 // خرج یا درآمد
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TypeToggle(stringResource(R.string.manual_expense), JibitoIcons.ArrowUp, !isDeposit, colors.primary) { isDeposit = false }
-                    TypeToggle(stringResource(R.string.manual_income), JibitoIcons.ArrowDown, isDeposit, DepositGreen) { isDeposit = true }
+                    TypeToggle(stringResource(R.string.manual_income), JibitoIcons.ArrowDown, isDeposit, JibitoTheme.colors.income) { isDeposit = true }
                 }
 
                 // مبلغ

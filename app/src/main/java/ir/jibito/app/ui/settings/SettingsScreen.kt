@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.theme.previewColors
 import androidx.compose.foundation.border
@@ -399,7 +400,7 @@ private fun PermissionRow(label: String, ok: Boolean) {
             stringResource(if (ok) R.string.settings_perm_ok else R.string.settings_perm_missing),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = if (ok) Color(0xFF1E9E6A) else colors.error,
+            color = if (ok) JibitoTheme.colors.income else colors.error,
         )
     }
 }

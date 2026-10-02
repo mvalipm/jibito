@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.runtime.remember
 import androidx.activity.compose.BackHandler
 import ir.jibito.app.ui.theme.LocalJibitoColors
@@ -66,7 +67,6 @@ import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 import ir.jibito.app.ui.theme.JibitoIcons
 
-private val WarningAmber = Color(0xFFF2A541)
 
 /**
  * صفحه‌ی «خلاصه»، طرح «یک نگاه، بدون اسکرول»:
@@ -311,7 +311,7 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val barColor = when (level) {
         100 -> colors.error
-        80 -> WarningAmber
+        80 -> JibitoTheme.colors.warning
         else -> base
     }
     val idle = c.spentRial == 0L && budget == null
@@ -395,7 +395,6 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     }
 }
 
-private val IncomeGreen = Color(0xFF1E9E6A)
 
 @Composable
 private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
@@ -410,7 +409,7 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
         Box(
             Modifier
                 .size(40.dp)
-                .background(IncomeGreen.copy(alpha = 0.14f), CircleShape),
+                .background(JibitoTheme.colors.income.copy(alpha = 0.14f), CircleShape),
             contentAlignment = Alignment.Center,
         ) { Text(icon ?: "•", fontSize = 18.sp) }
         Spacer(Modifier.size(12.dp))
@@ -425,7 +424,7 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
             "+ " + Money.toman(amountRial),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Black,
-            color = IncomeGreen,
+            color = JibitoTheme.colors.income,
         )
     }
 }
