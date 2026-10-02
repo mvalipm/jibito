@@ -18,5 +18,6 @@
         <exclude domain="sharedpref" path="security.xml" />
         <exclude domain="file" path="pending_restore" />
         <exclude domain="file" path="backup_work" />
+        <exclude domain="file" path="error_log.txt" />
     </device-transfer>
 </data-extraction-rules>

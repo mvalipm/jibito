@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import ir.jibito.app.util.ErrorLog
+import kotlinx.coroutines.CancellationException
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -76,8 +78,16 @@ fun MainScreen() {
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
 
+    val appContext = LocalContext.current.applicationContext
     LaunchedEffect(Unit) {
-        container.transactionRepository.syncFromSms()
+        // خطای همگام‌سازی نباید اپ را موقع باز شدن ببندد (وگرنه هر بار باز کردن = بسته شدن)؛ ثبت می‌شود
+        try {
+            container.transactionRepository.syncFromSms()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ErrorLog.record(appContext, "sync on open", e)
+        }
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
             tab = Tab.Review
