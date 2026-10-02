@@ -47,3 +47,11 @@ data class Category(
     /** دسته‌ای که خود کاربر ساخته */
     val isCustom: Boolean = false,
 )
+
+/** آخرین مانده‌ی یک بانک (از آخرین پیامکی که مانده داشت) */
+data class BankBalance(
+    val bank: Bank,
+    val balanceRial: Long,
+    /** زمان همان پیامک؛ مانده‌ی قدیمی ممکن است دیگر درست نباشد */
+    val dateMillis: Long,
+)

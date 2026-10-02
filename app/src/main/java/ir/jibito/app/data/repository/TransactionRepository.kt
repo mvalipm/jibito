@@ -13,6 +13,7 @@ import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.domain.TransferSuggestion
+import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.transfer.TransferCandidate
@@ -92,6 +93,9 @@ interface TransactionRepository {
 
     /** پرکاربردترین دسته‌ها برای این نوع (بیشترین استفاده اول) */
     suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long>
+
+    /** «چقد دارم؟»: آخرین مانده‌ی هر بانک، تازه‌ترین اول */
+    fun observeBankBalances(): Flow<List<BankBalance>>
 }
 
 class TransactionRepositoryImpl(
@@ -265,6 +269,13 @@ class TransactionRepositoryImpl(
 
     override suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long> =
         dao.frequentCategoryIds(flowType, limit)
+
+    override fun observeBankBalances(): Flow<List<BankBalance>> =
+        dao.observeBankBalances().map { rows ->
+            rows.distinctBy { it.bankId }.mapNotNull { row ->
+                BankDirectory.byId(row.bankId)?.let { BankBalance(it, row.remainAfter, row.dateEpoch) }
+            }
+        }
 
     override suspend fun deleteCustomCategory(categoryId: Long) {
         db.withTransaction {

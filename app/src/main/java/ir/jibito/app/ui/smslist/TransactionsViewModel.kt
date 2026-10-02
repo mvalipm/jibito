@@ -11,6 +11,7 @@ import ir.jibito.app.domain.Transaction
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
+import ir.jibito.app.domain.BankBalance
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -29,6 +30,10 @@ class TransactionsViewModel(
 
     /** خواندن پیامک‌ها را خود صفحه‌ی اصلی موقع باز شدن اپ شروع می‌کند (MainScreen) */
     val isSyncing: StateFlow<Boolean> = repository.isSyncing
+
+    /** آخرین مانده‌ی هر بانک */
+    val bankBalances: StateFlow<List<BankBalance>> = repository.observeBankBalances()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** پیشنهادهای «انتقال بین حساب‌های خودم» */
     val transferSuggestions: StateFlow<List<TransferSuggestion>> = repository.observeTransferSuggestions()

@@ -12,6 +12,7 @@ import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
+import ir.jibito.app.data.local.entity.BankBalanceRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
@@ -85,6 +86,24 @@ interface TransactionFlowDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)
+
+    /**
+     * «چقد دارم؟»: برای هر بانک، مانده‌ی آخرین پیامکی که مانده داشته.
+     * (اگر یک بانک چند حساب داشته باشد، مانده‌ی آخرین پیامکِ هر کدام که تازه‌تر است.)
+     */
+    @Query(
+        """
+        SELECT t.bankId AS bankId, t.remainAfter AS remainAfter, t.dateEpoch AS dateEpoch
+        FROM transaction_flows t
+        WHERE t.isDeleted = 0 AND t.remainAfter IS NOT NULL AND t.bankId IS NOT NULL
+          AND t.dateEpoch = (
+            SELECT MAX(t2.dateEpoch) FROM transaction_flows t2
+            WHERE t2.bankId = t.bankId AND t2.isDeleted = 0 AND t2.remainAfter IS NOT NULL
+          )
+        ORDER BY t.dateEpoch DESC
+        """
+    )
+    fun observeBankBalances(): Flow<List<BankBalanceRow>>
 
     /** یک تراکنش (ثبت دستی)؛ شناسه‌اش را برمی‌گرداند */
     @Insert

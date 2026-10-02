@@ -38,6 +38,12 @@
     <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
     <string name="notif_question">این خرج مال چی بود؟</string>
     <string name="tx_add_category">+ انتخاب دسته</string>
+    <string name="balances_title">چقد دارم؟</string>
+    <string name="balances_total">جمع مانده‌ها</string>
+    <string name="balances_total_hint">از %1$d بانک</string>
+    <string name="balances_today">مانده‌ی امروز</string>
+    <string name="balances_yesterday">مانده‌ی دیروز</string>
+    <string name="balances_days_ago">مانده‌ی %1$d روز پیش</string>
     <string name="tx_manual_expense">خرج نقدی</string>
     <string name="tx_manual_income">درآمد نقدی</string>
     <string name="tx_manual_source">ثبت دستی</string>

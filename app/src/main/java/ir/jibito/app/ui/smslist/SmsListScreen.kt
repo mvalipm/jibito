@@ -68,6 +68,7 @@ fun SmsListScreen() {
     val isSyncing by viewModel.isSyncing.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val transferSuggestions by viewModel.transferSuggestions.collectAsState()
+    val bankBalances by viewModel.bankBalances.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
@@ -137,6 +138,10 @@ fun SmsListScreen() {
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // «چقد دارم؟»: آخرین مانده‌ی هر بانک
+                if (bankBalances.isNotEmpty()) {
+                    item(key = "balances") { BankBalancesRow(bankBalances) }
+                }
                 // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
                 transferSuggestions.firstOrNull()?.let { suggestion ->
                     item(key = "transfer-suggestion") {

@@ -79,6 +79,13 @@ data class TransactionWithCategory(
     @ColumnInfo(name = "categoryIcon") val categoryIcon: String?,
 )
 
+/** آخرین «مانده»ی گزارش‌شده در پیامک‌های یک بانک */
+data class BankBalanceRow(
+    val bankId: Int,
+    val remainAfter: Long,
+    val dateEpoch: Long,
+)
+
 /** فقط ستون‌هایی که موقع همگام‌سازی با پیامک‌ها لازم داریم. */
 data class SmsFlowKey(
     val id: Long,
