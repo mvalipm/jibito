@@ -51,6 +51,7 @@ import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
@@ -160,6 +161,12 @@ fun SmsListScreen() {
             onSelfTransfer = { isTransfer ->
                 viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
+            },
+            onCreate = { name, parentId, icon, onResult ->
+                viewModel.createCategoryAndPick(selected, name, parentId, icon) { result ->
+                    if (result is CreateCategoryResult.Created) selectedId = null
+                    onResult(result)
+                }
             },
             onDismiss = { selectedId = null },
         )

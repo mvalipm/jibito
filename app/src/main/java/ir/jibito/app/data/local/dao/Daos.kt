@@ -118,6 +118,10 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET categoryId = :newId WHERE categoryId = :oldId")
     suspend fun moveCategory(oldId: Long, newId: Long)
 
+    /** حذف دسته‌ی شخصی: تراکنش‌هایش به دسته‌ی بالاتر (یا بی‌دسته) می‌روند */
+    @Query("UPDATE transaction_flows SET categoryId = :newId, isAutoCategorized = 0 WHERE categoryId IN (:ids)")
+    suspend fun reassign(ids: List<Long>, newId: Long?)
+
     @Query("UPDATE transaction_flows SET categoryId = NULL, isAutoCategorized = 0 WHERE categoryId = :oldId")
     suspend fun uncategorize(oldId: Long)
 

@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,6 +28,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.launch
@@ -52,6 +58,9 @@ fun SettingsScreen() {
     val app = context.applicationContext as JibitoApplication
     val repository = app.container.transactionRepository
     val isSyncing by repository.isSyncing.collectAsState()
+    val categoriesFlow = remember { repository.observeCategories() }
+    val categories by categoriesFlow.collectAsState(initial = emptyList())
+    var deleting by remember { mutableStateOf<Category?>(null) }
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
 
@@ -126,6 +135,35 @@ fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(12.dp))
+
+        // دسته‌های شخصی (ساخته‌شده از برگه‌ی انتخاب دسته)
+        val byId = categories.associateBy { it.id }
+        val custom = categories.filter { it.isCustom }
+        SettingsCard(stringResource(R.string.settings_custom_title)) {
+            if (custom.isEmpty()) {
+                Text(
+                    stringResource(R.string.settings_custom_empty),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            custom.forEach { c ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    val path = listOfNotNull(c.icon ?: rootIcon(c, byId), c.name, c.parentId?.let { byId[it]?.name }?.let { "· $it" })
+                    Text(
+                        path.joinToString(" "),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurface,
+                    )
+                    TextButton(onClick = { deleting = c }) {
+                        Text(stringResource(R.string.settings_custom_delete), color = colors.error)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
         SettingsCard(stringResource(R.string.settings_soon_title)) {
             Text(
                 stringResource(R.string.settings_soon_body),
@@ -146,6 +184,40 @@ fun SettingsScreen() {
         // جای خالی زیر محتوا، تا آخرین بخش زیر نوار شناور گم نشود
         Spacer(Modifier.height(LocalBottomBarSpace.current + 16.dp))
     }
+
+    deleting?.let { c ->
+        val parentName = c.parentId?.let { id -> categories.firstOrNull { it.id == id }?.name }
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text(stringResource(R.string.settings_custom_delete_title, c.name), fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    if (parentName != null) stringResource(R.string.settings_custom_delete_to_parent, parentName)
+                    else stringResource(R.string.settings_custom_delete_to_none)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { repository.deleteCustomCategory(c.id) }
+                    deleting = null
+                }) { Text(stringResource(R.string.settings_custom_delete), color = colors.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.budget_dialog_cancel)) }
+            },
+        )
+    }
+}
+
+/** آیکون دسته‌ی اصلی (زیردسته‌ها آیکون ندارند) */
+private fun rootIcon(c: Category, byId: Map<Long, Category>): String? {
+    var current = c
+    var steps = 0
+    while (current.parentId != null && steps < 10) {
+        current = byId[current.parentId] ?: break
+        steps++
+    }
+    return current.icon
 }
 
 @Composable

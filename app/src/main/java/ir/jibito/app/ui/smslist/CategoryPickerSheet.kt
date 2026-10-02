@@ -1,6 +1,7 @@
 package ir.jibito.app.ui.smslist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -31,10 +33,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -42,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import ir.jibito.app.data.category.CreateCategoryResult
+import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
@@ -66,8 +72,11 @@ fun CategoryPickerSheet(
     onPick: (categoryId: Long?) -> Unit,
     /** علامت زدن/برداشتن «انتقال بین حساب‌های خودم» */
     onSelfTransfer: (Boolean) -> Unit,
+    /** ساختن دسته‌ی شخصی (و انتخابش برای همین تراکنش): اسم، دسته‌ی بالاتر، آیکون، نتیجه */
+    onCreate: (String, Long?, String?, (CreateCategoryResult) -> Unit) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var creating by remember { mutableStateOf<CreateTarget?>(null) }
     val colors = MaterialTheme.colorScheme
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
@@ -164,6 +173,10 @@ fun CategoryPickerSheet(
                             style = MaterialTheme.typography.bodyMedium,
                             color = colors.onSurfaceVariant,
                         )
+                        Spacer(Modifier.height(8.dp))
+                        AddChip(stringResource(R.string.custom_create_named, query.trim())) {
+                            creating = CreateTarget(parentId = null, prefill = query.trim(), chooseParent = true)
+                        }
                     } else {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             results.forEach { c ->
@@ -204,7 +217,7 @@ fun CategoryPickerSheet(
                             hasChildren = subs.isNotEmpty(),
                             onClick = { onPick(root.id) },
                         )
-                        if (subs.isNotEmpty()) {
+                        if (subs.isNotEmpty() || !isDeposit) {
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 subs.forEach { sub ->
                                     val details = childrenOf[sub.id].orEmpty()
@@ -217,6 +230,10 @@ fun CategoryPickerSheet(
                                             else expandedId = if (isOpen) null else sub.id
                                         },
                                     )
+                                }
+                                // + زیردسته‌ی شخصی در همین دسته‌ی اصلی
+                                AddChip(stringResource(R.string.custom_add)) {
+                                    creating = CreateTarget(parentId = root.id)
                                 }
                             }
                             // جزئیات زیردسته‌ی باز (لایه‌ی ۳)
@@ -238,6 +255,9 @@ fun CategoryPickerSheet(
                                     childrenOf[open.id].orEmpty().forEach { d ->
                                         CategoryChip(label = d.name, selected = d.id == selectedId, onClick = { onPick(d.id) })
                                     }
+                                    AddChip(stringResource(R.string.custom_add)) {
+                                        creating = CreateTarget(parentId = open.id)
+                                    }
                                 }
                             }
                         }
@@ -249,8 +269,14 @@ fun CategoryPickerSheet(
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
-                        Spacer(Modifier.height(14.dp))
+                        Spacer(Modifier.height(if (subs.isEmpty() && isDeposit) 4.dp else 14.dp))
                     }
+
+                    // + دسته‌ی اصلی جدید (برای درآمد: دسته‌ی درآمد جدید)
+                    AddChip(stringResource(if (isDeposit) R.string.custom_add_income else R.string.custom_add_root)) {
+                        creating = CreateTarget(parentId = null)
+                    }
+                    Spacer(Modifier.height(14.dp))
                 }
 
                 if (transaction.merchant != null) {
@@ -290,6 +316,16 @@ fun CategoryPickerSheet(
                 }
             }
         }
+    }
+
+    creating?.let { target ->
+        NewCategoryDialog(
+            target = target,
+            roots = if (isDeposit) emptyList() else roots,
+            byId = byId,
+            onConfirm = { name, parentId, icon, onResult -> onCreate(name, parentId, icon, onResult) },
+            onDismiss = { creating = null },
+        )
     }
 }
 
@@ -359,4 +395,143 @@ private fun String?.toColorOrNull(): Color? = try {
     this?.let { Color(android.graphics.Color.parseColor(it)) }
 } catch (e: IllegalArgumentException) {
     null
+}
+
+/** کجا دسته‌ی شخصی ساخته شود */
+private data class CreateTarget(
+    val parentId: Long?,
+    val prefill: String = "",
+    /** از جست‌وجو آمده ← کاربر جایش را انتخاب می‌کند */
+    val chooseParent: Boolean = false,
+)
+
+@Composable
+private fun AddChip(label: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Text(
+        label,
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, colors.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        color = colors.primary,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+    )
+}
+
+/**
+ * ساختن دسته‌ی شخصی: اسم، (از جست‌وجو: جایش)، و برای دسته‌ی اصلی یک آیکون.
+ * بعد از ساختن، همان لحظه برای تراکنش انتخاب می‌شود.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun NewCategoryDialog(
+    target: CreateTarget,
+    roots: List<Category>,
+    byId: Map<Long, Category>,
+    onConfirm: (String, Long?, String?, (CreateCategoryResult) -> Unit) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    var name by remember { mutableStateOf(target.prefill) }
+    var parentId by remember { mutableStateOf(target.parentId) }
+    var icon by remember { mutableStateOf(CustomCategories.ICONS.first()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
+    val errEmpty = stringResource(R.string.custom_error_empty)
+    val errLong = stringResource(R.string.custom_error_long)
+    val errDup = stringResource(R.string.custom_error_duplicate)
+    val parentName = parentId?.let { byId[it]?.name }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (parentName == null) stringResource(R.string.custom_title_root)
+                else stringResource(R.string.custom_title_sub, parentName),
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it; error = null },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.custom_name)) },
+                        isError = error != null,
+                        supportingText = { error?.let { Text(it) } },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (target.chooseParent && roots.isNotEmpty()) {
+                        Text(
+                            stringResource(R.string.custom_where),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CategoryChip(
+                                label = stringResource(R.string.custom_as_root),
+                                selected = parentId == null,
+                                onClick = { parentId = null },
+                            )
+                            roots.forEach { r ->
+                                CategoryChip(
+                                    label = listOfNotNull(r.icon, r.name).joinToString(" "),
+                                    selected = parentId == r.id,
+                                    onClick = { parentId = r.id },
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    if (parentId == null) {
+                        Text(
+                            stringResource(R.string.custom_icon),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CustomCategories.ICONS.forEach { e ->
+                                Box(
+                                    Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(if (e == icon) colors.primary.copy(alpha = 0.18f) else colors.surfaceVariant)
+                                        .clickable { icon = e },
+                                    contentAlignment = Alignment.Center,
+                                ) { Text(e) }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !saving,
+                onClick = {
+                    saving = true
+                    onConfirm(name, parentId, if (parentId == null) icon else null) { result ->
+                        saving = false
+                        if (result is CreateCategoryResult.Invalid) {
+                            error = when (result.reason) {
+                                CreateCategoryResult.Reason.EMPTY -> errEmpty
+                                CreateCategoryResult.Reason.TOO_LONG -> errLong
+                                CreateCategoryResult.Reason.DUPLICATE -> errDup
+                            }
+                        }
+                    }
+                },
+            ) { Text(stringResource(R.string.custom_save), fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.budget_dialog_cancel)) } },
+    )
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +41,24 @@ class TransactionsViewModel(
         viewModelScope.launch {
             if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
             repository.setCategory(transaction.id, categoryId)
+        }
+    }
+
+    /** دسته‌ی شخصی می‌سازد و همان لحظه برای این تراکنش انتخابش می‌کند */
+    fun createCategoryAndPick(
+        transaction: Transaction,
+        name: String,
+        parentId: Long?,
+        icon: String?,
+        onResult: (CreateCategoryResult) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = repository.createCategory(name, parentId, transaction.transaction.type.code, icon)
+            if (result is CreateCategoryResult.Created) {
+                if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
+                repository.setCategory(transaction.id, result.id)
+            }
+            onResult(result)
         }
     }
 

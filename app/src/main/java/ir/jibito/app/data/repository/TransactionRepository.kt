@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
 import ir.jibito.app.data.category.CategorySeeder
+import ir.jibito.app.data.category.CreateCategoryResult
+import ir.jibito.app.data.category.CustomCategories
+import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -65,6 +68,15 @@ interface TransactionRepository {
 
     /** علامت زدن/برداشتن دستیِ «انتقال به خودم» برای یک تراکنش */
     suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean)
+
+    /**
+     * دسته‌ی شخصی می‌سازد. parentId = null یعنی دسته‌ی اصلی جدید.
+     * @param icon فقط برای دسته‌ی اصلی
+     */
+    suspend fun createCategory(name: String, parentId: Long?, flowType: Int, icon: String?): CreateCategoryResult
+
+    /** حذف دسته‌ی شخصی (و زیردسته‌هایش): تراکنش‌هایشان به دسته‌ی بالاتر یا بی‌دسته می‌روند */
+    suspend fun deleteCustomCategory(categoryId: Long)
 }
 
 class TransactionRepositoryImpl(
@@ -158,6 +170,59 @@ class TransactionRepositoryImpl(
                 row.transferPairId?.let { dao.setTransfer(it, TransactionFlowEntity.TRANSFER_REJECTED, null, now) }
                 // اگر این مقصد قبلاً «کارت خودم» یاد گرفته شده بود، فراموش شود
                 if (isWithdrawal) row.merchant?.let { dao.deleteOwnAccount(it) }
+            }
+        }
+        onCategoryChanged()
+    }
+
+    override suspend fun createCategory(
+        name: String,
+        parentId: Long?,
+        flowType: Int,
+        icon: String?,
+    ): CreateCategoryResult = db.withTransaction {
+        val categoryDao = db.categoryDao()
+        val all = categoryDao.all()
+        val sameType = all.filter { it.flowType == flowType && !it.isArchived }
+        CustomCategories.validate(name, sameType.map { it.name })?.let {
+            return@withTransaction CreateCategoryResult.Invalid(it)
+        }
+        val parent = parentId?.let { id -> all.firstOrNull { it.id == id } }
+        val customRoots = all.count { it.isCustom && it.parentId == null }
+        val id = categoryDao.insert(
+            CategoryEntity(
+                name = CustomCategories.clean(name),
+                icon = if (parent == null) icon ?: CustomCategories.ICONS.first() else null,
+                colorHex = if (parent == null) CustomCategories.COLORS[customRoots % CustomCategories.COLORS.size] else null,
+                flowType = flowType,
+                parentId = parent?.id,
+                // بعد از دسته‌های پیش‌فرض، به ترتیب ساخته شدن
+                sortOrder = 5_000 + all.size,
+                isCustom = true,
+                // زیر «پس‌انداز و قرض» هم خرج حساب نمی‌شود
+                countsAsSpend = parent?.countsAsSpend ?: true,
+            )
+        )
+        CreateCategoryResult.Created(id)
+    }
+
+    override suspend fun deleteCustomCategory(categoryId: Long) {
+        db.withTransaction {
+            val categoryDao = db.categoryDao()
+            val all = categoryDao.all()
+            val target = all.firstOrNull { it.id == categoryId } ?: return@withTransaction
+            if (!target.isCustom) return@withTransaction
+            // خودش + همه‌ی زیردسته‌هایش
+            val ids = mutableListOf(target.id)
+            var i = 0
+            while (i < ids.size) {
+                ids += all.filter { it.parentId == ids[i] && !it.isArchived }.map { it.id }
+                i++
+            }
+            dao.reassign(ids, target.parentId)
+            for (id in ids) {
+                db.summaryDao().deleteBudget(id)
+                categoryDao.archive(id)
             }
         }
         onCategoryChanged()
