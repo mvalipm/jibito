@@ -106,6 +106,15 @@
     <string name="summary_uncategorized">بی‌دسته</string>
     <string name="summary_categories">خرج دسته‌ها</string>
     <string name="summary_tap_to_budget">برای تعیین بودجه‌ی ماهانه، روی هر دسته بزن</string>
+    <string name="summary_tap_for_detail">برای دیدن ریز خرج و تعیین بودجه، روی هر دسته بزن</string>
+    <string name="chart_where_title">خرج‌ها کجا رفته؟</string>
+    <string name="chart_rest">بقیه و بی‌دسته</string>
+    <string name="chart_tap_again">برای دیدن ریز خرج این دسته، دوباره بزن</string>
+    <string name="detail_set_budget">تعیین بودجه‌ی ماهانه</string>
+    <string name="detail_edit_budget">تغییر بودجه</string>
+    <string name="detail_inside_title">ریز خرج</string>
+    <string name="detail_inside_empty">این ماه خرجی در این دسته نیست.</string>
+    <string name="detail_direct">بدون زیردسته</string>
     <string name="summary_no_budget">بدون بودجه</string>
     <string name="summary_remaining">%1$s مونده</string>
     <string name="summary_over_budget">%1$s بیشتر از بودجه</string>

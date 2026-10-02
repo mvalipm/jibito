@@ -42,6 +42,30 @@ object SpendRollup {
         return Result(byRoot, uncategorized, excluded)
     }
 
+    /**
+     * برای هر دسته‌ی اصلی: خرج هر زیردسته‌ی لایه‌ی ۲ (با جزئیاتش).
+     * کلید null یعنی تراکنش مستقیم روی خود دسته‌ی اصلی ثبت شده.
+     */
+    fun byChild(categories: List<CategoryEntity>, sums: List<CategorySum>): Map<Long, Map<CategoryEntity?, Long>> {
+        val byId = categories.associateBy { it.id }
+        val result = HashMap<Long, HashMap<CategoryEntity?, Long>>()
+        for (s in sums) {
+            val cat = s.categoryId?.let { byId[it] } ?: continue
+            val root = rootOf(cat, byId)
+            if (!root.countsAsSpend || !cat.countsAsSpend || root.isArchived) continue
+            // نزدیک‌ترین والدی که مستقیم زیر دسته‌ی اصلی است
+            var child: CategoryEntity? = if (cat.id == root.id) null else cat
+            var steps = 0
+            while (child != null && child.parentId != root.id && steps < 10) {
+                child = child.parentId?.let { byId[it] }
+                steps++
+            }
+            val bucket = result.getOrPut(root.id) { HashMap() }
+            bucket[child] = (bucket[child] ?: 0L) + s.totalRial
+        }
+        return result
+    }
+
     /** دسته‌ی اصلی (بالاترین والد)؛ در برابر حلقه‌ی اشتباهی هم امن است */
     fun rootOf(cat: CategoryEntity, byId: Map<Long, CategoryEntity>): CategoryEntity {
         var current = cat

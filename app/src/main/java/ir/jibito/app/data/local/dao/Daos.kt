@@ -166,6 +166,12 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE code = :code")
     suspend fun byCode(code: String): CategoryEntity?
 
+    @Query("UPDATE categories SET colorHex = :color WHERE code = :code")
+    suspend fun setColorByCode(code: String, color: String)
+
+    @Query("UPDATE categories SET colorHex = :color WHERE id = :id")
+    suspend fun setColor(id: Long, color: String)
+
     @Query("UPDATE categories SET isArchived = 1 WHERE id = :id")
     suspend fun archive(id: Long)
 

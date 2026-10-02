@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.combine
 import ir.jibito.app.data.category.CategorySeeder
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.category.CustomCategories
+import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
 import kotlinx.coroutines.sync.Mutex
@@ -193,7 +194,7 @@ class TransactionRepositoryImpl(
             CategoryEntity(
                 name = CustomCategories.clean(name),
                 icon = if (parent == null) icon ?: CustomCategories.ICONS.first() else null,
-                colorHex = if (parent == null) CustomCategories.COLORS[customRoots % CustomCategories.COLORS.size] else null,
+                colorHex = if (parent == null) CategoryPalette.forCustom(customRoots) else null,
                 flowType = flowType,
                 parentId = parent?.id,
                 // بعد از دسته‌های پیش‌فرض، به ترتیب ساخته شدن

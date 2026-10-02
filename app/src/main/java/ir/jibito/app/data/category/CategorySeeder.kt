@@ -16,8 +16,11 @@ class CategorySeeder(private val db: AppDatabase) {
 
     suspend fun ensure() {
         val categoryDao = db.categoryDao()
-        // قبلاً انجام شده؟
-        if (categoryDao.byCode(Taxonomy.expense.first().code) != null) return
+        // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
+        if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
+            syncColors()
+            return
+        }
 
         db.withTransaction {
             val existing = categoryDao.all()
@@ -52,6 +55,23 @@ class CategorySeeder(private val db: AppDatabase) {
 
             migrateOldExpenseCategories(existing, idByCode)
         }
+        syncColors()
+    }
+
+    /**
+     * رنگ دسته‌های اصلی ← پالت اعتبارسنجی‌شده‌ی نمودار (CategoryPalette).
+     * دسته‌های اصلی شخصی که رنگشان از پالت نیست، به نوبت یک رنگ پالت می‌گیرند.
+     */
+    private suspend fun syncColors() {
+        val categoryDao = db.categoryDao()
+        for ((code, color) in CategoryPalette.BY_CODE) categoryDao.setColorByCode(code, color)
+        val palette = CategoryPalette.LIGHT.toSet()
+        categoryDao.all()
+            .filter { it.isCustom && it.parentId == null && !it.isArchived }
+            .sortedBy { it.id }
+            .forEachIndexed { i, c ->
+                if (c.colorHex?.uppercase() !in palette) categoryDao.setColor(c.id, CategoryPalette.forCustom(i))
+            }
     }
 
     private suspend fun migrateOldExpenseCategories(existing: List<CategoryEntity>, idByCode: Map<String, Long>) {

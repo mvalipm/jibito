@@ -57,7 +57,11 @@ data class CategorySpend(
     val colorHex: String?,
     val spentRial: Long,
     val budgetRial: Long?,
+    /** خرج هر زیردسته (لایه‌ی ۲، با جزئیاتش)؛ name = null یعنی مستقیم روی خود دسته‌ی اصلی. بیشترین اول. */
+    val children: List<SubSpend> = emptyList(),
 )
+
+data class SubSpend(val name: String?, val spentRial: Long)
 
 interface BudgetRepository {
     fun observeMonth(month: JalaliMonth): Flow<MonthSummary>
@@ -124,13 +128,22 @@ class BudgetRepositoryImpl(
             budgets: Map<Long, Long>,
             overallBudgetRial: Long?,
         ): MonthSummary {
-            val spend = SpendRollup.rollup(categories.filter { it.flowType == FlowType.WITHDRAWAL.code }, spendSums)
+            val expenseCategories = categories.filter { it.flowType == FlowType.WITHDRAWAL.code }
+            val spend = SpendRollup.rollup(expenseCategories, spendSums)
+            val children = SpendRollup.byChild(expenseCategories, spendSums)
             val income = SpendRollup.rollup(categories.filter { it.flowType == FlowType.DEPOSIT.code }, incomeSums)
 
             // دسته‌های اصلی خرج: فعال‌ها همیشه (برای تعیین بودجه)؛ به ترتیب: بیشترین خرج، بعد ترتیب پیش‌فرض
             val expenseRoots = categories
                 .filter { it.flowType == FlowType.WITHDRAWAL.code && it.parentId == null && !it.isArchived && it.countsAsSpend }
-                .map { it.toSpend(spend.byRoot[it.id] ?: 0L, budgets[it.id]) }
+                .map { root ->
+                    val spendPair = root.toSpend(spend.byRoot[root.id] ?: 0L, budgets[root.id])
+                    spendPair.first.copy(
+                        children = children[root.id].orEmpty()
+                            .map { (child, amount) -> SubSpend(child?.name, amount) }
+                            .sortedByDescending { it.spentRial },
+                    ) to spendPair.second
+                }
                 .sortedWith(compareByDescending<Pair<CategorySpend, Int>> { it.first.spentRial }.thenBy { it.second })
                 .map { it.first }
 

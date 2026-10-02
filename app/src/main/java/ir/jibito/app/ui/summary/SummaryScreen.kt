@@ -2,6 +2,7 @@ package ir.jibito.app.ui.summary
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +74,8 @@ fun SummaryScreen() {
     val summary by viewModel.summary.collectAsState()
     var editing by rememberSaveable { mutableStateOf<Long?>(null) }
     var editingOverall by rememberSaveable { mutableStateOf(false) }
+    // دسته‌ای که جزئیاتش باز است
+    var detailId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -97,6 +100,7 @@ fun SummaryScreen() {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 item { HeroCard(s, onEditBudget = { editingOverall = true }) }
+                item { SpendBreakdownCard(s, onOpenCategory = { detailId = it }) }
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
                         Text(
@@ -106,14 +110,14 @@ fun SummaryScreen() {
                             color = colors.onBackground,
                         )
                         Text(
-                            stringResource(R.string.summary_tap_to_budget),
+                            stringResource(R.string.summary_tap_for_detail),
                             style = MaterialTheme.typography.labelMedium,
                             color = colors.onSurfaceVariant,
                         )
                     }
                 }
                 items(s.categories, key = { it.categoryId }) { c ->
-                    CategoryRow(c, onClick = { editing = c.categoryId })
+                    CategoryRow(c, onClick = { detailId = c.categoryId })
                 }
 
                 // درآمدها (بدون بودجه)
@@ -134,6 +138,14 @@ fun SummaryScreen() {
                 }
             }
 
+            s.categories.firstOrNull { it.categoryId == detailId }?.let { c ->
+                CategoryDetailSheet(
+                    c = c,
+                    monthTitle = s.month.title,
+                    onEditBudget = { editing = c.categoryId },
+                    onDismiss = { detailId = null },
+                )
+            }
             s.categories.firstOrNull { it.categoryId == editing }?.let { c ->
                 BudgetDialog(
                     key = "cat-${c.categoryId}",
@@ -326,7 +338,7 @@ private fun HeroPill(label: String, value: String) {
 @Composable
 private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val base = c.colorHex.toColorOrNull() ?: colors.primary
+    val base = ChartColors.forCategory(c.colorHex, isSystemInDarkTheme())
     val budget = c.budgetRial
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val barColor = when (level) {

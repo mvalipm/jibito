@@ -27,7 +27,7 @@ object Taxonomy {
 
     val expense: List<CategoryDef> = listOf(
         CategoryDef(
-            "food", "خوراک", "🛒", "#F2A541",
+            "food", "خوراک", "🛒", "#2A78D6",
             listOf(
                 c("food.market", "سوپرمارکت"),
                 c("food.produce", "میوه و سبزیجات"),
@@ -40,7 +40,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "dining", "رستوران و کافه", "🍽", "#E4572E",
+            "dining", "رستوران و کافه", "🍽", "#EB6834",
             listOf(
                 c("dining.restaurant", "رستوران و فست‌فود"),
                 c("dining.cafe", "کافه"),
@@ -49,7 +49,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "transport", "حمل‌ونقل", "🚗", "#17BEBB",
+            "transport", "حمل‌ونقل", "🚗", "#1BAF7A",
             listOf(
                 c(
                     "transport.car", "خودرو شخصی",
@@ -65,7 +65,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "clothing", "پوشاک", "👕", "#C73E8B",
+            "clothing", "پوشاک", "👕", "#E87BA4",
             listOf(
                 c("clothing.clothes", "لباس"),
                 c("clothing.shoes", "کفش"),
@@ -74,7 +74,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "home", "خانه و خانواده", "🏠", "#8D6A9F",
+            "home", "خانه و خانواده", "🏠", "#EDA100",
             listOf(
                 c("home.rent", "اجاره و مسکن"),
                 c("home.furniture", "اثاث و لوازم خانه"),
@@ -93,7 +93,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "health", "سلامت", "💊", "#D1495B",
+            "health", "سلامت", "💊", "#008300",
             listOf(
                 c("health.doctor", "پزشک و ویزیت"),
                 c("health.pharmacy", "دارو و مکمل"),
@@ -105,7 +105,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "education", "آموزش", "📚", "#3F88C5",
+            "education", "آموزش", "📚", "#2A78D6",
             listOf(
                 c("education.school", "مدرسه و دانشگاه"),
                 c("education.course", "کلاس و دوره"),
@@ -113,7 +113,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "fun", "تفریح و سرگرمی", "🎬", "#7FB069",
+            "fun", "تفریح و سرگرمی", "🎬", "#E34948",
             listOf(
                 c(
                     "fun.travel", "سفر و گردش",
@@ -128,7 +128,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "finance", "مالی و پرداخت", "💳", "#2E86AB",
+            "finance", "مالی و پرداخت", "💳", "#4A3AA7",
             listOf(
                 c(
                     "finance.bills", "قبض و شارژ",
@@ -153,7 +153,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "pets", "حیوان خانگی", "🐾", "#B5835A",
+            "pets", "حیوان خانگی", "🐾", "#EDA100",
             listOf(
                 c("pets.food", "غذای حیوان"),
                 c("pets.supplies", "لوازم حیوان"),
@@ -162,7 +162,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "beauty", "آرایشی و بهداشتی", "💄", "#E26D9B",
+            "beauty", "آرایشی و بهداشتی", "💄", "#E87BA4",
             listOf(
                 c("beauty.skin", "مراقبت پوست"),
                 c("beauty.hair", "مراقبت مو"),
@@ -172,7 +172,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "sport", "ورزش", "🏋", "#4CAF7A",
+            "sport", "ورزش", "🏋", "#1BAF7A",
             listOf(
                 c("sport.gym", "باشگاه و مربی"),
                 c("sport.gear", "تجهیزات ورزشی"),
@@ -180,7 +180,7 @@ object Taxonomy {
             ),
         ),
         CategoryDef(
-            "electronics", "الکترونیک و لوازم برقی", "📱", "#5C6BC0",
+            "electronics", "الکترونیک و لوازم برقی", "📱", "#4A3AA7",
             listOf(
                 c("electronics.mobile", "موبایل و تبلت"),
                 c("electronics.computer", "کامپیوتر و لپ‌تاپ"),

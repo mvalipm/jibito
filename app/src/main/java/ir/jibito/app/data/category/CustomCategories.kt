@@ -21,8 +21,6 @@ object CustomCategories {
     /** آیکون‌هایی که برای دسته‌ی اصلی شخصی می‌شود انتخاب کرد */
     val ICONS = listOf("⭐", "🎯", "🛍", "🧾", "🎁", "🧒", "🚬", "💼", "🔧", "🌱", "✂", "🕌")
 
-    /** رنگ‌های دسته‌ی اصلی شخصی (به نوبت) */
-    val COLORS = listOf("#6D597A", "#B56576", "#355070", "#E56B6F", "#2A9D8F", "#E9C46A")
 
     fun clean(name: String): String = name.trim().replace(Regex("\\s+"), " ")
 
