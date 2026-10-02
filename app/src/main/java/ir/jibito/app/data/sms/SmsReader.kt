@@ -10,6 +10,8 @@ import ir.jibito.app.data.category.CategorySuggester
 import ir.jibito.app.data.linking.OtpRecord
 import ir.jibito.app.data.linking.PurchaseLinker
 import ir.jibito.app.data.linking.TxRecord
+import ir.jibito.app.data.parser.EventKind
+import ir.jibito.app.data.parser.EventKindClassifier
 import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.NonTransactionFilter
 import ir.jibito.app.data.parser.ParsedTransaction
@@ -37,6 +39,8 @@ data class TransactionItem(
     val refundDateMillis: Long?,
     /** کارمزد انتقال، اگر از رمز دوم معلوم شده باشد */
     val feeRial: Long? = null,
+    /** نوع رویداد (خرید، انتقال، خودپرداز، قبض، کارمزد، برگشت پول) */
+    val kind: EventKind = EventKind.UNKNOWN,
 )
 
 /**
@@ -202,7 +206,8 @@ class SmsReader(private val context: Context) {
         val transactions = PurchaseLinker.link(txRecords, otpRecords).map { linked ->
             val raw = raws.getValue(linked.record.id)
             // طرف حساب: اول از پیامک رمز دوم، وگرنه از متن خود پیامک (مثلاً «خرید از فروشگاه ...» یا «انتقال به کارت ...»)
-            val merchant = linked.merchant ?: MerchantExtractor.find(SmsTextNormalizer.normalize(raw.body))
+            val text = SmsTextNormalizer.normalize(raw.body)
+            val merchant = linked.merchant ?: MerchantExtractor.find(text)
             TransactionItem(
                 id = raw.id,
                 bank = raw.bank,
@@ -214,6 +219,7 @@ class SmsReader(private val context: Context) {
                 suggestedCategory = CategorySuggester.suggest(merchant),
                 refundDateMillis = linked.refund?.timeMillis,
                 feeRial = linked.feeRial,
+                kind = EventKindClassifier.classify(text, linked.record.tx.type, linked.otp),
             )
         }
         ScanResult(

@@ -64,6 +64,8 @@ data class TransactionFlowEntity(
     @ColumnInfo(defaultValue = "0") val transferState: Int = TRANSFER_NONE,
     /** طرف دیگرِ انتقال (برداشت ↔ واریز)، اگر جفتش پیدا شده باشد */
     @ColumnInfo(defaultValue = "NULL") val transferPairId: Long? = null,
+    /** نوع رویداد (EventKind.code): خرید، انتقال، خودپرداز، قبض، کارمزد، برگشت پول (از نسخه‌ی ۱۲ دیتابیس) */
+    @ColumnInfo(defaultValue = "0") val eventKind: Int = 0,
 ) {
     companion object {
         const val TRANSFER_NONE = 0

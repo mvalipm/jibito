@@ -18,6 +18,7 @@ class CategorySeeder(private val db: AppDatabase) {
         val categoryDao = db.categoryDao()
         // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
         if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
+            addMissingDefaults()
             mergeDuplicates()
             syncColors()
             return
@@ -57,6 +58,44 @@ class CategorySeeder(private val db: AppDatabase) {
             migrateOldExpenseCategories(existing, idByCode)
         }
         syncColors()
+    }
+
+    /**
+     * دسته‌های پیش‌فرضی که در نسخه‌ی تازه‌ی اپ اضافه شده‌اند (مثلاً «پول نقد» و «برگشت پول»)
+     * برای کاربرهای قبلی هم ساخته شوند. دسته‌ای که کاربر قبلاً با همین اسم ساخته، تکراری ساخته نمی‌شود.
+     */
+    private suspend fun addMissingDefaults() {
+        val categoryDao = db.categoryDao()
+        db.withTransaction {
+            val all = categoryDao.all()
+            val idByCode = all.mapNotNull { c -> c.code?.let { it to c.id } }.toMap().toMutableMap()
+            var order = (all.maxOfOrNull { it.sortOrder } ?: 0) + 1
+
+            suspend fun addTree(defs: List<CategoryDef>, parentId: Long?, flowType: Int, inheritedSpend: Boolean) {
+                for (def in defs) {
+                    val counts = inheritedSpend && def.countsAsSpend
+                    val existingId = idByCode[def.code]
+                        ?: all.firstOrNull { it.name == def.name && it.parentId == parentId && it.flowType == flowType && !it.isArchived }?.id
+                    val id = existingId ?: categoryDao.insert(
+                        CategoryEntity(
+                            name = def.name,
+                            icon = def.icon,
+                            colorHex = def.color,
+                            flowType = flowType,
+                            parentId = parentId,
+                            sortOrder = order++,
+                            countsAsSpend = counts,
+                            code = def.code,
+                        )
+                    )
+                    idByCode[def.code] = id
+                    addTree(def.children, id, flowType, counts)
+                }
+            }
+
+            addTree(Taxonomy.expense, null, flowType = 2, inheritedSpend = true)
+            addTree(Taxonomy.income, null, flowType = 1, inheritedSpend = true)
+        }
     }
 
     /**

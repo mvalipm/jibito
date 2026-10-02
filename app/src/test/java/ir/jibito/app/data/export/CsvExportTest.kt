@@ -1,6 +1,7 @@
 package ir.jibito.app.data.export
 
 import ir.jibito.app.data.bank.Bank
+import ir.jibito.app.data.parser.EventKind
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.domain.Category
@@ -32,12 +33,13 @@ class CsvExportTest {
         selfTransfer: Boolean = false,
         manual: Boolean = false,
         feeRial: Long? = null,
+        kind: EventKind = EventKind.UNKNOWN,
     ) = Transaction(
         id = id, bank = if (manual) null else bank, body = "", dateMillis = at(hour, 5),
         transaction = ParsedTransaction(type = type, amountRial = amountRial, balanceRial = null),
         merchant = merchant, suggestedCategory = null, isFailedPurchase = false,
         categoryId = categoryId, categoryName = null, categoryIcon = null, isAutoCategorized = false,
-        isSelfTransfer = selfTransfer, isManual = manual, feeRial = feeRial,
+        isSelfTransfer = selfTransfer, isManual = manual, feeRial = feeRial, kind = kind,
     )
 
     private fun lines(csv: String) = csv.removePrefix("\uFEFF").trimEnd().split("\r\n")
@@ -46,7 +48,7 @@ class CsvExportTest {
     fun headerBomAndRowsInDateOrder() {
         val csv = CsvExport.build(
             listOf(
-                tx(2, 500_000, categoryId = 2, merchant = "اسنپ‌فود", hour = 13, feeRial = 1_000),
+                tx(2, 500_000, categoryId = 2, merchant = "اسنپ‌فود", hour = 13, feeRial = 1_000, kind = EventKind.PURCHASE),
                 tx(1, 2_000_000, type = FlowType.DEPOSIT, hour = 9),
             ),
             listOf(food, restaurant),
@@ -54,15 +56,15 @@ class CsvExportTest {
         assertTrue(csv.startsWith("\uFEFF"))
         val l = lines(csv)
         assertEquals(CsvExport.HEADER.joinToString(","), l[0])
-        assertEquals("1404/01/01,09:05,درآمد,200000,,,,ملت,,پیامک", l[1])
-        assertEquals("1404/01/01,13:05,خرج,50000,غذا,رستوران,اسنپ‌فود,ملت,100,پیامک", l[2])
+        assertEquals("1404/01/01,09:05,درآمد,200000,,,,ملت,,پیامک,", l[1])
+        assertEquals("1404/01/01,13:05,خرج,50000,غذا,رستوران,اسنپ‌فود,ملت,100,پیامک,خرید کارتی", l[2])
     }
 
     @Test
     fun selfTransferAndManualAreLabelled() {
         val l = lines(CsvExport.build(listOf(tx(1, 10, selfTransfer = true), tx(2, 10, manual = true, merchant = "نان")), emptyList()))
         assertTrue(l[1].contains("انتقال به حساب خودم"))
-        assertTrue(l[2].endsWith(",نان,,,دستی"))
+        assertTrue(l[2].endsWith(",نان,,,دستی,"))
     }
 
     @Test

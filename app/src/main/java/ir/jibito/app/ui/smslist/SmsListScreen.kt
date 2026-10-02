@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.data.parser.EventKind
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
@@ -385,9 +386,12 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
         failed -> stringResource(R.string.tx_failed_purchase)
         selfTransfer -> stringResource(R.string.tx_self_transfer)
         sms.isManual -> sms.merchant ?: stringResource(if (isDeposit) R.string.tx_manual_income else R.string.tx_manual_expense)
+        sms.merchant != null && sms.kind == EventKind.TRANSFER ->
+            stringResource(if (isDeposit) R.string.tx_transfer_from else R.string.tx_transfer_to, sms.merchant)
         sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
-        isDeposit -> stringResource(R.string.tx_deposit)
-        else -> stringResource(R.string.tx_withdrawal)
+        // بی‌فروشنده: نوع رویداد گویاتر از «برداشت/واریز» خالی است
+        else -> kindTitle(sms.kind, isDeposit)?.let { stringResource(it) }
+            ?: stringResource(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal)
     }
     Card(
         modifier = Modifier
@@ -533,4 +537,15 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
             }
         }
     }
+}
+
+/** عنوان تراکنش بی‌فروشنده از روی نوع رویداد؛ null یعنی همان «برداشت/واریز» */
+private fun kindTitle(kind: EventKind, isDeposit: Boolean): Int? = when (kind) {
+    EventKind.CASH_WITHDRAWAL -> R.string.kind_cash
+    EventKind.BILL_PAYMENT -> R.string.kind_bill
+    EventKind.FEE -> R.string.kind_fee
+    EventKind.REFUND -> R.string.kind_refund
+    EventKind.TRANSFER -> if (isDeposit) R.string.kind_transfer_in else R.string.kind_transfer_out
+    EventKind.PURCHASE -> if (isDeposit) null else R.string.kind_purchase
+    EventKind.UNKNOWN -> null
 }

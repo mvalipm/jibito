@@ -1,5 +1,6 @@
 package ir.jibito.app.data.export
 
+import ir.jibito.app.data.parser.EventKind
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
@@ -16,7 +17,7 @@ object CsvExport {
 
     private const val BOM = "\uFEFF"
 
-    val HEADER = listOf("تاریخ", "ساعت", "نوع", "مبلغ (تومان)", "دسته", "زیردسته", "طرف حساب / توضیح", "بانک", "کارمزد (تومان)", "منبع")
+    val HEADER = listOf("تاریخ", "ساعت", "نوع", "مبلغ (تومان)", "دسته", "زیردسته", "طرف حساب / توضیح", "بانک", "کارمزد (تومان)", "منبع", "رویداد بانکی")
 
     fun build(transactions: List<Transaction>, categories: List<Category>): String {
         val byId = categories.associateBy { it.id }
@@ -51,7 +52,18 @@ object CsvExport {
             t.bank?.name.orEmpty(),
             t.feeRial?.let { (it / 10).toString() }.orEmpty(),
             if (t.isManual) "دستی" else "پیامک",
+            kindLabel(t.kind),
         )
+    }
+
+    private fun kindLabel(kind: EventKind): String = when (kind) {
+        EventKind.PURCHASE -> "خرید کارتی"
+        EventKind.TRANSFER -> "انتقال"
+        EventKind.CASH_WITHDRAWAL -> "خودپرداز"
+        EventKind.BILL_PAYMENT -> "قبض"
+        EventKind.FEE -> "کارمزد"
+        EventKind.REFUND -> "برگشت پول"
+        EventKind.UNKNOWN -> ""
     }
 
     private fun pathOf(id: Long, byId: Map<Long, Category>): List<String> {

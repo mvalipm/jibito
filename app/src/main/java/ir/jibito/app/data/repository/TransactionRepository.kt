@@ -5,6 +5,8 @@ import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.category.CategoryLearning
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
+import ir.jibito.app.data.category.Taxonomy
+import ir.jibito.app.data.parser.EventKind
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.sms.SmsReader
@@ -172,6 +174,7 @@ class TransactionRepositoryImpl(
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
                     isManual = f.source == SOURCE_MANUAL,
                     feeRial = f.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull(),
+                    kind = EventKind.of(f.eventKind),
                 )
             }
         }
@@ -368,6 +371,11 @@ class TransactionRepositoryImpl(
 
     private suspend fun doSync(forceFull: Boolean): Int {
         ensureDefaultCategories()
+        // دسته‌ی پیش‌فرض برای نوع‌هایی که جمع ماه را عوض می‌کنند (خودپرداز ← پول نقد، برگشت پول ← نه درآمد)
+        val kindDefaults = mapOf(
+            EventKind.CASH_WITHDRAWAL to db.categoryDao().byCode(Taxonomy.CODE_CASH)?.id,
+            EventKind.REFUND to db.categoryDao().byCode(Taxonomy.CODE_REFUND)?.id,
+        )
         val ownAccounts = dao.ownAccounts().toHashSet()
         val learning = CategoryLearning(db)
         val reviewDao = db.reviewDao()
@@ -425,7 +433,9 @@ class TransactionRepositoryImpl(
                 // بی‌دسته: از انتخاب‌های قبلی کاربر برای همین طرف حساب یاد بگیر
                 // (۳ تأیید پشت سر هم ← خودکار؛ کمتر ← فقط پیشنهاد)
                 val decision = learning.decide(item.merchant, item.transaction.type.code)
+                // انتخاب‌های خود کاربر برای این طرف حساب مقدم‌اند؛ اگر چیزی یاد نگرفته‌ایم، نوع رویداد
                 val autoCategory = decision?.takeIf { it.auto }?.categoryId
+                    ?: if (decision == null) kindDefaults[item.kind] else null
                 val suggestion = decision?.takeIf { !it.auto }?.let { learning.nameOf(it.categoryId) }
                 toInsertOrUpdate(
                     old, item, now, toInsert, toUpdate, autoCategory,
@@ -532,7 +542,8 @@ class TransactionRepositoryImpl(
         remainAfter = transaction.balanceRial,
         dateEpoch = dateMillis,
         merchant = merchant,
-        suggestedCategory = learnedSuggestion ?: suggestedCategory,
+        // پیشنهاد: یادگرفته از کاربر ← از روی فروشنده (دقیق‌تر، مثلاً «برق») ← از روی نوع رویداد
+        suggestedCategory = learnedSuggestion ?: suggestedCategory ?: kindSuggestion(kind),
         isFailedPurchase = refundDateMillis != null,
         categoryId = categoryId,
         // ستون description برای پیامک‌ها: کارمزد انتقال (به ریال)، اگر معلوم باشد
@@ -545,7 +556,14 @@ class TransactionRepositoryImpl(
         isAutoCategorized = isAutoCategorized,
         transferState = transferState,
         transferPairId = transferPairId,
+        eventKind = kind.code,
     )
+
+    private fun kindSuggestion(kind: EventKind): String? = when (kind) {
+        EventKind.BILL_PAYMENT -> Taxonomy.byCode("finance.bills")?.name
+        EventKind.FEE -> Taxonomy.byCode("finance.fees")?.name
+        else -> null
+    }
 
     private companion object {
         const val SHARE_TIMEOUT_MILLIS = 5_000L

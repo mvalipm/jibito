@@ -183,6 +183,9 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
             // علامت +/− کنار عدد فارسی در متن راست‌به‌چپ جابه‌جا دیده می‌شود؛ به‌جایش کلمه
             stringResource(if (net >= 0) R.string.glance_net_plus else R.string.glance_net_minus, Money.compact(abs(net))),
             s.excludedRial.takeIf { it > 0 }?.let { stringResource(R.string.glance_saved, Money.compact(it)) },
+            // خودپرداز و برگشت پول: نه خرج‌اند نه درآمد، ولی دیده شوند تا عددها گم نشوند
+            s.cashRial.takeIf { it > 0 }?.let { stringResource(R.string.glance_cash, Money.compact(it)) },
+            s.refundRial.takeIf { it > 0 }?.let { stringResource(R.string.glance_refund, Money.compact(it)) },
         ).joinToString("  ·  ")
         Text(
             line,

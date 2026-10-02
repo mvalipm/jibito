@@ -1,6 +1,7 @@
 package ir.jibito.app.domain
 
 import ir.jibito.app.data.bank.Bank
+import ir.jibito.app.data.parser.EventKind
 import ir.jibito.app.data.parser.ParsedTransaction
 
 /** یک تراکنش، همان‌طور که بقیه‌ی اپ (صفحه‌ها) می‌بیند — بدون خبر از دیتابیس. */
@@ -26,6 +27,8 @@ data class Transaction(
     val isManual: Boolean = false,
     /** کارمزد انتقال (جزو همین مبلغ) */
     val feeRial: Long? = null,
+    /** نوع رویداد در بانک (خرید، انتقال، خودپرداز...)، جدا از دسته */
+    val kind: EventKind = EventKind.UNKNOWN,
 )
 
 /** پیشنهاد: «این برداشت و این واریزِ هم‌مبلغ، انتقال بین حساب‌های خودت بود؟» */
