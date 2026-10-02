@@ -61,7 +61,8 @@ object BankDirectory {
         Bank(id = 37, name = "موسسه میزان", parserKey = "mizan", senders = setOf("3000700500")),
         Bank(id = 38, name = "بانک خاورمیانه", parserKey = "khavar_mianeh", senders = setOf("20004860")),
         Bank(id = 39, name = "موسسه افضل توس", parserKey = "afzal_toos", senders = setOf("30008878")),
-        Bank(id = 40, name = "بلوبانک", parserKey = "smart", senders = setOf("999987641")),
+        // سرشماره‌ی بلو شبیه موبایل است (09999987641)؛ چون بانک‌ها قبل از «شماره‌ی شخصی» بررسی می‌شوند، درست شناخته می‌شود
+        Bank(id = 40, name = "بلوبانک", parserKey = "smart", senders = setOf("9999987641", "999987641")),
     )
 
     /** برای سرشماره‌هایی که کاربر گفته «بانک نیست ولی مالی است» (کیف پول، موسسه، ...) */

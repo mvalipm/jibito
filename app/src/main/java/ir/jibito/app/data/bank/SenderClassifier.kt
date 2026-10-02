@@ -18,7 +18,7 @@ object SenderClassifier {
     private val mobilePattern = Regex("^9\\d{9}$")
 
     fun classify(rawSender: String?): SenderType {
-        // ۱. اول فهرست بانک‌ها — چون بعضی بانک‌ها (مثل بلوبانک: 0999987641)
+        // ۱. اول فهرست بانک‌ها — چون بعضی بانک‌ها (مثل بلوبانک: 09999987641)
         //    سرشماره‌ای شبیه موبایل دارند و نباید «شخصی» حساب شوند.
         BankDirectory.findBySender(rawSender)?.let { return SenderType.BankSender(it) }
 

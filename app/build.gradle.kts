@@ -13,8 +13,8 @@ android {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 40
-        versionName = "0.32.2"
+        versionCode = 41
+        versionName = "0.33.0"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود

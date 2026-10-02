@@ -31,7 +31,11 @@ class SmsReceivedReceiver : BroadcastReceiver() {
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent) ?: return
         // بانک‌های رسمی، و فرستنده‌های ناشناس (شاید کاربر آن‌ها را به یک بانک/موسسه نسبت داده باشد).
         // پیامک شماره‌های شخصی هیچ‌وقت کاری راه نمی‌اندازد.
-        val worthChecking = messages.any { SenderClassifier.classify(it.originatingAddress) != SenderType.Personal }
+        // شماره‌ی شبه‌شخصی هم اگر متنش «مانده/موجودی» دارد (مثل بلوبانک)، همان لحظه بررسی شود
+        val worthChecking = messages.any {
+            SenderClassifier.classify(it.originatingAddress) != SenderType.Personal ||
+                it.messageBody.orEmpty().let { b -> b.contains("مانده") || b.contains("موجودی") }
+        }
         if (worthChecking) SmsSyncWorker.enqueue(context)
     }
 }

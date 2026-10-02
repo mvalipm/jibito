@@ -2,6 +2,7 @@ package ir.jibito.app.data.review
 
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.NonTransactionFilter
+import ir.jibito.app.data.parser.BalanceFinder
 
 /** یک عدد داخل متن پیامک که کاربر می‌تواند رویش بزند. */
 data class NumberToken(
@@ -92,6 +93,18 @@ object ReviewDetector {
         val content = contentScore(text)
         return if (content == 0) 0 else content + senderBonus
     }
+
+    /** آستانه‌ی خیلی بالاتر برای فرستنده‌ای که شبیه شماره‌ی موبایل شخصی است */
+    const val PERSONAL_SENDER_THRESHOLD = 8
+
+    /**
+     * پیامکِ شماره‌ای که شکل موبایل شخصی دارد، فقط وقتی به صندوق بررسی می‌رود (هرگز خودکار ثبت نمی‌شود)
+     * که قطعاً شکل پیامک بانکی داشته باشد: «مانده/موجودی» همراه عدد، و امتیاز محتوای خیلی بالا.
+     * پیامک دوستانه («۱ میلیون واریز کردم») «موجودی» ندارد، پس قانون «شماره‌ی شخصی وارد سیستم نشود» حفظ می‌شود.
+     * (برای بانک‌هایی مثل بلو که از شماره‌ی شبه‌موبایل پیامک می‌دهند و هنوز در فهرست نیستند.)
+     */
+    fun isBankLikeFromPersonal(text: String): Boolean =
+        BalanceFinder.find(text) != null && contentScore(text) >= PERSONAL_SENDER_THRESHOLD
 
     /** شبیه تراکنش است و باید به صندوق بررسی برود؟ */
     fun isCandidate(text: String, senderBonus: Int = 0): Boolean = score(text, senderBonus) >= REVIEW_THRESHOLD

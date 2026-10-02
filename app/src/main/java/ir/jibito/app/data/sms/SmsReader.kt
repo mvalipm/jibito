@@ -131,11 +131,22 @@ class SmsReader(private val context: Context) {
                 // اول بانک‌های رسمی، بعد سرشماره‌هایی که خود کاربر به یک بانک/موسسه نسبت داده
                 val senderType = SenderClassifier.classify(sender).let { t ->
                     val adopted = adoptedSenders[normalizedSender]
-                    if (t == SenderType.Unknown && adopted != null) {
+                    // شماره‌ی شبه‌شخصی‌ای که کاربر گفته «مال این بانک است» هم پذیرفته می‌شود
+                    if ((t == SenderType.Unknown || t == SenderType.Personal) && adopted != null) {
                         SenderType.BankSender(BankDirectory.byId(adopted) ?: BankDirectory.OTHER)
                     } else {
                         t
                     }
+                }
+                if (senderType == SenderType.Personal) {
+                    // شماره‌ی شبه‌موبایل: فقط پیامکی که قطعاً شکل بانکی دارد ← صندوق بررسی (هرگز خودکار)
+                    if (smsDate >= reviewSince && normalizedSender !in ignoredSenders) {
+                        val body = cursor.getString(bodyCol)
+                        if (body != null && ReviewDetector.isBankLikeFromPersonal(SmsTextNormalizer.normalize(body))) {
+                            candidates += ReviewCandidate(smsId, sender, body, smsDate, null)
+                        }
+                    }
+                    continue
                 }
                 if (senderType !is SenderType.BankSender) {
                     // فرستنده‌ی ناشناس (نه شخصی): اگر تازه و شبیه تراکنش بود ← صندوق بررسی
