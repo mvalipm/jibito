@@ -526,7 +526,7 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
         failed -> stringResource(R.string.tx_failed_purchase)
         selfTransfer -> stringResource(R.string.tx_self_transfer)
         sms.isManual -> sms.merchant ?: stringResource(if (isDeposit) R.string.tx_manual_income else R.string.tx_manual_expense)
-        sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
+        // تراکنش پیامکی: عنوان فقط «برداشت» یا «واریز»؛ طرف حساب در خط دوم می‌آید
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)
     }
@@ -584,7 +584,7 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
                 )
                 Text(
                     text = listOfNotNull(
-                        if ((failed || selfTransfer) && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
+                        if (!sms.isManual && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
                         Jalali.time(sms.dateMillis),
                         sms.feeRial?.let { stringResource(R.string.tx_fee, Money.toman(it)) },
                     ).joinToString(" · "),

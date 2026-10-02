@@ -27,7 +27,6 @@
     <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
-    <string name="tx_purchase_from">خرید از %1$s</string>
     <string name="tx_failed_purchase">خرید ناموفق</string>
     <string name="tx_refunded">پول به حسابت برگشت — این مبلغ خرج حساب نمی‌شه.</string>
     <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
@@ -35,7 +34,6 @@
     <string name="tx_balance">مانده: %1$s</string>
     <string name="notif_channel_name">تراکنش‌های تازه</string>
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
-    <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
     <string name="notif_question">این خرج مال چی بود؟</string>
     <string name="tx_add_category">انتخاب دسته</string>
     <string name="tx_fee">کارمزد %1$s</string>
