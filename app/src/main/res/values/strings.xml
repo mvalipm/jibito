@@ -116,7 +116,7 @@
     <string name="summary_excluded">پس‌انداز و قرض</string>
     <string name="sheet_learning_hint">هر دسته‌ای انتخاب کنی یاد می‌گیرم. اگه برای همین فروشگاه ۳ بار پشت سر هم یه دسته رو انتخاب کنی، از اون به بعد خودم می‌ذارمش.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
-    <string name="tx_self_transfer_chip">انتقال به خودم · خرج حساب نمی‌شه</string>
+    <string name="tx_self_transfer_chip">خرج حساب نمی‌شه</string>
     <string name="sheet_self_transfer">⇄ انتقال بین حساب‌های خودم</string>
     <string name="sheet_self_transfer_hint">نه خرج حساب می‌شه نه درآمد. کارت مقصد هم یادم می‌مونه و انتقال‌های بعدی به همون کارت خودکار علامت می‌خورن.</string>
     <string name="transfer_title">انتقال بین حساب‌های خودت بوده؟</string>

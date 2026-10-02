@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -120,6 +121,7 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)
     }
+    val largeText = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     val categoryEmoji = sms.categoryIcon?.takeIf { !failed && !selfTransfer && sms.categoryId != null }
 
     Column(
@@ -172,6 +174,7 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (largeText) AmountBlock(t.amountRial, t.balanceRial, failed, isDeposit, amountColor, Alignment.Start)
                 Text(
                     text = listOfNotNull(
                         if (!sms.isManual && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
@@ -180,7 +183,7 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = if (largeText) 4 else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 when {
@@ -228,42 +231,10 @@ internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: 
                     }
                 }
             }
-            Spacer(Modifier.size(8.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                // علامت، عدد و «تومان» سه تکه‌ی جدا هستند تا جهت‌نویسی راست‌به‌چپ جای علامت را جابه‌جا نکند.
-                // در Row راست‌به‌چپ، اولین تکه سمت راست می‌نشیند: «− ۱۲۵٬۰۰۰ تومان»
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!failed) {
-                        Text(
-                            text = if (isDeposit) "+" else "−",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                            color = amountColor,
-                        )
-                        Spacer(Modifier.size(2.dp))
-                    }
-                    Text(
-                        text = Money.tomanNumber(t.amountRial),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = amountColor,
-                        textDecoration = if (failed) TextDecoration.LineThrough else null,
-                    )
-                    Spacer(Modifier.size(4.dp))
-                    Text(
-                        text = stringResource(R.string.unit_toman),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = amountColor.copy(alpha = 0.8f),
-                    )
-                }
-                t.balanceRial?.takeIf { !failed }?.let { balance ->
-                    Text(
-                        text = stringResource(R.string.tx_balance, Money.tomanNumber(balance)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
+            // فونت بزرگ گوشی: مبلغ زیر عنوان می‌آید تا ستون متن جا داشته باشد
+            if (!largeText) {
+                Spacer(Modifier.size(8.dp))
+                AmountBlock(t.amountRial, t.balanceRial, failed, isDeposit, amountColor, Alignment.End)
             }
         }
     }
@@ -288,8 +259,60 @@ private fun Pill(text: String, container: Color, content: Color, leading: ImageV
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = content,
-            maxLines = 1,
+            maxLines = if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) 2 else 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/** از این اندازه‌ی فونت گوشی به بالا، چیدمان ردیف عمودی می‌شود */
+private const val LARGE_FONT_SCALE = 1.5f
+
+/** مبلغ (با علامت و «تومان») و مانده‌ی بعد از تراکنش */
+@Composable
+private fun AmountBlock(
+    amountRial: Long,
+    balanceRial: Long?,
+    failed: Boolean,
+    isDeposit: Boolean,
+    amountColor: Color,
+    alignment: Alignment.Horizontal,
+) {
+    val colors = MaterialTheme.colorScheme
+    Column(horizontalAlignment = alignment) {
+        // علامت، عدد و «تومان» سه تکه‌ی جدا هستند تا جهت‌نویسی راست‌به‌چپ جای علامت را جابه‌جا نکند.
+        // در Row راست‌به‌چپ، اولین تکه سمت راست می‌نشیند: «− ۱۲۵٬۰۰۰ تومان»
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!failed) {
+                Text(
+                    text = if (isDeposit) "+" else "−",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = amountColor,
+                )
+                Spacer(Modifier.size(2.dp))
+            }
+            Text(
+                text = Money.tomanNumber(amountRial),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = amountColor,
+                textDecoration = if (failed) TextDecoration.LineThrough else null,
+            )
+            Spacer(Modifier.size(4.dp))
+            Text(
+                text = stringResource(R.string.unit_toman),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = amountColor.copy(alpha = 0.8f),
+            )
+        }
+        balanceRial?.takeIf { !failed }?.let { balance ->
+            Text(
+                text = stringResource(R.string.tx_balance, Money.tomanNumber(balance)),
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
     }
 }

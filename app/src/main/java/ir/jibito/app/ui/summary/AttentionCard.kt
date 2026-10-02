@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -69,7 +70,8 @@ fun AttentionCard(items: List<AttentionItem>) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.onSurface,
-                    maxLines = 1,
+                    // فونت بزرگ گوشی: تا ۳ خط، تا جمله بریده نشود
+                    maxLines = if (LocalDensity.current.fontScale >= 1.5f) 3 else 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
