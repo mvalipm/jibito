@@ -67,9 +67,16 @@ class PurchaseLinkerTest {
     }
 
     @Test
-    fun `حتی یک ریال اختلاف یعنی وصل نشدن`() {
-        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 1_250_001)), listOf(otp(1, t0)))
+    fun `برداشت کمتر از مبلغ رمز، حتی یک ریال، وصل نمی‌شود`() {
+        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 1_249_999)), listOf(otp(1, t0)))
         assertNull(result[0].merchant)
+    }
+
+    @Test
+    fun `برداشت کمی بیشتر از رمز (زیر ۲٪) = انتقال با کارمزد`() {
+        val result = PurchaseLinker.link(listOf(withdraw(2, t0 + min, amount = 1_250_001)), listOf(otp(1, t0)))
+        assertEquals("اسنپ", result[0].merchant)
+        assertEquals(1L, result[0].feeRial)
     }
 
     @Test
