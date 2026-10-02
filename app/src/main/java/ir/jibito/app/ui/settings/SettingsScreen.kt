@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -202,6 +203,77 @@ fun SettingsScreen() {
         // دسته‌های شخصی (ساخته‌شده از برگه‌ی انتخاب دسته)
         val byId = categories.associateBy { it.id }
         val custom = categories.filter { it.isCustom }
+        // نمایش دسته‌ها: چند لایه، و کدام دسته‌های اصلی
+        val display = app.container.categoryDisplay
+        val depth by display.depth.collectAsState()
+        val hidden by display.hiddenRoots.collectAsState()
+        SettingsCard(stringResource(R.string.settings_display_title)) {
+            Text(
+                stringResource(R.string.settings_display_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            listOf(
+                Triple(1, R.string.settings_depth_1, R.string.settings_depth_1_hint),
+                Triple(2, R.string.settings_depth_2, R.string.settings_depth_2_hint),
+                Triple(3, R.string.settings_depth_3, R.string.settings_depth_3_hint),
+            ).forEach { (d, label, hint) ->
+                val selected = depth == d
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (selected) colors.primary.copy(alpha = 0.12f) else Color.Transparent)
+                        .border(
+                            width = if (selected) 1.5.dp else 1.dp,
+                            color = if (selected) colors.primary else colors.outlineVariant,
+                            shape = RoundedCornerShape(14.dp),
+                        )
+                        .clickable { display.setDepth(d) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                        Text(stringResource(hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    }
+                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Text(
+                stringResource(R.string.settings_roots_title),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurface,
+            )
+            categories.filter { it.parentId == null && it.flowType == 2 }.forEach { root ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { display.setRootVisible(root.id, root.id in hidden) }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        listOfNotNull(root.icon, root.name).joinToString(" "),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (root.id in hidden) colors.onSurfaceVariant else colors.onSurface,
+                    )
+                    Switch(
+                        checked = root.id !in hidden,
+                        onCheckedChange = { display.setRootVisible(root.id, it) },
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
         SettingsCard(stringResource(R.string.settings_custom_title)) {
             if (custom.isEmpty()) {
                 Text(

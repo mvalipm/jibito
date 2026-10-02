@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.FloatingActionButton
 import ir.jibito.app.ui.main.LocalBottomBarSpace
@@ -74,6 +76,9 @@ fun SmsListScreen(
     val categories by viewModel.categories.collectAsState()
     val transferSuggestions by viewModel.transferSuggestions.collectAsState()
     val bankBalances by viewModel.bankBalances.collectAsState()
+    // تنظیم «نمایش دسته‌ها»: چند لایه، و کدام دسته‌های اصلی پنهان‌اند
+    val displayDepth by app.container.categoryDisplay.depth.collectAsState()
+    val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
@@ -202,9 +207,16 @@ fun SmsListScreen(
     // برگه‌ی انتخاب دسته (از پایین صفحه)
     val selected = messages?.firstOrNull { it.id == selectedId }
     if (selected != null) {
+        var frequent by remember(selected.id) { mutableStateOf<List<Long>>(emptyList()) }
+        LaunchedEffect(selected.id) {
+            viewModel.loadQuickCategories(selected.transaction.type.code) { frequent = it }
+        }
         CategoryPickerSheet(
             transaction = selected,
             categories = categories,
+            frequentIds = frequent,
+            depth = displayDepth,
+            hiddenRoots = hiddenRoots,
             onPick = { categoryId ->
                 viewModel.setCategory(selected, categoryId)
                 selectedId = null
@@ -234,6 +246,8 @@ fun SmsListScreen(
     if (addingManual) {
         ManualEntrySheet(
             categories = categories,
+            depth = displayDepth,
+            hiddenRoots = hiddenRoots,
             loadQuick = viewModel::loadQuickCategories,
             onSave = { type, amountRial, categoryId, note, date, openPicker ->
                 viewModel.addManual(type, amountRial, categoryId, note, date) { newId ->

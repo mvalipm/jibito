@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
+import ir.jibito.app.domain.CategoryTree
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
@@ -75,6 +76,9 @@ fun ManualEntrySheet(
     loadQuick: (flowType: Int, onResult: (List<Long>) -> Unit) -> Unit,
     onSave: (FlowType, Long, Long?, String?, Long, Boolean) -> Unit,
     onDismiss: () -> Unit,
+    /** تنظیم «نمایش دسته‌ها»: چند لایه، و کدام دسته‌های اصلی پنهان‌اند */
+    depth: Int = 3,
+    hiddenRoots: Set<Long> = emptySet(),
 ) {
     val colors = MaterialTheme.colorScheme
     var isDeposit by rememberSaveable { mutableStateOf(false) }
@@ -93,8 +97,10 @@ fun ManualEntrySheet(
     // دسته‌های سریع: اول پرکاربردهای خود کاربر، بعد (برای کاربر تازه) دسته‌های اصلی به ترتیب پیش‌فرض
     val byId = categories.associateBy { it.id }
     val ofType = categories.filter { it.flowType == type.code && it.countsAsSpend }
-    val quick = (quickIds.mapNotNull { byId[it] }.filter { it.flowType == type.code } +
+    val quick = (quickIds.mapNotNull { byId[it] }.filter { it.flowType == type.code }
+        .map { CategoryTree.atDepth(it, byId, depth) } +
         ofType.filter { it.parentId == null })
+        .filter { CategoryTree.rootOf(it, byId).id !in hiddenRoots && it.countsAsSpend }
         .distinctBy { it.id }
         .take(QUICK_CATEGORY_COUNT)
 

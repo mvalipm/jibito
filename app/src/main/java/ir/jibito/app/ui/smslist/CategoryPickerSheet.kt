@@ -46,6 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import ir.jibito.app.domain.CategoryTree
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.data.parser.FlowType
@@ -57,12 +61,11 @@ import ir.jibito.app.util.Money
 private val TransferBlue = Color(0xFF3A6FD8)
 
 /**
- * برگه‌ای که از پایین صفحه باز می‌شود: انتخاب دسته با کمترین لمس.
- * - بالا: جست‌وجو (مثلاً «سوخ» ← سوخت · خودرو شخصی).
- * - پیشنهاد اپ اول می‌آید.
- * - بعد هر دسته‌ی اصلی یک بخش است و زیردسته‌هایش با یک لمس انتخاب می‌شوند.
- *   زیردسته‌ای که خودش جزئیات دارد (مثل «خودرو شخصی ›») با لمس باز می‌شود.
- * - خود دسته‌ی اصلی هم قابل انتخاب است (وقتی زیردسته مهم نیست).
+ * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» — خلوت و سریع:
+ * ۱) پیشنهاد اپ + پرکاربردهای کاربر (یک لمس).
+ * ۲) شبکه‌ی آیکونِ دسته‌های اصلی (۴ ستون). لمس یک دسته، زیردسته‌هایش را همان زیر باز می‌کند (دو لمس).
+ * ۳) جست‌وجو برای کسی که اسم را بلد است.
+ * تنظیم «نمایش دسته‌ها» (تنظیمات): depth = ۱ یعنی لمس دسته‌ی اصلی = ثبت؛ دسته‌های پنهان دیده نمی‌شوند.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -77,6 +80,12 @@ fun CategoryPickerSheet(
     onDismiss: () -> Unit,
     /** فقط برای تراکنش دستی: حذف آن */
     onDelete: (() -> Unit)? = null,
+    /** پرکاربردترین دسته‌های کاربر برای این نوع (بیشترین اول) */
+    frequentIds: List<Long> = emptyList(),
+    /** چند لایه دیده شود (۱ تا ۳) */
+    depth: Int = 3,
+    /** دسته‌های اصلی پنهان */
+    hiddenRoots: Set<Long> = emptySet(),
 ) {
     var creating by remember { mutableStateOf<CreateTarget?>(null) }
     val colors = MaterialTheme.colorScheme
@@ -88,14 +97,29 @@ fun CategoryPickerSheet(
     val isDeposit = transaction.transaction.type == FlowType.DEPOSIT
     val matching = categories.filter { it.flowType == transaction.transaction.type.code }
     val byId = matching.associateBy { it.id }
-    val childrenOf = matching.groupBy { it.parentId }
+    // دیدنی‌ها: دسته‌ی اصلی‌شان پنهان نیست و از عمق مجاز پایین‌تر نیستند
+    val visible = matching.filter {
+        CategoryTree.rootOf(it, byId).id !in hiddenRoots && CategoryTree.depthOf(it, byId) <= depth
+    }
+    val childrenOf = visible.groupBy { it.parentId }
     val roots = childrenOf[null].orEmpty()
-    val suggested = matching.firstOrNull { it.name == transaction.suggestedCategory }
     val selectedId = transaction.categoryId
+    val selectedRootId = selectedId?.let { id -> byId[id]?.let { CategoryTree.rootOf(it, byId).id } }
 
-    // اگر دسته‌ی فعلی یک جزئیات (لایه‌ی ۳) است، زیردسته‌اش از اول باز باشد
-    val initialExpanded = selectedId?.let { byId[it]?.parentId }?.takeIf { byId[it]?.parentId != null }
-    var expandedId by rememberSaveable(transaction.id) { mutableStateOf(initialExpanded) }
+    // دسته‌ی اصلیِ باز در شبکه؛ از اول همانی که تراکنش دارد
+    var openRootId by rememberSaveable(transaction.id) { mutableStateOf(selectedRootId?.takeIf { depth > 1 }) }
+    // جزئیاتِ باز (لایه‌ی ۳)
+    val initialDetail = selectedId?.let { byId[it]?.parentId }?.takeIf { byId[it]?.parentId != null }
+    var openSubId by rememberSaveable(transaction.id) { mutableStateOf(initialDetail) }
+
+    // پیشنهاد اپ + پرکاربردها، در عمق مجاز، بدون دسته‌های پنهان
+    val suggested = matching.firstOrNull { it.name == transaction.suggestedCategory }
+        ?.let { CategoryTree.atDepth(it, byId, depth) }
+        ?.takeIf { CategoryTree.rootOf(it, byId).id !in hiddenRoots }
+    val quick = (listOfNotNull(suggested) + frequentIds.mapNotNull { byId[it] }.map { CategoryTree.atDepth(it, byId, depth) })
+        .filter { CategoryTree.rootOf(it, byId).id !in hiddenRoots && it.countsAsSpend }
+        .distinctBy { it.id }
+        .take(6)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -121,7 +145,6 @@ fun CategoryPickerSheet(
                     fontWeight = FontWeight.Black,
                     color = colors.onSurface,
                 )
-                Spacer(Modifier.height(6.dp))
                 Text(
                     text = listOfNotNull(
                         "$sign ${Money.toman(t.amountRial)}",
@@ -131,28 +154,25 @@ fun CategoryPickerSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
 
-                // انتقال بین حساب‌های خودم: جدا از دسته‌ها، چون نه خرج است نه درآمد
-                if (!transaction.isManual) FilterChip(
-                    selected = transaction.isSelfTransfer,
-                    onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
-                    label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = TransferBlue,
-                        selectedLabelColor = Color.White,
-                    ),
-                )
-                if (!transaction.isManual) Text(
-                    text = stringResource(R.string.sheet_self_transfer_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(14.dp))
+                // انتقال بین حساب‌های خودم (نه خرج است نه درآمد)
+                if (!transaction.isManual) {
+                    FilterChip(
+                        selected = transaction.isSelfTransfer,
+                        onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
+                        label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = TransferBlue,
+                            selectedLabelColor = Color.White,
+                        ),
+                    )
+                }
 
-                // جست‌وجو (فقط برای خرج‌ها؛ درآمد چند دسته بیشتر ندارد)
+                // جست‌وجو (خرج‌ها)
                 if (!isDeposit) {
+                    Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -162,13 +182,13 @@ fun CategoryPickerSheet(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(12.dp))
                 }
+                Spacer(Modifier.height(12.dp))
 
                 val q = query.normalizedForSearch()
                 if (q.isNotEmpty()) {
-                    // نتیجه‌ی جست‌وجو: همه‌ی لایه‌ها، با اسم دسته‌ی بالاتر
-                    val results = matching.filter { it.name.normalizedForSearch().contains(q) }
+                    // نتیجه‌ی جست‌وجو: فقط دسته‌های دیدنی، با اسم دسته‌ی بالاتر
+                    val results = visible.filter { it.name.normalizedForSearch().contains(q) }
                     if (results.isEmpty()) {
                         Text(
                             stringResource(R.string.sheet_search_empty),
@@ -177,7 +197,7 @@ fun CategoryPickerSheet(
                         )
                         Spacer(Modifier.height(8.dp))
                         AddChip(stringResource(R.string.custom_create_named, query.trim())) {
-                            creating = CreateTarget(parentId = null, prefill = query.trim(), chooseParent = true)
+                            creating = CreateTarget(parentId = null, prefill = query.trim(), chooseParent = depth > 1)
                         }
                     } else {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -192,96 +212,98 @@ fun CategoryPickerSheet(
                         }
                     }
                 } else {
-                    // پیشنهاد اپ
-                    if (suggested != null && suggested.id != selectedId) {
+                    // ۱) پیشنهاد و پرکاربردها
+                    if (quick.isNotEmpty()) {
                         Text(
-                            stringResource(R.string.sheet_suggested_title),
+                            stringResource(R.string.sheet_quick_title),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Black,
-                            color = colors.primary,
+                            color = colors.onSurface,
                         )
                         Spacer(Modifier.height(6.dp))
-                        val parent = suggested.parentId?.let { byId[it]?.name }
-                        CategoryChip(
-                            label = "● " + listOfNotNull(suggested.name, parent).joinToString(" · "),
-                            selected = false,
-                            highlighted = true,
-                            onClick = { onPick(suggested.id) },
-                        )
-                        Spacer(Modifier.height(14.dp))
-                    }
-
-                    roots.forEach { root ->
-                        val subs = childrenOf[root.id].orEmpty()
-                        RootHeader(
-                            root = root,
-                            selected = root.id == selectedId,
-                            hasChildren = subs.isNotEmpty(),
-                            onClick = { onPick(root.id) },
-                        )
-                        if (subs.isNotEmpty() || !isDeposit) {
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                subs.forEach { sub ->
-                                    val details = childrenOf[sub.id].orEmpty()
-                                    val isOpen = expandedId == sub.id
-                                    CategoryChip(
-                                        label = sub.name + if (details.isNotEmpty()) (if (isOpen) "  ⌄" else "  ›") else "",
-                                        selected = sub.id == selectedId || (details.any { it.id == selectedId }),
-                                        onClick = {
-                                            if (details.isEmpty()) onPick(sub.id)
-                                            else expandedId = if (isOpen) null else sub.id
-                                        },
-                                    )
-                                }
-                                // + زیردسته‌ی شخصی در همین دسته‌ی اصلی
-                                AddChip(stringResource(R.string.custom_add)) {
-                                    creating = CreateTarget(parentId = root.id)
-                                }
-                            }
-                            // جزئیات زیردسته‌ی باز (لایه‌ی ۳)
-                            subs.firstOrNull { it.id == expandedId }?.let { open ->
-                                Spacer(Modifier.height(8.dp))
-                                FlowRow(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .background(colors.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                                        .padding(10.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    CategoryChip(
-                                        label = stringResource(R.string.sheet_all_of, open.name),
-                                        selected = open.id == selectedId,
-                                        onClick = { onPick(open.id) },
-                                    )
-                                    childrenOf[open.id].orEmpty().forEach { d ->
-                                        CategoryChip(label = d.name, selected = d.id == selectedId, onClick = { onPick(d.id) })
-                                    }
-                                    AddChip(stringResource(R.string.custom_add)) {
-                                        creating = CreateTarget(parentId = open.id)
-                                    }
-                                }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            quick.forEach { c ->
+                                val root = CategoryTree.rootOf(c, byId)
+                                CategoryChip(
+                                    label = listOfNotNull(
+                                        if (c.id == suggested?.id) "●" else null,
+                                        root.icon,
+                                        c.name,
+                                    ).joinToString(" "),
+                                    selected = c.id == selectedId,
+                                    highlighted = c.id == suggested?.id,
+                                    onClick = { onPick(c.id) },
+                                )
                             }
                         }
-                        if (!root.countsAsSpend) {
-                            Text(
-                                stringResource(R.string.sheet_not_spend_hint),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = colors.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
+                        Spacer(Modifier.height(16.dp))
+                    }
+
+                    // ۲) شبکه‌ی دسته‌های اصلی؛ زیردسته‌ها زیر همان ردیفی که لمس شده باز می‌شوند
+                    Text(
+                        stringResource(R.string.sheet_all_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Black,
+                        color = colors.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val tiles: List<Category?> = roots + listOf(null) // null = «＋ دسته‌ی جدید»
+                    tiles.chunked(GRID_COLUMNS).forEach { row ->
+                        Row(Modifier.fillMaxWidth()) {
+                            row.forEach { root ->
+                                Box(Modifier.weight(1f)) {
+                                    if (root == null) {
+                                        CategoryTile(
+                                            icon = "＋",
+                                            name = stringResource(if (isDeposit) R.string.custom_add_income_short else R.string.custom_add_root_short),
+                                            color = colors.primary,
+                                            selected = false,
+                                            open = false,
+                                            onClick = { creating = CreateTarget(parentId = null) },
+                                        )
+                                    } else {
+                                        val hasSubs = childrenOf[root.id].orEmpty().isNotEmpty()
+                                        CategoryTile(
+                                            icon = root.icon ?: "•",
+                                            name = root.name,
+                                            color = root.colorHex.toColorOrNull() ?: colors.primary,
+                                            selected = root.id == selectedRootId,
+                                            open = root.id == openRootId,
+                                            onClick = {
+                                                // فقط دسته‌ی اصلی (یا بی‌زیردسته) ← همین لمس = ثبت
+                                                if (depth == 1 || (!hasSubs && isDeposit)) {
+                                                    onPick(root.id)
+                                                } else {
+                                                    openRootId = if (openRootId == root.id) null else root.id
+                                                    openSubId = null
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                            // جای خالی آخرین ردیف
+                            repeat(GRID_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                        // پنل زیردسته‌ها، اگر دسته‌ی باز در همین ردیف است
+                        row.firstOrNull { it != null && it.id == openRootId }?.let { open ->
+                            SubPanel(
+                                root = open,
+                                subs = childrenOf[open.id].orEmpty(),
+                                childrenOf = childrenOf,
+                                selectedId = selectedId,
+                                openSubId = openSubId,
+                                onOpenSub = { openSubId = if (openSubId == it) null else it },
+                                onPick = onPick,
+                                onAdd = { parentId -> creating = CreateTarget(parentId = parentId) },
                             )
                         }
-                        Spacer(Modifier.height(if (subs.isEmpty() && isDeposit) 4.dp else 14.dp))
+                        Spacer(Modifier.height(4.dp))
                     }
-
-                    // + دسته‌ی اصلی جدید (برای درآمد: دسته‌ی درآمد جدید)
-                    AddChip(stringResource(if (isDeposit) R.string.custom_add_income else R.string.custom_add_root)) {
-                        creating = CreateTarget(parentId = null)
-                    }
-                    Spacer(Modifier.height(14.dp))
                 }
 
                 if (transaction.merchant != null) {
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.sheet_learning_hint),
                         style = MaterialTheme.typography.labelSmall,
@@ -336,42 +358,99 @@ fun CategoryPickerSheet(
     }
 }
 
-/** سرِ بخش هر دسته‌ی اصلی؛ خودش هم قابل انتخاب است */
+private const val GRID_COLUMNS = 4
+
+/** کاشیِ یک دسته‌ی اصلی در شبکه: آیکون در دایره‌ی رنگی + اسم */
 @Composable
-private fun RootHeader(root: Category, selected: Boolean, hasChildren: Boolean, onClick: () -> Unit) {
+private fun CategoryTile(icon: String, name: String, color: Color, selected: Boolean, open: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val dot = root.colorHex.toColorOrNull() ?: colors.primary
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp)
-            .background(
-                if (selected) colors.primary else Color.Transparent,
-                RoundedCornerShape(12.dp),
-            )
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (open) colors.surfaceVariant else Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 8.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             Modifier
-                .size(30.dp)
-                .background(dot.copy(alpha = 0.16f), CircleShape),
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(if (selected) colors.primary else color.copy(alpha = 0.16f)),
             contentAlignment = Alignment.Center,
-        ) { Text(root.icon ?: "•") }
-        Spacer(Modifier.size(8.dp))
+        ) { Text(icon, fontSize = 20.sp, color = if (selected) colors.onPrimary else colors.onSurface) }
+        Spacer(Modifier.height(4.dp))
         Text(
-            root.name,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = if (selected) colors.onPrimary else colors.onSurface,
+            name,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (selected || open) FontWeight.Bold else FontWeight.Normal,
+            color = colors.onSurface,
+            maxLines = 2,
+            textAlign = TextAlign.Center,
+            overflow = TextOverflow.Ellipsis,
         )
-        if (hasChildren && !selected) {
+    }
+}
+
+/** زیردسته‌های دسته‌ی باز (و جزئیاتِ زیردسته‌ی باز) */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SubPanel(
+    root: Category,
+    subs: List<Category>,
+    childrenOf: Map<Long?, List<Category>>,
+    selectedId: Long?,
+    openSubId: Long?,
+    onOpenSub: (Long) -> Unit,
+    onPick: (Long?) -> Unit,
+    onAdd: (parentId: Long) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .background(colors.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+            .padding(10.dp)
+    ) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CategoryChip(
+                label = stringResource(R.string.sheet_all_of, root.name),
+                selected = root.id == selectedId,
+                onClick = { onPick(root.id) },
+            )
+            subs.forEach { sub ->
+                val details = childrenOf[sub.id].orEmpty()
+                val isOpen = openSubId == sub.id
+                CategoryChip(
+                    label = sub.name + if (details.isNotEmpty()) (if (isOpen) "  ⌄" else "  ›") else "",
+                    selected = sub.id == selectedId || details.any { it.id == selectedId },
+                    onClick = { if (details.isEmpty()) onPick(sub.id) else onOpenSub(sub.id) },
+                )
+            }
+            AddChip("＋") { onAdd(root.id) }
+        }
+        subs.firstOrNull { it.id == openSubId }?.let { open ->
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CategoryChip(
+                    label = stringResource(R.string.sheet_all_of, open.name),
+                    selected = open.id == selectedId,
+                    onClick = { onPick(open.id) },
+                )
+                childrenOf[open.id].orEmpty().forEach { d ->
+                    CategoryChip(label = d.name, selected = d.id == selectedId, onClick = { onPick(d.id) })
+                }
+                AddChip("＋") { onAdd(open.id) }
+            }
+        }
+        if (!root.countsAsSpend) {
             Text(
-                stringResource(R.string.sheet_pick_root),
+                stringResource(R.string.sheet_not_spend_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
     }
