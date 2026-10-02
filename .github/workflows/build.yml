@@ -5,6 +5,11 @@ on:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+    inputs:
+      record_screenshots:
+        description: "تصویرهای مرجع اسکرین‌شات از نو ساخته و در همین شاخه ذخیره شوند (بعد از تغییر عمدی ظاهر)"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -28,20 +33,44 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # تست‌ها + ساختن اسکرین‌شات صفحه‌ها (Roborazzi) + APK آزمایشی
+      # تست‌ها + اسکرین‌شات‌ها (Roborazzi) + APK آزمایشی.
+      # اسکرین‌شات‌ها با تصویرهای مرجع app/src/test/screenshots مقایسه می‌شوند و هر تغییر ظاهری ساخت را می‌شکند.
+      # مرجع‌ها از نو ساخته می‌شوند اگر هنوز نیستند، یا با اجرای دستی و record_screenshots.
       - name: Run tests and build debug APK
         run: |
           set -o pipefail
-          ./gradlew testDebugUnitTest assembleDebug -Proborazzi.test.record=true --stacktrace 2>&1 | tee build.log
+          if [ "${{ inputs.record_screenshots }}" = "true" ] || [ -z "$(ls -A app/src/test/screenshots 2>/dev/null)" ]; then
+            echo "SCREENSHOT_MODE=record" >> "$GITHUB_ENV"
+            MODE="-Proborazzi.test.record=true"
+          else
+            MODE="-Proborazzi.test.verify=true"
+          fi
+          ./gradlew testDebugUnitTest assembleDebug $MODE --stacktrace 2>&1 | tee build.log
 
-      # اسکرین‌شات‌های هر پوسته در حالت روشن و تیره، برای دیدن ظاهر بدون گوشی
+      # مرجع‌ها + (اگر مقایسه شکست خورد) تصویر تفاوت‌ها
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: app/build/outputs/roborazzi/
+          path: |
+            app/src/test/screenshots/
+            app/build/outputs/roborazzi/
           if-no-files-found: ignore
+
+      # مرجع‌های تازه در همین شاخه ذخیره می‌شوند (در PR ممکن نیست؛ آن‌جا فقط مقایسه)
+      - name: Save recorded screenshots to branch
+        if: env.SCREENSHOT_MODE == 'record' && github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/test/screenshots
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged"
+          else
+            git commit -m "Update screenshot references [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       # Android Lint: هر مشکل تازه (که در app/lint-baseline.xml نیست) ساخت را متوقف می‌کند.
       # اگر baseline هنوز نیست، ساخته می‌شود و ساخت ادامه پیدا می‌کند (lint.baselines.continue).

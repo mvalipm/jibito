@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "ir.jibito.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "ir.jibito.app"
