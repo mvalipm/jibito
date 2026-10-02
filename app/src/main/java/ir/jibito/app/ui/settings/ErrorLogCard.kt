@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
@@ -28,6 +29,8 @@ import ir.jibito.app.util.Jalali
 @Composable
 fun ErrorLogCard(card: @Composable (title: String, content: @Composable () -> Unit) -> Unit) {
     val context = LocalContext.current
+    // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
+    val resources = LocalResources.current
     val colors = MaterialTheme.colorScheme
     // بعد از «پاک کردن» دوباره خوانده شود
     var version by remember { mutableIntStateOf(0) }
@@ -53,9 +56,9 @@ fun ErrorLogCard(card: @Composable (title: String, content: @Composable () -> Un
                     onClick = {
                         val send = Intent(Intent.ACTION_SEND)
                             .setType("text/plain")
-                            .putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.errorlog_subject))
+                            .putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.errorlog_subject))
                             .putExtra(Intent.EXTRA_TEXT, ErrorLog.report(context))
-                        context.startActivity(Intent.createChooser(send, context.getString(R.string.errorlog_send)))
+                        context.startActivity(Intent.createChooser(send, resources.getString(R.string.errorlog_send)))
                     },
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.weight(1f),

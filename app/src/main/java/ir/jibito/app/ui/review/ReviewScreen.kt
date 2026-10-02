@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +69,8 @@ fun ReviewScreen(onClose: () -> Unit) {
     val pending by viewModel.pending.collectAsState()
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
+    // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
+    val resources = LocalResources.current
     val haptics = rememberHaptics()
 
     Column(
@@ -122,7 +125,7 @@ fun ReviewScreen(onClose: () -> Unit) {
                     val send = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")
                         .putExtra(Intent.EXTRA_TEXT, viewModel.shareText(item))
-                    context.startActivity(Intent.createChooser(send, context.getString(R.string.review_share_title)))
+                    context.startActivity(Intent.createChooser(send, resources.getString(R.string.review_share_title)))
                 },
             )
         }

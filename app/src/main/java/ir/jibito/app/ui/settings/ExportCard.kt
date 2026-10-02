@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,8 @@ import java.util.Locale
 @Composable
 fun ExportCard(card: @Composable (title: String, content: @Composable () -> Unit) -> Unit) {
     val context = LocalContext.current
+    // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
+    val resources = LocalResources.current
     val repository = (context.applicationContext as JibitoApplication).container.transactionRepository
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
@@ -55,10 +58,10 @@ fun ExportCard(card: @Composable (title: String, content: @Composable () -> Unit
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)!!.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
                 }
-                context.getString(R.string.export_done, selected.size)
+                resources.getString(R.string.export_done, selected.size)
             } catch (e: Exception) {
                 ErrorLog.record(context, "csv export", e)
-                context.getString(R.string.export_failed)
+                resources.getString(R.string.export_failed)
             }
         }
     }
