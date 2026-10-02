@@ -331,11 +331,12 @@ private fun Modifier.pocketBackground(color: Color): Modifier = drawBehind {
     // دوخت
     val inset = 16.dp.toPx()
     val stitchY = h - curve - 12.dp.toPx()
+    val bottom = h - 12.dp.toPx()
+    // یک مسیر پیوسته از چپ به راست، تا خط‌چین وسط نشکند
     val stitch = Path().apply {
         moveTo(inset, stitchY)
-        cubicTo(inset, stitchY + curve * 0.75f, w * 0.72f, h - 12.dp.toPx(), w / 2f, h - 12.dp.toPx())
-        moveTo(w - inset, stitchY)
-        cubicTo(w - inset, stitchY + curve * 0.75f, w * 0.28f, h - 12.dp.toPx(), w / 2f, h - 12.dp.toPx())
+        cubicTo(inset, stitchY + curve * 0.75f, w * 0.28f, bottom, w / 2f, bottom)
+        cubicTo(w * 0.72f, bottom, w - inset, stitchY + curve * 0.75f, w - inset, stitchY)
     }
     drawPath(
         stitch,
