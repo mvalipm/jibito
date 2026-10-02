@@ -344,15 +344,4 @@
 
     <!-- نوتیفیکیشن خاموش -->
     <string name="attn_notifications_off">نوتیفیکیشن خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود. روشنش کن</string>
-
-    <!-- نوع رویداد (عنوان تراکنش بی‌فروشنده) -->
-    <string name="kind_cash">برداشت از خودپرداز</string>
-    <string name="kind_bill">پرداخت قبض</string>
-    <string name="kind_fee">کارمزد بانکی</string>
-    <string name="kind_refund">برگشت پول</string>
-    <string name="kind_transfer_in">انتقال به حسابت</string>
-    <string name="kind_transfer_out">انتقال وجه</string>
-    <string name="kind_purchase">خرید کارتی</string>
-    <string name="tx_transfer_to">انتقال به %1$s</string>
-    <string name="tx_transfer_from">انتقال از %1$s</string>
 </resources>
