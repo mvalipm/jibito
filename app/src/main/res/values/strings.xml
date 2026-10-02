@@ -306,4 +306,40 @@
     <string name="errorlog_clear">پاک کردن</string>
     <string name="errorlog_subject">گزارش خطای جیبیتو</string>
     <string name="errorlog_privacy">گزارش فقط روی همین گوشیه و خودکار جایی فرستاده نمی‌شه. با «ارسال گزارش» خودت انتخاب می‌کنی کجا بره (و قبل از فرستادن می‌بینیش).</string>
+
+    <!-- خروجی اکسل -->
+    <string name="export_title">خروجی اکسل</string>
+    <string name="export_hint">تراکنش‌ها در یک فایل CSV که با اکسل یا Google Sheets باز می‌شه: تاریخ شمسی، مبلغ به تومان، دسته و زیردسته، طرف حساب، بانک.</string>
+    <string name="export_this_month">این ماه</string>
+    <string name="export_all">همه‌ی تراکنش‌ها</string>
+    <string name="export_done">✓ %1$d تراکنش ذخیره شد.</string>
+    <string name="export_failed">ذخیره‌ی فایل نشد.</string>
+
+    <!-- ویجت -->
+    <string name="widget_name">خرج امروز</string>
+    <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
+    <string name="widget_today">خرج امروز</string>
+    <string name="widget_amount">%1$s تومان</string>
+    <string name="widget_month">این ماه: %1$s</string>
+    <string name="widget_left">مونده از بودجه: %1$s</string>
+    <string name="widget_over">%1$s بیشتر از بودجه</string>
+    <string name="widget_locked_label">جیبیتو</string>
+    <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
+
+    <!-- پرداخت‌های ماهانه -->
+    <string name="recurring_title">پرداخت‌های ماهانه</string>
+    <string name="recurring_hint">اجاره، قسط، شهریه… روز موعدش یادت می‌ندازم. (فقط یادآوریه؛ خود پرداخت مثل همیشه از پیامک بانک ثبت می‌شه.)</string>
+    <string name="recurring_row">%1$s · هر ماه روز %2$d</string>
+    <string name="recurring_add">+ پرداخت ماهانه</string>
+    <string name="recurring_field_title">برای چی؟ (مثلاً اجاره)</string>
+    <string name="recurring_field_amount">مبلغ (تومان)</string>
+    <string name="recurring_field_day">روز ماه (۱ تا ۳۱)</string>
+    <string name="recurring_save">ذخیره</string>
+    <string name="recurring_channel_name">یادآوری پرداخت‌ها</string>
+    <string name="recurring_channel_desc">روز موعد پرداخت‌های ماهانه (اجاره، قسط…)</string>
+    <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
+    <string name="recurring_notif_body">%1$s</string>
+
+    <!-- نوتیفیکیشن خاموش -->
+    <string name="attn_notifications_off">نوتیفیکیشن خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود. روشنش کن</string>
 </resources>

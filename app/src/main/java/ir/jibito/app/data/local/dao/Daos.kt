@@ -16,6 +16,7 @@ import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.BankBalanceRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
+import ir.jibito.app.data.local.entity.RecurringPaymentEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
 import kotlinx.coroutines.flow.Flow
@@ -366,4 +367,23 @@ interface ReviewDao {
     /** چند پیامک با هم «تراکنش نیست» می‌شوند */
     @Query("UPDATE review_sms SET status = 2, resolvedAt = :now WHERE status = 0 AND smsId IN (:smsIds)")
     suspend fun dismissMany(smsIds: List<Long>, now: Long)
+}
+
+@Dao
+interface RecurringDao {
+
+    @Query("SELECT * FROM recurring_payments ORDER BY dayOfMonth, id")
+    fun observeAll(): Flow<List<RecurringPaymentEntity>>
+
+    @Query("SELECT * FROM recurring_payments")
+    suspend fun all(): List<RecurringPaymentEntity>
+
+    @Insert
+    suspend fun insert(item: RecurringPaymentEntity): Long
+
+    @Query("DELETE FROM recurring_payments WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("UPDATE recurring_payments SET lastRemindedMonthKey = :monthKey WHERE id = :id")
+    suspend fun markReminded(id: Long, monthKey: Int)
 }

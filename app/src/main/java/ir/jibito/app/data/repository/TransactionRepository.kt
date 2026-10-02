@@ -113,6 +113,8 @@ class TransactionRepositoryImpl(
     private val syncState: SyncState,
     /** بعد از تعیین دسته صدا زده می‌شود (برای بررسی هشدار بودجه) */
     private val onCategoryChanged: suspend () -> Unit = {},
+    /** بعد از هر همگام‌سازی پیامک‌ها (مثلاً برای به‌روز کردن ویجت) */
+    private val onSynced: suspend () -> Unit = {},
     /** دامنه‌ی کل اپ؛ برای این‌که فهرست تراکنش‌ها یک بار ساخته و بین همه‌ی صفحه‌ها مشترک شود */
     private val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : TransactionRepository {
@@ -358,7 +360,7 @@ class TransactionRepositoryImpl(
     override suspend fun syncFromSms(forceFull: Boolean): Int = syncMutex.withLock {
         _isSyncing.value = true
         try {
-            doSync(forceFull)
+            doSync(forceFull).also { onSynced() }
         } finally {
             _isSyncing.value = false
         }

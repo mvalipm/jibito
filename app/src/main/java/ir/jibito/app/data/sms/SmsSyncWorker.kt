@@ -59,7 +59,8 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         return try {
             container.transactionRepository.syncFromSms()
             TransactionNotifier(applicationContext, container.database).processRecent()
-            container.budgetAlerter.check()
+            container.onDataChanged() // هشدار بودجه + ویجت
+            container.recurringReminder.check()
             Result.success()
         } catch (e: Exception) {
             // قبلاً خطا بی‌صدا تکرار می‌شد و هیچ ردی نمی‌ماند؛ حالا ثبت می‌شود (تنظیمات ← گزارش خطا)
