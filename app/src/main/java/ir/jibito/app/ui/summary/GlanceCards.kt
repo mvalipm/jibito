@@ -165,7 +165,8 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
         val net = s.totalIncomeRial - s.totalSpentRial
         val line = listOfNotNull(
             stringResource(R.string.glance_income, Money.compact(s.totalIncomeRial)),
-            stringResource(R.string.glance_net, (if (net >= 0) "+" else "−") + Money.compact(abs(net))),
+            // علامت +/− کنار عدد فارسی در متن راست‌به‌چپ جابه‌جا دیده می‌شود؛ به‌جایش کلمه
+            stringResource(if (net >= 0) R.string.glance_net_plus else R.string.glance_net_minus, Money.compact(abs(net))),
             s.excludedRial.takeIf { it > 0 }?.let { stringResource(R.string.glance_saved, Money.compact(it)) },
         ).joinToString("  ·  ")
         Text(
