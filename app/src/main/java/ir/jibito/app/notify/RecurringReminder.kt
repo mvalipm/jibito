@@ -20,6 +20,7 @@ import ir.jibito.app.util.Money
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.Calendar
+import ir.jibito.app.data.parser.FlowType
 
 /** قانون یادآوری پرداخت تکراری (بدون اندروید، قابل تست). */
 object RecurringSchedule {
@@ -46,6 +47,18 @@ object RecurringSchedule {
         return day > due || (day == due && hour >= REMIND_FROM_HOUR)
     }
 
+    /** یادآوری با تأخیر می‌آید (مثلاً گوشی روز موعد خاموش بود)؟ آن‌وقت متن نباید «امروز» بگوید */
+    fun isLate(dayOfMonth: Int, year: Int, month: Int, day: Int): Boolean = day > dueDay(dayOfMonth, year, month)
+
+    /** ساعت ۰۰:۰۰ روز موعد این ماه (به وقت گوشی) */
+    fun dueDayStart(dayOfMonth: Int, year: Int, month: Int): Long {
+        val (gy, gm, gd) = Jalali.toGregorian(year, month, dueDay(dayOfMonth, year, month))
+        return Calendar.getInstance().apply {
+            clear()
+            set(gy, gm - 1, gd, 0, 0, 0)
+        }.timeInMillis
+    }
+
     /**
      * پرداختی که امروز ساخته می‌شود و موعد این ماهش گذشته، برای همین ماه یادآوری نشود
      * (کاربر خودش همین الان به آن فکر کرده). مقدار برای ستون lastRemindedMonthKey.
@@ -62,14 +75,27 @@ class RecurringReminder(private val context: Context, private val db: AppDatabas
         val (y, m, d) = Jalali.fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         val hour = cal.get(Calendar.HOUR_OF_DAY)
         val dao = db.recurringDao()
+        val monthKey = JalaliMonth(y, m).key
         for (p in dao.all()) {
             if (!RecurringSchedule.isDue(p.dayOfMonth, p.lastRemindedMonthKey, y, m, d, hour)) continue
-            if (show(p.id, p.title, p.amountRial)) dao.markReminded(p.id, JalaliMonth(y, m).key)
+            // همان مبلغ از چند روز قبل از موعد تا الان از پیامک بانک برداشت شده ← پرداخت شده؛ یادآوری لازم نیست
+            val dueStart = RecurringSchedule.dueDayStart(p.dayOfMonth, y, m)
+            val withdrawals = db.summaryDao()
+                .amounts(FlowType.WITHDRAWAL.code, RecurringPaidCheck.windowStart(dueStart), now + 1)
+                .map { it.amount }
+            if (RecurringPaidCheck.alreadyPaid(withdrawals, p.amountRial)) {
+                dao.markReminded(p.id, monthKey)
+                continue
+            }
+            val dueDay = RecurringSchedule.dueDay(p.dayOfMonth, y, m)
+            val late = RecurringSchedule.isLate(p.dayOfMonth, y, m, d)
+            if (show(p.id, p.title, p.amountRial, if (late) dueDay else null)) dao.markReminded(p.id, monthKey)
         }
     }
 
     /** true اگر نشان داده شد (بدون اجازه‌ی نوتیفیکیشن، دفعه‌ی بعد دوباره امتحان می‌شود) */
-    private fun show(id: Long, title: String, amountRial: Long): Boolean {
+    /** @param lateDueDay اگر یادآوری دیر رسیده، روز موعدی که گذشت (متن: «موعد … روز ۱۱ بود») */
+    private fun show(id: Long, title: String, amountRial: Long, lateDueDay: Int?): Boolean {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -84,7 +110,10 @@ class RecurringReminder(private val context: Context, private val db: AppDatabas
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
-            .setContentTitle(context.getString(R.string.recurring_notif_title, title))
+            .setContentTitle(
+                if (lateDueDay == null) context.getString(R.string.recurring_notif_title, title)
+                else Jalali.toPersianDigits(context.getString(R.string.recurring_notif_title_late, title, lateDueDay))
+            )
             .setContentText(context.getString(R.string.recurring_notif_body, Money.toman(amountRial)))
             .setContentIntent(openApp)
             .setAutoCancel(true)
