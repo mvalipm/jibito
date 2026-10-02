@@ -13,8 +13,8 @@ android {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 41
-        versionName = "0.33.0"
+        versionCode = 42
+        versionName = "0.34.0"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود
@@ -43,6 +43,12 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    testOptions {
+        unitTests.all {
+            // تست Migration ها ساختار هر نسخه را از همین فایل‌های JSON می‌خواند
+            it.systemProperty("room.schemaDir", "$projectDir/schemas")
+        }
     }
 }
 
@@ -76,4 +82,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")
+    // تست‌هایی که اندروید واقعی لازم دارند (دیتابیس، Migration ها، پشتیبان‌گیری) بدون گوشی و شبیه‌ساز
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test:core-ktx:1.6.1")
 }

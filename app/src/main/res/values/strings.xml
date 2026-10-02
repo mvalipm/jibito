@@ -154,8 +154,6 @@
     <string name="settings_perm_ok">✓ فعال</string>
     <string name="settings_perm_missing">غیرفعال</string>
     <string name="settings_open_app_settings">باز کردن تنظیمات اپ در گوشی</string>
-    <string name="settings_soon_title">به‌زودی</string>
-    <string name="settings_soon_body">مدیریت دسته‌ها، قفل اپ با رمز یا اثر انگشت، و پشتیبان‌گیری.</string>
     <string name="settings_version">جیبیتو · نسخه‌ی %1$s</string>
     <string name="summary_prev_month">ماه قبل</string>
     <string name="summary_next_month">ماه بعد</string>
@@ -259,4 +257,44 @@
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
     <string name="review_learn_hint">جیبیتو قالب این پیامک رو یاد می‌گیره؛ پیامک‌های مشابهِ بعدی خودکار ثبت می‌شن.</string>
+
+    <!-- قفل اپ -->
+    <string name="lock_title">جیبیتو قفله</string>
+    <string name="lock_body">برای دیدن حساب‌هات، قفل گوشی رو تأیید کن.</string>
+    <string name="lock_unlock">باز کردن قفل</string>
+    <string name="lock_prompt_title">باز کردن جیبیتو</string>
+    <string name="lock_prompt_subtitle">با اثر انگشت یا قفل گوشی</string>
+    <string name="lock_enable_subtitle">برای روشن کردن قفل اپ، قفل گوشی رو تأیید کن</string>
+    <string name="lock_setting_title">قفل اپ</string>
+    <string name="lock_setting_hint">موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی خواسته می‌شه.</string>
+    <string name="lock_setting_unavailable">اول برای گوشی قفل صفحه (رمز، الگو یا اثر انگشت) بذار.</string>
+
+    <!-- پشتیبان‌گیری -->
+    <string name="security_title">امنیت و پشتیبان</string>
+    <string name="backup_hint">همه‌ی داده‌ها (تراکنش‌ها، دسته‌ها، بودجه‌ها و چیزهایی که جیبیتو یاد گرفته) در یک فایل رمزدار ذخیره می‌شن. فایل رو جای امنی نگه دار؛ با گوشی تازه یا بعد از نصب دوباره، از همین‌جا برش گردون.</string>
+    <string name="backup_export_button">گرفتن پشتیبان</string>
+    <string name="backup_restore_button">بازگردانی از پشتیبان</string>
+    <string name="backup_working">دارم کار می‌کنم…</string>
+    <string name="backup_export_done">✓ پشتیبان ذخیره شد.</string>
+    <string name="backup_export_failed">ذخیره‌ی پشتیبان نشد. یه جای دیگه رو امتحان کن.</string>
+    <string name="backup_export_password_title">رمز فایل پشتیبان</string>
+    <string name="backup_export_password_body">این رمز جایی ذخیره نمی‌شه و بدونش فایل باز نمی‌شه. حتماً یادت بمونه.</string>
+    <string name="backup_export_continue">ادامه و انتخاب محل ذخیره</string>
+    <string name="backup_password_label">رمز</string>
+    <string name="backup_password_repeat">تکرار رمز</string>
+    <string name="backup_password_short">دست‌کم %1$d حرف</string>
+    <string name="backup_password_mismatch">دو رمز یکی نیستن</string>
+    <string name="backup_restore_confirm_title">بازگردانی از پشتیبان؟</string>
+    <string name="backup_restore_confirm_body">همه‌ی داده‌های فعلی جیبیتو با داده‌های فایل پشتیبان جایگزین می‌شن. اگه لازمه، اول از وضع فعلی پشتیبان بگیر.</string>
+    <string name="backup_restore_choose_file">انتخاب فایل</string>
+    <string name="backup_restore_password_title">رمز فایل پشتیبان</string>
+    <string name="backup_restore_password_body">رمزی که موقع گرفتن پشتیبان گذاشتی.</string>
+    <string name="backup_restore_go">بازگردانی</string>
+    <string name="backup_error_password">رمز اشتباهه (یا فایل خراب شده).</string>
+    <string name="backup_error_not_backup">این فایل پشتیبان جیبیتو نیست.</string>
+    <string name="backup_error_too_new">این پشتیبان از نسخه‌ی جدیدتر جیبیتوئه. اول اپ رو به‌روز کن.</string>
+    <string name="backup_error_damaged">فایل پشتیبان سالم نیست.</string>
+    <string name="backup_restore_ready_title">پشتیبان آماده‌ست</string>
+    <string name="backup_restore_ready_body">%1$d تراکنش، پشتیبانِ %2$s. جیبیتو یه بار بسته و دوباره باز می‌شه تا داده‌ها جایگزین بشن؛ بعد پیامک‌ها دوباره خونده می‌شن.</string>
+    <string name="backup_restore_restart">باز کردن دوباره</string>
 </resources>

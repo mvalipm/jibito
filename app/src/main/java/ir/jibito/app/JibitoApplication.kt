@@ -1,12 +1,21 @@
 package ir.jibito.app
 
 import android.app.Application
+import android.content.Context
+import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.sms.SmsSyncWorker
 import ir.jibito.app.di.AppContainer
 
 /** کلاس اصلی اپ؛ فقط یک AppContainer برای کل اپ نگه می‌دارد. */
 class JibitoApplication : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // بازگردانی پشتیبانی که کاربر انتخاب کرده، قبل از این‌که دیتابیس یا تنظیمات باز شوند.
+        // این‌جا (نه onCreate) چون قبل از راه افتادن WorkManager و هر کار پس‌زمینه‌ای اجرا می‌شود.
+        BackupManager.applyPendingRestore(this)
+    }
 
     override fun onCreate() {
         super.onCreate()

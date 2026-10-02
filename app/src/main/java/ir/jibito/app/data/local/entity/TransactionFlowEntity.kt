@@ -89,7 +89,7 @@ data class BankBalanceRow(
 /** فقط ستون‌هایی که موقع همگام‌سازی با پیامک‌ها لازم داریم. */
 data class SmsFlowKey(
     val id: Long,
-    val smsId: Long,
+    val smsId: Long?,
     val categoryId: Long?,
     val isDeleted: Boolean,
     val notifiedAt: Long?,
@@ -98,4 +98,11 @@ data class SmsFlowKey(
     val dateEpoch: Long,
     val transferState: Int,
     val transferPairId: Long?,
+)
+
+/** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */
+data class SmsContentKey(
+    val id: Long,
+    val dateEpoch: Long,
+    val smsContent: String,
 )

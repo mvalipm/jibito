@@ -1,7 +1,9 @@
 package ir.jibito.app.di
 
 import android.content.Context
+import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
 import ir.jibito.app.data.repository.ReviewRepository
@@ -32,6 +34,12 @@ class AppContainer(context: Context) {
 
     /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
     val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }
+
+    /** قفل اپ با قفل گوشی */
+    val appLockSettings: AppLockSettings by lazy { AppLockSettings(appContext) }
+
+    /** پشتیبان‌گیری رمزدار و بازگردانی */
+    val backupManager: BackupManager by lazy { BackupManager(appContext, database) }
 
     val budgetAlerter: BudgetAlerter by lazy { BudgetAlerter(appContext, database) }
 

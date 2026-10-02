@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  اندروید ۱۲ به بعد.
+  - پشتیبان ابری گوگل: هیچ‌چیز (قول اپ: «همه‌چیز فقط روی گوشی خودت می‌مونه»). پشتیبان دستی و رمزدار از تنظیمات اپ.
+  - انتقال مستقیم گوشی به گوشی (موقع راه‌اندازی گوشی تازه): داده‌ها منتقل می‌شوند، جز وضعیت همگام‌سازی پیامک
+    (شناسه‌ی پیامک‌ها در گوشی تازه فرق دارد؛ بدون آن، کل صندوق از نو و درست خوانده می‌شود) و قفل اپ (مال همان گوشی).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="sms_sync_state.xml" />
+        <exclude domain="sharedpref" path="security.xml" />
+        <exclude domain="file" path="pending_restore" />
+        <exclude domain="file" path="backup_work" />
+    </device-transfer>
+</data-extraction-rules>
