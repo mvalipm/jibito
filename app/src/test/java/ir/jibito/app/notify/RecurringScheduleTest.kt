@@ -74,7 +74,7 @@ class RecurringScheduleTest {
     }
 
     @Test
-    fun `بعداً یادم بنداز: صبح و ظهر ← امشب ساعت ۲۰، عصر ← فردا ساعت ۹`() {
+    fun `بعداً یادم بنداز - صبح و ظهر ← امشب ساعت ۲۰، عصر ← فردا ساعت ۹`() {
         val morning = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 3, 10, 30) }.timeInMillis
         val tonight = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 3, 20, 0) }.timeInMillis
         assertTrue(RecurringSchedule.snoozesTonight(morning))
