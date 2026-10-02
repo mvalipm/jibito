@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.LocalJibitoColors
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
@@ -215,7 +216,7 @@ private fun HeroCard(s: MonthSummary, onEditBudget: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(colors.primary, Color(0xFFF08A4B))))
+            .background(Brush.linearGradient(listOf(LocalJibitoColors.current.heroStart, LocalJibitoColors.current.heroEnd)))
             .clickable(onClick = onEditBudget)
             .padding(22.dp)
     ) {

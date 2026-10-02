@@ -43,6 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.AppThemeStyle
+import ir.jibito.app.ui.theme.previewColors
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.util.Jalali
@@ -86,6 +95,60 @@ fun SettingsScreen() {
             fontWeight = FontWeight.Black,
             color = colors.onBackground,
         )
+
+        // پوسته
+        val themeSettings = app.container.themeSettings
+        val currentStyle by themeSettings.style.collectAsState()
+        SettingsCard(stringResource(R.string.settings_theme_title)) {
+            AppThemeStyle.entries.forEach { style ->
+                val selected = style == currentStyle
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (selected) colors.primary.copy(alpha = 0.12f) else Color.Transparent)
+                        .border(
+                            width = if (selected) 1.5.dp else 1.dp,
+                            color = if (selected) colors.primary else colors.outlineVariant,
+                            shape = RoundedCornerShape(16.dp),
+                        )
+                        .clickable { themeSettings.set(style) }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // نمونه‌ی رنگ‌ها
+                    Row {
+                        previewColors(style).forEachIndexed { i, c ->
+                            Box(
+                                Modifier
+                                    .offset(x = (-8 * i).dp)
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(c)
+                                    .border(2.dp, colors.surface, CircleShape)
+                            )
+                        }
+                    }
+                    Column(Modifier.weight(1f).padding(start = 4.dp)) {
+                        Text(
+                            stringResource(style.label),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                        )
+                        Text(
+                            stringResource(style.hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         // خواندن دوباره‌ی همه‌ی پیامک‌ها
         SettingsCard(stringResource(R.string.settings_rescan_title)) {

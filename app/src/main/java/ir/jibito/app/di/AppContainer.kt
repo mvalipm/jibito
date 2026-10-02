@@ -11,6 +11,7 @@ import ir.jibito.app.data.repository.TransactionRepositoryImpl
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.notify.BudgetAlerter
+import ir.jibito.app.ui.theme.ThemeSettings
 
 /**
  * جای ساختن اشیای اصلی اپ (دیتابیس، Repository ها).
@@ -20,6 +21,9 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
     val database: AppDatabase by lazy { AppDatabase.build(appContext) }
+
+    /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
+    val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }
 
     val budgetAlerter: BudgetAlerter by lazy { BudgetAlerter(appContext, database) }
 

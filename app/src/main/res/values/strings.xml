@@ -87,6 +87,13 @@
     <string name="tab_review">بررسی</string>
     <string name="tab_settings">تنظیمات</string>
     <string name="settings_title">تنظیمات</string>
+    <string name="settings_theme_title">پوسته</string>
+    <string name="theme_default">مرجانی</string>
+    <string name="theme_default_hint">رنگ‌های اصلی جیبیتو</string>
+    <string name="theme_warm">گرم</string>
+    <string name="theme_warm_hint">کرم، صورتی‌گلی و هلویی؛ نرم و دلنشین</string>
+    <string name="theme_cool">سرد</string>
+    <string name="theme_cool_hint">سرمه‌ای، آبی و یاسی؛ آرام و جدی</string>
     <string name="settings_rescan_title">خواندن دوباره‌ی پیامک‌ها</string>
     <string name="settings_rescan_hint">جیبیتو هر ۱۵ دقیقه پیامک‌های تازه رو خودش می‌خونه. اگه حس کردی تراکنشی جا افتاده، از این‌جا کل صندوق پیامک رو دوباره بخون.</string>
     <string name="settings_rescan_button">همین الان دوباره بخون</string>
