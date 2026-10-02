@@ -67,11 +67,23 @@ object BankDirectory {
     /** برای سرشماره‌هایی که کاربر گفته «بانک نیست ولی مالی است» (کیف پول، موسسه، ...) */
     val OTHER = Bank(id = 99, name = "سایر (کیف پول/موسسه)", parserKey = "smart", senders = emptySet())
 
-    /** بانک با شناسه؛ OTHER را هم می‌شناسد. */
+    /** موسسه‌هایی که خود کاربر اضافه کرده (مثلاً «کارگزاری مفید»)؛ شناسه‌شان از ۱۰۰۰ به بالاست */
+    @Volatile
+    var custom: List<Bank> = emptyList()
+        private set
+
+    fun setCustom(list: List<Bank>) {
+        custom = list
+    }
+
+    /** همه‌ی گزینه‌های قابل انتخاب: بانک‌ها + موسسه‌های کاربر */
+    val all: List<Bank> get() = banks + custom
+
+    /** بانک با شناسه؛ OTHER و موسسه‌های کاربر را هم می‌شناسد. */
     fun byId(id: Int?): Bank? = when (id) {
         null -> null
         OTHER.id -> OTHER
-        else -> banks.firstOrNull { it.id == id }
+        else -> banks.firstOrNull { it.id == id } ?: custom.firstOrNull { it.id == id }
     }
 
     private val bySender: Map<String, Bank> =

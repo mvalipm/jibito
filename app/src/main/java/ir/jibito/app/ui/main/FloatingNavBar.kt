@@ -36,6 +36,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
@@ -142,22 +145,28 @@ private fun NavButton(item: NavItem, selected: Boolean, onClick: () -> Unit, mod
         Box {
             Icon(item.icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
             if (item.badge > 0) {
+                // عدد کوچک روی گوشه‌ی آیکون؛ متن بدون فاصله‌ی اضافه‌ی فونت، تا دقیقاً وسط دایره بنشیند
+                val label = Jalali.toPersianDigits(if (item.badge > 9) "9+" else item.badge.toString())
                 Box(
                     Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 9.dp, y = (-5).dp)
-                        .defaultMinSize(minWidth = 17.dp, minHeight = 17.dp)
-                        .background(colors.primary, CircleShape)
-                        .border(1.5.dp, colors.surface, CircleShape)
-                        .padding(horizontal = 4.dp),
+                        .offset(x = 6.dp, y = (-3).dp)
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(colors.primary)
+                        .border(1.5.dp, colors.surface, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        Jalali.toPersianDigits(if (item.badge > 99) "99+" else item.badge.toString()),
+                        label,
                         color = colors.onPrimary,
-                        fontSize = 10.sp,
                         fontWeight = FontWeight.Black,
-                        lineHeight = 12.sp,
+                        style = TextStyle(
+                            fontSize = 9.sp,
+                            lineHeight = 9.sp,
+                            platformStyle = PlatformTextStyle(includeFontPadding = false),
+                            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                        ),
                     )
                 }
             }

@@ -227,6 +227,12 @@
     <string name="review_position">%1$d از %2$d</string>
     <string name="review_prev">قبلی</string>
     <string name="review_next">بعدی</string>
+    <string name="review_swipe_card_hint">کارت رو بکش</string>
+    <string name="institution_add">+ افزودن موسسه‌ی جدید</string>
+    <string name="institution_search_hint">جست‌وجوی بانک یا موسسه…</string>
+    <string name="institution_name">اسم بانک یا موسسه</string>
+    <string name="institution_name_hint">مثلاً کارگزاری مفید (فرستنده: %1$s)</string>
+    <string name="institution_save">افزودن و انتخاب</string>
     <string name="review_swipe_hint">برای دیدن بقیه‌ی پیامک‌ها، به چپ و راست بکشید.</string>
     <string name="review_share">ارسال برای بهبود اپ</string>
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>

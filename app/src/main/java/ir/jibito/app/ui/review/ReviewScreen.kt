@@ -52,6 +52,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
@@ -103,7 +112,8 @@ fun ReviewScreen(onClose: () -> Unit) {
                 )
                 pending?.takeIf { it.isNotEmpty() }?.let {
                     Text(
-                        Jalali.toPersianDigits(stringResource(R.string.review_count, it.size)),
+                        Jalali.toPersianDigits(stringResource(R.string.review_count, it.size)) +
+                            if (it.size > 1) "  ·  " + stringResource(R.string.review_swipe_card_hint) else "",
                         style = MaterialTheme.typography.labelLarge,
                         color = colors.primary,
                         fontWeight = FontWeight.Bold,
@@ -121,6 +131,7 @@ fun ReviewScreen(onClose: () -> Unit) {
                 list = list,
                 onConfirm = { item, type, amount, balance, bankId -> viewModel.confirm(item, type, amount, balance, bankId) },
                 onDismiss = { item, ignore -> viewModel.dismiss(item, ignore) },
+                onAddInstitution = { name -> app.container.customInstitutions.add(name) },
                 onShare = { item ->
                     val send = Intent(Intent.ACTION_SEND)
                         .setType("text/plain")
@@ -133,62 +144,56 @@ fun ReviewScreen(onClose: () -> Unit) {
 }
 
 /**
- * پیامک‌های منتظر بررسی، صفحه‌به‌صفحه: با کشیدن به چپ و راست (یا دکمه‌های قبلی/بعدی)
- * می‌شود بین‌شان رفت و هر کدام را خواست اول تعیین تکلیف کرد.
- * وقتی یکی تعیین تکلیف شد از فهرست بیرون می‌رود و پیامک بعدی جایش می‌آید.
+ * پیامک‌های منتظر بررسی، هر کدام یک «کارت»: کارت را به چپ و راست بکشید تا قبلی/بعدی بیاید.
+ * کارت‌های کناری کمی پیدا هستند و با حرکت نرم (کوچک و کم‌رنگ شدن) جابه‌جا می‌شوند.
+ * وقتی یکی تعیین تکلیف شد از فهرست بیرون می‌رود و کارت بعدی جایش می‌آید.
  */
 @Composable
 private fun ReviewPager(
     list: List<ReviewItem>,
     onConfirm: (ReviewItem, FlowType, NumberToken, NumberToken?, Int?) -> Unit,
     onDismiss: (ReviewItem, Boolean) -> Unit,
+    onAddInstitution: (String) -> Int?,
     onShare: (ReviewItem) -> Unit,
 ) {
     val currentList by rememberUpdatedState(list)
     val pagerState = rememberPagerState(pageCount = { currentList.size })
-    val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
+    val bottomSpace = LocalBottomBarSpace.current
 
     Column(Modifier.fillMaxSize()) {
-        if (list.size > 1) {
+        // نقطه‌های جای کارت
+        if (list.size in 2..12) {
             val current = pagerState.currentPage.coerceIn(0, list.size - 1)
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
             ) {
-                // در چیدمان راست‌به‌چپ، «قبلی» سمت راست است
-                TextButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(current - 1) } },
-                    enabled = current > 0,
-                ) { Text("→ " + stringResource(R.string.review_prev)) }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        Jalali.toPersianDigits(stringResource(R.string.review_position, current + 1, list.size)),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Black,
-                        color = colors.onBackground,
-                    )
-                    Text(
-                        stringResource(R.string.review_swipe_hint),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
+                list.indices.forEach { i ->
+                    val active = i == current
+                    Box(
+                        Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (active) colors.primary else colors.outlineVariant)
                     )
                 }
-                TextButton(
-                    onClick = { scope.launch { pagerState.animateScrollToPage(current + 1) } },
-                    enabled = current < list.size - 1,
-                ) { Text(stringResource(R.string.review_next) + " ←") }
             }
+        } else {
+            Spacer(Modifier.height(8.dp))
         }
 
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .padding(bottom = bottomSpace),
+            contentPadding = PaddingValues(horizontal = 22.dp),
+            pageSpacing = 10.dp,
             key = { index -> currentList.getOrNull(index)?.smsId ?: -index.toLong() },
             verticalAlignment = Alignment.Top,
         ) { page ->
@@ -197,36 +202,34 @@ private fun ReviewPager(
             val sameSenderOthers = currentList.count {
                 it.smsId != item.smsId && BankDirectory.normalizeSender(it.sender) == target
             }
-            ReviewCard(
-                item = item,
-                sameSenderOthers = sameSenderOthers,
-                onConfirm = { type, amount, balance, bankId -> onConfirm(item, type, amount, balance, bankId) },
-                onDismiss = { ignore -> onDismiss(item, ignore) },
-                onShare = { onShare(item) },
-            )
+            // فاصله‌ی این کارت از کارت وسط (۰ = وسط، ۱ = یک کارت آن‌طرف‌تر)
+            val offset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+            val distance = kotlin.math.abs(offset).coerceIn(0f, 1f)
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 4.dp)
+                    .graphicsLayer {
+                        val scale = 1f - 0.08f * distance
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - 0.45f * distance
+                        rotationZ = offset.coerceIn(-1f, 1f) * 2.5f
+                    }
+                    .shadow(10.dp, RoundedCornerShape(28.dp), clip = false)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(colors.surface)
+            ) {
+                ReviewCard(
+                    item = item,
+                    sameSenderOthers = sameSenderOthers,
+                    onConfirm = { type, amount, balance, bankId -> onConfirm(item, type, amount, balance, bankId) },
+                    onDismiss = { ignore -> onDismiss(item, ignore) },
+                    onAddInstitution = onAddInstitution,
+                    onShare = { onShare(item) },
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun AllDone(onClose: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("✓", fontSize = 48.sp, color = DepositGreen, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(12.dp))
-        Text(
-            stringResource(R.string.review_all_done),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = onClose, shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.review_back)) }
     }
 }
 
@@ -238,6 +241,7 @@ private fun ReviewCard(
     sameSenderOthers: Int,
     onConfirm: (FlowType, NumberToken, NumberToken?, Int?) -> Unit,
     onDismiss: (ignoreSender: Boolean) -> Unit,
+    onAddInstitution: (String) -> Int?,
     onShare: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -256,20 +260,14 @@ private fun ReviewCard(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = 18.dp, vertical = 18.dp)
     ) {
-        Text(
-            stringResource(R.string.review_explain),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(14.dp))
 
         // متن پیامک
         Column(
             Modifier
                 .fillMaxWidth()
-                .background(colors.surface, RoundedCornerShape(20.dp))
+                .background(colors.surfaceVariant.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
                 .padding(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -424,12 +422,20 @@ private fun ReviewCard(
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        // جای خالی زیر محتوا، تا دکمه‌ها زیر نوار شناور گم نشوند
-        Spacer(Modifier.height(LocalBottomBarSpace.current))
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.review_explain),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 
     if (pickingBank) {
         BankPickerDialog(
+            senderHint = item.sender,
+            onAdd = onAddInstitution,
             onPick = {
                 bankId = it
                 pickingBank = false
@@ -439,25 +445,88 @@ private fun ReviewCard(
     }
 }
 
-/** فهرست بانک‌ها و موسسه‌ها + «سایر» */
+/**
+ * انتخاب بانک یا موسسه: جست‌وجو، «+ افزودن موسسه‌ی جدید» (مثلاً «کارگزاری مفید»)، موسسه‌های کاربر، بانک‌ها، و «سایر».
+ */
 @Composable
-private fun BankPickerDialog(onPick: (Int) -> Unit, onDismiss: () -> Unit) {
-    val options = listOf(BankDirectory.OTHER) + BankDirectory.banks.sortedBy { it.name }
+private fun BankPickerDialog(
+    senderHint: String,
+    onAdd: (String) -> Int?,
+    onPick: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    var query by rememberSaveable { mutableStateOf("") }
+    var adding by rememberSaveable { mutableStateOf(false) }
+    var newName by rememberSaveable { mutableStateOf("") }
+    val q = query.trim()
+    val options = (BankDirectory.custom.sortedBy { it.name } + BankDirectory.banks.sortedBy { it.name } + BankDirectory.OTHER)
+        .filter { q.isEmpty() || it.name.contains(q) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.review_which_bank), fontWeight = FontWeight.Bold) },
         text = {
-            LazyColumn(Modifier.height(380.dp)) {
-                items(options, key = { it.id }) { bank ->
-                    Text(
-                        bank.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onPick(bank.id) }
-                            .padding(vertical = 12.dp, horizontal = 4.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (bank.id == BankDirectory.OTHER.id) FontWeight.Bold else FontWeight.Normal,
-                    )
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Column {
+                    if (adding) {
+                        // افزودن موسسه‌ی تازه
+                        OutlinedTextField(
+                            value = newName,
+                            onValueChange = { newName = it.take(40) },
+                            singleLine = true,
+                            label = { Text(stringResource(R.string.institution_name)) },
+                            placeholder = { Text(stringResource(R.string.institution_name_hint, senderHint)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row {
+                            Button(
+                                onClick = { onAdd(newName)?.let(onPick) },
+                                enabled = newName.isNotBlank(),
+                                shape = RoundedCornerShape(14.dp),
+                            ) { Text(stringResource(R.string.institution_save), fontWeight = FontWeight.Bold) }
+                            Spacer(Modifier.weight(1f))
+                            TextButton(onClick = { adding = false }) { Text(stringResource(R.string.budget_dialog_cancel)) }
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            singleLine = true,
+                            placeholder = { Text(stringResource(R.string.institution_search_hint)) },
+                            leadingIcon = { Text("🔍") },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.institution_add),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    newName = q
+                                    adding = true
+                                }
+                                .padding(vertical = 12.dp, horizontal = 4.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary,
+                        )
+                        LazyColumn(Modifier.height(320.dp)) {
+                            items(options, key = { it.id }) { bank ->
+                                Text(
+                                    bank.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onPick(bank.id) }
+                                        .padding(vertical = 12.dp, horizontal = 4.dp),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (bank.id >= 1000) FontWeight.Bold else FontWeight.Normal,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },

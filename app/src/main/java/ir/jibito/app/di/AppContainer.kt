@@ -11,6 +11,7 @@ import ir.jibito.app.data.repository.TransactionRepositoryImpl
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.notify.BudgetAlerter
+import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.ui.theme.ThemeSettings
 
@@ -25,6 +26,9 @@ class AppContainer(context: Context) {
 
     /** چند لایه از دسته‌ها و کدام دسته‌های اصلی در برگه‌ی انتخاب دیده شوند */
     val categoryDisplay: CategoryDisplaySettings by lazy { CategoryDisplaySettings(appContext) }
+
+    /** بانک‌ها و موسسه‌هایی که کاربر خودش اضافه کرده */
+    val customInstitutions: CustomInstitutions by lazy { CustomInstitutions(appContext) }
 
     /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
     val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }
