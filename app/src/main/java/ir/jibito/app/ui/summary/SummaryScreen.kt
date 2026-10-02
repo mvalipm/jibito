@@ -77,6 +77,7 @@ fun SummaryScreen() {
     var editingOverall by rememberSaveable { mutableStateOf(false) }
     // دسته‌ای که جزئیاتش باز است
     var detailId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showIdle by rememberSaveable { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -117,8 +118,33 @@ fun SummaryScreen() {
                         )
                     }
                 }
-                items(s.categories, key = { it.categoryId }) { c ->
+                // دسته‌هایی که این ماه خرج یا بودجه دارند؛ بقیه در یک ردیف تاشو
+                val active = s.categories.filter { it.spentRial > 0 || it.budgetRial != null }
+                val idle = s.categories - active.toSet()
+                items(active, key = { it.categoryId }) { c ->
                     CategoryRow(c, onClick = { detailId = c.categoryId })
+                }
+                if (idle.isNotEmpty()) {
+                    item(key = "idle-toggle") {
+                        Text(
+                            Jalali.toPersianDigits(
+                                stringResource(if (showIdle) R.string.summary_hide_idle else R.string.summary_show_idle, idle.size)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showIdle = !showIdle }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary,
+                        )
+                    }
+                    if (showIdle) {
+                        items(idle, key = { it.categoryId }) { c ->
+                            CategoryRow(c, onClick = { detailId = c.categoryId })
+                        }
+                    }
                 }
 
                 // درآمدها (بدون بودجه)
@@ -227,20 +253,30 @@ private fun HeroCard(s: MonthSummary, onEditBudget: () -> Unit) {
                 style = MaterialTheme.typography.labelLarge,
             )
             Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
+            if (s.totalSpentRial == 0L) {
+                // صفر فارسی (۰) در اندازه‌ی بزرگ فقط یک نقطه است؛ به‌جایش یک جمله
                 Text(
-                    Money.tomanNumber(s.totalSpentRial),
+                    stringResource(R.string.summary_no_spend_yet),
                     color = Color.White,
-                    fontSize = 34.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                 )
-                Spacer(Modifier.size(6.dp))
-                Text(
-                    stringResource(R.string.unit_toman),
-                    color = Color.White.copy(alpha = 0.85f),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
+            } else {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        Money.tomanNumber(s.totalSpentRial),
+                        color = Color.White,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        stringResource(R.string.unit_toman),
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
             }
             OverallBudgetPart(s, onEditBudget)
             Spacer(Modifier.height(14.dp))

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,6 +117,16 @@ fun MainScreen() {
                 }
             }
         }
+
+        // محوشدگی ملایم پایین صفحه: محتوایی که زیر نوار شناور و نوار سیستم می‌رود، بی‌پرده دیده نشود
+        val fadeColor = MaterialTheme.colorScheme.background
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(navInset + FloatingNavBarBottomMargin + FloatingNavBarHeight / 2)
+                .background(Brush.verticalGradient(listOf(fadeColor.copy(alpha = 0f), fadeColor.copy(alpha = 0.92f))))
+        )
 
         FloatingNavBar(
             items = listOf(
