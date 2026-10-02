@@ -22,6 +22,8 @@ data class Transaction(
     val isSelfTransfer: Boolean = false,
     /** کاربر گفته «انتقال به خودم نیست» ← دیگر پیشنهاد انتقال برایش نمی‌آید */
     val isTransferRejected: Boolean = false,
+    /** ثبت دستی (نقدی)، نه از پیامک */
+    val isManual: Boolean = false,
 )
 
 /** پیشنهاد: «این برداشت و این واریزِ هم‌مبلغ، انتقال بین حساب‌های خودت بود؟» */

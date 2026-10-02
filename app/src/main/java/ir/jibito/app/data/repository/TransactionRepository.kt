@@ -37,6 +37,8 @@ import kotlinx.coroutines.sync.withLock
 /** منبع تراکنش: خودکار از پیامک، یا تأییدشده توسط کاربر از صندوق بررسی */
 const val SOURCE_SMS_AUTO = "SMS_AUTO"
 const val SOURCE_SMS_MANUAL = "SMS_MANUAL"
+/** ثبت دستی (نقدی یا تراکنشی که پیامک ندارد) */
+const val SOURCE_MANUAL = "MANUAL"
 
 /**
  * تنها راه صفحه‌ها برای رسیدن به تراکنش‌ها (قانون سند معماری: ViewModel هرگز مستقیم Room نمی‌بیند).
@@ -78,6 +80,18 @@ interface TransactionRepository {
 
     /** حذف دسته‌ی شخصی (و زیردسته‌هایش): تراکنش‌هایشان به دسته‌ی بالاتر یا بی‌دسته می‌روند */
     suspend fun deleteCustomCategory(categoryId: Long)
+
+    /**
+     * ثبت دستی یک خرج یا درآمد. شناسه‌ی تراکنش تازه را برمی‌گرداند.
+     * @param note «برای چی بود؟» — مثل طرف حساب رفتار می‌کند (پیشنهاد و یادگیری دسته)
+     */
+    suspend fun addManual(type: FlowType, amountRial: Long, categoryId: Long?, note: String?, dateMillis: Long): Long
+
+    /** حذف تراکنش دستی (فقط تراکنش‌های دستی؛ پیامکی‌ها از روی پیامک دوباره ساخته می‌شوند) */
+    suspend fun deleteManual(transactionId: Long)
+
+    /** پرکاربردترین دسته‌ها برای این نوع (بیشترین استفاده اول) */
+    suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long>
 }
 
 class TransactionRepositoryImpl(
@@ -119,6 +133,7 @@ class TransactionRepositoryImpl(
                     isAutoCategorized = f.isAutoCategorized,
                     isSelfTransfer = f.transferState == TransactionFlowEntity.TRANSFER_SELF,
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
+                    isManual = f.source == SOURCE_MANUAL,
                 )
             }
         }
@@ -206,6 +221,50 @@ class TransactionRepositoryImpl(
         )
         CreateCategoryResult.Created(id)
     }
+
+    override suspend fun addManual(
+        type: FlowType,
+        amountRial: Long,
+        categoryId: Long?,
+        note: String?,
+        dateMillis: Long,
+    ): Long {
+        val now = System.currentTimeMillis()
+        val merchant = note?.trim()?.takeIf { it.isNotEmpty() }
+        val id = dao.insert(
+            TransactionFlowEntity(
+                smsId = null,
+                bankId = null,
+                flowType = type.code,
+                amount = amountRial,
+                remainAfter = null,
+                dateEpoch = dateMillis,
+                merchant = merchant,
+                suggestedCategory = null,
+                isFailedPurchase = false,
+                categoryId = categoryId,
+                description = null,
+                smsContent = null,
+                source = SOURCE_MANUAL,
+                updatedAt = now,
+                // خود کاربر همین الان ثبتش کرده؛ نوتیفیکیشن «مال چی بود؟» لازم نیست
+                notifiedAt = now,
+                isAutoCategorized = false,
+            )
+        )
+        onCategoryChanged()
+        return id
+    }
+
+    override suspend fun deleteManual(transactionId: Long) {
+        val row = dao.byId(transactionId) ?: return
+        if (row.source != SOURCE_MANUAL) return
+        dao.softDelete(listOf(row.id), System.currentTimeMillis())
+        onCategoryChanged()
+    }
+
+    override suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long> =
+        dao.frequentCategoryIds(flowType, limit)
 
     override suspend fun deleteCustomCategory(categoryId: Long) {
         db.withTransaction {

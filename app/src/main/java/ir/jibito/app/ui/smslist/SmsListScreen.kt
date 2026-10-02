@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import androidx.compose.material3.FloatingActionButton
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.JibitoApplication
@@ -70,6 +71,10 @@ fun SmsListScreen() {
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val colors = MaterialTheme.colorScheme
 
+    var addingManual by rememberSaveable { mutableStateOf(false) }
+    val bottomSpace = LocalBottomBarSpace.current
+
+    Box(Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -129,7 +134,7 @@ fun SmsListScreen() {
                 )
             }
             else -> LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp + LocalBottomBarSpace.current),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
@@ -148,6 +153,21 @@ fun SmsListScreen() {
         }
     }
 
+
+    // «+» ثبت دستی: پایین صفحه، بالای نوار شناور (روی چیزی نمی‌افتد؛ فهرست جای خالی دارد)
+    FloatingActionButton(
+        onClick = { addingManual = true },
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 20.dp, bottom = bottomSpace + 12.dp),
+        containerColor = colors.primary,
+        contentColor = colors.onPrimary,
+        shape = RoundedCornerShape(20.dp),
+    ) {
+        Text("+", fontSize = 28.sp, fontWeight = FontWeight.Black)
+    }
+    }
+
     // برگه‌ی انتخاب دسته (از پایین صفحه)
     val selected = messages?.firstOrNull { it.id == selectedId }
     if (selected != null) {
@@ -162,6 +182,14 @@ fun SmsListScreen() {
                 viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
             },
+            onDelete = if (selected.isManual) {
+                {
+                    viewModel.deleteManual(selected.id)
+                    selectedId = null
+                }
+            } else {
+                null
+            },
             onCreate = { name, parentId, icon, onResult ->
                 viewModel.createCategoryAndPick(selected, name, parentId, icon) { result ->
                     if (result is CreateCategoryResult.Created) selectedId = null
@@ -169,6 +197,21 @@ fun SmsListScreen() {
                 }
             },
             onDismiss = { selectedId = null },
+        )
+    }
+
+    if (addingManual) {
+        ManualEntrySheet(
+            categories = categories,
+            loadQuick = viewModel::loadQuickCategories,
+            onSave = { type, amountRial, categoryId, note, date, openPicker ->
+                viewModel.addManual(type, amountRial, categoryId, note, date) { newId ->
+                    addingManual = false
+                    // «دسته‌ی دیگر…»: برگه‌ی کامل دسته‌ها برای همین تراکنش تازه
+                    if (openPicker) selectedId = newId
+                }
+            },
+            onDismiss = { addingManual = false },
         )
     }
 }
@@ -258,7 +301,7 @@ private fun TransferSuggestionCard(
 private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
-    val bankName = sms.bank?.name ?: stringResource(R.string.bank_unknown)
+    val bankName = if (sms.isManual) stringResource(R.string.tx_manual_source) else sms.bank?.name ?: stringResource(R.string.bank_unknown)
     val isDeposit = t.type == FlowType.DEPOSIT
     val failed = sms.isFailedPurchase
     val selfTransfer = sms.isSelfTransfer && !failed
@@ -271,6 +314,7 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
     val title = when {
         failed -> stringResource(R.string.tx_failed_purchase)
         selfTransfer -> stringResource(R.string.tx_self_transfer)
+        sms.isManual -> sms.merchant ?: stringResource(if (isDeposit) R.string.tx_manual_income else R.string.tx_manual_expense)
         sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)

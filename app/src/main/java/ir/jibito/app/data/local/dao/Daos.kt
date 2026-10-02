@@ -86,6 +86,23 @@ interface TransactionFlowDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)
 
+    /** یک تراکنش (ثبت دستی)؛ شناسه‌اش را برمی‌گرداند */
+    @Insert
+    suspend fun insert(item: TransactionFlowEntity): Long
+
+    /** دسته‌هایی که بیشترین تراکنش را دارند (برای دکمه‌های سریع ثبت دستی) */
+    @Query(
+        """
+        SELECT t.categoryId FROM transaction_flows t
+        JOIN categories c ON c.id = t.categoryId
+        WHERE t.isDeleted = 0 AND t.flowType = :flowType AND c.isArchived = 0
+        GROUP BY t.categoryId
+        ORDER BY COUNT(*) DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long>
+
     @Update
     suspend fun updateAll(items: List<TransactionFlowEntity>)
 

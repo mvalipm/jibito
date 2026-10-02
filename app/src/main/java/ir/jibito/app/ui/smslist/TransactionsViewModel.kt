@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import kotlinx.coroutines.flow.SharingStarted
@@ -60,6 +61,26 @@ class TransactionsViewModel(
             }
             onResult(result)
         }
+    }
+
+    /** ثبت دستی؛ بعد از ذخیره، شناسه‌ی تراکنش تازه به onSaved داده می‌شود */
+    fun addManual(
+        type: FlowType,
+        amountRial: Long,
+        categoryId: Long?,
+        note: String?,
+        dateMillis: Long,
+        onSaved: (Long) -> Unit,
+    ) {
+        viewModelScope.launch { onSaved(repository.addManual(type, amountRial, categoryId, note, dateMillis)) }
+    }
+
+    fun deleteManual(transactionId: Long) {
+        viewModelScope.launch { repository.deleteManual(transactionId) }
+    }
+
+    fun loadQuickCategories(flowType: Int, onResult: (List<Long>) -> Unit) {
+        viewModelScope.launch { onResult(repository.frequentCategoryIds(flowType, 6)) }
     }
 
     fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {

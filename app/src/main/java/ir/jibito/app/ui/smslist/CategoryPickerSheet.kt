@@ -75,6 +75,8 @@ fun CategoryPickerSheet(
     /** ساختن دسته‌ی شخصی (و انتخابش برای همین تراکنش): اسم، دسته‌ی بالاتر، آیکون، نتیجه */
     onCreate: (String, Long?, String?, (CreateCategoryResult) -> Unit) -> Unit,
     onDismiss: () -> Unit,
+    /** فقط برای تراکنش دستی: حذف آن */
+    onDelete: (() -> Unit)? = null,
 ) {
     var creating by remember { mutableStateOf<CreateTarget?>(null) }
     val colors = MaterialTheme.colorScheme
@@ -132,7 +134,7 @@ fun CategoryPickerSheet(
                 Spacer(Modifier.height(14.dp))
 
                 // انتقال بین حساب‌های خودم: جدا از دسته‌ها، چون نه خرج است نه درآمد
-                FilterChip(
+                if (!transaction.isManual) FilterChip(
                     selected = transaction.isSelfTransfer,
                     onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
                     label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
@@ -142,7 +144,7 @@ fun CategoryPickerSheet(
                         selectedLabelColor = Color.White,
                     ),
                 )
-                Text(
+                if (!transaction.isManual) Text(
                     text = stringResource(R.string.sheet_self_transfer_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
@@ -295,7 +297,12 @@ fun CategoryPickerSheet(
                         }
                     }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { showSms = !showSms }) {
+                    if (onDelete != null) {
+                        TextButton(onClick = onDelete) {
+                            Text(stringResource(R.string.manual_delete), color = colors.error)
+                        }
+                    }
+                    if (transaction.body.isNotBlank()) TextButton(onClick = { showSms = !showSms }) {
                         Text(stringResource(if (showSms) R.string.sheet_hide_sms else R.string.sheet_show_sms))
                     }
                 }
