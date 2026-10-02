@@ -1,6 +1,21 @@
 package ir.jibito.app.ui.summary
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import android.provider.Settings
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -64,7 +79,7 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .background(Brush.linearGradient(listOf(extras.heroStart, extras.heroEnd)))
+            .animatedHeroBackground(extras.heroStart, extras.heroEnd)
             .clickable(onClick = onEditBudget)
             .padding(horizontal = 18.dp, vertical = 16.dp)
     ) {
@@ -181,6 +196,60 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** یک دور کامل حرکت پس‌زمینه‌ی کارت (میلی‌ثانیه) — آرام، تا حواس را پرت نکند */
+private const val HERO_MOTION_MILLIS = 14_000
+
+/**
+ * پس‌زمینه‌ی متحرک و ملایم کارت بالا:
+ * - جهت گرادیان آرام می‌چرخد.
+ * - یک هاله‌ی نور نرم (سفید کم‌رنگ) آهسته روی کارت حرکت می‌کند.
+ * فقط مرحله‌ی «کشیدن» تکرار می‌شود (نه چیدمان صفحه)، پس سبک است.
+ * اگر کاربر در تنظیمات گوشی انیمیشن‌ها را خاموش کرده باشد، ثابت می‌ماند.
+ */
+@Composable
+private fun Modifier.animatedHeroBackground(start: Color, end: Color): Modifier {
+    val context = LocalContext.current
+    val motionOff = remember {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+    val mid = lerp(start, end, 0.5f)
+    if (motionOff) return this.background(Brush.linearGradient(listOf(start, end)))
+
+    val transition = rememberInfiniteTransition(label = "hero")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(tween(HERO_MOTION_MILLIS, easing = LinearEasing), RepeatMode.Restart),
+        label = "heroPhase",
+    )
+    return this.drawBehind {
+        val w = size.width
+        val h = size.height
+        val s = sin(phase)
+        val c = cos(phase)
+        // گرادیان اصلی که جهتش آرام جابه‌جا می‌شود
+        drawRect(
+            Brush.linearGradient(
+                colors = listOf(start, mid, end),
+                start = Offset(w * (0.15f * s), h * (0.5f - 0.5f * c)),
+                end = Offset(w * (1f - 0.15f * s), h * (0.5f + 0.5f * c)),
+            )
+        )
+        // هاله‌ی نور نرم
+        val center = Offset(w * (0.5f + 0.35f * c), h * (0.45f + 0.3f * s))
+        val radius = maxOf(w, h) * 0.55f
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color.White.copy(alpha = 0.16f), Color.Transparent),
+                center = center,
+                radius = radius,
+            ),
+            radius = radius,
+            center = center,
         )
     }
 }
