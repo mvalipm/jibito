@@ -326,7 +326,7 @@
 
     <!-- پرداخت‌های ماهانه -->
     <string name="recurring_title">پرداخت‌های ماهانه</string>
-    <string name="recurring_hint">اجاره، قسط، شهریه… روز موعدش یادت می‌ندازم. (فقط یادآوریه؛ خود پرداخت مثل همیشه از پیامک بانک ثبت می‌شه.)</string>
+    <string name="recurring_hint">اجاره، قسط، شهریه… روز موعدش ساعت ۹ صبح یادت می‌ندازم؛ اگه همون مبلغ رو از قبل پرداخت کرده باشی، یادآوری نمیاد. (فقط یادآوریه؛ خود پرداخت مثل همیشه از پیامک بانک ثبت می‌شه.)</string>
     <string name="recurring_row">%1$s · هر ماه روز %2$d</string>
     <string name="recurring_add">+ پرداخت ماهانه</string>
     <string name="recurring_field_title">برای چی؟ (مثلاً اجاره)</string>
@@ -341,6 +341,7 @@
     <string name="recurring_channel_name">یادآوری پرداخت‌ها</string>
     <string name="recurring_channel_desc">روز موعد پرداخت‌های ماهانه (اجاره، قسط…)</string>
     <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
+    <string name="recurring_notif_title_late">موعد «%1$s» روز %2$d بود</string>
     <string name="recurring_notif_body">%1$s</string>
 
     <!-- نوتیفیکیشن خاموش -->

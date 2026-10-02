@@ -41,6 +41,14 @@ class RecurringScheduleTest {
     }
 
     @Test
+    fun lateOnlyAfterTheDueDay() {
+        assertFalse(RecurringSchedule.isLate(11, 1405, 7, 11))
+        assertTrue(RecurringSchedule.isLate(11, 1405, 7, 12))
+        // روز ۳۱ در مهرِ ۳۰ روزه: روز ۳۰ دیر نیست
+        assertFalse(RecurringSchedule.isLate(31, 1405, 7, 30))
+    }
+
+    @Test
     fun newPaymentWhoseDayPassedWaitsForNextMonth() {
         assertEquals(140507, RecurringSchedule.initialRemindedKey(5, 1405, 7, 20))
         assertNull(RecurringSchedule.initialRemindedKey(25, 1405, 7, 20))
