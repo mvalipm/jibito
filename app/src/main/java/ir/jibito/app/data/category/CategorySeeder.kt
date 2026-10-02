@@ -18,6 +18,7 @@ class CategorySeeder(private val db: AppDatabase) {
         val categoryDao = db.categoryDao()
         // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
         if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
+            mergeDuplicates()
             syncColors()
             return
         }
@@ -57,6 +58,40 @@ class CategorySeeder(private val db: AppDatabase) {
         }
         syncColors()
     }
+
+    /**
+     * خودترمیمی: اگر دو دسته‌ی فعال با یک اسم، زیر یک والد و از یک نوع وجود داشته باشند
+     * (مثلاً «الکترونیک و لوازم برقی» دو بار)، تراکنش‌ها، بودجه و زیردسته‌های تکراری
+     * به دسته‌ی «اصلی» منتقل می‌شوند و تکراری بایگانی می‌شود. هیچ داده‌ای حذف نمی‌شود.
+     * دسته‌ی اصلی: آن که شناسه‌ی ثابت (code) دارد؛ وگرنه قدیمی‌ترین.
+     */
+    private suspend fun mergeDuplicates() {
+        val categoryDao = db.categoryDao()
+        val flowDao = db.transactionFlowDao()
+        val summaryDao = db.summaryDao()
+        val active = categoryDao.all().filter { !it.isArchived }
+        val groups = active.groupBy { Triple(it.flowType, it.parentId, normalizeName(it.name)) }.values.filter { it.size > 1 }
+        if (groups.isEmpty()) return
+        db.withTransaction {
+            for (group in groups) {
+                val keeper = group.sortedWith(compareBy<CategoryEntity> { it.code == null }.thenBy { it.id }).first()
+                for (dup in group) {
+                    if (dup.id == keeper.id) continue
+                    flowDao.reassign(listOf(dup.id), keeper.id)
+                    categoryDao.reparent(dup.id, keeper.id)
+                    summaryDao.budgetFor(dup.id)?.let { b ->
+                        val current = summaryDao.budgetFor(keeper.id)?.monthlyLimitRial ?: 0L
+                        summaryDao.upsertBudget(BudgetEntity(keeper.id, current + b.monthlyLimitRial))
+                        summaryDao.deleteBudget(dup.id)
+                    }
+                    categoryDao.archive(dup.id)
+                }
+            }
+        }
+    }
+
+    private fun normalizeName(s: String): String =
+        s.replace('ي', 'ی').replace('ك', 'ک').replace("\u200c", "").replace(" ", "").lowercase()
 
     /**
      * رنگ دسته‌های اصلی ← پالت اعتبارسنجی‌شده‌ی نمودار (CategoryPalette).

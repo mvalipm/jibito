@@ -208,6 +208,10 @@ interface CategoryDao {
     @Query("UPDATE categories SET colorHex = :color WHERE id = :id")
     suspend fun setColor(id: Long, color: String)
 
+    /** زیردسته‌های یک دسته ← زیر دسته‌ی دیگر (برای یکی کردن دسته‌های تکراری) */
+    @Query("UPDATE categories SET parentId = :newParentId WHERE parentId = :oldParentId")
+    suspend fun reparent(oldParentId: Long, newParentId: Long)
+
     @Query("UPDATE categories SET isArchived = 1 WHERE id = :id")
     suspend fun archive(id: Long)
 
