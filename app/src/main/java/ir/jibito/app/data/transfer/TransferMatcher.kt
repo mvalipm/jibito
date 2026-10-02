@@ -30,22 +30,53 @@ object TransferMatcher {
 
     /** ورودی‌ها باید از قبل فیلتر شده باشند (حذف‌شده، خرید ناموفق، انتقال‌های قبلی و ردشده‌ها کنار رفته‌اند). */
     fun findPairs(items: List<TransferCandidate>): List<TransferPair> {
-        val withdrawals = items.filter { it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
-        val deposits = items.filter { !it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
+        val order = compareBy<TransferCandidate>({ it.dateMillis }, { it.id })
+        val withdrawals = items.filter { it.isWithdrawal }.sortedWith(order)
+        val deposits = items.filter { !it.isWithdrawal }.sortedWith(order)
         val depositsByAmount = deposits.groupBy { it.amountRial }
+        val datesByAmount = depositsByAmount.mapValues { (_, list) -> LongArray(list.size) { list[it].dateMillis } }
+        val depositDates = LongArray(deposits.size) { deposits[it].dateMillis }
         val used = HashSet<Long>()
         val pairs = mutableListOf<TransferPair>()
         for (w in withdrawals) {
             fun ok(d: TransferCandidate) =
                 d.id !in used && d.dateMillis >= w.dateMillis && d.dateMillis - w.dateMillis <= WINDOW_MILLIS
-            // اول مبلغ دقیقاً برابر؛ وگرنه واریزی که به اندازه‌ی کارمزد انتقال کمتر است (برداشت = واریز + کارمزد)
-            val match = depositsByAmount[w.amountRial]?.firstOrNull(::ok)
-                ?: deposits.filter { ok(it) && PurchaseLinker.isTransferFee(w.amountRial, it.amountRial) }
-                    .minByOrNull { it.dateMillis }
+            // اول مبلغ دقیقاً برابر؛ وگرنه واریزی که به اندازه‌ی کارمزد انتقال کمتر است (برداشت = واریز + کارمزد).
+            // فقط واریزهای همان ۲۴ ساعت بررسی می‌شوند (جستجوی دودویی روی زمان)، نه همه‌ی واریزها.
+            val match = depositsByAmount[w.amountRial]?.let { sameAmount ->
+                firstInWindow(sameAmount, datesByAmount.getValue(w.amountRial), w.dateMillis) { ok(it) }
+            }
+                ?: firstInWindow(deposits, depositDates, w.dateMillis) { ok(it) && PurchaseLinker.isTransferFee(w.amountRial, it.amountRial) }
                 ?: continue
             used += match.id
             pairs += TransferPair(w.id, match.id)
         }
         return pairs
+    }
+
+    /** اولین واریز (به ترتیب زمان) از [from] تا ۲۴ ساعت بعدش که شرط را دارد */
+    private inline fun firstInWindow(
+        deposits: List<TransferCandidate>,
+        dates: LongArray,
+        from: Long,
+        predicate: (TransferCandidate) -> Boolean,
+    ): TransferCandidate? {
+        var i = lowerBound(dates, from)
+        while (i < deposits.size && dates[i] - from <= WINDOW_MILLIS) {
+            if (predicate(deposits[i])) return deposits[i]
+            i++
+        }
+        return null
+    }
+
+    /** اولین اندیسی که زمانش >= value است */
+    private fun lowerBound(sorted: LongArray, value: Long): Int {
+        var lo = 0
+        var hi = sorted.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (sorted[mid] < value) lo = mid + 1 else hi = mid
+        }
+        return lo
     }
 }

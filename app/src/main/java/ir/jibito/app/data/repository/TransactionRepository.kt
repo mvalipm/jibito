@@ -33,6 +33,12 @@ import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -54,7 +60,7 @@ interface TransactionRepository {
 
     /**
      * پیامک‌ها را می‌خواند و دیتابیس را به‌روز می‌کند. تعداد تراکنش‌های جدید را برمی‌گرداند.
-     * معمولاً فقط پیامک‌های تازه خوانده می‌شوند؛ بار اول، روزی یک بار، یا با forceFull کل صندوق.
+     * معمولاً فقط پیامک‌های تازه خوانده می‌شوند؛ بار اول، بعد از به‌روزرسانی اپ، هفته‌ای یک بار، یا با forceFull کل صندوق.
      */
     suspend fun syncFromSms(forceFull: Boolean = false): Int
 
@@ -107,6 +113,8 @@ class TransactionRepositoryImpl(
     private val syncState: SyncState,
     /** بعد از تعیین دسته صدا زده می‌شود (برای بررسی هشدار بودجه) */
     private val onCategoryChanged: suspend () -> Unit = {},
+    /** دامنه‌ی کل اپ؛ برای این‌که فهرست تراکنش‌ها یک بار ساخته و بین همه‌ی صفحه‌ها مشترک شود */
+    private val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : TransactionRepository {
 
     private val dao = db.transactionFlowDao()
@@ -114,7 +122,27 @@ class TransactionRepositoryImpl(
     private val _isSyncing = MutableStateFlow(false)
     override val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-    override fun observeTransactions(): Flow<List<Transaction>> =
+    override fun observeTransactions(): Flow<List<Transaction>> = sharedTransactions
+
+    override fun observeTransferSuggestions(): Flow<List<TransferSuggestion>> = sharedTransferSuggestions
+
+    /**
+     * فهرست تراکنش‌ها: یک بار برای همه‌ی صفحه‌ها (نه یک بار برای هر صفحه) و بیرون از رشته‌ی اصلی (UI)،
+     * تا با هزاران تراکنش هم صفحه گیر نکند. ۵ ثانیه بعد از رفتن آخرین صفحه، خاموش می‌شود.
+     */
+    private val sharedTransactions: Flow<List<Transaction>> by lazy {
+        buildTransactions()
+            .flowOn(Dispatchers.Default)
+            .shareIn(appScope, SharingStarted.WhileSubscribed(SHARE_TIMEOUT_MILLIS), replay = 1)
+    }
+
+    private val sharedTransferSuggestions: Flow<List<TransferSuggestion>> by lazy {
+        buildTransferSuggestions(sharedTransactions)
+            .flowOn(Dispatchers.Default)
+            .shareIn(appScope, SharingStarted.WhileSubscribed(SHARE_TIMEOUT_MILLIS), replay = 1)
+    }
+
+    private fun buildTransactions(): Flow<List<Transaction>> =
         combine(dao.observeAll(), db.categoryDao().observeAll()) { rows, categories ->
             val byId = categories.associateBy { it.id }
             rows.map { row ->
@@ -146,8 +174,8 @@ class TransactionRepositoryImpl(
             }
         }
 
-    override fun observeTransferSuggestions(): Flow<List<TransferSuggestion>> =
-        observeTransactions().map { all ->
+    private fun buildTransferSuggestions(transactions: Flow<List<Transaction>>): Flow<List<TransferSuggestion>> =
+        transactions.map { all ->
             val rows = all.filter { !it.isFailedPurchase && !it.isSelfTransfer && !it.isTransferRejected }
             val byId = rows.associateBy { it.id }
             TransferMatcher.findPairs(
@@ -279,7 +307,7 @@ class TransactionRepositoryImpl(
             rows.distinctBy { it.bankId }.mapNotNull { row ->
                 BankDirectory.byId(row.bankId)?.let { BankBalance(it, row.remainAfter, row.dateEpoch) }
             }
-        }
+        }.flowOn(Dispatchers.Default)
 
     override suspend fun deleteCustomCategory(categoryId: Long) {
         db.withTransaction {
@@ -516,4 +544,8 @@ class TransactionRepositoryImpl(
         transferState = transferState,
         transferPairId = transferPairId,
     )
+
+    private companion object {
+        const val SHARE_TIMEOUT_MILLIS = 5_000L
+    }
 }

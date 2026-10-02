@@ -41,4 +41,53 @@ class TransferMatcherTest {
         )
         assertEquals(listOf(TransferPair(1, 3), TransferPair(2, 4)), pairs)
     }
+
+    /** همان الگوریتم قبلی (همه‌ی واریزها برای هر برداشت)؛ نسخه‌ی سریع باید دقیقاً همین جواب را بدهد */
+    private fun naive(items: List<TransferCandidate>): List<TransferPair> {
+        val withdrawals = items.filter { it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
+        val deposits = items.filter { !it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
+        val byAmount = deposits.groupBy { it.amountRial }
+        val used = HashSet<Long>()
+        val pairs = mutableListOf<TransferPair>()
+        for (w in withdrawals) {
+            fun ok(d: TransferCandidate) =
+                d.id !in used && d.dateMillis >= w.dateMillis && d.dateMillis - w.dateMillis <= TransferMatcher.WINDOW_MILLIS
+            val match = byAmount[w.amountRial]?.firstOrNull(::ok)
+                ?: deposits.filter { ok(it) && ir.jibito.app.data.linking.PurchaseLinker.isTransferFee(w.amountRial, it.amountRial) }
+                    .minByOrNull { it.dateMillis }
+                ?: continue
+            used += match.id
+            pairs += TransferPair(w.id, match.id)
+        }
+        return pairs
+    }
+
+    @Test
+    fun `نسخه‌ی سریع همان جواب نسخه‌ی کامل را می‌دهد`() {
+        val random = java.util.Random(42)
+        val amounts = listOf(1_000_000L, 1_011_000L, 5_000_000L, 5_050_000L, 20_000_000L, 20_100_000L, 333_000L)
+        repeat(200) { round ->
+            val items = (1..60L).map { id ->
+                TransferCandidate(
+                    id = id,
+                    isWithdrawal = random.nextBoolean(),
+                    amountRial = amounts[random.nextInt(amounts.size)],
+                    // چند روز، با زمان‌های تکراری هم
+                    dateMillis = random.nextInt(4 * 24 * 6).toLong() * 10 * min,
+                )
+            }
+            assertEquals("round $round", naive(items), TransferMatcher.findPairs(items))
+        }
+    }
+
+    @Test
+    fun `چند ده هزار تراکنش در کسری از ثانیه`() {
+        val items = (1..40_000L).map { id ->
+            TransferCandidate(id, id % 3 != 0L, 1_000_000L + (id % 97) * 1_000, id * 20 * min)
+        }
+        val start = System.nanoTime()
+        TransferMatcher.findPairs(items)
+        val millis = (System.nanoTime() - start) / 1_000_000
+        assert(millis < 3_000) { "took $millis ms" }
+    }
 }
