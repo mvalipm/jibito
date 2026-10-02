@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    env:
+      # کلید انتشار در Secrets تعریف شده؟ (راهنما: RELEASE.md)
+      HAS_RELEASE_KEY: ${{ secrets.JIBITO_KEYSTORE_BASE64 != '' }}
     steps:
       - name: Get code
         uses: actions/checkout@v4
@@ -30,6 +33,22 @@ jobs:
         run: |
           set -o pipefail
           gradle testDebugUnitTest assembleDebug --stacktrace 2>&1 | tee build.log
+
+      # نسخه‌ی انتشار (R8) همیشه ساخته می‌شود تا خرابی‌اش همان موقع معلوم شود؛ امضا فقط اگر کلید در Secrets باشد
+      - name: Build release APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.JIBITO_KEYSTORE_BASE64 }}
+          JIBITO_KEYSTORE_PASSWORD: ${{ secrets.JIBITO_KEYSTORE_PASSWORD }}
+          JIBITO_KEY_ALIAS: ${{ secrets.JIBITO_KEY_ALIAS }}
+          JIBITO_KEY_PASSWORD: ${{ secrets.JIBITO_KEY_PASSWORD }}
+        run: |
+          set -o pipefail
+          if [ "$HAS_RELEASE_KEY" = "true" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            export JIBITO_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
+          fi
+          gradle assembleRelease --stacktrace 2>&1 | tee -a build.log
+          rm -f "$RUNNER_TEMP/release.jks"
 
       # اگر ساخت شکست خورد، خطاهای کامپایل و تست‌های ردشده را به‌صورت خلاصه بالای صفحه‌ی گیت‌هاب نشان می‌دهد
       - name: Show errors summary
@@ -52,6 +71,15 @@ jobs:
         with:
           name: jibito-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload signed release APK
+        if: env.HAS_RELEASE_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jibito-release
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/mapping/release/mapping.txt
 
       # فایل ساختار دیتابیس (app/schemas) را اگر عوض شده باشد خودکار در گیت ذخیره می‌کند
       - name: Save Room schema to repository

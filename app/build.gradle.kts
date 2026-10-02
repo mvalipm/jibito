@@ -26,11 +26,27 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // کلید انتشار هرگز در گیت نیست: از متغیرهای محیطی (در GitHub Actions از Secrets) خوانده می‌شود.
+        // راهنمای ساختن کلید و تنظیم Secrets: RELEASE.md
+        val releaseStore = System.getenv("JIBITO_KEYSTORE_FILE")
+        if (!releaseStore.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseStore)
+                storePassword = System.getenv("JIBITO_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("JIBITO_KEY_ALIAS")
+                keyPassword = System.getenv("JIBITO_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: کد استفاده‌نشده حذف و اسم‌ها کوتاه می‌شوند ← APK کوچک‌تر و سریع‌تر، و مهندسی معکوس سخت‌تر
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // بدون کلید انتشار (مثلاً روی کامپیوتر توسعه‌دهنده)، نسخه‌ی release امضا نمی‌شود
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
