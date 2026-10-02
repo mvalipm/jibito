@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.review.ReviewScreen
@@ -157,7 +157,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 Modifier
                     .fillMaxSize()
                     .consumeWindowInsets(WindowInsets.navigationBars)
-                    .haze(state = hazeState)
+                    .hazeSource(state = hazeState)
             ) {
                 // بنر زرد «پیامک‌های منتظر» حذف شد: عدد روی تب «بررسی» و مورد «کارهای لازم» در خلاصه کافی است
                 Box(

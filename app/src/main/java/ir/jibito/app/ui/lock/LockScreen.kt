@@ -1,6 +1,5 @@
 package ir.jibito.app.ui.lock
 
-import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,13 +19,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import androidx.activity.compose.LocalActivity
 
 /** صفحه‌ی قفل: تا قفل گوشی تأیید نشود، هیچ داده‌ای نشان داده نمی‌شود. پنجره‌ی تأیید خودکار باز می‌شود. */
 @Composable
@@ -39,7 +38,7 @@ fun LockScreen(onUnlocked: () -> Unit) {
 
     LaunchedEffect(Unit) { authenticate() }
     // «برگشت» روی صفحه‌ی قفل: اپ به پس‌زمینه می‌رود (نه صفحه‌ی زیرین)
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     BackHandler { activity?.moveTaskToBack(true) }
 
     Column(

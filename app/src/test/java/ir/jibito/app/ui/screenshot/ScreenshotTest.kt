@@ -38,19 +38,43 @@ import ir.jibito.app.ui.summary.TrendCard
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.RevealStats
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import com.github.takahirom.roborazzi.RoborazziOptions
+import java.util.Calendar
+import java.util.TimeZone
+import org.junit.After
+import org.junit.Before
 
 /**
- * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره.
- * فقط وقتی ساخته می‌شوند که -Proborazzi.test.record=true داده شود (در CI)؛ خروجی: app/build/outputs/roborazzi/
- * هدف: دیدن ظاهر بعد از هر تغییر، بدون گوشی.
+ * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره، و با فونت بزرگ.
+ * تصویرهای مرجع در app/src/test/screenshots/ هستند:
+ * - -Proborazzi.test.verify=true (پیش‌فرض CI): هر تفاوتی با مرجع، ساخت را می‌شکند (تصویر تفاوت در Artifact)
+ * - -Proborazzi.test.record=true: مرجع‌ها از نو ساخته می‌شوند (CI: اجرای دستی با record_screenshots)
+ * زمان و منطقه‌ی زمانی ثابت‌اند تا تصویرها هر بار یکی باشند.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w400dp-h860dp-xxhdpi")
 class ScreenshotTest {
 
-    private val now = System.currentTimeMillis()
+    private companion object {
+        const val ZONE = "Asia/Tehran"
+    }
+
+    /** پنجشنبه ۹ مهر ۱۴۰۵، ساعت ۲۰ تهران */
+    private val now = Calendar.getInstance(TimeZone.getTimeZone(ZONE)).apply { clear(); set(2026, Calendar.OCTOBER, 1, 20, 0) }.timeInMillis
     private val hour = 60 * 60 * 1000L
+    private lateinit var savedZone: TimeZone
+
+    @Before
+    fun fixZone() {
+        savedZone = TimeZone.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone(ZONE))
+    }
+
+    @After
+    fun restoreZone() = TimeZone.setDefault(savedZone)
 
     private fun tx(
         id: Long,
@@ -83,17 +107,44 @@ class ScreenshotTest {
         tx(7, 29, 900_000),
     ).sortedByDescending { it.dateMillis }
 
+    private val attentionItems = listOf(
+        AttentionItem(JibitoIcons.Bell, "نوتیفیکیشن‌ها خاموش‌اند", AttentionItem.Tone.WARN) {},
+        AttentionItem(JibitoIcons.Warning, "کافه: ۱۱۲٪ بودجه", AttentionItem.Tone.DANGER) {},
+        AttentionItem(JibitoIcons.Tag, "۸۵۰ هزار تومان خرج بی‌دسته", AttentionItem.Tone.NORMAL) {},
+        AttentionItem(JibitoIcons.Repeat, "«شارژ ساختمون» هر ماه پرداخت می‌شه؟ یادآوری بسازم", AttentionItem.Tone.NORMAL) {},
+    )
+
+    private val trendSample = JalaliMonth(1405, 7).let { end ->
+        val values = listOf(38_000_000L, 52_500_000L, 41_200_000L, 66_000_000L, 47_800_000L, 29_300_000L)
+        SpendTrend(values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) }, lastMonthSameTimeRial = null)
+    }
+
+    /** ۱٪ تفاوت پیکسل‌ها (لبه‌های نرم فونت) قبول است؛ بیشتر از آن یعنی ظاهر عوض شده */
+    private val options = RoborazziOptions(compareOptions = RoborazziOptions.CompareOptions(changeThreshold = 0.01f))
+
     private val variants = listOf(
         AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true,
         AppThemeStyle.WARM to false, AppThemeStyle.WARM to true,
         AppThemeStyle.COOL to false, AppThemeStyle.COOL to true,
     )
 
-    private fun shot(name: String, style: AppThemeStyle, dark: Boolean, padded: Boolean = true, content: @Composable () -> Unit) {
-        val file = "build/outputs/roborazzi/${name}_${style.name.lowercase()}_${if (dark) "dark" else "light"}.png"
-        captureRoboImage(file) {
+    private fun shot(
+        name: String,
+        style: AppThemeStyle,
+        dark: Boolean,
+        padded: Boolean = true,
+        fontScale: Float = 1f,
+        content: @Composable () -> Unit,
+    ) {
+        val suffix = if (fontScale != 1f) "_font${(fontScale * 100).toInt()}" else ""
+        val file = "src/test/screenshots/${name}_${style.name.lowercase()}_${if (dark) "dark" else "light"}$suffix.png"
+        captureRoboImage(file, roborazziOptions = options) {
             JibitoTheme(style = style, darkTheme = dark) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides LayoutDirection.Rtl,
+                    LocalDensity provides Density(density.density, fontScale),
+                ) {
                     Column(
                         Modifier
                             .fillMaxWidth()
@@ -111,30 +162,35 @@ class ScreenshotTest {
         for ((style, dark) in variants) {
             shot("transactions", style, dark) {
                 groups.forEach { group ->
-                    DayHeader(group)
+                    DayHeader(group, now)
                     group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
                 }
             }
         }
     }
 
+    /** بزرگ‌ترین اندازه‌ی فونت گوشی: متن‌ها نباید بریده شوند یا روی هم بیفتند */
+    @Test
+    fun largeFont() {
+        val groups = groupByDay(sample)
+        shot("transactions", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) {
+            groups.take(1).forEach { group ->
+                DayHeader(group, now)
+                group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
+            }
+        }
+        shot("attention", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) { AttentionCard(attentionItems) }
+        shot("trend", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) { TrendCard(trendSample) }
+    }
+
     @Test
     fun attentionCard() {
-        val items = listOf(
-            AttentionItem(JibitoIcons.Bell, "نوتیفیکیشن‌ها خاموش‌اند", AttentionItem.Tone.WARN) {},
-            AttentionItem(JibitoIcons.Warning, "کافه: ۱۱۲٪ بودجه", AttentionItem.Tone.DANGER) {},
-            AttentionItem(JibitoIcons.Tag, "۸۵۰ هزار تومان خرج بی‌دسته", AttentionItem.Tone.NORMAL) {},
-            AttentionItem(JibitoIcons.Message, "۲ پیامک منتظر بررسی", AttentionItem.Tone.NORMAL) {},
-        )
-        for ((style, dark) in variants) shot("attention", style, dark) { AttentionCard(items) }
+        for ((style, dark) in variants) shot("attention", style, dark) { AttentionCard(attentionItems) }
     }
 
     @Test
     fun trend() {
-        val end = JalaliMonth(1404, 7)
-        val values = listOf(38_000_000L, 52_500_000L, 41_200_000L, 66_000_000L, 47_800_000L, 29_300_000L)
-        val trend = SpendTrend(values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) }, lastMonthSameTimeRial = null)
-        for ((style, dark) in variants) shot("trend", style, dark) { TrendCard(trend) }
+        for ((style, dark) in variants) shot("trend", style, dark) { TrendCard(trendSample) }
     }
 
     @Test

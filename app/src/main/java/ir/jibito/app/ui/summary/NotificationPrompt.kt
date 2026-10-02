@@ -1,7 +1,6 @@
 package ir.jibito.app.ui.summary
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -19,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.activity.compose.LocalActivity
 
 /**
  * نوتیفیکیشن خاموش است؟ (یعنی «این خرج مال چی بود؟» و هشدار بودجه و یادآوری‌ها نمی‌آیند)
@@ -39,9 +39,9 @@ fun rememberNotificationPrompt(): NotificationPromptState {
         snoozed = isSnoozed(context)
     }
 
+    val activity = LocalActivity.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         enabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
-        val activity = context as? Activity
         // رد شد و اندروید دیگر پنجره نشان نمی‌دهد ← مستقیم تنظیمات
         if (!granted && activity != null &&
             !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)

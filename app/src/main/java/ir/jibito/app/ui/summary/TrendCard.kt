@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -48,6 +49,7 @@ fun TrendCard(trend: SpendTrend) {
     val max = months.maxOf { it.spentRial }.coerceAtLeast(1L)
     val picked = months[selected.coerceIn(0, months.lastIndex)]
     val toman = stringResource(R.string.unit_toman)
+    val largeText = LocalDensity.current.fontScale >= 1.5f
 
     Column(
         Modifier
@@ -105,7 +107,8 @@ fun TrendCard(trend: SpendTrend) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             months.forEachIndexed { i, m ->
                 Text(
-                    Jalali.MONTH_NAMES[m.month.month - 1],
+                    // فونت بزرگ گوشی: شماره‌ی ماه به جای اسم (اسم کامل ماه انتخاب‌شده بالای نمودار هست)
+                    if (largeText) Jalali.toPersianDigits(m.month.month.toString()) else Jalali.MONTH_NAMES[m.month.month - 1],
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (i == selected) FontWeight.Bold else FontWeight.Normal,

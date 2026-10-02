@@ -1,6 +1,6 @@
 plugins {
+    // از AGP 9، کاتلین داخل خود پلاگین اندروید است (دیگر kotlin-android جدا لازم نیست)
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     // تست اسکرین‌شات صفحه‌ها روی JVM (Robolectric)؛ تصویرها در CI ساخته و به‌صورت Artifact گذاشته می‌شوند
@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "ir.jibito.app"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 51
-        versionName = "0.40.2"
+        versionCode = 52
+        versionName = "0.41.0"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود
@@ -56,9 +56,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
     }
@@ -68,6 +65,9 @@ android {
         abortOnError = true
         checkDependencies = false
         htmlReport = true
+        // همه‌ی مشکل‌ها در خروجی CI هم نوشته شوند (نه فقط اولی)
+        textReport = true
+        textOutput = file("stdout")
     }
     testOptions {
         // منابع اپ (رشته‌ها، فونت وزیرمتن) در تست‌های Robolectric هم در دسترس باشند (لازم برای تست اسکرین‌شات)
@@ -102,6 +102,9 @@ dependencies {
     // پس‌زمینه‌ی شیشه‌ای مات نوار پایین (تار کردن محتوای زیرش)
     implementation(libs.haze)
     implementation(libs.androidx.work.runtime.ktx)
+    // پروفایل‌های آماده‌ی کتابخانه‌ها (Compose و…) را روی گوشی نصب می‌کند تا اپ سریع‌تر باز شود؛
+    // مهم برای نصب از کافه‌بازار و مایکت که مثل گوگل‌پلی پروفایل ابری ندارند
+    implementation(libs.androidx.profileinstaller)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

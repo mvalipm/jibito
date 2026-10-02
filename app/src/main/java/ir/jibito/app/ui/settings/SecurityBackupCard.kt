@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,6 +53,8 @@ import kotlin.system.exitProcess
 @Composable
 fun SecurityBackupCard(card: @Composable (title: String, content: @Composable () -> Unit) -> Unit) {
     val context = LocalContext.current
+    // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
+    val resources = LocalResources.current
     val container = (context.applicationContext as JibitoApplication).container
     val lockSettings = container.appLockSettings
     val backup = container.backupManager
@@ -89,9 +92,9 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
         scope.launch {
             message = try {
                 context.contentResolver.openOutputStream(uri)!!.use { backup.export(it, password) }
-                context.getString(R.string.backup_export_done)
+                resources.getString(R.string.backup_export_done)
             } catch (e: Exception) {
-                context.getString(R.string.backup_export_failed)
+                resources.getString(R.string.backup_export_failed)
             } finally {
                 password.fill(' ')
                 busy = false
@@ -223,13 +226,13 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
                         restoreUri = null
                         restored = summary
                     } catch (e: BackupCrypto.WrongPasswordException) {
-                        error = context.getString(R.string.backup_error_password)
+                        error = resources.getString(R.string.backup_error_password)
                     } catch (e: BackupCrypto.NotABackupException) {
-                        error = context.getString(R.string.backup_error_not_backup)
+                        error = resources.getString(R.string.backup_error_not_backup)
                     } catch (e: BackupManager.TooNewException) {
-                        error = context.getString(R.string.backup_error_too_new)
+                        error = resources.getString(R.string.backup_error_too_new)
                     } catch (e: Exception) {
-                        error = context.getString(R.string.backup_error_damaged)
+                        error = resources.getString(R.string.backup_error_damaged)
                     } finally {
                         password.fill(' ')
                         working = false

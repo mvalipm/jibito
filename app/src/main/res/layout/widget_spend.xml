@@ -17,7 +17,8 @@
         android:gravity="start"
         android:text="@string/widget_today"
         android:textColor="@color/widget_muted"
-        android:textSize="13sp" />
+        android:textSize="13sp"
+        android:fontFamily="@font/vazirmatn_regular" />
 
     <TextView
         android:id="@+id/widget_today"
@@ -27,7 +28,7 @@
         android:maxLines="1"
         android:textColor="@color/widget_text"
         android:textSize="24sp"
-        android:textStyle="bold" />
+        android:fontFamily="@font/vazirmatn_bold" />
 
     <TextView
         android:id="@+id/widget_month"
@@ -37,7 +38,8 @@
         android:gravity="start"
         android:maxLines="1"
         android:textColor="@color/widget_muted"
-        android:textSize="13sp" />
+        android:textSize="13sp"
+        android:fontFamily="@font/vazirmatn_regular" />
 
     <TextView
         android:id="@+id/widget_left"
@@ -47,5 +49,5 @@
         android:maxLines="1"
         android:textColor="@color/widget_accent"
         android:textSize="13sp"
-        android:textStyle="bold" />
+        android:fontFamily="@font/vazirmatn_bold" />
 </LinearLayout>
