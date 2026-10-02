@@ -47,15 +47,17 @@ data class LinkedTransaction(
 object PurchaseLinker {
 
     /**
-     * کارمزد انتقال: برداشتِ انتقال می‌تواند کمی بیشتر از مبلغ رمز باشد
-     * (مثلاً رمز ۱۰٬۰۰۰٬۰۰۰ و برداشت ۱۰٬۰۱۱٬۰۰۰ ریال). حداکثر ۰٫۵٪ مبلغ، حداقل سقف ۲۰ هزار و حداکثر ۵۰۰ هزار ریال.
-     * برای خرید این تحمل نیست: مبلغ باید دقیقاً برابر باشد.
+     * قانون کارفرما (برای همه‌ی بانک‌ها): اگر بعد از رمز دوم، تا ۳ دقیقه، از همان بانک برداشتی آمد که
+     * **بیشتر** از مبلغ رمز است ولی اختلافش **کمتر از ۲٪** مبلغ رمز است ← کارت‌به‌کارت یا انتقال بین‌بانکی
+     * با کارمزد؛ اختلاف = کارمزد. (مثلاً رمز ۱۰٬۰۰۰٬۰۰۰ و برداشت ۱۰٬۰۱۱٬۰۰۰ ریال.)
+     * مبلغ دقیقاً برابر ← خرید (یا انتقال بی‌کارمزد).
      */
+    const val MAX_FEE_PERCENT = 2
+
     fun isTransferFee(grossRial: Long, netRial: Long): Boolean {
         val fee = grossRial - netRial
-        if (fee <= 0) return false
-        val cap = minOf(500_000L, maxOf(20_000L, grossRial / 200))
-        return fee <= cap
+        if (fee <= 0 || netRial <= 0) return false
+        return fee * 100 < netRial * MAX_FEE_PERCENT
     }
 
     /** مهلت رمز دوم و مهلت برگشت پول. */
@@ -79,9 +81,9 @@ object PurchaseLinker {
                     w.timeMillis - o.timeMillis <= WINDOW_MILLIS &&
                     o.otp.amountRial != null // رمزِ بدون مبلغ وصل نمی‌شود
             }
-            // اول: مبلغ دقیقاً برابر (خرید و انتقال)؛ بعد: فقط برای رمزِ انتقال، برداشت = مبلغ + کارمزد
+            // اول: مبلغ دقیقاً برابر (خرید)؛ بعد: برداشت = مبلغ رمز + کارمزد زیر ۲٪ (انتقال)
             val otp = inWindow.filter { it.otp.amountRial == w.tx.amountRial }.maxByOrNull { it.timeMillis }
-                ?: inWindow.filter { it.otp.isTransfer && isTransferFee(w.tx.amountRial, it.otp.amountRial!!) }
+                ?: inWindow.filter { isTransferFee(w.tx.amountRial, it.otp.amountRial!!) }
                     .maxByOrNull { it.timeMillis }
                 ?: continue
             usedOtps += otp.id

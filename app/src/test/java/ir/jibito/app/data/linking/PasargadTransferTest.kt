@@ -51,19 +51,40 @@ class PasargadTransferTest {
     }
 
     @Test
-    fun `برای خرید، مبلغ همچنان باید دقیقاً برابر باشد`() {
+    fun `قانون همه‌ی بانک‌ها - اختلاف زیر ۲٪ حتی بدون کلمه‌ی انتقال در رمز`() {
         val linked = PurchaseLinker.link(
-            listOf(TxRecord(2, 30_000, 12, ParsedTransaction(FlowType.WITHDRAWAL, 1_011_000, null))),
-            listOf(OtpRecord(1, 0, 12, PurchaseOtp(1_000_000, "اسنپ", isTransfer = false))),
+            listOf(TxRecord(2, 30_000, 5, ParsedTransaction(FlowType.WITHDRAWAL, 1_011_000, null))),
+            listOf(OtpRecord(1, 0, 5, PurchaseOtp(1_000_000, "کارت/حساب …1234", isTransfer = false))),
+        ).single()
+        assertEquals("کارت/حساب …1234", linked.merchant)
+        assertEquals(11_000L, linked.feeRial)
+    }
+
+    @Test
+    fun `اختلاف ۲٪ یا بیشتر وصل نمی‌شود`() {
+        val linked = PurchaseLinker.link(
+            listOf(TxRecord(2, 30_000, 5, ParsedTransaction(FlowType.WITHDRAWAL, 1_020_000, null))),
+            listOf(OtpRecord(1, 0, 5, PurchaseOtp(1_000_000, "اسنپ"))),
         ).single()
         assertNull(linked.merchant)
     }
 
     @Test
-    fun `کارمزد غیرعادی (خیلی زیاد) وصل نمی‌شود`() {
-        assertTrue(PurchaseLinker.isTransferFee(10_011_000, 10_000_000))
-        assertTrue(!PurchaseLinker.isTransferFee(10_900_000, 10_000_000))
-        assertTrue(!PurchaseLinker.isTransferFee(10_000_000, 10_000_000))
+    fun `مرز ۲٪`() {
+        assertTrue(PurchaseLinker.isTransferFee(10_011_000, 10_000_000))   // ۰٫۱۱٪
+        assertTrue(PurchaseLinker.isTransferFee(10_190_000, 10_000_000))   // ۱٫۹٪
+        assertTrue(!PurchaseLinker.isTransferFee(10_200_000, 10_000_000))  // ۲٪ (زیر ۲٪ نیست)
+        assertTrue(!PurchaseLinker.isTransferFee(10_000_000, 10_000_000))  // برابر = خرید، کارمزد ندارد
+        assertTrue(!PurchaseLinker.isTransferFee(9_990_000, 10_000_000))   // برداشت کمتر از رمز
+    }
+
+    @Test
+    fun `رمز بعد از ۳ دقیقه وصل نمی‌شود`() {
+        val linked = PurchaseLinker.link(
+            listOf(TxRecord(2, 3 * 60_000 + 1, 12, ParsedTransaction(FlowType.WITHDRAWAL, 10_011_000, null))),
+            listOf(OtpRecord(1, 0, 12, PurchaseOtp(10_000_000, "کارت/حساب …2805", isTransfer = true))),
+        ).single()
+        assertNull(linked.merchant)
     }
 
     @Test
