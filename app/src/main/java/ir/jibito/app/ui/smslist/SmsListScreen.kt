@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.FloatingActionButton
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.parser.FlowType
@@ -58,7 +59,11 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
 @Composable
-fun SmsListScreen() {
+fun SmsListScreen(
+    /** فقط خرج‌های بی‌دسته (از «کارهای لازم» در خلاصه) */
+    onlyUncategorized: Boolean = false,
+    onClearFilter: () -> Unit = {},
+) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: TransactionsViewModel = viewModel(
         factory = TransactionsViewModel.factory(app.container.transactionRepository)
@@ -110,7 +115,28 @@ fun SmsListScreen() {
             }
         }
 
-        val list = messages
+        if (onlyUncategorized) {
+            Text(
+                stringResource(R.string.tx_filter_uncategorized),
+                modifier = Modifier
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(colors.primary.copy(alpha = 0.14f))
+                    .clickable(onClick = onClearFilter)
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                color = colors.primary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        val list = if (onlyUncategorized) {
+            messages?.filter {
+                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
+                    it.transaction.type == FlowType.WITHDRAWAL
+            }
+        } else {
+            messages
+        }
         when {
             list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

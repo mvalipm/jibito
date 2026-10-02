@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import androidx.compose.runtime.remember
+import androidx.activity.compose.BackHandler
 import ir.jibito.app.ui.theme.LocalJibitoColors
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.data.repository.CategorySpend
@@ -65,8 +67,21 @@ import ir.jibito.app.util.Money
 
 private val WarningAmber = Color(0xFFF2A541)
 
+/**
+ * صفحه‌ی «خلاصه»، طرح «یک نگاه، بدون اسکرول»:
+ * ۱) چقدر خرج کردم؟ ۲) تا آخر ماه می‌رسم؟ ۳) چه کاری لازم است؟ + خرج‌ها کجا رفته (۵ دسته‌ی اول).
+ * فهرست کامل دسته‌ها، بودجه‌ها و درآمدها یک لمس دورتر است («همه‌ی دسته‌ها و بودجه‌ها»).
+ */
 @Composable
-fun SummaryScreen() {
+fun SummaryScreen(
+    /** پیامک‌های منتظر بررسی */
+    pendingReview: Int = 0,
+    onOpenReview: () -> Unit = {},
+    /** رفتن به تراکنش‌ها با فیلتر «فقط بی‌دسته» */
+    onOpenUncategorized: () -> Unit = {},
+    /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
+    onOpenTransactions: () -> Unit = {},
+) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
         factory = SummaryViewModel.factory(app.container.budgetRepository)
@@ -78,7 +93,12 @@ fun SummaryScreen() {
     // دسته‌ای که جزئیاتش باز است
     var detailId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showIdle by rememberSaveable { mutableStateOf(false) }
+    // فهرست کامل دسته‌ها و بودجه‌ها (به‌جای نمای «یک نگاه»)
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
+    val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
     val colors = MaterialTheme.colorScheme
+    BackHandler(enabled = showAll) { showAll = false }
 
     Column(
         Modifier
@@ -97,12 +117,57 @@ fun SummaryScreen() {
         if (s == null || s.month != month) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         } else {
+            if (!showAll) {
+                val attention = buildList {
+                    s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 100 }.forEach { c ->
+                        add(AttentionItem("⚠", stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
+                    }
+                    s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 80 }.forEach { c ->
+                        add(AttentionItem("●", stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
+                    }
+                    if (s.uncategorizedRial > 0 && s.month == JalaliMonth.current()) {
+                        add(AttentionItem("🏷", stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
+                    }
+                    if (transferSuggestions.isNotEmpty()) {
+                        add(AttentionItem("⇄", Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
+                    }
+                    if (pendingReview > 0) {
+                        add(AttentionItem("✉", Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
+                    }
+                }.take(4)
+                LazyColumn(
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp + LocalBottomBarSpace.current),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    item(key = "hero") { GlanceHero(s, onEditBudget = { editingOverall = true }) }
+                    if (attention.isNotEmpty()) item(key = "attention") { AttentionCard(attention) }
+                    item(key = "where") {
+                        WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                    }
+                }
+            } else {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { showAll = false }
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("→", fontSize = 18.sp, color = colors.onBackground)
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    stringResource(R.string.glance_all_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = colors.onBackground,
+                )
+            }
             LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item { HeroCard(s, onEditBudget = { editingOverall = true }) }
-                item { SpendBreakdownCard(s, onOpenCategory = { detailId = it }) }
+
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
                         Text(
@@ -165,6 +230,7 @@ fun SummaryScreen() {
                 }
             }
 
+            }
             s.categories.firstOrNull { it.categoryId == detailId }?.let { c ->
                 CategoryDetailSheet(
                     c = c,
@@ -210,7 +276,7 @@ private fun MonthSwitcher(month: JalaliMonth, canGoNext: Boolean, onPrevious: ()
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // در چیدمان راست‌به‌چپ این آیکون‌ها خودشان آینه می‌شوند: «ماه قبل» سمت راست، «ماه بعد» سمت چپ
@@ -220,7 +286,7 @@ private fun MonthSwitcher(month: JalaliMonth, canGoNext: Boolean, onPrevious: ()
         Text(
             text = month.title,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -228,147 +294,6 @@ private fun MonthSwitcher(month: JalaliMonth, canGoNext: Boolean, onPrevious: ()
         IconButton(onClick = onNext, enabled = canGoNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.summary_next_month))
         }
-    }
-}
-
-/**
- * کارت بالای داشبورد: کل خرج ماه، و اگر بودجه‌ی کل تعیین شده:
- * نوار مصرف، «چقدر مونده» و «روزی چقدر تا آخر ماه». با زدن روی کارت، بودجه‌ی کل عوض می‌شود.
- */
-@Composable
-private fun HeroCard(s: MonthSummary, onEditBudget: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(LocalJibitoColors.current.heroStart, LocalJibitoColors.current.heroEnd)))
-            .clickable(onClick = onEditBudget)
-            .padding(22.dp)
-    ) {
-        Column {
-            Text(
-                stringResource(R.string.summary_spent, s.month.title),
-                color = Color.White.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Spacer(Modifier.height(6.dp))
-            if (s.totalSpentRial == 0L) {
-                // صفر فارسی (۰) در اندازه‌ی بزرگ فقط یک نقطه است؛ به‌جایش یک جمله
-                Text(
-                    stringResource(R.string.summary_no_spend_yet),
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                )
-            } else {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        Money.tomanNumber(s.totalSpentRial),
-                        color = Color.White,
-                        fontSize = 34.sp,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(
-                        stringResource(R.string.unit_toman),
-                        color = Color.White.copy(alpha = 0.85f),
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 6.dp),
-                    )
-                }
-            }
-            OverallBudgetPart(s, onEditBudget)
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                HeroPill(stringResource(R.string.summary_income), Money.toman(s.totalIncomeRial))
-                if (s.uncategorizedRial > 0) {
-                    HeroPill(stringResource(R.string.summary_uncategorized), Money.toman(s.uncategorizedRial))
-                }
-                if (s.excludedRial > 0) {
-                    HeroPill(stringResource(R.string.summary_excluded), Money.toman(s.excludedRial))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OverallBudgetPart(s: MonthSummary, onEditBudget: () -> Unit) {
-    val budget = s.overallBudgetRial
-    if (budget == null || budget <= 0) {
-        Spacer(Modifier.height(10.dp))
-        Text(
-            stringResource(R.string.overall_set_budget),
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.22f))
-                .clickable(onClick = onEditBudget)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            color = Color.White,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        return
-    }
-    val level = BudgetLevel.of(s.totalSpentRial, budget)
-    val fraction = (s.totalSpentRial.toFloat() / budget.toFloat()).coerceIn(0f, 1f)
-    val barColor = when (level) {
-        100 -> Color(0xFFFFE1E1)
-        80 -> Color(0xFFFFE08A)
-        else -> Color.White
-    }
-    Spacer(Modifier.height(12.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        LinearProgressIndicator(
-            progress = { fraction },
-            modifier = Modifier
-                .weight(1f)
-                .height(10.dp),
-            color = barColor,
-            trackColor = Color.White.copy(alpha = 0.25f),
-            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
-        )
-        Spacer(Modifier.size(10.dp))
-        Text(
-            Jalali.toPersianDigits("${(s.totalSpentRial * 100 / budget).coerceAtMost(999)}٪"),
-            color = Color.White,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Black,
-        )
-    }
-    Spacer(Modifier.height(8.dp))
-    val remaining = budget - s.totalSpentRial
-    Text(
-        if (remaining >= 0) {
-            stringResource(R.string.overall_remaining, Money.toman(remaining), Money.toman(budget))
-        } else {
-            stringResource(R.string.overall_over, Money.toman(-remaining), Money.toman(budget))
-        },
-        color = Color.White,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-    )
-    s.dailyAllowanceRial()?.let { daily ->
-        Text(
-            stringResource(R.string.overall_daily, Money.toman(daily)),
-            color = Color.White.copy(alpha = 0.88f),
-            style = MaterialTheme.typography.labelMedium,
-        )
-    }
-}
-
-@Composable
-private fun HeroPill(label: String, value: String) {
-    Column(
-        Modifier
-            .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    ) {
-        Text(label, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall)
-        Text(value, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
 

@@ -39,6 +39,27 @@ data class MonthSummary(
      * «روزی چقدر می‌تونی خرج کنی تا آخر ماه»: باقی‌مانده تقسیم بر روزهای باقی‌مانده (با امروز).
      * فقط برای ماه جاری و وقتی هنوز چیزی مانده.
      */
+    /** چه کسری از ماه گذشته (۰ تا ۱)؛ فقط برای ماه جاری، وگرنه null */
+    fun timeFraction(nowMillis: Long = System.currentTimeMillis()): Float? {
+        val start = month.startMillis()
+        val end = month.endMillis()
+        if (nowMillis < start || nowMillis >= end) return null
+        return ((nowMillis - start).toDouble() / (end - start)).toFloat()
+    }
+
+    /** چه کسری از بودجه‌ی کل خرج شده (می‌تواند بیشتر از ۱ باشد)؛ بدون بودجه null */
+    fun spentFraction(): Float? = overallBudgetRial?.takeIf { it > 0 }?.let { (totalSpentRial.toDouble() / it).toFloat() }
+
+    /**
+     * سرعت خرج نسبت به زمان: مثبت یعنی تندتر از گذشت ماه خرج شده (مثلاً ۰٫۰۸ = ۸٪ جلوتر از زمان)،
+     * منفی یعنی آهسته‌تر (خوب). فقط ماه جاری با بودجه‌ی کل.
+     */
+    fun paceDelta(nowMillis: Long = System.currentTimeMillis()): Float? {
+        val t = timeFraction(nowMillis) ?: return null
+        val s = spentFraction() ?: return null
+        return s - t
+    }
+
     fun dailyAllowanceRial(nowMillis: Long = System.currentTimeMillis()): Long? {
         val remaining = overallRemainingRial ?: return null
         if (remaining <= 0) return null

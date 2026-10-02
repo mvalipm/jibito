@@ -70,6 +70,8 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 fun MainScreen() {
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
     var tab by rememberSaveable { mutableStateOf(Tab.Summary) }
+    // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
+    var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
@@ -97,20 +99,29 @@ fun MainScreen() {
                     .consumeWindowInsets(WindowInsets.navigationBars)
                     .haze(state = hazeState)
             ) {
-                if (pending.isNotEmpty() && tab != Tab.Review) {
-                    Box(Modifier.statusBarsPadding()) {
-                        ReviewBanner(count = pending.size, onClick = { tab = Tab.Review })
-                    }
-                }
+                // بنر زرد «پیامک‌های منتظر» حذف شد: عدد روی تب «بررسی» و مورد «کارهای لازم» در خلاصه کافی است
                 Box(
                     Modifier
                         .weight(1f)
                         // بنر خودش فاصله‌ی نوار وضعیت را گذاشته
-                        .then(if (pending.isNotEmpty() && tab != Tab.Review) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)
                 ) {
                     when (tab) {
-                        Tab.Summary -> SummaryScreen()
-                        Tab.Transactions -> SmsListScreen()
+                        Tab.Summary -> SummaryScreen(
+                            pendingReview = pending.size,
+                            onOpenReview = { tab = Tab.Review },
+                            onOpenUncategorized = {
+                                onlyUncategorized = true
+                                tab = Tab.Transactions
+                            },
+                            onOpenTransactions = {
+                                onlyUncategorized = false
+                                tab = Tab.Transactions
+                            },
+                        )
+                        Tab.Transactions -> SmsListScreen(
+                            onlyUncategorized = onlyUncategorized,
+                            onClearFilter = { onlyUncategorized = false },
+                        )
                         Tab.Review -> ReviewScreen(onClose = { tab = Tab.Summary })
                         Tab.Settings -> SettingsScreen()
                     }
@@ -140,31 +151,5 @@ fun MainScreen() {
             hazeState = hazeState,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
-    }
-}
-
-@Composable
-private fun ReviewBanner(count: Int, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(colors.secondaryContainer, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("📩", fontSize = 18.sp)
-        Text(
-            Jalali.toPersianDigits(stringResource(R.string.review_banner, count)),
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 10.dp),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSecondaryContainer,
-        )
-        Text("›", fontSize = 20.sp, color = colors.onSecondaryContainer)
     }
 }

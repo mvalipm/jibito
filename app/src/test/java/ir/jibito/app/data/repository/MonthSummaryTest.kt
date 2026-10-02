@@ -42,4 +42,13 @@ class MonthSummaryTest {
     fun `باقی‌مانده‌ی منفی یعنی بیشتر از بودجه`() {
         assertEquals(-5_000_000L, summary(35_000_000, 30_000_000).overallRemainingRial)
     }
+
+    @Test
+    fun `سرعت خرج - نصف ماه گذشته و ۶۰٪ بودجه خرج شده ← ۱۰٪ تندتر`() {
+        val mid = month.startMillis() + (month.endMillis() - month.startMillis()) / 2
+        val pace = summary(spent = 18_000_000, budget = 30_000_000).paceDelta(mid)!!
+        assertEquals(0.10f, pace, 0.001f)
+        assertNull(summary(18_000_000, null).paceDelta(mid))
+        assertNull(summary(18_000_000, 30_000_000).paceDelta(month.endMillis() + day))
+    }
 }
