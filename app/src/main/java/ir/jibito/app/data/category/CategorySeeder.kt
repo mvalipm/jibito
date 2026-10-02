@@ -1,0 +1,92 @@
+package ir.jibito.app.data.category
+
+import androidx.room.withTransaction
+import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.local.entity.BudgetEntity
+import ir.jibito.app.data.local.entity.CategoryEntity
+
+/**
+ * دسته‌های پیش‌فرض را می‌سازد (درخت جدید)، و فقط یک بار، دسته‌های نسخه‌ی قبلی اپ را به آن منتقل می‌کند:
+ * - تراکنش‌های هر دسته‌ی قدیمی ← دسته‌ی جدید معادلش (Taxonomy.OLD_TO_NEW).
+ * - بودجه‌ی دسته‌ی قدیمی ← بودجه‌ی «دسته‌ی اصلیِ» معادلش (اگر چند تا روی یکی افتادند، جمع می‌شوند).
+ * - «سایر» ← بی‌دسته. «خرید» ← دسته‌ی شخصی کاربر (جای مشخصی در ساختار جدید ندارد).
+ * همه داخل یک تراکنش دیتابیس: یا کامل انجام می‌شود یا هیچ.
+ */
+class CategorySeeder(private val db: AppDatabase) {
+
+    suspend fun ensure() {
+        val categoryDao = db.categoryDao()
+        // قبلاً انجام شده؟
+        if (categoryDao.byCode(Taxonomy.expense.first().code) != null) return
+
+        db.withTransaction {
+            val existing = categoryDao.all()
+            val idByCode = HashMap<String, Long>()
+            var order = 0
+
+            suspend fun insertTree(defs: List<CategoryDef>, parentId: Long?, flowType: Int, inheritedSpend: Boolean) {
+                for (def in defs) {
+                    val counts = inheritedSpend && def.countsAsSpend
+                    val id = categoryDao.insert(
+                        CategoryEntity(
+                            name = def.name,
+                            icon = def.icon,
+                            colorHex = def.color,
+                            flowType = flowType,
+                            parentId = parentId,
+                            sortOrder = order++,
+                            countsAsSpend = counts,
+                            code = def.code,
+                        )
+                    )
+                    idByCode[def.code] = id
+                    insertTree(def.children, id, flowType, counts)
+                }
+            }
+
+            insertTree(Taxonomy.expense, null, flowType = 2, inheritedSpend = true)
+            // نصب تازه: دسته‌های درآمد هم ساخته می‌شوند (کاربرهای قبلی از Migration_3_4 دارندشان)
+            if (existing.none { it.flowType == 1 }) {
+                insertTree(Taxonomy.income, null, flowType = 1, inheritedSpend = true)
+            }
+
+            migrateOldExpenseCategories(existing, idByCode)
+        }
+    }
+
+    private suspend fun migrateOldExpenseCategories(existing: List<CategoryEntity>, idByCode: Map<String, Long>) {
+        val categoryDao = db.categoryDao()
+        val flowDao = db.transactionFlowDao()
+        val summaryDao = db.summaryDao()
+        val old = existing.filter { it.flowType == 2 && !it.isArchived && it.code == null && !it.isCustom }
+
+        for (cat in old) {
+            if (cat.name == Taxonomy.OLD_KEEP_AS_CUSTOM) {
+                // تراکنش‌ها و بودجه‌اش همان‌جا می‌مانند؛ فقط آخر فهرست می‌رود
+                categoryDao.markCustom(cat.id, sortOrder = 10_000)
+                continue
+            }
+            if (!Taxonomy.OLD_TO_NEW.containsKey(cat.name)) continue
+            val newCode = Taxonomy.OLD_TO_NEW[cat.name]
+            val newId = newCode?.let { idByCode[it] }
+
+            if (newCode == null || newId == null) {
+                // «سایر» ← بی‌دسته
+                flowDao.uncategorize(cat.id)
+                flowDao.renameSuggestion(cat.name, null)
+                summaryDao.deleteBudget(cat.id)
+            } else {
+                flowDao.moveCategory(cat.id, newId)
+                flowDao.renameSuggestion(cat.name, Taxonomy.byCode(newCode)?.name)
+                // بودجه فقط روی دسته‌ی اصلی
+                summaryDao.budgetFor(cat.id)?.let { oldBudget ->
+                    val rootId = idByCode.getValue(newCode.substringBefore('.'))
+                    val current = summaryDao.budgetFor(rootId)?.monthlyLimitRial ?: 0L
+                    summaryDao.upsertBudget(BudgetEntity(rootId, current + oldBudget.monthlyLimitRial))
+                    summaryDao.deleteBudget(cat.id)
+                }
+            }
+            categoryDao.archive(cat.id)
+        }
+    }
+}

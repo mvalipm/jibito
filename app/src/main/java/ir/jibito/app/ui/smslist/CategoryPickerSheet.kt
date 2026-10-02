@@ -1,6 +1,7 @@
 package ir.jibito.app.ui.smslist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +23,12 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,7 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.CompositionLocalProvider
 import ir.jibito.app.R
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
@@ -46,9 +48,15 @@ import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
+private val TransferBlue = Color(0xFF3A6FD8)
+
 /**
- * برگه‌ای که از پایین صفحه باز می‌شود: همه‌ی دسته‌ها برای انتخاب، + متن پیامک.
- * دسته‌ی پیشنهادی (از مقصد خرید) اول و با برچسب «پیشنهاد» می‌آید.
+ * برگه‌ای که از پایین صفحه باز می‌شود: انتخاب دسته با کمترین لمس.
+ * - بالا: جست‌وجو (مثلاً «سوخ» ← سوخت · خودرو شخصی).
+ * - پیشنهاد اپ اول می‌آید.
+ * - بعد هر دسته‌ی اصلی یک بخش است و زیردسته‌هایش با یک لمس انتخاب می‌شوند.
+ *   زیردسته‌ای که خودش جزئیات دارد (مثل «خودرو شخصی ›») با لمس باز می‌شود.
+ * - خود دسته‌ی اصلی هم قابل انتخاب است (وقتی زیردسته مهم نیست).
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -63,13 +71,20 @@ fun CategoryPickerSheet(
     val colors = MaterialTheme.colorScheme
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
+    var query by rememberSaveable(transaction.id) { mutableStateOf("") }
 
     // برداشت ← دسته‌های خرج؛ واریز ← دسته‌های درآمد
     val isDeposit = transaction.transaction.type == FlowType.DEPOSIT
     val matching = categories.filter { it.flowType == transaction.transaction.type.code }
-    // پیشنهادی اول، بقیه به ترتیب خودشان
+    val byId = matching.associateBy { it.id }
+    val childrenOf = matching.groupBy { it.parentId }
+    val roots = childrenOf[null].orEmpty()
     val suggested = matching.firstOrNull { it.name == transaction.suggestedCategory }
-    val ordered = listOfNotNull(suggested) + matching.filter { it.id != suggested?.id }
+    val selectedId = transaction.categoryId
+
+    // اگر دسته‌ی فعلی یک جزئیات (لایه‌ی ۳) است، زیردسته‌اش از اول باز باشد
+    val initialExpanded = selectedId?.let { byId[it]?.parentId }?.takeIf { byId[it]?.parentId != null }
+    var expandedId by rememberSaveable(transaction.id) { mutableStateOf(initialExpanded) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -105,7 +120,7 @@ fun CategoryPickerSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
                 // انتقال بین حساب‌های خودم: جدا از دسته‌ها، چون نه خرج است نه درآمد
                 FilterChip(
@@ -114,7 +129,7 @@ fun CategoryPickerSheet(
                     label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
                     shape = RoundedCornerShape(14.dp),
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF3A6FD8),
+                        selectedContainerColor = TransferBlue,
                         selectedLabelColor = Color.White,
                     ),
                 )
@@ -123,55 +138,122 @@ fun CategoryPickerSheet(
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
-                // دسته‌ها
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    ordered.forEach { category ->
-                        val isSelected = category.id == transaction.categoryId
-                        val dot = category.colorHex.toColorOrNull() ?: colors.primary
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onPick(category.id) },
-                            label = {
-                                Text(
-                                    text = listOfNotNull(category.icon, category.name).joinToString(" "),
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                // جست‌وجو (فقط برای خرج‌ها؛ درآمد چند دسته بیشتر ندارد)
+                if (!isDeposit) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        singleLine = true,
+                        placeholder = { Text(stringResource(R.string.sheet_search_hint)) },
+                        leadingIcon = { Text("🔍") },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                val q = query.normalizedForSearch()
+                if (q.isNotEmpty()) {
+                    // نتیجه‌ی جست‌وجو: همه‌ی لایه‌ها، با اسم دسته‌ی بالاتر
+                    val results = matching.filter { it.name.normalizedForSearch().contains(q) }
+                    if (results.isEmpty()) {
+                        Text(
+                            stringResource(R.string.sheet_search_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                        )
+                    } else {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            results.forEach { c ->
+                                val parent = c.parentId?.let { byId[it]?.name }
+                                CategoryChip(
+                                    label = listOfNotNull(c.name, parent).joinToString(" · "),
+                                    selected = c.id == selectedId,
+                                    onClick = { onPick(c.id) },
                                 )
-                            },
-                            leadingIcon = if (category.id == suggested?.id && !isSelected) {
-                                {
-                                    Box(
-                                        Modifier
-                                            .size(8.dp)
-                                            .background(dot, CircleShape)
+                            }
+                        }
+                    }
+                } else {
+                    // پیشنهاد اپ
+                    if (suggested != null && suggested.id != selectedId) {
+                        Text(
+                            stringResource(R.string.sheet_suggested_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = colors.primary,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        val parent = suggested.parentId?.let { byId[it]?.name }
+                        CategoryChip(
+                            label = "● " + listOfNotNull(suggested.name, parent).joinToString(" · "),
+                            selected = false,
+                            highlighted = true,
+                            onClick = { onPick(suggested.id) },
+                        )
+                        Spacer(Modifier.height(14.dp))
+                    }
+
+                    roots.forEach { root ->
+                        val subs = childrenOf[root.id].orEmpty()
+                        RootHeader(
+                            root = root,
+                            selected = root.id == selectedId,
+                            hasChildren = subs.isNotEmpty(),
+                            onClick = { onPick(root.id) },
+                        )
+                        if (subs.isNotEmpty()) {
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                subs.forEach { sub ->
+                                    val details = childrenOf[sub.id].orEmpty()
+                                    val isOpen = expandedId == sub.id
+                                    CategoryChip(
+                                        label = sub.name + if (details.isNotEmpty()) (if (isOpen) "  ⌄" else "  ›") else "",
+                                        selected = sub.id == selectedId || (details.any { it.id == selectedId }),
+                                        onClick = {
+                                            if (details.isEmpty()) onPick(sub.id)
+                                            else expandedId = if (isOpen) null else sub.id
+                                        },
                                     )
                                 }
-                            } else {
-                                null
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = colors.primary,
-                                selectedLabelColor = colors.onPrimary,
-                            ),
-                        )
+                            }
+                            // جزئیات زیردسته‌ی باز (لایه‌ی ۳)
+                            subs.firstOrNull { it.id == expandedId }?.let { open ->
+                                Spacer(Modifier.height(8.dp))
+                                FlowRow(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(colors.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                                        .padding(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    CategoryChip(
+                                        label = stringResource(R.string.sheet_all_of, open.name),
+                                        selected = open.id == selectedId,
+                                        onClick = { onPick(open.id) },
+                                    )
+                                    childrenOf[open.id].orEmpty().forEach { d ->
+                                        CategoryChip(label = d.name, selected = d.id == selectedId, onClick = { onPick(d.id) })
+                                    }
+                                }
+                            }
+                        }
+                        if (!root.countsAsSpend) {
+                            Text(
+                                stringResource(R.string.sheet_not_spend_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(14.dp))
                     }
                 }
 
-                if (suggested != null && suggested.id != transaction.categoryId) {
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "● " + stringResource(R.string.sheet_suggested),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
                 if (transaction.merchant != null) {
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.sheet_learning_hint),
                         style = MaterialTheme.typography.labelSmall,
@@ -179,7 +261,7 @@ fun CategoryPickerSheet(
                     )
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (transaction.categoryId != null) {
                         TextButton(onClick = { onPick(null) }) {
@@ -210,6 +292,68 @@ fun CategoryPickerSheet(
         }
     }
 }
+
+/** سرِ بخش هر دسته‌ی اصلی؛ خودش هم قابل انتخاب است */
+@Composable
+private fun RootHeader(root: Category, selected: Boolean, hasChildren: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val dot = root.colorHex.toColorOrNull() ?: colors.primary
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+            .background(
+                if (selected) colors.primary else Color.Transparent,
+                RoundedCornerShape(12.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(30.dp)
+                .background(dot.copy(alpha = 0.16f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) { Text(root.icon ?: "•") }
+        Spacer(Modifier.size(8.dp))
+        Text(
+            root.name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Black,
+            color = if (selected) colors.onPrimary else colors.onSurface,
+        )
+        if (hasChildren && !selected) {
+            Text(
+                stringResource(R.string.sheet_pick_root),
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit, highlighted: Boolean = false) {
+    val colors = MaterialTheme.colorScheme
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, fontWeight = if (selected || highlighted) FontWeight.Bold else FontWeight.Normal) },
+        shape = RoundedCornerShape(14.dp),
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = if (highlighted) colors.primary.copy(alpha = 0.10f) else Color.Transparent,
+            labelColor = if (highlighted) colors.primary else colors.onSurface,
+            selectedContainerColor = colors.primary,
+            selectedLabelColor = colors.onPrimary,
+        ),
+    )
+}
+
+/** برای جست‌وجو: ی/ک عربی، نیم‌فاصله و فاصله یکسان می‌شوند */
+private fun String.normalizedForSearch(): String =
+    trim().replace('ي', 'ی').replace('ك', 'ک').replace("‌", "").replace(" ", "").lowercase()
 
 private fun String?.toColorOrNull(): Color? = try {
     this?.let { Color(android.graphics.Color.parseColor(it)) }

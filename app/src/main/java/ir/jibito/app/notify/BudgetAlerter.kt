@@ -15,6 +15,7 @@ import ir.jibito.app.MainActivity
 import ir.jibito.app.R
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 
@@ -42,26 +43,27 @@ class BudgetAlerter(
 
     suspend fun check() {
         val month = JalaliMonth.current()
-        checkOverall(month)
-        val budgets = dao.budgets().associateBy { it.categoryId }
-        if (budgets.isEmpty()) return
-        val rows = dao.categorySpend(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())
+        val categories = db.categoryDao().all().filter { it.flowType == FlowType.WITHDRAWAL.code }
+        // خرج‌ها روی دسته‌ی اصلی جمع می‌شوند (بودجه فقط روی دسته‌ی اصلی است)
+        val spend = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis()))
+        checkOverall(month, spend.total)
 
-        for (row in rows) {
-            val budget = budgets[row.categoryId] ?: continue
-            val level = BudgetLevel.of(row.spentRial, budget.monthlyLimitRial)
+        val byId = categories.associateBy { it.id }
+        for (budget in dao.budgets()) {
+            val category = byId[budget.categoryId] ?: continue
+            val spent = spend.byRoot[budget.categoryId] ?: 0L
+            val level = BudgetLevel.of(spent, budget.monthlyLimitRial)
             val alreadyAlerted = if (budget.alertedMonthKey == month.key) budget.alertedLevel else 0
             if (level > alreadyAlerted) {
-                show(row.categoryId, row.name, row.icon, level, row.spentRial, budget.monthlyLimitRial)
-                dao.markAlerted(row.categoryId, month.key, level)
+                show(category.id, category.name, category.icon, level, spent, budget.monthlyLimitRial)
+                dao.markAlerted(category.id, month.key, level)
             }
         }
     }
 
     /** بودجه‌ی کل ماه: همان قانون ۸۰٪ و ۱۰۰٪، یک بار در ماه برای هر سطح */
-    private suspend fun checkOverall(month: JalaliMonth) {
+    private suspend fun checkOverall(month: JalaliMonth, spent: Long) {
         val budget = dao.overallBudget() ?: return
-        val spent = dao.total(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())
         val level = BudgetLevel.of(spent, budget.monthlyLimitRial)
         val alreadyAlerted = if (budget.alertedMonthKey == month.key) budget.alertedLevel else 0
         if (level > alreadyAlerted) {

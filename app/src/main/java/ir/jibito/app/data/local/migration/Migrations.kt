@@ -109,8 +109,25 @@ object Migrations {
         }
     }
 
+    /**
+     * نسخه‌ی ۹ ← ۱۰: دسته‌بندی درختی (دسته‌ی اصلی ← زیردسته ← جزئیات).
+     * فقط ستون‌ها این‌جا اضافه می‌شوند؛ ساختن دسته‌های جدید و انتقال دسته‌های قبلی
+     * یک بار در CategorySeeder (با کد کاتلین، داخل یک تراکنش) انجام می‌شود.
+     */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `categories` ADD COLUMN `parentId` INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE `categories` ADD COLUMN `sortOrder` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `categories` ADD COLUMN `isCustom` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `categories` ADD COLUMN `countsAsSpend` INTEGER NOT NULL DEFAULT 1")
+            db.execSQL("ALTER TABLE `categories` ADD COLUMN `code` TEXT DEFAULT NULL")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_categories_parentId` ON `categories` (`parentId`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_categories_code` ON `categories` (`code`)")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
-        MIGRATION_8_9,
+        MIGRATION_8_9, MIGRATION_9_10,
     )
 }

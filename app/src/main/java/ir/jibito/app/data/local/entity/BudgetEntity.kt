@@ -47,12 +47,8 @@ data class OverallBudgetEntity(
     }
 }
 
-/** یک ردیف خلاصه‌ی ماه: دسته + خرجش + بودجه‌اش. */
-data class CategorySpendRow(
-    val categoryId: Long,
-    val name: String,
-    val icon: String?,
-    val colorHex: String?,
-    val spentRial: Long,
-    val budgetRial: Long?,
+/** جمع مبلغ یک دسته در یک بازه (null = بی‌دسته). */
+data class CategorySum(
+    val categoryId: Long?,
+    val totalRial: Long,
 )

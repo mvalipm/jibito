@@ -37,7 +37,7 @@ import ir.jibito.app.data.local.migration.Migrations
         OwnAccountEntity::class,
         OverallBudgetEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -52,22 +52,6 @@ abstract class AppDatabase : RoomDatabase() {
             Room.databaseBuilder(context, AppDatabase::class.java, "jibito.db")
                 .addMigrations(*Migrations.ALL) // هر نسخه‌ی جدید فقط این‌جا اضافه می‌شود
                 .build()
-
-        /** دسته‌های پیش‌فرض؛ اسم‌ها با پیشنهادهای CategorySuggester یکی‌اند. */
-        // «get()» یعنی هر بار ساخته می‌شود؛ تا ترتیب تعریف با INCOME_CATEGORIES (پایین‌تر) مشکلی نسازد
-        val DEFAULT_CATEGORIES: List<CategoryEntity>
-            get() = listOf(
-            CategoryEntity(name = "غذا", icon = "🍔", colorHex = "#E4572E"),
-            CategoryEntity(name = "سوپرمارکت", icon = "🛒", colorHex = "#F2A541"),
-            CategoryEntity(name = "رفت‌وآمد", icon = "🚕", colorHex = "#17BEBB"),
-            CategoryEntity(name = "سوخت", icon = "⛽", colorHex = "#8D6A9F"),
-            CategoryEntity(name = "خرید", icon = "🛍", colorHex = "#C73E8B"),
-            CategoryEntity(name = "قبض و شارژ", icon = "💡", colorHex = "#3F88C5"),
-            CategoryEntity(name = "سرگرمی", icon = "🎬", colorHex = "#7FB069"),
-            CategoryEntity(name = "سفر", icon = "✈", colorHex = "#2E86AB"),
-            CategoryEntity(name = "درمان", icon = "💊", colorHex = "#D1495B"),
-            CategoryEntity(name = "سایر", icon = "•", colorHex = "#8C8C8C"),
-        ) + INCOME_CATEGORIES
 
         /** دسته‌های واریز (درآمد). در Migration_3_4 هم همین‌ها برای کاربرهای قبلی اضافه می‌شوند. */
         val INCOME_CATEGORIES = listOf(

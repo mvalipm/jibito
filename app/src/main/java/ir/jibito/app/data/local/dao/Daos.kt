@@ -7,7 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.entity.CategoryEntity
-import ir.jibito.app.data.local.entity.CategorySpendRow
+import ir.jibito.app.data.local.entity.CategorySum
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
@@ -113,6 +113,17 @@ interface TransactionFlowDao {
     )
     suspend fun markSelfTransferByMerchant(merchant: String, now: Long): Int
 
+    // ── انتقال دسته‌های نسخه‌ی قبل به ساختار جدید (یک بار) ──
+
+    @Query("UPDATE transaction_flows SET categoryId = :newId WHERE categoryId = :oldId")
+    suspend fun moveCategory(oldId: Long, newId: Long)
+
+    @Query("UPDATE transaction_flows SET categoryId = NULL, isAutoCategorized = 0 WHERE categoryId = :oldId")
+    suspend fun uncategorize(oldId: Long)
+
+    @Query("UPDATE transaction_flows SET suggestedCategory = :newName WHERE suggestedCategory = :oldName")
+    suspend fun renameSuggestion(oldName: String, newName: String?)
+
     @Query("SELECT merchant FROM own_accounts")
     suspend fun ownAccounts(): List<String>
 
@@ -126,8 +137,18 @@ interface TransactionFlowDao {
 @Dao
 interface CategoryDao {
 
-    @Query("SELECT * FROM categories WHERE isArchived = 0 ORDER BY id")
+    @Query("SELECT * FROM categories WHERE isArchived = 0 ORDER BY sortOrder, id")
     fun observeActive(): Flow<List<CategoryEntity>>
+
+    /** همه (با بایگانی‌شده‌ها) — برای پیدا کردن دسته‌ی اصلیِ هر تراکنش */
+    @Query("SELECT * FROM categories")
+    fun observeAll(): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories")
+    suspend fun all(): List<CategoryEntity>
+
+    @Insert
+    suspend fun insert(item: CategoryEntity): Long
 
     @Insert
     suspend fun insertAll(items: List<CategoryEntity>)
@@ -138,14 +159,24 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun byId(id: Long): CategoryEntity?
 
+    @Query("SELECT * FROM categories WHERE code = :code")
+    suspend fun byCode(code: String): CategoryEntity?
+
+    @Query("UPDATE categories SET isArchived = 1 WHERE id = :id")
+    suspend fun archive(id: Long)
+
+    /** دسته‌ی قدیمی‌ای که جای مشخصی در ساختار جدید ندارد ← دسته‌ی شخصی کاربر */
+    @Query("UPDATE categories SET isCustom = 1, sortOrder = :sortOrder WHERE id = :id")
+    suspend fun markCustom(id: Long, sortOrder: Int)
+
     /** دسته‌ها به ترتیب «بیشترین استفاده»؛ برای انتخاب دکمه‌های نوتیفیکیشن. */
     @Query(
         """
         SELECT c.* FROM categories c
         LEFT JOIN transaction_flows t ON t.categoryId = c.id AND t.isDeleted = 0
-        WHERE c.isArchived = 0 AND c.flowType = :flowType
+        WHERE c.isArchived = 0 AND c.flowType = :flowType AND c.countsAsSpend = 1
         GROUP BY c.id
-        ORDER BY COUNT(t.id) DESC, c.id ASC
+        ORDER BY COUNT(t.id) DESC, c.sortOrder ASC, c.id ASC
         """
     )
     suspend fun byUsage(flowType: Int): List<CategoryEntity>
@@ -154,50 +185,39 @@ interface CategoryDao {
 @Dao
 interface SummaryDao {
 
-    /** جمع واریز یا برداشت در یک بازه (خریدهای ناموفق حساب نمی‌شوند). */
+    /**
+     * جمع واریز یا برداشت هر دسته در یک بازه (null = بی‌دسته).
+     * خریدهای ناموفق، حذف‌شده‌ها و انتقال به خودم حساب نمی‌شوند.
+     * جمع زدن روی دسته‌ی اصلی (درخت) در کاتلین انجام می‌شود: SpendRollup.
+     */
     @Query(
         """
-        SELECT COALESCE(SUM(amount), 0) FROM transaction_flows
+        SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows
         WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
           AND dateEpoch >= :from AND dateEpoch < :to
+        GROUP BY categoryId
         """
     )
-    fun observeTotal(flowType: Int, from: Long, to: Long): Flow<Long>
-
-    /** جمع هر دسته (خرج یا درآمد، بسته به flowType) در یک بازه + بودجه‌اش. */
-    @Query(
-        """
-        SELECT c.id AS categoryId, c.name AS name, c.icon AS icon, c.colorHex AS colorHex,
-               COALESCE(SUM(t.amount), 0) AS spentRial, b.monthlyLimitRial AS budgetRial
-        FROM categories c
-        LEFT JOIN transaction_flows t
-          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0 AND t.transferState != 1
-         AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
-        LEFT JOIN budgets b ON b.categoryId = c.id
-        WHERE c.isArchived = 0 AND c.flowType = :flowType
-        GROUP BY c.id
-        ORDER BY spentRial DESC, c.id ASC
-        """
-    )
-    fun observeCategorySpend(flowType: Int, from: Long, to: Long): Flow<List<CategorySpendRow>>
+    fun observeSums(flowType: Int, from: Long, to: Long): Flow<List<CategorySum>>
 
     @Query(
         """
-        SELECT c.id AS categoryId, c.name AS name, c.icon AS icon, c.colorHex AS colorHex,
-               COALESCE(SUM(t.amount), 0) AS spentRial, b.monthlyLimitRial AS budgetRial
-        FROM categories c
-        LEFT JOIN transaction_flows t
-          ON t.categoryId = c.id AND t.isDeleted = 0 AND t.isFailedPurchase = 0 AND t.transferState != 1
-         AND t.flowType = :flowType AND t.dateEpoch >= :from AND t.dateEpoch < :to
-        LEFT JOIN budgets b ON b.categoryId = c.id
-        WHERE c.isArchived = 0 AND c.flowType = :flowType
-        GROUP BY c.id
+        SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows
+        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
+          AND dateEpoch >= :from AND dateEpoch < :to
+        GROUP BY categoryId
         """
     )
-    suspend fun categorySpend(flowType: Int, from: Long, to: Long): List<CategorySpendRow>
+    suspend fun sums(flowType: Int, from: Long, to: Long): List<CategorySum>
+
+    @Query("SELECT * FROM budgets")
+    fun observeBudgets(): Flow<List<BudgetEntity>>
 
     @Query("SELECT * FROM budgets")
     suspend fun budgets(): List<BudgetEntity>
+
+    @Query("SELECT * FROM budgets WHERE categoryId = :categoryId")
+    suspend fun budgetFor(categoryId: Long): BudgetEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudget(budget: BudgetEntity)
@@ -207,16 +227,6 @@ interface SummaryDao {
 
     @Query("UPDATE budgets SET alertedMonthKey = :monthKey, alertedLevel = :level WHERE categoryId = :categoryId")
     suspend fun markAlerted(categoryId: Long, monthKey: Int, level: Int)
-
-    /** جمع واریز یا برداشت در یک بازه (یک بار، برای هشدار) */
-    @Query(
-        """
-        SELECT COALESCE(SUM(amount), 0) FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
-          AND dateEpoch >= :from AND dateEpoch < :to
-        """
-    )
-    suspend fun total(flowType: Int, from: Long, to: Long): Long
 
     // ── بودجه‌ی کل ماه ──
 

@@ -24,6 +24,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import ir.jibito.app.data.category.CategorySeeder
+import ir.jibito.app.data.category.SpendRollup
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -78,7 +81,8 @@ class TransactionRepositoryImpl(
     override val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
     override fun observeTransactions(): Flow<List<Transaction>> =
-        dao.observeAll().map { rows ->
+        combine(dao.observeAll(), db.categoryDao().observeAll()) { rows, categories ->
+            val byId = categories.associateBy { it.id }
             rows.map { row ->
                 val f = row.flow
                 Transaction(
@@ -96,7 +100,9 @@ class TransactionRepositoryImpl(
                     isFailedPurchase = f.isFailedPurchase,
                     categoryId = f.categoryId,
                     categoryName = row.categoryName,
-                    categoryIcon = row.categoryIcon,
+                    // زیردسته‌ها آیکون ندارند ← آیکون دسته‌ی اصلی
+                    categoryIcon = row.categoryIcon
+                        ?: row.flow.categoryId?.let { id -> byId[id]?.let { SpendRollup.rootOf(it, byId).icon } },
                     isAutoCategorized = f.isAutoCategorized,
                     isSelfTransfer = f.transferState == TransactionFlowEntity.TRANSFER_SELF,
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
@@ -166,7 +172,18 @@ class TransactionRepositoryImpl(
 
     override fun observeCategories(): Flow<List<Category>> =
         db.categoryDao().observeActive().map { rows ->
-            rows.map { Category(id = it.id, name = it.name, icon = it.icon, colorHex = it.colorHex, flowType = it.flowType) }
+            rows.map {
+                Category(
+                    id = it.id,
+                    name = it.name,
+                    icon = it.icon,
+                    colorHex = it.colorHex,
+                    flowType = it.flowType,
+                    parentId = it.parentId,
+                    countsAsSpend = it.countsAsSpend,
+                    isCustom = it.isCustom,
+                )
+            }
         }
 
     /** اگر هم‌زمان دو جا (مثلاً اپ و کار پس‌زمینه) بخواهند همگام کنند، دومی منتظر اولی می‌ماند. */
@@ -265,10 +282,8 @@ class TransactionRepositoryImpl(
         return inserted
     }
 
-    private suspend fun ensureDefaultCategories() {
-        val categoryDao = db.categoryDao()
-        if (categoryDao.count() == 0) categoryDao.insertAll(AppDatabase.DEFAULT_CATEGORIES)
-    }
+    /** دسته‌های پیش‌فرض (و یک بار، انتقال دسته‌های نسخه‌ی قبل به ساختار درختی) */
+    private suspend fun ensureDefaultCategories() = CategorySeeder(db).ensure()
 
     override suspend fun setCategory(transactionId: Long, categoryId: Long?) {
         val now = System.currentTimeMillis()

@@ -38,4 +38,10 @@ data class Category(
     val colorHex: String?,
     /** ۲ = خرج، ۱ = درآمد (همان کدهای FlowType) */
     val flowType: Int,
+    /** دسته‌ی بالاتر؛ null یعنی دسته‌ی اصلی */
+    val parentId: Long? = null,
+    /** false یعنی خرج حساب نمی‌شود (پس‌انداز، قرض دادن) */
+    val countsAsSpend: Boolean = true,
+    /** دسته‌ای که خود کاربر ساخته */
+    val isCustom: Boolean = false,
 )

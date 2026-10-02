@@ -2,7 +2,9 @@ package ir.jibito.app.data.repository
 
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.BudgetEntity
-import ir.jibito.app.data.local.entity.CategorySpendRow
+import ir.jibito.app.data.local.entity.CategorySum
+import ir.jibito.app.data.local.entity.CategoryEntity
+import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
@@ -24,6 +26,8 @@ data class MonthSummary(
     val uncategorizedIncomeRial: Long,
     /** بودجه‌ی کل ماه؛ null یعنی تعیین نشده */
     val overallBudgetRial: Long? = null,
+    /** پس‌انداز و قرض دادن: از حساب رفته ولی خرج حساب نمی‌شود */
+    val excludedRial: Long = 0,
 ) {
     /** جمع بودجه‌ی دسته‌ها (برای پیشنهاد بودجه‌ی کل) */
     val categoryBudgetsSumRial: Long get() = categories.sumOf { it.budgetRial ?: 0L }
@@ -66,7 +70,7 @@ interface BudgetRepository {
 }
 
 class BudgetRepositoryImpl(
-    db: AppDatabase,
+    private val db: AppDatabase,
     /** بعد از تغییر بودجه صدا زده می‌شود (برای بررسی هشدار) */
     private val onBudgetsChanged: suspend () -> Unit,
 ) : BudgetRepository {
@@ -77,27 +81,15 @@ class BudgetRepositoryImpl(
         val from = month.startMillis()
         val to = month.endMillis()
         return combine(
-            dao.observeTotal(FlowType.WITHDRAWAL.code, from, to),
-            dao.observeTotal(FlowType.DEPOSIT.code, from, to),
-            dao.observeCategorySpend(FlowType.WITHDRAWAL.code, from, to),
-            dao.observeCategorySpend(FlowType.DEPOSIT.code, from, to),
+            dao.observeSums(FlowType.WITHDRAWAL.code, from, to),
+            dao.observeSums(FlowType.DEPOSIT.code, from, to),
+            db.categoryDao().observeAll(),
+            dao.observeBudgets(),
             dao.observeOverallBudget(),
-        ) { spent, income, expenseRows, incomeRows, overall ->
-            MonthSummary(
-                month = month,
-                totalSpentRial = spent,
-                totalIncomeRial = income,
-                uncategorizedRial = (spent - expenseRows.sumOf { it.spentRial }).coerceAtLeast(0),
-                categories = expenseRows.map { it.toSpend() },
-                incomeCategories = incomeRows.filter { it.spentRial > 0 }.map { it.toSpend() },
-                uncategorizedIncomeRial = (income - incomeRows.sumOf { it.spentRial }).coerceAtLeast(0),
-                overallBudgetRial = overall?.monthlyLimitRial,
-            )
+        ) { spendSums, incomeSums, categories, budgets, overall ->
+            buildSummary(month, spendSums, incomeSums, categories, budgets.associate { it.categoryId to it.monthlyLimitRial }, overall?.monthlyLimitRial)
         }
     }
-
-    private fun CategorySpendRow.toSpend() =
-        CategorySpend(categoryId, name, icon, colorHex, spentRial, budgetRial)
 
     override suspend fun setBudget(categoryId: Long, monthlyLimitRial: Long?) {
         if (monthlyLimitRial == null || monthlyLimitRial <= 0) {
@@ -117,5 +109,52 @@ class BudgetRepositoryImpl(
             dao.upsertOverallBudget(OverallBudgetEntity(monthlyLimitRial = monthlyLimitRial))
         }
         onBudgetsChanged()
+    }
+
+    companion object {
+        /**
+         * خلاصه‌ی ماه از روی جمع هر دسته: خرج‌ها روی «دسته‌ی اصلی» جمع می‌شوند (SpendRollup).
+         * درآمدها یک لایه‌اند.
+         */
+        fun buildSummary(
+            month: JalaliMonth,
+            spendSums: List<CategorySum>,
+            incomeSums: List<CategorySum>,
+            categories: List<CategoryEntity>,
+            budgets: Map<Long, Long>,
+            overallBudgetRial: Long?,
+        ): MonthSummary {
+            val spend = SpendRollup.rollup(categories.filter { it.flowType == FlowType.WITHDRAWAL.code }, spendSums)
+            val income = SpendRollup.rollup(categories.filter { it.flowType == FlowType.DEPOSIT.code }, incomeSums)
+
+            // دسته‌های اصلی خرج: فعال‌ها همیشه (برای تعیین بودجه)؛ به ترتیب: بیشترین خرج، بعد ترتیب پیش‌فرض
+            val expenseRoots = categories
+                .filter { it.flowType == FlowType.WITHDRAWAL.code && it.parentId == null && !it.isArchived && it.countsAsSpend }
+                .map { it.toSpend(spend.byRoot[it.id] ?: 0L, budgets[it.id]) }
+                .sortedWith(compareByDescending<Pair<CategorySpend, Int>> { it.first.spentRial }.thenBy { it.second })
+                .map { it.first }
+
+            val incomeRoots = categories
+                .filter { it.flowType == FlowType.DEPOSIT.code && it.parentId == null && !it.isArchived }
+                .map { it.toSpend(income.byRoot[it.id] ?: 0L, null) }
+                .filter { it.first.spentRial > 0 }
+                .sortedByDescending { it.first.spentRial }
+                .map { it.first }
+
+            return MonthSummary(
+                month = month,
+                totalSpentRial = spend.total,
+                totalIncomeRial = income.total + income.excluded,
+                uncategorizedRial = spend.uncategorized,
+                categories = expenseRoots,
+                incomeCategories = incomeRoots,
+                uncategorizedIncomeRial = income.uncategorized,
+                overallBudgetRial = overallBudgetRial,
+                excludedRial = spend.excluded,
+            )
+        }
+
+        private fun CategoryEntity.toSpend(spent: Long, budget: Long?) =
+            CategorySpend(id, name, icon, colorHex, spent, budget) to sortOrder
     }
 }

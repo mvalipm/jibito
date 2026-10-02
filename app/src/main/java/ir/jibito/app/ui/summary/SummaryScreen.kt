@@ -236,6 +236,9 @@ private fun HeroCard(s: MonthSummary, onEditBudget: () -> Unit) {
                 if (s.uncategorizedRial > 0) {
                     HeroPill(stringResource(R.string.summary_uncategorized), Money.toman(s.uncategorizedRial))
                 }
+                if (s.excludedRial > 0) {
+                    HeroPill(stringResource(R.string.summary_excluded), Money.toman(s.excludedRial))
+                }
             }
         }
     }

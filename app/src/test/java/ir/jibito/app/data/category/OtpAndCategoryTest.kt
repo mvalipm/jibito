@@ -44,11 +44,11 @@ class OtpAndCategoryTest {
 
     @Test
     fun `پیشنهاد دسته`() {
-        assertEquals("رفت‌وآمد", CategorySuggester.suggest("اسنپ"))
-        assertEquals("غذا", CategorySuggester.suggest("اسنپ فود"))
-        assertEquals("سفر", CategorySuggester.suggest("اسنپ تریپ"))
-        assertEquals("خرید", CategorySuggester.suggest("فروشگاه اینترنتی دیجی کالا"))
-        assertEquals("قبض و شارژ", CategorySuggester.suggest("ایرانسل"))
+        assertEquals("تاکسی اینترنتی", CategorySuggester.suggest("اسنپ"))
+        assertEquals("رستوران و فست‌فود", CategorySuggester.suggest("اسنپ فود"))
+        assertEquals("اقامت", CategorySuggester.suggest("اسنپ تریپ"))
+        assertNull(CategorySuggester.suggest("فروشگاه اینترنتی دیجی کالا"))
+        assertEquals("شارژ موبایل", CategorySuggester.suggest("ایرانسل"))
         assertNull(CategorySuggester.suggest("کارت/حساب …5678"))
         assertNull(CategorySuggester.suggest(null))
     }
