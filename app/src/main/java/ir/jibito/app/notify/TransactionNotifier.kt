@@ -71,16 +71,14 @@ class TransactionNotifier(
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
         val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
         val bankName = BankDirectory.byId(flow.bankId)?.name
-        val title = if (flow.merchant != null) {
-            context.getString(R.string.notif_title_purchase, amount, flow.merchant)
-        } else {
-            listOfNotNull(amount, bankName).joinToString(" · ")
-        }
+        // مثل فهرست تراکنش‌ها: «برداشت» یا «واریز»، نه «خرید از …»
+        val kind = context.getString(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal)
+        val title = listOfNotNull(amount, kind, bankName).joinToString(" · ")
 
         val openApp = PendingIntent.getActivity(
             context,
             notificationId(flow.id),
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            MainActivity.openTransactionIntent(context, flow.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -124,7 +122,7 @@ class TransactionNotifier(
         val openApp = PendingIntent.getActivity(
             context,
             notificationId(flow.id),
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            MainActivity.openTransactionIntent(context, flow.id),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, AUTO_CHANNEL_ID)

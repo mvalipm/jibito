@@ -23,6 +23,9 @@ import ir.jibito.app.notify.BudgetAlerter
 import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.ui.theme.ThemeSettings
+import ir.jibito.app.data.recurring.RecurringSuggestions
+import ir.jibito.app.notify.WeeklyDigest
+import ir.jibito.app.ui.welcome.FirstRunFlag
 
 /**
  * جای ساختن اشیای اصلی اپ (دیتابیس، Repository ها).
@@ -56,6 +59,17 @@ class AppContainer(context: Context) {
     val recurringReminder: RecurringReminder by lazy { RecurringReminder(appContext, database) }
 
     val budgetAlerter: BudgetAlerter by lazy { BudgetAlerter(appContext, database) }
+
+    /** صفحه‌ی «N تراکنش پیدا شد» فقط یک بار */
+    val firstRun: FirstRunFlag by lazy { FirstRunFlag(appContext) }
+
+    /** خلاصه‌ی هفتگی (جمعه‌ها عصر) */
+    val weeklyDigest: WeeklyDigest by lazy { WeeklyDigest(appContext, database) }
+
+    /** «این پرداخت ماهانه است؟» از روی تراکنش‌ها */
+    val recurringSuggestions: RecurringSuggestions by lazy {
+        RecurringSuggestions(appContext, transactionRepository, recurringRepository)
+    }
 
     val transactionRepository: TransactionRepository by lazy {
         TransactionRepositoryImpl(

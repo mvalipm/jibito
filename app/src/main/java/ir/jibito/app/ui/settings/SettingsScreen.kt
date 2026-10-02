@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.theme.previewColors
 import androidx.compose.foundation.border
@@ -59,6 +60,8 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.ErrorLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
  * تنظیمات: پوسته، خواندن دوباره‌ی پیامک‌ها، دسترسی‌ها، نمایش دسته‌ها، دسته‌های شخصی،
@@ -146,7 +149,7 @@ fun SettingsScreen() {
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                    if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
                 }
             }
         }
@@ -208,6 +211,16 @@ fun SettingsScreen() {
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.settings_open_app_settings)) }
             }
+            // خلاصه‌ی هفتگی (جمعه‌ها عصر)
+            val digest = app.container.weeklyDigest
+            val digestOn by digest.enabled.collectAsState()
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_digest), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                    Text(stringResource(R.string.settings_digest_hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                }
+                Switch(checked = digestOn, onCheckedChange = digest::setEnabled)
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -251,7 +264,7 @@ fun SettingsScreen() {
                         Text(stringResource(label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.onSurface)
                         Text(stringResource(hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
-                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                    if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
                 }
             }
 
@@ -397,7 +410,7 @@ private fun PermissionRow(label: String, ok: Boolean) {
             stringResource(if (ok) R.string.settings_perm_ok else R.string.settings_perm_missing),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = if (ok) Color(0xFF1E9E6A) else colors.error,
+            color = if (ok) JibitoTheme.colors.income else colors.error,
         )
     }
 }

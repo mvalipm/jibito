@@ -1,7 +1,14 @@
 package ir.jibito.app.ui.main
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,12 +55,16 @@ import ir.jibito.app.ui.settings.SettingsScreen
 import ir.jibito.app.ui.smslist.SmsListScreen
 import ir.jibito.app.ui.summary.SummaryScreen
 import ir.jibito.app.util.Jalali
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import ir.jibito.app.ui.welcome.FirstRunReveal
+import ir.jibito.app.ui.welcome.RevealStats
 
-private enum class Tab(val label: Int) {
-    Summary(R.string.tab_summary),
-    Transactions(R.string.tab_transactions),
-    Review(R.string.tab_review),
-    Settings(R.string.tab_settings),
+private enum class Tab(val route: String, val label: Int) {
+    Summary("summary", R.string.tab_summary),
+    Transactions("transactions", R.string.tab_transactions),
+    Review("review", R.string.tab_review),
+    Settings("settings", R.string.tab_settings),
 }
 
 /**
@@ -64,38 +75,77 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 
 /**
  * صفحه‌ی اصلی اپ با نوار پایینِ شناور: خلاصه، تراکنش‌ها، بررسی، تنظیمات.
+ * تب‌ها با Navigation-Compose عوض می‌شوند: هر تب حالت خودش (جای اسکرول، جست‌وجو، برگه‌ی باز) را نگه می‌دارد
+ * و دکمه‌ی برگشت از هر تب به «خلاصه» و از خلاصه به بیرون می‌رود.
  * محتوای صفحه تا پایین کشیده می‌شود و زیر نوار شیشه‌ای (تار) دیده می‌شود.
  * موقع باز شدن اپ: پیامک‌ها خوانده می‌شوند؛ اگر پیامک تازه‌ای در «صندوق بررسی» باشد،
  * اول تب «بررسی» باز می‌شود (به‌جای نوتیفیکیشن — تا نوتیفیکیشن‌های اپ همیشه معتبر بمانند).
+ *
+ * @param openTransactionId تراکنشی که باید باز شود (لمس نوتیفیکیشن «این خرج مال چی بود؟»)
+ * @param onOpenHandled بعد از رسیدگی به openTransactionId صدا زده می‌شود تا دوباره باز نشود
  */
 @Composable
-fun MainScreen() {
+fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) {
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
-    var tab by rememberSaveable { mutableStateOf(Tab.Summary) }
+    val nav = rememberNavController()
+    val backStackEntry by nav.currentBackStackEntryAsState()
+    val tab = Tab.entries.firstOrNull { it.route == backStackEntry?.destination?.route } ?: Tab.Summary
+    fun go(target: Tab) {
+        nav.navigate(target.route) {
+            // الگوی استاندارد نوار پایین: پشته همیشه «خلاصه ← تب فعلی» است و حالت هر تب ذخیره و برگردانده می‌شود
+            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
     // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
     var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
+    // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
+    var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
 
+    LaunchedEffect(openTransactionId) {
+        val id = openTransactionId ?: return@LaunchedEffect
+        onlyUncategorized = false
+        pendingOpen = id
+        go(Tab.Transactions)
+        onOpenHandled()
+    }
+
+    // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند
+    var reveal by remember { mutableStateOf<RevealStats?>(null) }
+
     val appContext = LocalContext.current.applicationContext
     LaunchedEffect(Unit) {
+        val repository = container.transactionRepository
+        val firstRun = !container.firstRun.done
+        // کاربری که از نسخه‌ی قبل به‌روز کرده، داده دارد و این صفحه را نمی‌بیند
+        val hadData = !firstRun || repository.observeTransactions().first().isNotEmpty()
+        var found = 0
         // خطای همگام‌سازی نباید اپ را موقع باز شدن ببندد (وگرنه هر بار باز کردن = بسته شدن)؛ ثبت می‌شود
         try {
-            container.transactionRepository.syncFromSms()
+            found = repository.syncFromSms()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             ErrorLog.record(appContext, "sync on open", e)
         }
+        if (firstRun) {
+            container.firstRun.markDone()
+            if (!hadData && found > 0) {
+                // فهرست مشترک تراکنش‌ها کمی بعد از ذخیره به‌روز می‌شود
+                val all = withTimeoutOrNull(3_000) { repository.observeTransactions().first { it.size >= found } }
+                reveal = all?.let { RevealStats.of(it) } ?: RevealStats(count = found, months = 0, banks = 0)
+            }
+        }
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
-            tab = Tab.Review
+            // اگر کاربر از نوتیفیکیشن یک تراکنش آمده، همان مهم‌تر است
+            if (pendingOpen == null) go(Tab.Review)
         }
     }
-
-    // دکمه‌ی برگشت گوشی: از هر تب ← خلاصه؛ از خلاصه ← خروج
-    BackHandler(enabled = tab != Tab.Summary) { tab = Tab.Summary }
 
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomSpace = FloatingNavBarHeight + FloatingNavBarBottomMargin + navInset + 8.dp
@@ -115,25 +165,41 @@ fun MainScreen() {
                         .weight(1f)
                         // بنر خودش فاصله‌ی نوار وضعیت را گذاشته
                 ) {
-                    when (tab) {
-                        Tab.Summary -> SummaryScreen(
-                            pendingReview = pending.size,
-                            onOpenReview = { tab = Tab.Review },
-                            onOpenUncategorized = {
-                                onlyUncategorized = true
-                                tab = Tab.Transactions
-                            },
-                            onOpenTransactions = {
-                                onlyUncategorized = false
-                                tab = Tab.Transactions
-                            },
-                        )
-                        Tab.Transactions -> SmsListScreen(
-                            onlyUncategorized = onlyUncategorized,
-                            onClearFilter = { onlyUncategorized = false },
-                        )
-                        Tab.Review -> ReviewScreen(onClose = { tab = Tab.Summary })
-                        Tab.Settings -> SettingsScreen()
+                    NavHost(
+                        navController = nav,
+                        startDestination = Tab.Summary.route,
+                        modifier = Modifier.fillMaxSize(),
+                        // جابه‌جایی نرم و سریع بین تب‌ها (پیش‌فرض کتابخانه کُند است)
+                        enterTransition = { fadeIn(tween(180)) },
+                        exitTransition = { fadeOut(tween(120)) },
+                        popEnterTransition = { fadeIn(tween(180)) },
+                        popExitTransition = { fadeOut(tween(120)) },
+                    ) {
+                        composable(Tab.Summary.route) {
+                            SummaryScreen(
+                                pendingReview = pending.size,
+                                onOpenReview = { go(Tab.Review) },
+                                onOpenUncategorized = {
+                                    onlyUncategorized = true
+                                    go(Tab.Transactions)
+                                },
+                                onOpenTransactions = {
+                                    onlyUncategorized = false
+                                    go(Tab.Transactions)
+                                },
+                                onOpenSettings = { go(Tab.Settings) },
+                            )
+                        }
+                        composable(Tab.Transactions.route) {
+                            SmsListScreen(
+                                onlyUncategorized = onlyUncategorized,
+                                onClearFilter = { onlyUncategorized = false },
+                                openTransactionId = pendingOpen,
+                                onOpened = { pendingOpen = null },
+                            )
+                        }
+                        composable(Tab.Review.route) { ReviewScreen(onClose = { go(Tab.Summary) }) }
+                        composable(Tab.Settings.route) { SettingsScreen() }
                     }
                 }
             }
@@ -157,9 +223,11 @@ fun MainScreen() {
                 NavItem(NavIcons.Settings, stringResource(Tab.Settings.label)),
             ),
             selectedIndex = tab.ordinal,
-            onSelect = { tab = Tab.entries[it] },
+            onSelect = { go(Tab.entries[it]) },
             hazeState = hazeState,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+
+        reveal?.let { stats -> FirstRunReveal(stats, onDone = { reveal = null }) }
     }
 }

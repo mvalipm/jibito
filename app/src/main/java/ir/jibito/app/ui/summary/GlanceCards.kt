@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.notify.BudgetLevel
@@ -60,8 +61,10 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import ir.jibito.app.ui.theme.JibitoIcons
 
-private val WarnAmber = Color(0xFFF2A541)
 
 /** کمتر از این فاصله بین «خرج» و «زمان» یعنی «طبق برنامه» */
 private const val ON_TRACK_MARGIN = 0.05f
@@ -72,7 +75,12 @@ private const val ON_TRACK_MARGIN = 0.05f
  * درآمد و خالص در یک خط. با لمس کارت، بودجه‌ی کل عوض می‌شود.
  */
 @Composable
-fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
+fun GlanceHero(
+    s: MonthSummary,
+    onEditBudget: () -> Unit,
+    /** چند درصد بیشتر/کمتر از همین موقعِ ماه قبل (فقط ماه جاری) */
+    vsLastMonthPercent: Int? = null,
+) {
     val extras = LocalJibitoColors.current
     val budget = s.overallBudgetRial?.takeIf { it > 0 }
     Column(
@@ -105,6 +113,18 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(bottom = 5.dp),
+                )
+            }
+            vsLastMonthPercent?.let { p ->
+                Text(
+                    when {
+                        abs(p) < SAME_AS_LAST_MONTH -> stringResource(R.string.vs_last_month_same)
+                        p > 0 -> Jalali.toPersianDigits(stringResource(R.string.vs_last_month_more, p))
+                        else -> Jalali.toPersianDigits(stringResource(R.string.vs_last_month_less, -p))
+                    },
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -286,8 +306,11 @@ private fun PaceBar(spent: Float, today: Float?, fill: Color, modifier: Modifier
     }
 }
 
+/** کمتر از این درصد اختلاف با ماه قبل = «تقریباً همون اندازه» */
+private const val SAME_AS_LAST_MONTH = 3
+
 /** یک مورد «کار لازم» */
-data class AttentionItem(val icon: String, val text: String, val tone: Tone, val onClick: () -> Unit) {
+data class AttentionItem(val icon: ImageVector, val text: String, val tone: Tone, val onClick: () -> Unit) {
     enum class Tone { NORMAL, WARN, DANGER }
 }
 
@@ -305,7 +328,7 @@ fun AttentionCard(items: List<AttentionItem>) {
         items.forEach { item ->
             val tint = when (item.tone) {
                 AttentionItem.Tone.DANGER -> colors.error
-                AttentionItem.Tone.WARN -> WarnAmber
+                AttentionItem.Tone.WARN -> JibitoTheme.colors.warning
                 AttentionItem.Tone.NORMAL -> colors.primary
             }
             Row(
@@ -321,7 +344,7 @@ fun AttentionCard(items: List<AttentionItem>) {
                         .clip(RoundedCornerShape(9.dp))
                         .background(tint.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center,
-                ) { Text(item.icon, fontSize = 14.sp) }
+                ) { Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp)) }
                 Spacer(Modifier.size(10.dp))
                 Text(
                     item.text,
@@ -332,7 +355,7 @@ fun AttentionCard(items: List<AttentionItem>) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text("‹", color = colors.onSurfaceVariant, fontSize = 18.sp)
+                Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -435,7 +458,7 @@ private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted:
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val status = when (level) {
         100 -> colors.error
-        80 -> WarnAmber
+        80 -> JibitoTheme.colors.warning
         else -> null
     }
     Column(

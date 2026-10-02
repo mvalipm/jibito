@@ -27,7 +27,6 @@
     <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
-    <string name="tx_purchase_from">خرید از %1$s</string>
     <string name="tx_failed_purchase">خرید ناموفق</string>
     <string name="tx_refunded">پول به حسابت برگشت — این مبلغ خرج حساب نمی‌شه.</string>
     <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
@@ -35,9 +34,8 @@
     <string name="tx_balance">مانده: %1$s</string>
     <string name="notif_channel_name">تراکنش‌های تازه</string>
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
-    <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
     <string name="notif_question">این خرج مال چی بود؟</string>
-    <string name="tx_add_category">+ انتخاب دسته</string>
+    <string name="tx_add_category">انتخاب دسته</string>
     <string name="tx_fee">کارمزد %1$s</string>
     <string name="search_hint">اسم، بانک، دسته یا مبلغ…</string>
     <string name="search_date_all">همه</string>
@@ -118,7 +116,7 @@
     <string name="summary_excluded">پس‌انداز و قرض</string>
     <string name="sheet_learning_hint">هر دسته‌ای انتخاب کنی یاد می‌گیرم. اگه برای همین فروشگاه ۳ بار پشت سر هم یه دسته رو انتخاب کنی، از اون به بعد خودم می‌ذارمش.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
-    <string name="tx_self_transfer_chip">⇄ انتقال به خودم · خرج حساب نمی‌شه</string>
+    <string name="tx_self_transfer_chip">انتقال به خودم · خرج حساب نمی‌شه</string>
     <string name="sheet_self_transfer">⇄ انتقال بین حساب‌های خودم</string>
     <string name="sheet_self_transfer_hint">نه خرج حساب می‌شه نه درآمد. کارت مقصد هم یادم می‌مونه و انتقال‌های بعدی به همون کارت خودکار علامت می‌خورن.</string>
     <string name="transfer_title">انتقال بین حساب‌های خودت بوده؟</string>
@@ -181,7 +179,7 @@
     <string name="attn_uncategorized">%1$s تومان خرج بی‌دسته ← دسته‌بندی کن</string>
     <string name="attn_transfers">%1$d انتقال احتمالی بین حساب‌های خودت</string>
     <string name="attn_review">%1$d پیامک منتظر بررسی</string>
-    <string name="tx_filter_uncategorized">فقط خرج‌های بی‌دسته  ✕</string>
+    <string name="tx_filter_uncategorized">فقط خرج‌های بی‌دسته</string>
     <string name="summary_no_spend_yet">هنوز خرجی ثبت نشده</string>
     <string name="summary_show_idle">+ %1$d دسته‌ی دیگر (این ماه بدون خرج)</string>
     <string name="summary_hide_idle">− بستن %1$d دسته‌ی بدون خرج</string>
@@ -335,6 +333,11 @@
     <string name="recurring_field_amount">مبلغ (تومان)</string>
     <string name="recurring_field_day">روز ماه (۱ تا ۳۱)</string>
     <string name="recurring_save">ذخیره</string>
+    <string name="recurring_suggest_title">«%1$s» هر ماه پرداخت می‌شه؟</string>
+    <string name="recurring_suggest_body">حدود %1$s · معمولاً روز %2$d ماه · در %3$d ماه اخیر</string>
+    <string name="recurring_suggest_yes">یادم بنداز</string>
+    <string name="recurring_suggest_no">نه</string>
+    <string name="attn_recurring">«%1$s» هر ماه پرداخت می‌شه؟ یادآوری بسازم</string>
     <string name="recurring_channel_name">یادآوری پرداخت‌ها</string>
     <string name="recurring_channel_desc">روز موعد پرداخت‌های ماهانه (اجاره، قسط…)</string>
     <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
@@ -342,4 +345,48 @@
 
     <!-- نوتیفیکیشن خاموش -->
     <string name="attn_notifications_off">نوتیفیکیشن خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود. روشنش کن</string>
+
+    <!-- فهرست روزبه‌روز و «برگردان» -->
+    <string name="day_spend">%1$s تومان خرج</string>
+    <string name="undo">برگردان</string>
+    <string name="undo_categorized">«%1$s» ثبت شد</string>
+    <string name="undo_uncategorized">دسته برداشته شد</string>
+    <string name="undo_deleted">تراکنش حذف شد</string>
+
+    <!-- توضیح آیکون‌ها برای صفحه‌خوان (TalkBack) -->
+    <string name="cd_search">جست‌وجو</string>
+    <string name="cd_close_search">بستن جست‌وجو</string>
+    <string name="cd_clear_text">پاک کردن</string>
+    <string name="cd_add_manual">ثبت دستی خرج یا درآمد</string>
+    <string name="cd_back">برگشت</string>
+    <string name="cd_selected">انتخاب‌شده</string>
+    <string name="cd_pick_category">انتخاب دسته</string>
+    <string name="cd_clear_filter">برداشتن فیلتر</string>
+
+    <!-- گزارش پیامکی که اشتباه خوانده شده -->
+    <!-- اولین آشنایی، بعد از اولین خواندن پیامک‌ها -->
+    <string name="reveal_found">تراکنش از پیامک‌های بانکت پیدا شد</string>
+    <string name="reveal_span">از %1$d ماه گذشته</string>
+    <string name="reveal_span_banks">از %1$d ماه گذشته، در %2$d بانک</string>
+    <string name="reveal_next">از این به بعد هر خرج تازه خودش ثبت می‌شه؛ تو فقط با یه لمس می‌گی مال چی بود.</string>
+    <string name="reveal_go">بزن بریم</string>
+
+    <!-- خلاصه‌ی هفتگی -->
+    <string name="digest_channel_name">خلاصه‌ی هفتگی</string>
+    <string name="digest_channel_desc">جمعه‌ها عصر: این هفته چقدر خرج شد و بیشترش کجا رفت</string>
+    <string name="digest_title">این هفته %1$s تومان خرج کردی</string>
+    <string name="digest_more">%1$d٪ بیشتر از هفته‌ی قبل</string>
+    <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل</string>
+    <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
+    <string name="digest_top">بیشترین: %1$s</string>
+    <string name="settings_digest">خلاصه‌ی هفتگی</string>
+    <string name="settings_digest_hint">جمعه‌ها عصر یک نوتیفیکیشن کوتاه</string>
+
+    <!-- روند ماه‌ها -->
+    <string name="trend_title">روند خرج %1$d ماه اخیر</string>
+    <string name="vs_last_month_more">%1$d٪ بیشتر از همین موقعِ ماه قبل</string>
+    <string name="vs_last_month_less">%1$d٪ کمتر از همین موقعِ ماه قبل</string>
+    <string name="vs_last_month_same">تقریباً همون اندازه‌ی همین موقعِ ماه قبل</string>
+
+    <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
 </resources>

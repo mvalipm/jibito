@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.domain.CategoryTree
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,8 +58,12 @@ import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import ir.jibito.app.data.review.WrongReadingReport
 
-private val TransferBlue = Color(0xFF3A6FD8)
 
 /**
  * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» — خلوت و سریع:
@@ -164,7 +169,7 @@ fun CategoryPickerSheet(
                         label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
                         shape = RoundedCornerShape(14.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = TransferBlue,
+                            selectedContainerColor = JibitoTheme.colors.transfer,
                             selectedLabelColor = Color.White,
                         ),
                     )
@@ -178,7 +183,7 @@ fun CategoryPickerSheet(
                         onValueChange = { query = it },
                         singleLine = true,
                         placeholder = { Text(stringResource(R.string.sheet_search_hint)) },
-                        leadingIcon = { Text("🔍") },
+                        leadingIcon = { Icon(JibitoIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -339,6 +344,24 @@ fun CategoryPickerSheet(
                         Text(
                             text = transaction.body,
                             style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    // مبلغ یا نوع اشتباه خوانده شده؟ گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر همین بانک
+                    if (!transaction.isManual) {
+                        val context = LocalContext.current
+                        val chooserTitle = stringResource(R.string.review_share_title)
+                        TextButton(
+                            onClick = {
+                                val send = Intent(Intent.ACTION_SEND)
+                                    .setType("text/plain")
+                                    .putExtra(Intent.EXTRA_TEXT, WrongReadingReport.text(transaction))
+                                context.startActivity(Intent.createChooser(send, chooserTitle))
+                            },
+                        ) { Text(stringResource(R.string.sheet_report_wrong)) }
+                        Text(
+                            stringResource(R.string.review_share_hint),
+                            style = MaterialTheme.typography.labelSmall,
                             color = colors.onSurfaceVariant,
                         )
                     }

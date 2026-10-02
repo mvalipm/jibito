@@ -25,6 +25,43 @@ object Jalali {
         return toPersianDigits(text)
     }
 
+    /** فقط ساعت، مثلاً: ۱۷:۰۲ */
+    fun time(epochMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = epochMillis }
+        return toPersianDigits("%02d:%02d".format(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)))
+    }
+
+    /** ساعت ۰۰:۰۰ همان روز (به وقت گوشی) */
+    fun startOfDay(epochMillis: Long): Long = Calendar.getInstance().apply {
+        timeInMillis = epochMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+    /**
+     * عنوان یک روز برای سرتیتر فهرست: «امروز»، «دیروز»، «شنبه ۱۲ مهر»؛
+     * اگر سال شمسی‌اش با امسال فرق کند، سال هم می‌آید: «شنبه ۱۲ مهر ۱۴۰۳».
+     */
+    fun dayTitle(epochMillis: Long, nowMillis: Long = System.currentTimeMillis()): String {
+        val day = startOfDay(epochMillis)
+        val today = startOfDay(nowMillis)
+        if (day == today) return "امروز"
+        val yesterday = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, -1) }.timeInMillis
+        if (day == yesterday) return "دیروز"
+        val cal = Calendar.getInstance().apply { timeInMillis = day }
+        val (jy, jm, jd) = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+        val nowCal = Calendar.getInstance().apply { timeInMillis = today }
+        val thisYear = fromGregorian(nowCal.get(Calendar.YEAR), nowCal.get(Calendar.MONTH) + 1, nowCal.get(Calendar.DAY_OF_MONTH)).first
+        val weekday = WEEKDAY_NAMES[cal.get(Calendar.DAY_OF_WEEK) - 1]
+        val year = if (jy != thisYear) " $jy" else ""
+        return toPersianDigits("$weekday $jd ${MONTH_NAMES[jm - 1]}$year")
+    }
+
+    /** به ترتیب Calendar.DAY_OF_WEEK (یکشنبه = ۱) */
+    private val WEEKDAY_NAMES = listOf("یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه")
+
     fun fromGregorian(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
         val gDaysBeforeMonth = intArrayOf(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
         val gy2 = if (gm > 2) gy + 1 else gy

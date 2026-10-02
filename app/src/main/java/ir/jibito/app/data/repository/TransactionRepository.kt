@@ -50,6 +50,9 @@ const val SOURCE_MANUAL = "MANUAL"
 /** پیشوند ذخیره‌ی کارمزد انتقال در ستون description */
 const val FEE_PREFIX = "fee:"
 
+/** حالت چند تراکنش پیش از یک تغییر، برای «برگردان». صفحه‌ها فقط نگهش می‌دارند و به restore می‌دهند. */
+class UndoSnapshot internal constructor(internal val rows: List<TransactionFlowEntity>)
+
 /**
  * تنها راه صفحه‌ها برای رسیدن به تراکنش‌ها (قانون سند معماری: ViewModel هرگز مستقیم Room نمی‌بیند).
  */
@@ -69,6 +72,16 @@ interface TransactionRepository {
 
     /** دسته‌ی یک تراکنش را تعیین می‌کند (null = بدون دسته). */
     suspend fun setCategory(transactionId: Long, categoryId: Long?)
+
+    /**
+     * حالت فعلی این تراکنش و هر تراکنشی که تغییر دسته یا حذفش ممکن است رویش اثر بگذارد
+     * (جفت انتقالش، و تراکنش‌های بی‌دسته‌ی همان طرف حساب که یادگیری دسته عوضشان می‌کند).
+     * باید قبل از تغییر گرفته شود؛ با restore همه دقیقاً به همین حالت برمی‌گردند.
+     */
+    suspend fun snapshotForUndo(transactionId: Long): UndoSnapshot
+
+    /** «برگردان»: تراکنش‌های داخل snapshot را به همان حالت برمی‌گرداند */
+    suspend fun restore(snapshot: UndoSnapshot)
 
     /** جفت‌های «برداشت ← واریزِ هم‌مبلغ تا ۲۴ ساعت» که شاید انتقال بین حساب‌های خود کاربر باشند (تازه‌ترها اول) */
     fun observeTransferSuggestions(): Flow<List<TransferSuggestion>>
@@ -292,6 +305,30 @@ class TransactionRepositoryImpl(
         )
         onCategoryChanged()
         return id
+    }
+
+    override suspend fun snapshotForUndo(transactionId: Long): UndoSnapshot {
+        val row = dao.byId(transactionId) ?: return UndoSnapshot(emptyList())
+        val rows = buildList {
+            add(row)
+            row.transferPairId?.let { dao.byId(it) }?.let { add(it) }
+            row.merchant?.let { addAll(dao.uncategorizedSameMerchant(it, row.flowType)) }
+        }.distinctBy { it.id }
+        return UndoSnapshot(rows)
+    }
+
+    override suspend fun restore(snapshot: UndoSnapshot) {
+        if (snapshot.rows.isEmpty()) return
+        val now = System.currentTimeMillis()
+        db.withTransaction {
+            snapshot.rows.forEach {
+                dao.restoreUserState(
+                    it.id, it.categoryId, it.isAutoCategorized, it.suggestedCategory,
+                    it.transferState, it.transferPairId, it.isDeleted, now,
+                )
+            }
+        }
+        onCategoryChanged()
     }
 
     override suspend fun deleteManual(transactionId: Long) {

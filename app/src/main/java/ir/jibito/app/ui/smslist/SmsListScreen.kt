@@ -15,11 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -47,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
@@ -59,12 +57,38 @@ import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import ir.jibito.app.data.repository.UndoSnapshot
+import ir.jibito.app.ui.common.rememberHaptics
+import ir.jibito.app.ui.theme.JibitoIcons
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SmsListScreen(
     /** فقط خرج‌های بی‌دسته (از «کارهای لازم» در خلاصه) */
     onlyUncategorized: Boolean = false,
     onClearFilter: () -> Unit = {},
+    /** تراکنشی که برگه‌ی دسته‌اش باید باز شود (از نوتیفیکیشن) */
+    openTransactionId: Long? = null,
+    onOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: TransactionsViewModel = viewModel(
@@ -80,12 +104,40 @@ fun SmsListScreen(
     val displayDepth by app.container.categoryDisplay.depth.collectAsState()
     val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // از نوتیفیکیشن: وقتی تراکنش‌ها آمدند، برگه‌ی دسته‌ی همان تراکنش باز می‌شود
+    LaunchedEffect(openTransactionId, messages) {
+        val id = openTransactionId ?: return@LaunchedEffect
+        val all = messages ?: return@LaunchedEffect
+        if (all.any { it.id == id }) selectedId = id
+        onOpened()
+    }
     val colors = MaterialTheme.colorScheme
 
     var addingManual by rememberSaveable { mutableStateOf(false) }
     var showSearch by rememberSaveable { mutableStateOf(false) }
-    var search by remember { mutableStateOf(TxSearch()) }
+    val search by viewModel.search.collectAsState()
+    val visible by viewModel.visible.collectAsState()
+    LaunchedEffect(onlyUncategorized) { viewModel.setOnlyUncategorized(onlyUncategorized) }
     val bottomSpace = LocalBottomBarSpace.current
+
+    // «برگردان» بعد از دسته‌بندی یا حذف، و لرزش کوتاه موقع تأیید
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val haptics = rememberHaptics()
+    val undoLabel = stringResource(R.string.undo)
+    val categorizedMessage = stringResource(R.string.undo_categorized)
+    val uncategorizedMessage = stringResource(R.string.undo_uncategorized)
+    val deletedMessage = stringResource(R.string.undo_deleted)
+    fun offerUndo(message: String, snapshot: UndoSnapshot) {
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val result = snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                haptics.tick()
+                viewModel.undo(snapshot)
+            }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
     Column(
@@ -104,19 +156,22 @@ fun SmsListScreen(
                     color = colors.onBackground,
                 )
                 // جست‌وجو (تاریخ، مبلغ، اسم)
-                Text(
-                    if (showSearch) "✕" else "🔍",
+                IconButton(
+                    onClick = {
+                        if (showSearch) viewModel.setSearch(TxSearch())
+                        showSearch = !showSearch
+                    },
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(if (search.isActive) colors.primary.copy(alpha = 0.15f) else colors.surface)
-                        .clickable {
-                            if (showSearch) search = TxSearch()
-                            showSearch = !showSearch
-                        }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    fontSize = 18.sp,
-                    color = colors.onSurface,
-                )
+                        .background(if (search.isActive) colors.primary.copy(alpha = 0.15f) else colors.surface),
+                ) {
+                    Icon(
+                        if (showSearch) JibitoIcons.Close else JibitoIcons.Search,
+                        contentDescription = stringResource(if (showSearch) R.string.cd_close_search else R.string.cd_search),
+                        tint = colors.onSurface,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
             messages?.takeIf { it.isNotEmpty() }?.let {
                 Spacer(Modifier.height(4.dp))
@@ -140,31 +195,30 @@ fun SmsListScreen(
         }
 
         if (onlyUncategorized) {
-            Text(
-                stringResource(R.string.tx_filter_uncategorized),
+            Row(
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 4.dp)
                     .clip(RoundedCornerShape(50))
                     .background(colors.primary.copy(alpha = 0.14f))
-                    .clickable(onClick = onClearFilter)
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-                color = colors.primary,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        val base = if (onlyUncategorized) {
-            messages?.filter {
-                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                    it.transaction.type == FlowType.WITHDRAWAL
+                    .clickable(onClickLabel = stringResource(R.string.cd_clear_filter), onClick = onClearFilter)
+                    .padding(start = 14.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.tx_filter_uncategorized),
+                    color = colors.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.size(6.dp))
+                Icon(JibitoIcons.Close, contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
             }
-        } else {
-            messages
         }
-        val range = search.range()
-        val list = if (search.isActive) base?.filter { search.matches(it, range) } else base
+        // فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel و بیرون از رشته‌ی اصلی انجام می‌شود
+        val list = visible?.list
+        val groups = visible?.groups.orEmpty()
         if (showSearch) {
-            SearchPanel(search = search, onChange = { search = it }, results = list)
+            SearchPanel(search = search, onChange = viewModel::setSearch, results = list)
             Spacer(Modifier.height(6.dp))
         }
         when {
@@ -192,24 +246,41 @@ fun SmsListScreen(
             }
             else -> LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp + LocalBottomBarSpace.current),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // «چقد دارم؟»: آخرین مانده‌ی هر بانک
                 if (bankBalances.isNotEmpty() && !search.isActive) {
-                    item(key = "balances") { BankBalancesRow(bankBalances) }
+                    item(key = "balances") { Box(Modifier.padding(bottom = 10.dp)) { BankBalancesRow(bankBalances) } }
                 }
                 // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
                 transferSuggestions.firstOrNull()?.takeIf { !search.isActive }?.let { suggestion ->
                     item(key = "transfer-suggestion") {
-                        TransferSuggestionCard(
-                            suggestion = suggestion,
-                            total = transferSuggestions.size,
-                            onYes = { viewModel.confirmTransfer(suggestion) },
-                            onNo = { viewModel.rejectTransfer(suggestion) },
+                        Box(Modifier.padding(bottom = 4.dp)) {
+                            TransferSuggestionCard(
+                                suggestion = suggestion,
+                                total = transferSuggestions.size,
+                                onYes = {
+                                    haptics.confirm()
+                                    viewModel.confirmTransfer(suggestion)
+                                },
+                                onNo = {
+                                    haptics.reject()
+                                    viewModel.rejectTransfer(suggestion)
+                                },
+                            )
+                        }
+                    }
+                }
+                // روزبه‌روز: سرتیتر چسبان «امروز · ۴۵۰ هزار خرج» و تراکنش‌های آن روز در یک سطح
+                groups.forEach { group ->
+                    stickyHeader(key = "day-${group.dayStartMillis}") { DayHeader(group) }
+                    itemsIndexed(group.items, key = { _, sms -> sms.id }) { index, sms ->
+                        TransactionRow(
+                            sms = sms,
+                            position = groupPosition(index, group.items.size),
+                            onClick = { selectedId = sms.id },
                         )
                     }
                 }
-                items(list, key = { it.id }) { sms -> SmsCard(sms, onClick = { selectedId = sms.id }) }
             }
         }
     }
@@ -225,8 +296,17 @@ fun SmsListScreen(
         contentColor = colors.onPrimary,
         shape = RoundedCornerShape(20.dp),
     ) {
-        Text("+", fontSize = 28.sp, fontWeight = FontWeight.Black)
+        Icon(JibitoIcons.Plus, contentDescription = stringResource(R.string.cd_add_manual), modifier = Modifier.size(26.dp))
     }
+
+    // جای «برگردان»: کنار دکمه‌ی «+»، بالای نوار شناور
+    SnackbarHost(
+        hostState = snackbar,
+        modifier = Modifier
+            .align(Alignment.BottomStart)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 20.dp + 56.dp + 8.dp, bottom = bottomSpace + 12.dp),
+    ) { data -> Snackbar(data, shape = RoundedCornerShape(16.dp)) }
     }
 
     // برگه‌ی انتخاب دسته (از پایین صفحه)
@@ -243,16 +323,22 @@ fun SmsListScreen(
             depth = displayDepth,
             hiddenRoots = hiddenRoots,
             onPick = { categoryId ->
-                viewModel.setCategory(selected, categoryId)
+                haptics.confirm()
+                val name = categories.firstOrNull { it.id == categoryId }?.name
+                viewModel.setCategory(selected, categoryId) { before ->
+                    offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
+                }
                 selectedId = null
             },
             onSelfTransfer = { isTransfer ->
+                haptics.confirm()
                 viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
             },
             onDelete = if (selected.isManual) {
                 {
-                    viewModel.deleteManual(selected.id)
+                    haptics.reject()
+                    viewModel.deleteManual(selected.id) { before -> offerUndo(deletedMessage, before) }
                     selectedId = null
                 }
             } else {
@@ -286,8 +372,6 @@ fun SmsListScreen(
     }
 }
 
-private val DepositGreen = Color(0xFF1E9E6A)
-private val TransferBlue = Color(0xFF3A6FD8)
 
 /** کارت پیشنهاد: «این برداشت و این واریز، انتقال بین حساب‌های خودت بود؟» */
 @Composable
@@ -304,11 +388,11 @@ private fun TransferSuggestionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = TransferBlue.copy(alpha = 0.10f)),
+        colors = CardDefaults.cardColors(containerColor = JibitoTheme.colors.transfer.copy(alpha = 0.10f)),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⇄", color = TransferBlue, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                Icon(JibitoIcons.Transfer, contentDescription = null, tint = JibitoTheme.colors.transfer, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.transfer_title),
@@ -322,7 +406,7 @@ private fun TransferSuggestionCard(
                         Jalali.toPersianDigits(stringResource(R.string.transfer_count, total)),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TransferBlue,
+                        color = JibitoTheme.colors.transfer,
                     )
                 }
             }
@@ -337,7 +421,7 @@ private fun TransferSuggestionCard(
                 Money.toman(w.transaction.amountRial),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
-                color = TransferBlue,
+                color = JibitoTheme.colors.transfer,
             )
             Spacer(Modifier.height(6.dp))
             Text(
@@ -357,7 +441,7 @@ private fun TransferSuggestionCard(
                     onClick = onYes,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TransferBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = JibitoTheme.colors.transfer),
                 ) { Text(stringResource(R.string.transfer_yes), fontWeight = FontWeight.Bold) }
                 OutlinedButton(onClick = onNo, shape = RoundedCornerShape(14.dp)) {
                     Text(stringResource(R.string.transfer_no))
@@ -367,8 +451,59 @@ private fun TransferSuggestionCard(
     }
 }
 
+/** جای یک ردیف در سطح مشترک روز: فقط ردیف اول و آخر گوشه‌ی گرد دارند (internal: برای تست اسکرین‌شات) */
+internal enum class GroupPosition { Single, First, Middle, Last }
+
+internal fun groupPosition(index: Int, size: Int): GroupPosition = when {
+    size == 1 -> GroupPosition.Single
+    index == 0 -> GroupPosition.First
+    index == size - 1 -> GroupPosition.Last
+    else -> GroupPosition.Middle
+}
+
+private fun GroupPosition.shape(radius: Dp = 20.dp): Shape = when (this) {
+    GroupPosition.Single -> RoundedCornerShape(radius)
+    GroupPosition.First -> RoundedCornerShape(topStart = radius, topEnd = radius)
+    GroupPosition.Last -> RoundedCornerShape(bottomStart = radius, bottomEnd = radius)
+    GroupPosition.Middle -> RectangleShape
+}
+
+/** سرتیتر چسبان هر روز: «امروز» … «۴۵۰ هزار تومان خرج» */
 @Composable
-private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
+internal fun DayHeader(group: DayGroup) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(colors.background)
+            .padding(start = 6.dp, end = 6.dp, top = 16.dp, bottom = 8.dp)
+            .semantics { heading() },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            Jalali.dayTitle(group.dayStartMillis),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Black,
+            color = colors.onBackground,
+        )
+        if (group.spendRial > 0) {
+            Text(
+                stringResource(R.string.day_spend, Money.compact(group.spendRial)),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * یک تراکنش در فهرست روز: آیکون دسته (یا جهت پول)، عنوان، بانک و ساعت، برچسب دسته؛ مبلغ و مانده در سمت دیگر.
+ * رنگ فقط برای پولی است که آمده (سبز)، انتقال به خودم (آبی) یا خرید ناموفق (کم‌رنگ)؛ خرج عادی رنگ متن است.
+ */
+@Composable
+internal fun TransactionRow(sms: Transaction, position: GroupPosition, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val t = sms.transaction
     val bankName = if (sms.isManual) stringResource(R.string.tx_manual_source) else sms.bank?.name ?: stringResource(R.string.bank_unknown)
@@ -377,160 +512,194 @@ private fun SmsCard(sms: Transaction, onClick: () -> Unit) {
     val selfTransfer = sms.isSelfTransfer && !failed
     val accent = when {
         failed -> colors.outline
-        selfTransfer -> TransferBlue
-        isDeposit -> DepositGreen
+        selfTransfer -> JibitoTheme.colors.transfer
+        isDeposit -> JibitoTheme.colors.income
         else -> colors.primary
+    }
+    val amountColor = when {
+        failed -> colors.outline
+        selfTransfer -> JibitoTheme.colors.transfer
+        isDeposit -> JibitoTheme.colors.income
+        else -> colors.onSurface
     }
     val title = when {
         failed -> stringResource(R.string.tx_failed_purchase)
         selfTransfer -> stringResource(R.string.tx_self_transfer)
         sms.isManual -> sms.merchant ?: stringResource(if (isDeposit) R.string.tx_manual_income else R.string.tx_manual_expense)
-        sms.merchant != null -> stringResource(R.string.tx_purchase_from, sms.merchant)
+        // تراکنش پیامکی: عنوان فقط «برداشت» یا «واریز»؛ طرف حساب در خط دوم می‌آید
         isDeposit -> stringResource(R.string.tx_deposit)
         else -> stringResource(R.string.tx_withdrawal)
     }
-    Card(
-        modifier = Modifier
+    val categoryEmoji = sms.categoryIcon?.takeIf { !failed && !selfTransfer && sms.categoryId != null }
+
+    Column(
+        Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            .clip(position.shape())
+            .background(colors.surface)
+            .clickable(onClickLabel = stringResource(R.string.cd_pick_category), onClick = onClick)
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(accent.copy(alpha = 0.14f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = when {
-                            failed -> "↺"
-                            selfTransfer -> "⇄"
-                            isDeposit -> "↓"
-                            else -> "↑"
+        if (position == GroupPosition.Middle || position == GroupPosition.Last) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 68.dp, end = 16.dp),
+                thickness = 0.8.dp,
+                color = colors.outlineVariant.copy(alpha = 0.6f),
+            )
+        }
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        if (categoryEmoji != null) colors.surfaceVariant else accent.copy(alpha = 0.13f),
+                        CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (categoryEmoji != null) {
+                    Text(categoryEmoji, fontSize = 18.sp)
+                } else {
+                    Icon(
+                        when {
+                            failed -> JibitoIcons.Refund
+                            selfTransfer -> JibitoIcons.Transfer
+                            isDeposit -> JibitoIcons.ArrowDown
+                            else -> JibitoIcons.ArrowUp
                         },
-                        color = accent,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
-                Spacer(Modifier.size(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onSurface,
-                    )
-                    Text(
-                        text = listOfNotNull(
-                            if ((failed || selfTransfer) && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
-                            sms.feeRial?.let { stringResource(R.string.tx_fee, Money.toman(it)) },
-                        ).joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    // علامت، عدد و «تومان» سه تکه‌ی جدا هستند تا جهت‌نویسی راست‌به‌چپ جای علامت را جابه‌جا نکند.
-                    // در Row راست‌به‌چپ، اولین تکه سمت راست می‌نشیند: «− ۱۲۵٬۰۰۰ تومان»
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (!failed) {
-                            Text(
-                                text = if (isDeposit) "+" else "−",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                color = accent,
-                            )
-                            Spacer(Modifier.size(2.dp))
-                        }
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = listOfNotNull(
+                        if (!sms.isManual && sms.merchant != null) "${sms.merchant} · $bankName" else bankName,
+                        Jalali.time(sms.dateMillis),
+                        sms.feeRial?.let { stringResource(R.string.tx_fee, Money.toman(it)) },
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                when {
+                    failed -> {
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            text = Money.tomanNumber(t.amountRial),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                            color = accent,
-                            textDecoration = if (failed) TextDecoration.LineThrough else null,
-                        )
-                        Spacer(Modifier.size(4.dp))
-                        Text(
-                            text = stringResource(R.string.unit_toman),
+                            text = stringResource(R.string.tx_refunded),
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = accent,
+                            color = colors.onSurfaceVariant,
                         )
                     }
+                    selfTransfer -> {
+                        Spacer(Modifier.height(6.dp))
+                        Pill(
+                            stringResource(R.string.tx_self_transfer_chip),
+                            container = JibitoTheme.colors.transfer.copy(alpha = 0.13f),
+                            content = JibitoTheme.colors.transfer,
+                            leading = JibitoIcons.Transfer,
+                        )
+                    }
+                    sms.categoryName != null -> {
+                        Spacer(Modifier.height(6.dp))
+                        Pill(
+                            if (sms.isAutoCategorized) stringResource(R.string.tx_auto_category, sms.categoryName) else sms.categoryName,
+                            container = colors.primaryContainer,
+                            content = colors.onPrimaryContainer,
+                        )
+                    }
+                    sms.suggestedCategory != null -> {
+                        Spacer(Modifier.height(6.dp))
+                        Pill(
+                            stringResource(R.string.tx_suggested_category, sms.suggestedCategory),
+                            container = colors.secondaryContainer,
+                            content = colors.onSecondaryContainer,
+                        )
+                    }
+                    else -> {
+                        Spacer(Modifier.height(6.dp))
+                        Pill(
+                            stringResource(R.string.tx_add_category),
+                            container = colors.primary.copy(alpha = 0.10f),
+                            content = colors.primary,
+                            leading = JibitoIcons.Plus,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.size(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                // علامت، عدد و «تومان» سه تکه‌ی جدا هستند تا جهت‌نویسی راست‌به‌چپ جای علامت را جابه‌جا نکند.
+                // در Row راست‌به‌چپ، اولین تکه سمت راست می‌نشیند: «− ۱۲۵٬۰۰۰ تومان»
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (!failed) {
+                        Text(
+                            text = if (isDeposit) "+" else "−",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = amountColor,
+                        )
+                        Spacer(Modifier.size(2.dp))
+                    }
                     Text(
-                        text = Jalali.format(sms.dateMillis),
+                        text = Money.tomanNumber(t.amountRial),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = amountColor,
+                        textDecoration = if (failed) TextDecoration.LineThrough else null,
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        text = stringResource(R.string.unit_toman),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = amountColor.copy(alpha = 0.8f),
+                    )
+                }
+                t.balanceRial?.takeIf { !failed }?.let { balance ->
+                    Text(
+                        text = stringResource(R.string.tx_balance, Money.tomanNumber(balance)),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
             }
-            if (failed) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.tx_refunded),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            if (selfTransfer) {
-                Spacer(Modifier.height(10.dp))
-                AssistChip(
-                    onClick = onClick,
-                    label = { Text(stringResource(R.string.tx_self_transfer_chip), fontWeight = FontWeight.Bold) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = TransferBlue.copy(alpha = 0.14f),
-                        labelColor = TransferBlue,
-                    ),
-                    border = null,
-                )
-            } else if (!failed && sms.categoryName != null) {
-                Spacer(Modifier.height(10.dp))
-                AssistChip(
-                    onClick = onClick,
-                    label = {
-                        val name = listOfNotNull(sms.categoryIcon, sms.categoryName).joinToString(" ")
-                        Text(
-                            if (sms.isAutoCategorized) stringResource(R.string.tx_auto_category, name) else name,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = colors.primaryContainer,
-                        labelColor = colors.onPrimaryContainer,
-                    ),
-                    border = null,
-                )
-            } else if (!failed && sms.suggestedCategory != null) {
-                Spacer(Modifier.height(10.dp))
-                AssistChip(
-                    onClick = onClick,
-                    label = { Text(stringResource(R.string.tx_suggested_category, sms.suggestedCategory)) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = colors.secondaryContainer,
-                        labelColor = colors.onSecondaryContainer,
-                    ),
-                    border = null,
-                )
-            } else if (!failed) {
-                Spacer(Modifier.height(10.dp))
-                AssistChip(
-                    onClick = onClick,
-                    label = { Text(stringResource(R.string.tx_add_category)) },
-                )
-            }
-            t.balanceRial?.takeIf { !failed }?.let { balance ->
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.tx_balance, Money.toman(balance)),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colors.onSurfaceVariant,
-                )
-            }
         }
+    }
+}
+
+/** برچسب کوچک زیر عنوان تراکنش (دسته، پیشنهاد، انتقال) */
+@Composable
+private fun Pill(text: String, container: Color, content: Color, leading: ImageVector? = null) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(container)
+            .padding(start = if (leading != null) 8.dp else 10.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (leading != null) {
+            Icon(leading, contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.size(4.dp))
+        }
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = content,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

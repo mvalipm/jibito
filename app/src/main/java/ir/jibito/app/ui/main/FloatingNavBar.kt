@@ -45,6 +45,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
+import ir.jibito.app.ui.theme.Vazirmatn
 import ir.jibito.app.util.Jalali
 
 /** یک دکمه‌ی نوار پایین */
@@ -162,6 +163,7 @@ private fun NavButton(item: NavItem, selected: Boolean, onClick: () -> Unit, mod
                         color = colors.onPrimary,
                         fontWeight = FontWeight.Black,
                         style = TextStyle(
+                            fontFamily = Vazirmatn,
                             fontSize = 9.sp,
                             lineHeight = 9.sp,
                             platformStyle = PlatformTextStyle(includeFontPadding = false),

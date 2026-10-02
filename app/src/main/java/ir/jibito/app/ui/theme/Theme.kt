@@ -8,6 +8,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -19,11 +20,35 @@ val Cream = Color(0xFFFFF8F3)
 val Ink = Color(0xFF1C1B22)
 val InkSoft = Color(0xFF2A2830)
 
-/** رنگ‌هایی که در MaterialTheme جایی ندارند: گرادیان کارت بالای «خلاصه» (متن رویش سفید است) */
+/**
+ * رنگ‌هایی که در MaterialTheme جایی ندارند:
+ * - گرادیان کارت بالای «خلاصه» (متن رویش سفید است)
+ * - رنگ‌های معنایی: پول آمده (income)، انتقال به خودم (transfer)، هشدار نزدیک بودجه (warning).
+ *   در هر سه پوسته یکی‌اند و فقط برای حالت تیره روشن‌تر می‌شوند تا روی زمینه‌ی تیره خوانا بمانند.
+ */
 @Immutable
-data class JibitoColors(val heroStart: Color, val heroEnd: Color)
+data class JibitoColors(
+    val heroStart: Color,
+    val heroEnd: Color,
+    val income: Color = IncomeLight,
+    val transfer: Color = TransferLight,
+    val warning: Color = WarningLight,
+)
+
+private val IncomeLight = Color(0xFF1E9E6A)
+private val IncomeDark = Color(0xFF4CC38A)
+private val TransferLight = Color(0xFF3A6FD8)
+private val TransferDark = Color(0xFF7FA4F0)
+private val WarningLight = Color(0xFFE0951F)
+private val WarningDark = Color(0xFFF2B45A)
 
 val LocalJibitoColors = staticCompositionLocalOf { JibitoColors(Coral, Color(0xFFF08A4B)) }
+
+/** دسترسی کوتاه: JibitoTheme.colors.income */
+object JibitoTheme {
+    val colors: JibitoColors
+        @Composable @ReadOnlyComposable get() = LocalJibitoColors.current
+}
 
 // ── مرجانی (پیش‌فرض) ──
 
@@ -164,8 +189,9 @@ fun JibitoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val (scheme, extras) = schemeFor(style, darkTheme)
+    val (scheme, hero) = schemeFor(style, darkTheme)
+    val extras = if (darkTheme) hero.copy(income = IncomeDark, transfer = TransferDark, warning = WarningDark) else hero
     CompositionLocalProvider(LocalJibitoColors provides extras) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = JibitoTypography, content = content)
     }
 }

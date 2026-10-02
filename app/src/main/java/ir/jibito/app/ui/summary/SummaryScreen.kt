@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.runtime.remember
 import androidx.activity.compose.BackHandler
 import ir.jibito.app.ui.theme.LocalJibitoColors
@@ -64,8 +65,8 @@ import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
+import ir.jibito.app.ui.theme.JibitoIcons
 
-private val WarningAmber = Color(0xFFF2A541)
 
 /**
  * صفحه‌ی «خلاصه»، طرح «یک نگاه، بدون اسکرول»:
@@ -81,6 +82,8 @@ fun SummaryScreen(
     onOpenUncategorized: () -> Unit = {},
     /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
     onOpenTransactions: () -> Unit = {},
+    /** رفتن به تنظیمات (مثلاً برای پیشنهاد پرداخت ماهانه) */
+    onOpenSettings: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -88,6 +91,7 @@ fun SummaryScreen(
     )
     val month by viewModel.month.collectAsState()
     val summary by viewModel.summary.collectAsState()
+    val trend by viewModel.trend.collectAsState()
     var editing by rememberSaveable { mutableStateOf<Long?>(null) }
     var editingOverall by rememberSaveable { mutableStateOf(false) }
     // دسته‌ای که جزئیاتش باز است
@@ -97,6 +101,8 @@ fun SummaryScreen(
     var showAll by rememberSaveable { mutableStateOf(false) }
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
+    val recurringFlow = remember { app.container.recurringSuggestions.observe() }
+    val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val notificationPrompt = rememberNotificationPrompt()
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
@@ -121,30 +127,39 @@ fun SummaryScreen(
             if (!showAll) {
                 val attention = buildList {
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 100 }.forEach { c ->
-                        add(AttentionItem("⚠", stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
+                        add(AttentionItem(JibitoIcons.Warning, stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
                     }
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 80 }.forEach { c ->
-                        add(AttentionItem("●", stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
+                        add(AttentionItem(JibitoIcons.Gauge, stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
                     }
                     if (s.uncategorizedRial > 0 && s.month == JalaliMonth.current()) {
-                        add(AttentionItem("🏷", stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
+                        add(AttentionItem(JibitoIcons.Tag, stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
                     }
                     if (transferSuggestions.isNotEmpty()) {
-                        add(AttentionItem("⇄", Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
+                        add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
+                    }
+                    recurringSuggestions.firstOrNull()?.let { r ->
+                        add(AttentionItem(JibitoIcons.Repeat, stringResource(R.string.attn_recurring, r.title), AttentionItem.Tone.NORMAL, onOpenSettings))
                     }
                     if (pendingReview > 0) {
-                        add(AttentionItem("✉", Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
+                        add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
                     }
                     // نوتیفیکیشن خاموش: اول فهرست، چون بدونش «این خرج مال چی بود؟» و هشدارها نمی‌آیند
                     if (notificationPrompt.visible) {
-                        add(0, AttentionItem("🔔", stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
+                        add(0, AttentionItem(JibitoIcons.Bell, stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
                     }
                 }.take(4)
                 LazyColumn(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp + LocalBottomBarSpace.current),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    item(key = "hero") { GlanceHero(s, onEditBudget = { editingOverall = true }) }
+                    item(key = "hero") {
+                        GlanceHero(
+                            s,
+                            onEditBudget = { editingOverall = true },
+                            vsLastMonthPercent = trend?.takeIf { it.months.lastOrNull()?.month == s.month }?.vsLastMonthPercent,
+                        )
+                    }
                     if (attention.isNotEmpty()) item(key = "attention") { AttentionCard(attention) }
                     item(key = "where") {
                         WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
@@ -159,7 +174,7 @@ fun SummaryScreen(
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("→", fontSize = 18.sp, color = colors.onBackground)
+                Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.cd_back), tint = colors.onBackground, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.glance_all_title),
@@ -172,6 +187,10 @@ fun SummaryScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // روند ۶ ماه اخیر (لمس هر ستون، مبلغ همان ماه را نشان می‌دهد)
+                trend?.takeIf { t -> t.months.lastOrNull()?.month == s.month && t.months.any { it.spentRial > 0 } }?.let { t ->
+                    item(key = "trend") { TrendCard(t) }
+                }
 
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
@@ -310,7 +329,7 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val barColor = when (level) {
         100 -> colors.error
-        80 -> WarningAmber
+        80 -> JibitoTheme.colors.warning
         else -> base
     }
     val idle = c.spentRial == 0L && budget == null
@@ -394,7 +413,6 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     }
 }
 
-private val IncomeGreen = Color(0xFF1E9E6A)
 
 @Composable
 private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
@@ -409,7 +427,7 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
         Box(
             Modifier
                 .size(40.dp)
-                .background(IncomeGreen.copy(alpha = 0.14f), CircleShape),
+                .background(JibitoTheme.colors.income.copy(alpha = 0.14f), CircleShape),
             contentAlignment = Alignment.Center,
         ) { Text(icon ?: "•", fontSize = 18.sp) }
         Spacer(Modifier.size(12.dp))
@@ -424,7 +442,7 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
             "+ " + Money.toman(amountRial),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Black,
-            color = IncomeGreen,
+            color = JibitoTheme.colors.income,
         )
     }
 }

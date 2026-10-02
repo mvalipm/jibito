@@ -20,6 +20,7 @@ import ir.jibito.app.data.local.entity.RecurringPaymentEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
 import kotlinx.coroutines.flow.Flow
+import ir.jibito.app.data.local.entity.DatedAmount
 
 @Dao
 interface TransactionFlowDao {
@@ -138,6 +139,36 @@ interface TransactionFlowDao {
 
     @Query("UPDATE transaction_flows SET isDeleted = 1, updatedAt = :now WHERE id IN (:ids)")
     suspend fun softDelete(ids: List<Long>, now: Long)
+
+    /** تراکنش‌های بی‌دسته‌ی یک طرف حساب: همان‌هایی که یادگیری دسته ممکن است عوضشان کند (برای «برگردان») */
+    @Query(
+        """
+        SELECT * FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NULL AND isDeleted = 0
+          AND transferState != 1
+        """
+    )
+    suspend fun uncategorizedSameMerchant(merchant: String, flowType: Int): List<TransactionFlowEntity>
+
+    /** «برگردان»: دسته، پیشنهاد، وضعیت انتقال و حذف یک تراکنش را به حالت قبل برمی‌گرداند */
+    @Query(
+        """
+        UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = :isAuto,
+            suggestedCategory = :suggested, transferState = :transferState, transferPairId = :transferPairId,
+            isDeleted = :isDeleted, updatedAt = :now
+        WHERE id = :id
+        """
+    )
+    suspend fun restoreUserState(
+        id: Long,
+        categoryId: Long?,
+        isAuto: Boolean,
+        suggested: String?,
+        transferState: Int,
+        transferPairId: Long?,
+        isDeleted: Boolean,
+        now: Long,
+    )
 
     /** وضعیت انتقال یک تراکنش (۰ عادی، ۱ انتقال به خودم، ۲ «انتقال نیست»). انتقال به خودم دسته ندارد. */
     @Query(
@@ -260,6 +291,25 @@ interface SummaryDao {
         """
     )
     fun observeSums(flowType: Int, from: Long, to: Long): Flow<List<CategorySum>>
+
+    /** همان شرط‌های observeSums، ولی هر تراکنش جدا با زمانش (روند ماه‌ها، خلاصه‌ی هفتگی) */
+    @Query(
+        """
+        SELECT categoryId, amount, dateEpoch FROM transaction_flows
+        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
+          AND dateEpoch >= :from AND dateEpoch < :to
+        """
+    )
+    fun observeAmounts(flowType: Int, from: Long, to: Long): Flow<List<DatedAmount>>
+
+    @Query(
+        """
+        SELECT categoryId, amount, dateEpoch FROM transaction_flows
+        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
+          AND dateEpoch >= :from AND dateEpoch < :to
+        """
+    )
+    suspend fun amounts(flowType: Int, from: Long, to: Long): List<DatedAmount>
 
     @Query(
         """

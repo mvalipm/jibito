@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ir.jibito.app.data.repository.SpendTrend
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SummaryViewModel(
@@ -28,6 +29,11 @@ class SummaryViewModel(
     /** null یعنی «هنوز در حال بارگذاری» */
     val summary: StateFlow<MonthSummary?> = _month
         .flatMapLatest { repository.observeMonth(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** روند ۶ ماه منتهی به ماه انتخاب‌شده؛ null یعنی «هنوز در حال بارگذاری» */
+    val trend: StateFlow<SpendTrend?> = _month
+        .flatMapLatest { repository.observeTrend(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun previousMonth() {

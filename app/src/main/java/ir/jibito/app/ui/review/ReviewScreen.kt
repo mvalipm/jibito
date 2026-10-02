@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
@@ -69,8 +70,11 @@ import ir.jibito.app.data.repository.ReviewItem
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import ir.jibito.app.ui.theme.JibitoIcons
+import ir.jibito.app.ui.common.rememberHaptics
 
-private val DepositGreen = Color(0xFF1E9E6A)
 
 /**
  * «صندوق بررسی»: پیامک‌هایی که شبیه تراکنش‌اند ولی خودکار خوانده نشدند، یکی‌یکی.
@@ -89,6 +93,7 @@ fun ReviewScreen(onClose: () -> Unit) {
     val pending by viewModel.pending.collectAsState()
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
+    val haptics = rememberHaptics()
 
     Column(
         Modifier
@@ -129,8 +134,14 @@ fun ReviewScreen(onClose: () -> Unit) {
             list.isEmpty() -> AllDone(onClose)
             else -> ReviewPager(
                 list = list,
-                onConfirm = { item, type, amount, balance, bankId -> viewModel.confirm(item, type, amount, balance, bankId) },
-                onDismiss = { item, ignore -> viewModel.dismiss(item, ignore) },
+                onConfirm = { item, type, amount, balance, bankId ->
+                    haptics.confirm()
+                    viewModel.confirm(item, type, amount, balance, bankId)
+                },
+                onDismiss = { item, ignore ->
+                    haptics.reject()
+                    viewModel.dismiss(item, ignore)
+                },
                 onAddInstitution = { name -> app.container.customInstitutions.add(name) },
                 onShare = { item ->
                     val send = Intent(Intent.ACTION_SEND)
@@ -242,7 +253,7 @@ private fun AllDone(onClose: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("✓", fontSize = 48.sp, color = DepositGreen, fontWeight = FontWeight.Black)
+        Icon(JibitoIcons.Check, contentDescription = null, tint = JibitoTheme.colors.income, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.review_all_done),
@@ -335,8 +346,8 @@ private fun ReviewCard(
         // نوع
         SectionTitle(stringResource(R.string.review_type))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TypeChip(stringResource(R.string.tx_withdrawal), "↑", type == FlowType.WITHDRAWAL, colors.primary) { type = FlowType.WITHDRAWAL }
-            TypeChip(stringResource(R.string.tx_deposit), "↓", type == FlowType.DEPOSIT, DepositGreen) { type = FlowType.DEPOSIT }
+            TypeChip(stringResource(R.string.tx_withdrawal), JibitoIcons.ArrowUp, type == FlowType.WITHDRAWAL, colors.primary) { type = FlowType.WITHDRAWAL }
+            TypeChip(stringResource(R.string.tx_deposit), JibitoIcons.ArrowDown, type == FlowType.DEPOSIT, JibitoTheme.colors.income) { type = FlowType.DEPOSIT }
         }
 
         // مبلغ
@@ -350,7 +361,7 @@ private fun ReviewCard(
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (type == FlowType.DEPOSIT) DepositGreen else colors.primary,
+                color = if (type == FlowType.DEPOSIT) JibitoTheme.colors.income else colors.primary,
             )
         }
 
@@ -516,7 +527,7 @@ private fun BankPickerDialog(
                             onValueChange = { query = it },
                             singleLine = true,
                             placeholder = { Text(stringResource(R.string.institution_search_hint)) },
-                            leadingIcon = { Text("🔍") },
+                            leadingIcon = { Icon(JibitoIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -569,15 +580,18 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun TypeChip(label: String, icon: String, selected: Boolean, color: Color, onClick: () -> Unit) {
+private fun TypeChip(label: String, icon: ImageVector, selected: Boolean, color: Color, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text("$icon  $label", fontWeight = FontWeight.Bold) },
+        label = { Text(label, fontWeight = FontWeight.Bold) },
+        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
         shape = RoundedCornerShape(14.dp),
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = color,
             selectedLabelColor = Color.White,
+            selectedLeadingIconColor = Color.White,
+            iconColor = color,
         ),
     )
 }

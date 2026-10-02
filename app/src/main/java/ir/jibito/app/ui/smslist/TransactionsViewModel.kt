@@ -12,10 +12,15 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ir.jibito.app.data.repository.UndoSnapshot
 
 class TransactionsViewModel(
     private val repository: TransactionRepository,
@@ -27,6 +32,29 @@ class TransactionsViewModel(
 
     val categories: StateFlow<List<Category>> = repository.observeCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val onlyUncategorized = MutableStateFlow(false)
+
+    private val _search = MutableStateFlow(TxSearch())
+    /** جست‌وجوی فعلی؛ با رفتن به تب دیگر و برگشتن هم می‌ماند */
+    val search: StateFlow<TxSearch> = _search
+
+    fun setSearch(value: TxSearch) {
+        _search.value = value
+    }
+
+    /** «فقط خرج‌های بی‌دسته» (از «کارهای لازم» در خلاصه) */
+    fun setOnlyUncategorized(value: Boolean) {
+        onlyUncategorized.value = value
+    }
+
+    /** فهرستی که صفحه نشان می‌دهد (فیلترشده و روزبه‌روز)؛ null تا وقتی تراکنش‌ها از دیتابیس نیامده‌اند */
+    val visible: StateFlow<VisibleTransactions?> =
+        combine(repository.observeTransactions(), categories, onlyUncategorized, _search) { all, cats, onlyUncat, search ->
+            visibleTransactions(all, cats, onlyUncat, search)
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** خواندن پیامک‌ها را خود صفحه‌ی اصلی موقع باز شدن اپ شروع می‌کند (MainScreen) */
     val isSyncing: StateFlow<Boolean> = repository.isSyncing
@@ -43,11 +71,18 @@ class TransactionsViewModel(
      * دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود.
      * اگر تراکنش «انتقال به خودم» بود، با انتخاب دسته دیگر انتقال حساب نمی‌شود.
      */
-    fun setCategory(transaction: Transaction, categoryId: Long?) {
+    fun setCategory(transaction: Transaction, categoryId: Long?, onDone: (UndoSnapshot) -> Unit = {}) {
         viewModelScope.launch {
+            val before = repository.snapshotForUndo(transaction.id)
             if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
             repository.setCategory(transaction.id, categoryId)
+            onDone(before)
         }
+    }
+
+    /** «برگردان» آخرین تغییر (دسته یا حذف) */
+    fun undo(snapshot: UndoSnapshot) {
+        viewModelScope.launch { repository.restore(snapshot) }
     }
 
     /** دسته‌ی شخصی می‌سازد و همان لحظه برای این تراکنش انتخابش می‌کند */
@@ -80,8 +115,12 @@ class TransactionsViewModel(
         viewModelScope.launch { onSaved(repository.addManual(type, amountRial, categoryId, note, dateMillis)) }
     }
 
-    fun deleteManual(transactionId: Long) {
-        viewModelScope.launch { repository.deleteManual(transactionId) }
+    fun deleteManual(transactionId: Long, onDone: (UndoSnapshot) -> Unit = {}) {
+        viewModelScope.launch {
+            val before = repository.snapshotForUndo(transactionId)
+            repository.deleteManual(transactionId)
+            onDone(before)
+        }
     }
 
     fun loadQuickCategories(flowType: Int, onResult: (List<Long>) -> Unit) {

@@ -34,6 +34,7 @@ import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
 
 /** «پرداخت‌های ماهانه»: اجاره، قسط، شهریه...؛ روز موعدش یادآوری می‌شود. */
 @Composable
@@ -42,6 +43,9 @@ fun RecurringCard(card: @Composable (title: String, content: @Composable () -> U
     val repository = (context.applicationContext as JibitoApplication).container.recurringRepository
     val itemsFlow = remember { repository.observeAll() }
     val items by itemsFlow.collectAsState(initial = emptyList())
+    val suggestionsSource = (context.applicationContext as JibitoApplication).container.recurringSuggestions
+    val suggestionsFlow = remember { suggestionsSource.observe() }
+    val suggestions by suggestionsFlow.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
     var adding by remember { mutableStateOf(false) }
@@ -64,6 +68,35 @@ fun RecurringCard(card: @Composable (title: String, content: @Composable () -> U
                 }
                 TextButton(onClick = { scope.launch { repository.delete(p.id) } }) {
                     Text(stringResource(R.string.settings_custom_delete), color = colors.error)
+                }
+            }
+        }
+        // پیشنهادهای خودکار: «به نظر هر ماه پرداخت می‌شه»
+        suggestions.forEach { s ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .background(colors.secondaryContainer.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                    .padding(start = 12.dp, end = 6.dp, top = 10.dp, bottom = 4.dp)
+            ) {
+                Text(
+                    stringResource(R.string.recurring_suggest_title, s.title),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSecondaryContainer,
+                )
+                Text(
+                    Jalali.toPersianDigits(stringResource(R.string.recurring_suggest_body, Money.toman(s.amountRial), s.dayOfMonth, s.months)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSecondaryContainer,
+                )
+                Row {
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { suggestionsSource.dismiss(s) }) { Text(stringResource(R.string.recurring_suggest_no)) }
+                    TextButton(onClick = { scope.launch { suggestionsSource.accept(s) } }) {
+                        Text(stringResource(R.string.recurring_suggest_yes), fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
