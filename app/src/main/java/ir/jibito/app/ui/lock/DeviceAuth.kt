@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import ir.jibito.app.util.ErrorLog
 
 /**
  * تأیید هویت با قفل خود گوشی (اثر انگشت / چهره / رمز / الگو)، بدون کتابخانه‌ی اضافه:
@@ -40,15 +41,24 @@ fun rememberDeviceAuthenticator(title: String, subtitle: String, onResult: (Bool
     }
     return remember(context, title, subtitle) {
         {
-            if (!DeviceAuth.isAvailable(context)) {
-                currentOnResult(false)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                showBiometricPrompt(context, title, subtitle) { currentOnResult(it) }
-            } else {
+            fun confirmWithKeyguard() {
                 @Suppress("DEPRECATION")
                 val intent = context.getSystemService(KeyguardManager::class.java)
                     ?.createConfirmDeviceCredentialIntent(title, subtitle)
                 if (intent != null) keyguardLauncher.launch(intent) else currentOnResult(false)
+            }
+            if (!DeviceAuth.isAvailable(context)) {
+                currentOnResult(false)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    showBiometricPrompt(context, title, subtitle) { currentOnResult(it) }
+                } catch (e: Exception) {
+                    // مثلاً گوشی‌ای که BiometricPrompt را درست پیاده نکرده: به‌جای بسته شدن اپ، صفحه‌ی تأیید قفل گوشی
+                    ErrorLog.record(context, "biometric prompt", e)
+                    runCatching { confirmWithKeyguard() }.onFailure { currentOnResult(false) }
+                }
+            } else {
+                confirmWithKeyguard()
             }
         }
     }

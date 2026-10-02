@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <!-- نوتیفیکیشن «این خرج مال چی بود؟» (اندروید ۱۳ به بعد) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- قفل اپ با اثر انگشت / چهره / قفل گوشی (اجازه‌ی عادی؛ بدون پرسیدن از کاربر داده می‌شود) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <!--
