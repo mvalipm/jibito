@@ -211,16 +211,20 @@ fun SettingsScreen() {
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.settings_open_app_settings)) }
             }
-            // خلاصه‌ی هفتگی (جمعه‌ها عصر)
-            val digest = app.container.weeklyDigest
-            val digestOn by digest.enabled.collectAsState()
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_digest), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-                    Text(stringResource(R.string.settings_digest_hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                }
-                Switch(checked = digestOn, onCheckedChange = digest::setEnabled)
-            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // نوتیفیکیشن‌ها: حریم خصوصی، ساعت آرام، خلاصه‌ی هفتگی
+        val notifySettings = app.container.notificationSettings
+        val hideOnLock by notifySettings.hideOnLockScreen.collectAsState()
+        val quiet by notifySettings.quietHours.collectAsState()
+        val digest = app.container.weeklyDigest
+        val digestOn by digest.enabled.collectAsState()
+        SettingsCard(stringResource(R.string.settings_notifications_title)) {
+            SwitchRow(stringResource(R.string.settings_hide_lock), stringResource(R.string.settings_hide_lock_hint), hideOnLock, notifySettings::setHideOnLockScreen)
+            SwitchRow(stringResource(R.string.settings_quiet_hours), stringResource(R.string.settings_quiet_hours_hint), quiet, notifySettings::setQuietHours)
+            SwitchRow(stringResource(R.string.settings_digest), stringResource(R.string.settings_digest_hint), digestOn, digest::setEnabled)
         }
 
         Spacer(Modifier.height(12.dp))
@@ -384,6 +388,19 @@ private fun rootIcon(c: Category, byId: Map<Long, Category>): String? {
         steps++
     }
     return current.icon
+}
+
+/** یک گزینه‌ی روشن/خاموش با توضیح کوتاه */
+@Composable
+private fun SwitchRow(title: String, hint: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+            Text(hint, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
 }
 
 @Composable

@@ -53,4 +53,36 @@ class RecurringScheduleTest {
         assertEquals(140507, RecurringSchedule.initialRemindedKey(5, 1405, 7, 20))
         assertNull(RecurringSchedule.initialRemindedKey(25, 1405, 7, 20))
     }
+
+    @Test
+    fun `ماه بعد که علامت خورده، یعنی این ماه هم انجام شده`() {
+        // «پرداخت کردم» روی «فردا موعد…» در روز آخر ماه، ماه بعد را علامت می‌زند
+        assertFalse(RecurringSchedule.isDue(1, 140508, 1405, 7, 30, 20))
+    }
+
+    @Test
+    fun `یادآوری عصر روز قبل از موعد`() {
+        // موعد روز ۵؛ فردا ۵ مهر است
+        assertTrue(RecurringSchedule.isDueTomorrow(5, null, 1405, 7, 5, 18))
+        assertFalse("not before evening", RecurringSchedule.isDueTomorrow(5, null, 1405, 7, 5, 17))
+        assertFalse("tomorrow is not the due day", RecurringSchedule.isDueTomorrow(5, null, 1405, 7, 6, 20))
+        assertFalse("already done for that month", RecurringSchedule.isDueTomorrow(5, 140507, 1405, 7, 5, 20))
+        // موعد روز ۱: فردا اول ماه بعد است
+        assertTrue(RecurringSchedule.isDueTomorrow(1, 140507, 1405, 8, 1, 19))
+        // موعد ۳۱ در ماه ۳۰ روزه ← فردا روز ۳۰
+        assertTrue(RecurringSchedule.isDueTomorrow(31, null, 1405, 7, 30, 19))
+    }
+
+    @Test
+    fun `بعداً یادم بنداز: صبح و ظهر ← امشب ساعت ۲۰، عصر ← فردا ساعت ۹`() {
+        val morning = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 3, 10, 30) }.timeInMillis
+        val tonight = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 3, 20, 0) }.timeInMillis
+        assertTrue(RecurringSchedule.snoozesTonight(morning))
+        org.junit.Assert.assertEquals(tonight, RecurringSchedule.snoozeUntil(morning))
+
+        val evening = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 3, 18, 0) }.timeInMillis
+        val tomorrow = java.util.Calendar.getInstance().apply { clear(); set(2026, 9, 4, 9, 0) }.timeInMillis
+        assertFalse(RecurringSchedule.snoozesTonight(evening))
+        org.junit.Assert.assertEquals(tomorrow, RecurringSchedule.snoozeUntil(evening))
+    }
 }

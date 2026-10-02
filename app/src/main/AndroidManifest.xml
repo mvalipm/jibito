@@ -61,6 +61,11 @@
         <receiver
             android:name=".notify.CategoryActionReceiver"
             android:exported="false" />
+
+        <!-- دکمه‌های یادآوری پرداخت: «پرداخت کردم» و «بعداً یادم بنداز» -->
+        <receiver
+            android:name=".notify.RecurringActionReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

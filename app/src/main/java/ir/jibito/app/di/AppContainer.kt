@@ -20,6 +20,7 @@ import ir.jibito.app.data.repository.TransactionRepositoryImpl
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.notify.BudgetAlerter
+import ir.jibito.app.notify.NotificationSettings
 import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.ui.theme.ThemeSettings
@@ -59,6 +60,9 @@ class AppContainer(context: Context) {
     val recurringReminder: RecurringReminder by lazy { RecurringReminder(appContext, database) }
 
     val budgetAlerter: BudgetAlerter by lazy { BudgetAlerter(appContext, database) }
+
+    /** پنهان کردن مبلغ روی صفحه‌ی قفل، ساعت آرام */
+    val notificationSettings: NotificationSettings by lazy { NotificationSettings(appContext) }
 
     /** صفحه‌ی «N تراکنش پیدا شد» فقط یک بار */
     val firstRun: FirstRunFlag by lazy { FirstRunFlag(appContext) }

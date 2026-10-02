@@ -17,6 +17,7 @@ import androidx.work.WorkerParameters
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.bank.SenderType
+import ir.jibito.app.notify.Notify
 import ir.jibito.app.notify.TransactionNotifier
 import ir.jibito.app.util.ErrorLog
 import java.util.concurrent.TimeUnit
@@ -62,6 +63,8 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             container.onDataChanged() // هشدار بودجه + ویجت
             container.recurringReminder.check()
             container.weeklyDigest.check()
+            // اگر گیرنده‌ی باز شدن قفل اجرا نشده بود (اپ بسته بود)، این‌جا جبران می‌شود
+            Notify.revealAfterUnlock(applicationContext)
             Result.success()
         } catch (e: Exception) {
             // قبلاً خطا بی‌صدا تکرار می‌شد و هیچ ردی نمی‌ماند؛ حالا ثبت می‌شود (تنظیمات ← گزارش خطا)

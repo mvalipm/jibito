@@ -5,6 +5,7 @@ import android.content.Context
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.sms.SmsSyncWorker
 import ir.jibito.app.di.AppContainer
+import ir.jibito.app.notify.Notify
 import ir.jibito.app.util.ErrorLog
 
 /** کلاس اصلی اپ؛ فقط یک AppContainer برای کل اپ نگه می‌دارد. */
@@ -26,5 +27,7 @@ class JibitoApplication : Application() {
         container.customInstitutions.load()
         // همگام‌سازی دوره‌ای پیامک‌ها (هر ۱۵ دقیقه) — اگر قبلاً زمان‌بندی شده باشد، تکرار نمی‌شود
         SmsSyncWorker.schedulePeriodic(this)
+        // نوتیفیکیشن‌هایی که وقت قفل بودن گوشی بی‌مبلغ آمدند، با باز شدن قفل کامل شوند
+        Notify.watchUnlock(this)
     }
 }

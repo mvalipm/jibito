@@ -79,4 +79,18 @@ class RecurringReminderTest {
 
         assertNull(db.recurringDao().all().single().lastRemindedMonthKey)
     }
+
+    @Test
+    fun alreadyPaidBeforeTheDayBeforeReminder() = runBlocking {
+        // موعد اول آبان؛ عصر ۳۰ مهر (روز قبل)، همان مبلغ دو روز پیش برداشت شده
+        db.recurringDao().insert(payment(5_000_000).copy(dayOfMonth = 1, lastRemindedMonthKey = 140507))
+        db.transactionFlowDao().insert(withdrawal(5_000_000, j(1405, 7, 28, 14)))
+
+        RecurringReminder(context, db).check(now = j(1405, 7, 30, 19))
+        assertEquals(140508, db.recurringDao().all().single().lastRemindedMonthKey)
+
+        // و یادآوری «دیرکرده»ی مهر هم نمی‌آید
+        RecurringReminder(context, db).check(now = j(1405, 7, 30, 21))
+        assertEquals(140508, db.recurringDao().all().single().lastRemindedMonthKey)
+    }
 }

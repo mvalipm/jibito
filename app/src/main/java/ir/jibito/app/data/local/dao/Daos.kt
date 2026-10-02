@@ -117,6 +117,21 @@ interface TransactionFlowDao {
     )
     fun observeBankBalances(): Flow<List<BankBalanceRow>>
 
+    /** همان «چقد دارم؟» یک بار (برای یادآوری پرداخت: «مانده کافی است؟») */
+    @Query(
+        """
+        SELECT t.bankId AS bankId, t.remainAfter AS remainAfter, t.dateEpoch AS dateEpoch
+        FROM transaction_flows t
+        WHERE t.isDeleted = 0 AND t.remainAfter IS NOT NULL AND t.bankId IS NOT NULL
+          AND t.dateEpoch = (
+            SELECT MAX(t2.dateEpoch) FROM transaction_flows t2
+            WHERE t2.bankId = t.bankId AND t2.isDeleted = 0 AND t2.remainAfter IS NOT NULL
+          )
+        ORDER BY t.dateEpoch DESC
+        """
+    )
+    suspend fun bankBalances(): List<BankBalanceRow>
+
     /** یک تراکنش (ثبت دستی)؛ شناسه‌اش را برمی‌گرداند */
     @Insert
     suspend fun insert(item: TransactionFlowEntity): Long
@@ -436,4 +451,11 @@ interface RecurringDao {
 
     @Query("UPDATE recurring_payments SET lastRemindedMonthKey = :monthKey WHERE id = :id")
     suspend fun markReminded(id: Long, monthKey: Int)
+
+    /** «بعداً یادم بنداز»: یادآوری این ماه دوباره بیاید */
+    @Query("UPDATE recurring_payments SET lastRemindedMonthKey = NULL WHERE id = :id")
+    suspend fun clearReminded(id: Long)
+
+    @Query("SELECT * FROM recurring_payments WHERE id = :id")
+    suspend fun byId(id: Long): RecurringPaymentEntity?
 }

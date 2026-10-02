@@ -204,10 +204,14 @@
     <string name="budget_channel_name">هشدار بودجه</string>
     <string name="budget_channel_desc">وقتی خرج یک دسته به ۸۰٪ بودجه برسه یا ازش رد بشه</string>
     <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
-    <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
+    <string name="budget_alert_over">بودجه‌ی %1$s پر شد</string>
     <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
-    <string name="budget_alert_overall_warning">۸۰٪ بودجه‌ی کل این ماه مصرف شد</string>
-    <string name="budget_alert_overall_over">بودجه‌ی کل این ماه تموم شد!</string>
+    <string name="budget_alert_body_over">%1$s تومان بیشتر از برنامه (%2$s از %3$s)</string>
+    <string name="budget_alert_body_allowance">%1$s از %2$s خرج شده · تا آخر ماه روزی %3$s تومان جا داری</string>
+    <string name="budget_alert_pace">با این سرعت، بودجه‌ی %1$s حدود %2$s تموم می‌شه</string>
+    <string name="budget_overall_label">کل این ماه</string>
+    <string name="budget_soft_channel_name">هشدار سرعت خرج</string>
+    <string name="budget_soft_channel_desc">پیش از تموم شدن بودجه: وقتی با این سرعت زودتر تموم می‌شه، یا ۸۰٪ش رفته</string>
     <string name="overall_set_budget">+ تعیین بودجه‌ی کل ماه</string>
     <string name="overall_remaining">%1$s مونده از %2$s</string>
     <string name="overall_over">%1$s بیشتر از بودجه‌ی %2$s</string>
@@ -218,6 +222,13 @@
     <string name="overall_dialog_use_sum">همین رو بذار</string>
     <string name="sheet_title_income">این پول از کجا اومد؟</string>
     <string name="notif_question_income">این پول از کجا اومد؟</string>
+    <string name="notif_redacted_withdrawal">یک خرج تازه ثبت شد</string>
+    <string name="notif_redacted_deposit">یک واریز تازه ثبت شد</string>
+    <string name="notif_other_category">دسته‌ی دیگر…</string>
+    <string name="notif_chosen">✓ %1$s ثبت شد</string>
+    <string name="notif_undo">برگردون</string>
+    <string name="notif_group_title">%1$d تراکنش منتظر دسته</string>
+    <string name="notif_group_text">بزن تا دسته‌شون رو بگی</string>
     <string name="summary_income_categories">درآمدها</string>
     <string name="tx_auto_category">%1$s · خودکار</string>
     <string name="notif_auto_text">✓ %1$s (خودکار) — اگه درست نیست، بزن و عوضش کن</string>
@@ -343,6 +354,13 @@
     <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
     <string name="recurring_notif_title_late">موعد «%1$s» روز %2$d بود</string>
     <string name="recurring_notif_body">%1$s</string>
+    <string name="recurring_notif_title_tomorrow">فردا موعد «%1$s»ه</string>
+    <string name="recurring_action_paid">✓ پرداخت کردم</string>
+    <string name="recurring_action_tonight">امشب یادم بنداز</string>
+    <string name="recurring_action_tomorrow">فردا یادم بنداز</string>
+    <string name="recurring_balance_of">مانده‌ی %1$s</string>
+    <string name="recurring_balance_all">مانده‌ی حساب‌هات</string>
+    <string name="recurring_shortfall">%1$s: %2$s · برای این پرداخت %3$s کم داری</string>
 
     <!-- نوتیفیکیشن خاموش -->
     <string name="attn_notifications_off">نوتیفیکیشن خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود. روشنش کن</string>
@@ -376,12 +394,18 @@
     <string name="digest_channel_name">خلاصه‌ی هفتگی</string>
     <string name="digest_channel_desc">جمعه‌ها عصر: این هفته چقدر خرج شد و بیشترش کجا رفت</string>
     <string name="digest_title">این هفته %1$s تومان خرج کردی</string>
+    <string name="digest_title_redacted">خلاصه‌ی این هفته آماده‌ست</string>
     <string name="digest_more">%1$d٪ بیشتر از هفته‌ی قبل</string>
     <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل</string>
     <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
     <string name="digest_top">بیشترین: %1$s</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>
     <string name="settings_digest_hint">جمعه‌ها عصر یک نوتیفیکیشن کوتاه</string>
+    <string name="settings_notifications_title">نوتیفیکیشن‌ها</string>
+    <string name="settings_hide_lock">مبلغ‌ها روی صفحه‌ی قفل دیده نشن</string>
+    <string name="settings_hide_lock_hint">تا قفل گوشی باز نشده، فقط «یک خرج تازه ثبت شد»</string>
+    <string name="settings_quiet_hours">ساعت آرام</string>
+    <string name="settings_quiet_hours_hint">از ۲۳ تا ۷ صبح نوتیفیکیشن‌ها بی‌صدا میان</string>
 
     <!-- روند ماه‌ها -->
     <string name="trend_title">روند خرج %1$d ماه اخیر</string>

@@ -1,15 +1,11 @@
 package ir.jibito.app.notify
 
-import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import ir.jibito.app.MainActivity
 import ir.jibito.app.R
@@ -60,11 +56,7 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
 
     /** true اگر نشان داده شد (بدون اجازه‌ی نوتیفیکیشن، دفعه‌ی بعد دوباره امتحان می‌شود) */
     private fun show(d: WeeklyDigestRule.Digest, topName: String?): Boolean {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return false
-        }
+        if (!Notify.canPost(context)) return false
         ensureChannel()
         val change = d.changePercent?.let { p ->
             when {
@@ -82,17 +74,20 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
             Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_jibito)
-            .setContentTitle(context.getString(R.string.digest_title, Money.compact(d.thisWeekRial)))
-            .apply { if (body.isNotBlank()) setContentText(body) }
-            .setContentIntent(openApp)
-            .setAutoCancel(true)
-            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        return true
+        return Notify.post(context, NOTIFICATION_ID) { redacted ->
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_jibito)
+                // روی صفحه‌ی قفل: «خلاصه‌ی این هفته آماده‌ست»، بدون مبلغ
+                .setContentTitle(
+                    if (redacted) context.getString(R.string.digest_title_redacted)
+                    else context.getString(R.string.digest_title, Money.compact(d.thisWeekRial))
+                )
+                .apply { if (body.isNotBlank() && !redacted) setContentText(body) }
+                .setContentIntent(openApp)
+                .setAutoCancel(true)
+                .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+        }
     }
 
     private fun ensureChannel() {

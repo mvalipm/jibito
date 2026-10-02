@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
 import ir.jibito.app.data.security.AppLockSession
+import ir.jibito.app.notify.Notify
 import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.ui.lock.DeviceAuth
 import ir.jibito.app.ui.lock.LockScreen
@@ -122,6 +123,8 @@ class MainActivity : ComponentActivity() {
         }
         session.backgroundedAt = 0
         refreshLock()
+        // کاربر اپ را باز کرده، پس قفل گوشی باز است: نوتیفیکیشن‌های بی‌مبلغ کامل شوند
+        Notify.revealAfterUnlock(this)
     }
 
     override fun onStop() {
