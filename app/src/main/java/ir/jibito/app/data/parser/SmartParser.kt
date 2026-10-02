@@ -70,7 +70,9 @@ object SmartParser : SmsParser {
 
         val finalAmount = amount ?: return null
         if (finalAmount <= 0 || finalAmount >= MAX_AMOUNT_RIAL) return null
-        if (balance == finalAmount && !signed) balance = null
+        // مانده‌ی برابر با مبلغ معمولاً تکرار اشتباهی همان عدد است — مگر صریحاً بعد از «مانده/موجودی» آمده باشد
+        // (مثلاً اولین واریز به حساب بلوبانک: «۱,۰۰۰,۰۰۰ ریال به حساب شما نشست. موجودی: ۱,۰۰۰,۰۰۰ ریال»)
+        if (balance == finalAmount && !signed && BalanceFinder.find(text) != finalAmount) balance = null
 
         // محافظ در برابر پیامک‌های غیرتراکنشی: یا علامت داشته باشد، یا مانده، یا حداقل کلمه‌ی نوع تراکنش + «مبلغ»
         val trustworthy = signed || balance != null || (hasFlowWord && text.contains("مبلغ"))
