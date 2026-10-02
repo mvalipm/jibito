@@ -170,6 +170,14 @@ fun CategoryPickerSheet(
                         color = colors.onSurfaceVariant,
                     )
                 }
+                if (transaction.merchant != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.sheet_learning_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
 
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {

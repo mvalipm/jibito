@@ -50,27 +50,38 @@ interface TransactionFlowDao {
     suspend fun byId(id: Long): TransactionFlowEntity?
 
     /**
-     * یادگیری: آخرین دسته‌ای که «خود کاربر» برای این طرف حساب انتخاب کرده.
+     * یادگیری: دسته‌هایی که «خود کاربر» برای این طرف حساب انتخاب کرده، تازه‌ترین اول.
      * (دسته‌های خودکار حساب نمی‌شوند، تا یک اشتباه خودش را تکرار نکند.)
      */
     @Query(
         """
         SELECT categoryId FROM transaction_flows
         WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NOT NULL
-          AND isAutoCategorized = 0 AND isDeleted = 0
-        ORDER BY dateEpoch DESC LIMIT 1
+          AND isAutoCategorized = 0 AND isDeleted = 0 AND transferState != 1
+        ORDER BY dateEpoch DESC LIMIT :limit
         """
     )
-    suspend fun learnedCategory(merchant: String, flowType: Int): Long?
+    suspend fun userChoices(merchant: String, flowType: Int, limit: Int): List<Long>
 
-    /** همه‌ی تراکنش‌های بی‌دسته‌ی همین طرف حساب هم همین دسته را (خودکار) می‌گیرند. */
+    /** اپ مطمئن شده ← تراکنش‌های بی‌دسته‌ی همین طرف حساب این دسته را (خودکار) می‌گیرند. */
     @Query(
         """
         UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 1, updatedAt = :now
         WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NULL AND isDeleted = 0
+          AND transferState != 1
         """
     )
     suspend fun applyToSameMerchant(merchant: String, flowType: Int, categoryId: Long, now: Long): Int
+
+    /** هنوز مطمئن نیست ← تراکنش‌های بی‌دسته‌ی همین طرف حساب این دسته را «پیشنهاد» می‌گیرند. */
+    @Query(
+        """
+        UPDATE transaction_flows SET suggestedCategory = :categoryName, updatedAt = :now
+        WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NULL AND isDeleted = 0
+          AND transferState != 1
+        """
+    )
+    suspend fun suggestForSameMerchant(merchant: String, flowType: Int, categoryName: String, now: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)

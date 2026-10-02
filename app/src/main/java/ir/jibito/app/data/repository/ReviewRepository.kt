@@ -3,6 +3,7 @@ package ir.jibito.app.data.repository
 import androidx.room.withTransaction
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.category.CategorySuggester
+import ir.jibito.app.data.category.CategoryLearning
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
@@ -103,7 +104,11 @@ class ReviewRepositoryImpl(
             )
 
             val flowDao = db.transactionFlowDao()
-            val learnedCategory = merchant?.let { flowDao.learnedCategory(it, type.code) }
+            // یادگیری دسته: ۳ تأیید پشت سر هم ← خودکار؛ کمتر ← فقط پیشنهاد
+            val learning = CategoryLearning(db)
+            val decision = learning.decide(merchant, type.code)
+            val learnedCategory = decision?.takeIf { it.auto }?.categoryId
+            val learnedSuggestion = decision?.takeIf { !it.auto }?.let { learning.nameOf(it.categoryId) }
             flowDao.insertAll(
                 listOf(
                     TransactionFlowEntity(
@@ -114,7 +119,8 @@ class ReviewRepositoryImpl(
                         remainAfter = balance?.value?.times(factor),
                         dateEpoch = row.dateEpoch,
                         merchant = merchant,
-                        suggestedCategory = if (type == FlowType.WITHDRAWAL) CategorySuggester.suggest(merchant) else null,
+                        suggestedCategory = learnedSuggestion
+                            ?: if (type == FlowType.WITHDRAWAL) CategorySuggester.suggest(merchant) else null,
                         isFailedPurchase = false,
                         categoryId = learnedCategory,
                         description = null,

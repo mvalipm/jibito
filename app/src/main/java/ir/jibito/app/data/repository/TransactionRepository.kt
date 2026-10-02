@@ -3,6 +3,7 @@ package ir.jibito.app.data.repository
 import androidx.room.withTransaction
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.category.CategoryLearning
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
@@ -181,6 +182,7 @@ class TransactionRepositoryImpl(
     private suspend fun doSync(forceFull: Boolean): Int {
         ensureDefaultCategories()
         val ownAccounts = dao.ownAccounts().toHashSet()
+        val learning = CategoryLearning(db)
         val reviewDao = db.reviewDao()
         val startedAt = System.currentTimeMillis()
         val full = forceFull || syncState.needsFullScan(startedAt)
@@ -218,12 +220,18 @@ class TransactionRepositoryImpl(
                     item.merchant != null && item.merchant in ownAccounts &&
                     (old == null || old.transferState == TransactionFlowEntity.TRANSFER_NONE)
                 if (toOwnAccount) {
-                    toInsertOrUpdate(old, item, now, toInsert, toUpdate, null, TransactionFlowEntity.TRANSFER_SELF)
+                    toInsertOrUpdate(old, item, now, toInsert, toUpdate, null, TransactionFlowEntity.TRANSFER_SELF, null)
                     continue
                 }
-                // بی‌دسته: اگر کاربر قبلاً برای همین طرف حساب دسته‌ای انتخاب کرده، همان را خودکار بگذار
-                val learned = item.merchant?.let { dao.learnedCategory(it, item.transaction.type.code) }
-                toInsertOrUpdate(old, item, now, toInsert, toUpdate, learned, old?.transferState ?: TransactionFlowEntity.TRANSFER_NONE)
+                // بی‌دسته: از انتخاب‌های قبلی کاربر برای همین طرف حساب یاد بگیر
+                // (۳ تأیید پشت سر هم ← خودکار؛ کمتر ← فقط پیشنهاد)
+                val decision = learning.decide(item.merchant, item.transaction.type.code)
+                val autoCategory = decision?.takeIf { it.auto }?.categoryId
+                val suggestion = decision?.takeIf { !it.auto }?.let { learning.nameOf(it.categoryId) }
+                toInsertOrUpdate(
+                    old, item, now, toInsert, toUpdate, autoCategory,
+                    old?.transferState ?: TransactionFlowEntity.TRANSFER_NONE, suggestion,
+                )
             }
 
             // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
@@ -266,10 +274,21 @@ class TransactionRepositoryImpl(
         val now = System.currentTimeMillis()
         db.withTransaction {
             dao.setCategory(transactionId, categoryId, now)
-            // یادگیری: بقیه‌ی تراکنش‌های بی‌دسته‌ی همین طرف حساب هم همین دسته را می‌گیرند
+            // یادگیری: بقیه‌ی تراکنش‌های بی‌دسته‌ی همین طرف حساب، بسته به تعداد تأییدها،
+            // یا خودکار همین دسته را می‌گیرند (۳ تأیید پشت سر هم) یا فقط پیشنهادش را
             val row = dao.byId(transactionId)
             if (row != null && categoryId != null && row.merchant != null) {
-                dao.applyToSameMerchant(row.merchant, row.flowType, categoryId, now)
+                val learning = CategoryLearning(db)
+                val decision = learning.decide(row.merchant, row.flowType)
+                if (decision != null) {
+                    if (decision.auto) {
+                        dao.applyToSameMerchant(row.merchant, row.flowType, decision.categoryId, now)
+                    } else {
+                        learning.nameOf(decision.categoryId)?.let {
+                            dao.suggestForSameMerchant(row.merchant, row.flowType, it, now)
+                        }
+                    }
+                }
             }
         }
         onCategoryChanged()
@@ -283,11 +302,14 @@ class TransactionRepositoryImpl(
         toUpdate: MutableList<TransactionFlowEntity>,
         categoryId: Long?,
         transferState: Int,
+        learnedSuggestion: String?,
     ) {
         if (old == null) {
-            toInsert += item.toEntity(0, categoryId, categoryId != null, null, now, transferState, null)
+            toInsert += item.toEntity(0, categoryId, categoryId != null, null, now, transferState, null, learnedSuggestion)
         } else {
-            toUpdate += item.toEntity(old.id, categoryId, categoryId != null, old.notifiedAt, now, transferState, old.transferPairId)
+            toUpdate += item.toEntity(
+                old.id, categoryId, categoryId != null, old.notifiedAt, now, transferState, old.transferPairId, learnedSuggestion,
+            )
         }
     }
 
@@ -299,6 +321,8 @@ class TransactionRepositoryImpl(
         now: Long,
         transferState: Int,
         transferPairId: Long?,
+        /** دسته‌ای که از انتخاب‌های کاربر یاد گرفته شده؛ بر پیشنهادِ کلمه‌ای (CategorySuggester) مقدم است */
+        learnedSuggestion: String? = null,
     ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
@@ -308,7 +332,7 @@ class TransactionRepositoryImpl(
         remainAfter = transaction.balanceRial,
         dateEpoch = dateMillis,
         merchant = merchant,
-        suggestedCategory = suggestedCategory,
+        suggestedCategory = learnedSuggestion ?: suggestedCategory,
         isFailedPurchase = refundDateMillis != null,
         categoryId = categoryId,
         description = null,

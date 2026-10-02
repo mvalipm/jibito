@@ -38,6 +38,7 @@
     <string name="notif_title_purchase">%1$s · خرید از %2$s</string>
     <string name="notif_question">این خرج مال چی بود؟</string>
     <string name="tx_add_category">+ انتخاب دسته</string>
+    <string name="sheet_learning_hint">هر دسته‌ای انتخاب کنی یاد می‌گیرم. اگه برای همین فروشگاه ۳ بار پشت سر هم یه دسته رو انتخاب کنی، از اون به بعد خودم می‌ذارمش.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
     <string name="tx_self_transfer_chip">⇄ انتقال به خودم · خرج حساب نمی‌شه</string>
     <string name="sheet_self_transfer">⇄ انتقال بین حساب‌های خودم</string>
