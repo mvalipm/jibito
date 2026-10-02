@@ -233,6 +233,28 @@ private fun ReviewPager(
     }
 }
 
+@Composable
+private fun AllDone(onClose: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("✓", fontSize = 48.sp, color = DepositGreen, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.review_all_done),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onClose, shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.review_back)) }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewCard(
