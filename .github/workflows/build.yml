@@ -69,6 +69,8 @@ jobs:
             echo "Screenshots unchanged"
           else
             git commit -m "Update screenshot references [skip ci]"
+            # اگر در این فاصله کامیت تازه‌ای به شاخه رسیده، اول روی آن قرار می‌گیرد
+            git pull --rebase origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
