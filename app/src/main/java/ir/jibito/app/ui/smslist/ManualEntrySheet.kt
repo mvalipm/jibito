@@ -52,6 +52,10 @@ import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.CategoryTree
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import ir.jibito.app.ui.theme.JibitoIcons
+import androidx.compose.foundation.layout.size
 
 private val DepositGreen = Color(0xFF1E9E6A)
 
@@ -135,8 +139,8 @@ fun ManualEntrySheet(
 
                 // خرج یا درآمد
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TypeToggle(stringResource(R.string.manual_expense), "↑", !isDeposit, colors.primary) { isDeposit = false }
-                    TypeToggle(stringResource(R.string.manual_income), "↓", isDeposit, DepositGreen) { isDeposit = true }
+                    TypeToggle(stringResource(R.string.manual_expense), JibitoIcons.ArrowUp, !isDeposit, colors.primary) { isDeposit = false }
+                    TypeToggle(stringResource(R.string.manual_income), JibitoIcons.ArrowDown, isDeposit, DepositGreen) { isDeposit = true }
                 }
 
                 // مبلغ
@@ -247,15 +251,18 @@ private fun rootIcon(c: Category, byId: Map<Long, Category>): String? {
 }
 
 @Composable
-private fun TypeToggle(label: String, icon: String, selected: Boolean, color: Color, onClick: () -> Unit) {
+private fun TypeToggle(label: String, icon: ImageVector, selected: Boolean, color: Color, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text("$icon  $label", fontWeight = FontWeight.Bold) },
+        label = { Text(label, fontWeight = FontWeight.Bold) },
+        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
         shape = RoundedCornerShape(14.dp),
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = color,
             selectedLabelColor = Color.White,
+            selectedLeadingIconColor = Color.White,
+            iconColor = color,
         ),
     )
 }

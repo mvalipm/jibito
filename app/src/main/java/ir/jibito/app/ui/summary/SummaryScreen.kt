@@ -64,6 +64,7 @@ import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
+import ir.jibito.app.ui.theme.JibitoIcons
 
 private val WarningAmber = Color(0xFFF2A541)
 
@@ -121,23 +122,23 @@ fun SummaryScreen(
             if (!showAll) {
                 val attention = buildList {
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 100 }.forEach { c ->
-                        add(AttentionItem("⚠", stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
+                        add(AttentionItem(JibitoIcons.Warning, stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
                     }
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 80 }.forEach { c ->
-                        add(AttentionItem("●", stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
+                        add(AttentionItem(JibitoIcons.Gauge, stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
                     }
                     if (s.uncategorizedRial > 0 && s.month == JalaliMonth.current()) {
-                        add(AttentionItem("🏷", stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
+                        add(AttentionItem(JibitoIcons.Tag, stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
                     }
                     if (transferSuggestions.isNotEmpty()) {
-                        add(AttentionItem("⇄", Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
+                        add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
                     }
                     if (pendingReview > 0) {
-                        add(AttentionItem("✉", Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
+                        add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
                     }
                     // نوتیفیکیشن خاموش: اول فهرست، چون بدونش «این خرج مال چی بود؟» و هشدارها نمی‌آیند
                     if (notificationPrompt.visible) {
-                        add(0, AttentionItem("🔔", stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
+                        add(0, AttentionItem(JibitoIcons.Bell, stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
                     }
                 }.take(4)
                 LazyColumn(
@@ -159,7 +160,7 @@ fun SummaryScreen(
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("→", fontSize = 18.sp, color = colors.onBackground)
+                Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.cd_back), tint = colors.onBackground, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.glance_all_title),

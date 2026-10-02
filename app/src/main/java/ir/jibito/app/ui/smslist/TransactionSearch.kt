@@ -43,6 +43,9 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 import java.util.Calendar
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
+import androidx.compose.material3.IconButton
 
 /** بازه‌ی تاریخ جست‌وجو */
 enum class DatePreset { ALL, TODAY, YESTERDAY, WEEK, THIS_MONTH, LAST_MONTH, CUSTOM }
@@ -154,9 +157,13 @@ fun SearchPanel(
             onValueChange = { onChange(search.copy(text = it)) },
             singleLine = true,
             placeholder = { Text(stringResource(R.string.search_hint)) },
-            leadingIcon = { Text("🔍") },
+            leadingIcon = { Icon(JibitoIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
             trailingIcon = if (search.text.isNotEmpty()) {
-                { Text("✕", modifier = Modifier.clickable { onChange(search.copy(text = "")) }.padding(8.dp)) }
+                {
+                    IconButton(onClick = { onChange(search.copy(text = "")) }) {
+                        Icon(JibitoIcons.Close, contentDescription = stringResource(R.string.cd_clear_text), modifier = Modifier.size(20.dp))
+                    }
+                }
             } else {
                 null
             },

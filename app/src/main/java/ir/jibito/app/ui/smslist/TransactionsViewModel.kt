@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ir.jibito.app.data.repository.UndoSnapshot
 
 class TransactionsViewModel(
     private val repository: TransactionRepository,
@@ -43,11 +44,18 @@ class TransactionsViewModel(
      * دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود.
      * اگر تراکنش «انتقال به خودم» بود، با انتخاب دسته دیگر انتقال حساب نمی‌شود.
      */
-    fun setCategory(transaction: Transaction, categoryId: Long?) {
+    fun setCategory(transaction: Transaction, categoryId: Long?, onDone: (UndoSnapshot) -> Unit = {}) {
         viewModelScope.launch {
+            val before = repository.snapshotForUndo(transaction.id)
             if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
             repository.setCategory(transaction.id, categoryId)
+            onDone(before)
         }
+    }
+
+    /** «برگردان» آخرین تغییر (دسته یا حذف) */
+    fun undo(snapshot: UndoSnapshot) {
+        viewModelScope.launch { repository.restore(snapshot) }
     }
 
     /** دسته‌ی شخصی می‌سازد و همان لحظه برای این تراکنش انتخابش می‌کند */
@@ -80,8 +88,12 @@ class TransactionsViewModel(
         viewModelScope.launch { onSaved(repository.addManual(type, amountRial, categoryId, note, dateMillis)) }
     }
 
-    fun deleteManual(transactionId: Long) {
-        viewModelScope.launch { repository.deleteManual(transactionId) }
+    fun deleteManual(transactionId: Long, onDone: (UndoSnapshot) -> Unit = {}) {
+        viewModelScope.launch {
+            val before = repository.snapshotForUndo(transactionId)
+            repository.deleteManual(transactionId)
+            onDone(before)
+        }
     }
 
     fun loadQuickCategories(flowType: Int, onResult: (List<Long>) -> Unit) {

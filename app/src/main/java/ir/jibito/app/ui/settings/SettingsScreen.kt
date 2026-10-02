@@ -59,6 +59,8 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.ErrorLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
  * تنظیمات: پوسته، خواندن دوباره‌ی پیامک‌ها، دسترسی‌ها، نمایش دسته‌ها، دسته‌های شخصی،
@@ -146,7 +148,7 @@ fun SettingsScreen() {
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                    if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
                 }
             }
         }
@@ -251,7 +253,7 @@ fun SettingsScreen() {
                         Text(stringResource(label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.onSurface)
                         Text(stringResource(hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
-                    if (selected) Text("✓", color = colors.primary, fontWeight = FontWeight.Black)
+                    if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
                 }
             }
 

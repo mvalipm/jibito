@@ -60,6 +60,9 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import ir.jibito.app.ui.theme.JibitoIcons
 
 private val WarnAmber = Color(0xFFF2A541)
 
@@ -287,7 +290,7 @@ private fun PaceBar(spent: Float, today: Float?, fill: Color, modifier: Modifier
 }
 
 /** یک مورد «کار لازم» */
-data class AttentionItem(val icon: String, val text: String, val tone: Tone, val onClick: () -> Unit) {
+data class AttentionItem(val icon: ImageVector, val text: String, val tone: Tone, val onClick: () -> Unit) {
     enum class Tone { NORMAL, WARN, DANGER }
 }
 
@@ -321,7 +324,7 @@ fun AttentionCard(items: List<AttentionItem>) {
                         .clip(RoundedCornerShape(9.dp))
                         .background(tint.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center,
-                ) { Text(item.icon, fontSize = 14.sp) }
+                ) { Icon(item.icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp)) }
                 Spacer(Modifier.size(10.dp))
                 Text(
                     item.text,
@@ -332,7 +335,7 @@ fun AttentionCard(items: List<AttentionItem>) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text("‹", color = colors.onSurfaceVariant, fontSize = 18.sp)
+                Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }

@@ -166,6 +166,6 @@ fun JibitoTheme(
 ) {
     val (scheme, extras) = schemeFor(style, darkTheme)
     CompositionLocalProvider(LocalJibitoColors provides extras) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = JibitoTypography, content = content)
     }
 }

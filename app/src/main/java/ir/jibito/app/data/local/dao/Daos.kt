@@ -139,6 +139,36 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET isDeleted = 1, updatedAt = :now WHERE id IN (:ids)")
     suspend fun softDelete(ids: List<Long>, now: Long)
 
+    /** تراکنش‌های بی‌دسته‌ی یک طرف حساب: همان‌هایی که یادگیری دسته ممکن است عوضشان کند (برای «برگردان») */
+    @Query(
+        """
+        SELECT * FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NULL AND isDeleted = 0
+          AND transferState != 1
+        """
+    )
+    suspend fun uncategorizedSameMerchant(merchant: String, flowType: Int): List<TransactionFlowEntity>
+
+    /** «برگردان»: دسته، پیشنهاد، وضعیت انتقال و حذف یک تراکنش را به حالت قبل برمی‌گرداند */
+    @Query(
+        """
+        UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = :isAuto,
+            suggestedCategory = :suggested, transferState = :transferState, transferPairId = :transferPairId,
+            isDeleted = :isDeleted, updatedAt = :now
+        WHERE id = :id
+        """
+    )
+    suspend fun restoreUserState(
+        id: Long,
+        categoryId: Long?,
+        isAuto: Boolean,
+        suggested: String?,
+        transferState: Int,
+        transferPairId: Long?,
+        isDeleted: Boolean,
+        now: Long,
+    )
+
     /** وضعیت انتقال یک تراکنش (۰ عادی، ۱ انتقال به خودم، ۲ «انتقال نیست»). انتقال به خودم دسته ندارد. */
     @Query(
         """

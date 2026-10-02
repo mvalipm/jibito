@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
 
 @Composable
 fun SmsPermissionScreen(
@@ -57,7 +59,7 @@ fun SmsPermissionScreen(
                     .background(colors.secondaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("✉", fontSize = 34.sp, color = colors.onSecondaryContainer)
+                Icon(JibitoIcons.Message, contentDescription = null, tint = colors.onSecondaryContainer, modifier = Modifier.size(36.dp))
             }
             Spacer(Modifier.height(24.dp))
             Text(
@@ -133,7 +135,7 @@ private fun PromiseRow(text: String) {
                 .background(colors.secondary, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Text("✓", color = colors.onSecondary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Icon(JibitoIcons.Check, contentDescription = null, tint = colors.onSecondary, modifier = Modifier.size(16.dp))
         }
         Spacer(Modifier.size(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)

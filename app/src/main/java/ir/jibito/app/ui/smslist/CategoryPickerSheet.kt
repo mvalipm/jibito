@@ -57,6 +57,8 @@ import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import androidx.compose.material3.Icon
+import ir.jibito.app.ui.theme.JibitoIcons
 
 private val TransferBlue = Color(0xFF3A6FD8)
 
@@ -178,7 +180,7 @@ fun CategoryPickerSheet(
                         onValueChange = { query = it },
                         singleLine = true,
                         placeholder = { Text(stringResource(R.string.sheet_search_hint)) },
-                        leadingIcon = { Text("🔍") },
+                        leadingIcon = { Icon(JibitoIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
