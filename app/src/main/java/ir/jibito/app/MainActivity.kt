@@ -1,6 +1,9 @@
 package ir.jibito.app
 
 import android.Manifest
+import android.content.Context
+import android.content.res.Configuration
+import java.util.Locale
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -27,6 +30,20 @@ import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.welcome.WelcomeScreen
 
 class MainActivity : ComponentActivity() {
+    /**
+     * زبان (و جهت راست‌به‌چپ) کل اپ از همان لحظه‌ی ساخته شدن: فارسی.
+     * بدون این، پنجره‌های جدا (پنجره‌ی بودجه، برگه‌هایی که از پایین باز می‌شوند) در اولین لحظه
+     * جهت زبان گوشی (مثلاً انگلیسی، چپ‌به‌راست) را می‌گرفتند و نوشته‌ها یک لحظه سمت چپ دیده می‌شدند.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val persian = Locale("fa")
+        val config = Configuration(newBase.resources.configuration).apply {
+            setLocale(persian)
+            setLayoutDirection(persian)
+        }
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
