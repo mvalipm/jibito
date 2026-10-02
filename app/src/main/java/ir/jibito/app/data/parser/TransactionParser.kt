@@ -56,7 +56,9 @@ object TransactionParser {
         val text = SmsTextNormalizer.normalize(rawBody)
         if (text.isEmpty() || NonTransactionFilter.isNotTransaction(text)) return null
 
-        val result = bankParsers[bank.parserKey]?.parse(text) ?: SmartParser.parse(text) ?: return null
+        val parsed = bankParsers[bank.parserKey]?.parse(text) ?: SmartParser.parse(text) ?: return null
+        // پارسر بانک مانده را پیدا نکرد؟ با یابنده‌ی عمومی مانده دوباره امتحان کن
+        val result = if (parsed.balanceRial == null) parsed.copy(balanceRial = BalanceFinder.find(text)) else parsed
 
         val inToman = text.contains("تومان") && !text.contains("ریال")
         return if (inToman) {

@@ -34,7 +34,7 @@ object MellatParser : SmsParser {
                 line.startsWith("واریز") -> type = FlowType.DEPOSIT
                 line.startsWith("برداشت") -> type = FlowType.WITHDRAWAL
                 line.startsWith("مبلغ") -> amount = digitsToLong(line)
-                line.startsWith("موجودی") || line.startsWith("مانده") -> balance = digitsToLong(line)
+                line.startsWith("موجودی") || line.startsWith("مانده") -> balance = BalanceFinder.find(line)
             }
         }
         return Kw.valid(type, amount, balance)
@@ -48,7 +48,7 @@ object MellatParser : SmsParser {
         val type = Kw.typeOf(typeLine)
         if (typeLine.contains("حواله")) i++
         val amount = l.getOrNull(i + 1)?.let(::digitsToLong)
-        val balance = l.getOrNull(i + 2)?.takeIf { it.contains("موجودی") || it.contains("مانده") }?.let(::digitsToLong)
+        val balance = l.getOrNull(i + 2)?.takeIf { it.contains("موجودی") || it.contains("مانده") }?.let(BalanceFinder::find)
         return Kw.valid(type, amount, balance)
     }
 }

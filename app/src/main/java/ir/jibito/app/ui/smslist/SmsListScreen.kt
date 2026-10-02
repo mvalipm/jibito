@@ -83,6 +83,8 @@ fun SmsListScreen(
     val colors = MaterialTheme.colorScheme
 
     var addingManual by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
+    var search by remember { mutableStateOf(TxSearch()) }
     val bottomSpace = LocalBottomBarSpace.current
 
     Box(Modifier.fillMaxSize()) {
@@ -93,12 +95,29 @@ fun SmsListScreen(
             .safeDrawingPadding(),
     ) {
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp)) {
-            Text(
-                text = stringResource(R.string.list_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-                color = colors.onBackground,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.list_title),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = colors.onBackground,
+                )
+                // جست‌وجو (تاریخ، مبلغ، اسم)
+                Text(
+                    if (showSearch) "✕" else "🔍",
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (search.isActive) colors.primary.copy(alpha = 0.15f) else colors.surface)
+                        .clickable {
+                            if (showSearch) search = TxSearch()
+                            showSearch = !showSearch
+                        }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    fontSize = 18.sp,
+                    color = colors.onSurface,
+                )
+            }
             messages?.takeIf { it.isNotEmpty() }?.let {
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -134,13 +153,19 @@ fun SmsListScreen(
                 fontWeight = FontWeight.Bold,
             )
         }
-        val list = if (onlyUncategorized) {
+        val base = if (onlyUncategorized) {
             messages?.filter {
                 it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
                     it.transaction.type == FlowType.WITHDRAWAL
             }
         } else {
             messages
+        }
+        val range = search.range()
+        val list = if (search.isActive) base?.filter { search.matches(it, range) } else base
+        if (showSearch) {
+            SearchPanel(search = search, onChange = { search = it }, results = list)
+            Spacer(Modifier.height(6.dp))
         }
         when {
             list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -170,11 +195,11 @@ fun SmsListScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // «چقد دارم؟»: آخرین مانده‌ی هر بانک
-                if (bankBalances.isNotEmpty()) {
+                if (bankBalances.isNotEmpty() && !search.isActive) {
                     item(key = "balances") { BankBalancesRow(bankBalances) }
                 }
                 // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
-                transferSuggestions.firstOrNull()?.let { suggestion ->
+                transferSuggestions.firstOrNull()?.takeIf { !search.isActive }?.let { suggestion ->
                     item(key = "transfer-suggestion") {
                         TransferSuggestionCard(
                             suggestion = suggestion,
