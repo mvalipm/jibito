@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeEffect
 import ir.jibito.app.ui.theme.Vazirmatn
 import ir.jibito.app.util.Jalali
 
@@ -93,7 +93,7 @@ fun FloatingNavBar(
                 spotColor = Color.Black.copy(alpha = 0.20f),
             )
             .clip(CircleShape)
-            .hazeChild(
+            .hazeEffect(
                 state = hazeState,
                 style = HazeStyle(
                     backgroundColor = glass,

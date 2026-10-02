@@ -1,6 +1,6 @@
 plugins {
+    // از AGP 9، کاتلین داخل خود پلاگین اندروید است (دیگر kotlin-android جدا لازم نیست)
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     // تست اسکرین‌شات صفحه‌ها روی JVM (Robolectric)؛ تصویرها در CI ساخته و به‌صورت Artifact گذاشته می‌شوند
@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "ir.jibito.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ir.jibito.app"
@@ -56,9 +56,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
     }
@@ -102,6 +99,9 @@ dependencies {
     // پس‌زمینه‌ی شیشه‌ای مات نوار پایین (تار کردن محتوای زیرش)
     implementation(libs.haze)
     implementation(libs.androidx.work.runtime.ktx)
+    // پروفایل‌های آماده‌ی کتابخانه‌ها (Compose و…) را روی گوشی نصب می‌کند تا اپ سریع‌تر باز شود؛
+    // مهم برای نصب از کافه‌بازار و مایکت که مثل گوگل‌پلی پروفایل ابری ندارند
+    implementation(libs.androidx.profileinstaller)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
