@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.JibitoLogo
 
 @Composable
 fun WelcomeScreen(onStart: () -> Unit) {
@@ -50,14 +51,7 @@ fun WelcomeScreen(onStart: () -> Unit) {
         ) {
             Column {
                 Spacer(Modifier.height(32.dp))
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(colors.primary, RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("ج", color = colors.onPrimary, fontSize = 32.sp, fontWeight = FontWeight.Black)
-                }
+                JibitoLogo(size = 72.dp)
                 Spacer(Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.app_name),

@@ -52,3 +52,10 @@ data class CategorySum(
     val categoryId: Long?,
     val totalRial: Long,
 )
+
+/** مبلغ یک تراکنش با دسته و زمانش (برای روند چندماهه و خلاصه‌ی هفتگی) */
+data class DatedAmount(
+    val categoryId: Long?,
+    val amount: Long,
+    val dateEpoch: Long,
+)

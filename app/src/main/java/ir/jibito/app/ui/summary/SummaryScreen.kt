@@ -82,6 +82,8 @@ fun SummaryScreen(
     onOpenUncategorized: () -> Unit = {},
     /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
     onOpenTransactions: () -> Unit = {},
+    /** رفتن به تنظیمات (مثلاً برای پیشنهاد پرداخت ماهانه) */
+    onOpenSettings: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -89,6 +91,7 @@ fun SummaryScreen(
     )
     val month by viewModel.month.collectAsState()
     val summary by viewModel.summary.collectAsState()
+    val trend by viewModel.trend.collectAsState()
     var editing by rememberSaveable { mutableStateOf<Long?>(null) }
     var editingOverall by rememberSaveable { mutableStateOf(false) }
     // دسته‌ای که جزئیاتش باز است
@@ -98,6 +101,8 @@ fun SummaryScreen(
     var showAll by rememberSaveable { mutableStateOf(false) }
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
+    val recurringFlow = remember { app.container.recurringSuggestions.observe() }
+    val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val notificationPrompt = rememberNotificationPrompt()
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
@@ -133,6 +138,9 @@ fun SummaryScreen(
                     if (transferSuggestions.isNotEmpty()) {
                         add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
                     }
+                    recurringSuggestions.firstOrNull()?.let { r ->
+                        add(AttentionItem(JibitoIcons.Repeat, stringResource(R.string.attn_recurring, r.title), AttentionItem.Tone.NORMAL, onOpenSettings))
+                    }
                     if (pendingReview > 0) {
                         add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
                     }
@@ -145,7 +153,13 @@ fun SummaryScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp + LocalBottomBarSpace.current),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    item(key = "hero") { GlanceHero(s, onEditBudget = { editingOverall = true }) }
+                    item(key = "hero") {
+                        GlanceHero(
+                            s,
+                            onEditBudget = { editingOverall = true },
+                            vsLastMonthPercent = trend?.takeIf { it.months.lastOrNull()?.month == s.month }?.vsLastMonthPercent,
+                        )
+                    }
                     if (attention.isNotEmpty()) item(key = "attention") { AttentionCard(attention) }
                     item(key = "where") {
                         WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
@@ -173,6 +187,10 @@ fun SummaryScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // روند ۶ ماه اخیر (لمس هر ستون، مبلغ همان ماه را نشان می‌دهد)
+                trend?.takeIf { t -> t.months.lastOrNull()?.month == s.month && t.months.any { it.spentRial > 0 } }?.let { t ->
+                    item(key = "trend") { TrendCard(t) }
+                }
 
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {

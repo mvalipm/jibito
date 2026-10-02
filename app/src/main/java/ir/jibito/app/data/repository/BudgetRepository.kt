@@ -10,6 +10,8 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 
 /** خلاصه‌ی یک ماه، آماده‌ی نمایش. همه‌ی مبلغ‌ها ریال. */
 data class MonthSummary(
@@ -84,8 +86,14 @@ data class CategorySpend(
 
 data class SubSpend(val name: String?, val spentRial: Long)
 
+/** چند ماه در نمودار روند */
+const val TREND_MONTHS = 6
+
 interface BudgetRepository {
     fun observeMonth(month: JalaliMonth): Flow<MonthSummary>
+
+    /** خرج چند ماهِ منتهی به month (و مقایسه با همین موقعِ ماه قبل، اگر month ماه جاری باشد) */
+    fun observeTrend(month: JalaliMonth, months: Int = TREND_MONTHS): Flow<SpendTrend>
 
     /** بودجه‌ی ماهانه‌ی یک دسته؛ null یا صفر = حذف بودجه. */
     suspend fun setBudget(categoryId: Long, monthlyLimitRial: Long?)
@@ -116,6 +124,19 @@ class BudgetRepositoryImpl(
         }
     }
 
+    override fun observeTrend(month: JalaliMonth, months: Int): Flow<SpendTrend> {
+        val count = months.coerceAtLeast(2)
+        val from = month.plus(-(count - 1)).startMillis()
+        return combine(
+            dao.observeAmounts(FlowType.WITHDRAWAL.code, from, month.endMillis()),
+            db.categoryDao().observeAll(),
+        ) { rows, categories ->
+            val excluded = excludedFromSpend(categories)
+            val spends = rows.filter { it.categoryId == null || it.categoryId !in excluded }.map { it.dateEpoch to it.amount }
+            SpendTrend.compute(spends, month, count, System.currentTimeMillis())
+        }.flowOn(Dispatchers.Default)
+    }
+
     override suspend fun setBudget(categoryId: Long, monthlyLimitRial: Long?) {
         if (monthlyLimitRial == null || monthlyLimitRial <= 0) {
             dao.deleteBudget(categoryId)
@@ -141,6 +162,12 @@ class BudgetRepositoryImpl(
          * خلاصه‌ی ماه از روی جمع هر دسته: خرج‌ها روی «دسته‌ی اصلی» جمع می‌شوند (SpendRollup).
          * درآمدها یک لایه‌اند.
          */
+        /** دسته‌هایی که خرج حساب نمی‌شوند (پس‌انداز، قرض دادن و زیردسته‌هایشان)، مثل SpendRollup */
+        fun excludedFromSpend(categories: List<CategoryEntity>): Set<Long> {
+            val byId = categories.associateBy { it.id }
+            return categories.filter { !it.countsAsSpend || !SpendRollup.rootOf(it, byId).countsAsSpend }.mapTo(HashSet()) { it.id }
+        }
+
         fun buildSummary(
             month: JalaliMonth,
             spendSums: List<CategorySum>,

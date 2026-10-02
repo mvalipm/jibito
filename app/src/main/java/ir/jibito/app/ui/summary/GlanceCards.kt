@@ -75,7 +75,12 @@ private const val ON_TRACK_MARGIN = 0.05f
  * درآمد و خالص در یک خط. با لمس کارت، بودجه‌ی کل عوض می‌شود.
  */
 @Composable
-fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
+fun GlanceHero(
+    s: MonthSummary,
+    onEditBudget: () -> Unit,
+    /** چند درصد بیشتر/کمتر از همین موقعِ ماه قبل (فقط ماه جاری) */
+    vsLastMonthPercent: Int? = null,
+) {
     val extras = LocalJibitoColors.current
     val budget = s.overallBudgetRial?.takeIf { it > 0 }
     Column(
@@ -108,6 +113,18 @@ fun GlanceHero(s: MonthSummary, onEditBudget: () -> Unit) {
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(bottom = 5.dp),
+                )
+            }
+            vsLastMonthPercent?.let { p ->
+                Text(
+                    when {
+                        abs(p) < SAME_AS_LAST_MONTH -> stringResource(R.string.vs_last_month_same)
+                        p > 0 -> Jalali.toPersianDigits(stringResource(R.string.vs_last_month_more, p))
+                        else -> Jalali.toPersianDigits(stringResource(R.string.vs_last_month_less, -p))
+                    },
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -288,6 +305,9 @@ private fun PaceBar(spent: Float, today: Float?, fill: Color, modifier: Modifier
         }
     }
 }
+
+/** کمتر از این درصد اختلاف با ماه قبل = «تقریباً همون اندازه» */
+private const val SAME_AS_LAST_MONTH = 3
 
 /** یک مورد «کار لازم» */
 data class AttentionItem(val icon: ImageVector, val text: String, val tone: Tone, val onClick: () -> Unit) {

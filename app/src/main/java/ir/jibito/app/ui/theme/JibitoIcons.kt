@@ -162,6 +162,18 @@ object JibitoIcons {
         }
     }
 
+    /** پرداخت تکراری (ماهانه) */
+    val Repeat: ImageVector by lazy {
+        lineIcon("repeat") {
+            moveTo(5f, 12f)
+            arcTo(7f, 7f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 19f, y1 = 12f)
+            moveTo(16.8f, 9.8f); lineTo(19f, 12f); lineTo(21.2f, 9.8f)
+            moveTo(19f, 12f)
+            arcTo(7f, 7f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 5f, y1 = 12f)
+            moveTo(2.8f, 14.2f); lineTo(5f, 12f); lineTo(7.2f, 14.2f)
+        }
+    }
+
     /** بودجه نزدیک به تمام شدن: نمودار دایره‌ای با برش بزرگ */
     val Gauge: ImageVector by lazy {
         lineIcon("gauge") {

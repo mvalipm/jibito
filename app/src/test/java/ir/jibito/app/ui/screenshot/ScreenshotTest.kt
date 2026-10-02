@@ -32,6 +32,12 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import ir.jibito.app.data.repository.MonthSpend
+import ir.jibito.app.data.repository.SpendTrend
+import ir.jibito.app.ui.summary.TrendCard
+import ir.jibito.app.util.JalaliMonth
+import ir.jibito.app.ui.welcome.FirstRunReveal
+import ir.jibito.app.ui.welcome.RevealStats
 
 /**
  * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره.
@@ -124,10 +130,21 @@ class ScreenshotTest {
     }
 
     @Test
+    fun trend() {
+        val end = JalaliMonth(1404, 7)
+        val values = listOf(38_000_000L, 52_500_000L, 41_200_000L, 66_000_000L, 47_800_000L, 29_300_000L)
+        val trend = SpendTrend(values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) }, lastMonthSameTimeRial = null)
+        for ((style, dark) in variants) shot("trend", style, dark) { TrendCard(trend) }
+    }
+
+    @Test
     fun onboarding() {
         for (dark in listOf(false, true)) {
             shot("welcome", AppThemeStyle.DEFAULT, dark, padded = false) { WelcomeScreen(onStart = {}) }
             shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}) }
+        }
+        for ((style, dark) in variants) {
+            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3), onDone = {}) }
         }
     }
 }

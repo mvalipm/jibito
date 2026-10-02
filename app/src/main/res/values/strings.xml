@@ -335,6 +335,11 @@
     <string name="recurring_field_amount">مبلغ (تومان)</string>
     <string name="recurring_field_day">روز ماه (۱ تا ۳۱)</string>
     <string name="recurring_save">ذخیره</string>
+    <string name="recurring_suggest_title">«%1$s» هر ماه پرداخت می‌شه؟</string>
+    <string name="recurring_suggest_body">حدود %1$s · معمولاً روز %2$d ماه · در %3$d ماه اخیر</string>
+    <string name="recurring_suggest_yes">یادم بنداز</string>
+    <string name="recurring_suggest_no">نه</string>
+    <string name="attn_recurring">«%1$s» هر ماه پرداخت می‌شه؟ یادآوری بسازم</string>
     <string name="recurring_channel_name">یادآوری پرداخت‌ها</string>
     <string name="recurring_channel_desc">روز موعد پرداخت‌های ماهانه (اجاره، قسط…)</string>
     <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
@@ -361,5 +366,29 @@
     <string name="cd_clear_filter">برداشتن فیلتر</string>
 
     <!-- گزارش پیامکی که اشتباه خوانده شده -->
+    <!-- اولین آشنایی، بعد از اولین خواندن پیامک‌ها -->
+    <string name="reveal_found">تراکنش از پیامک‌های بانکت پیدا شد</string>
+    <string name="reveal_span">از %1$d ماه گذشته</string>
+    <string name="reveal_span_banks">از %1$d ماه گذشته، در %2$d بانک</string>
+    <string name="reveal_next">از این به بعد هر خرج تازه خودش ثبت می‌شه؛ تو فقط با یه لمس می‌گی مال چی بود.</string>
+    <string name="reveal_go">بزن بریم</string>
+
+    <!-- خلاصه‌ی هفتگی -->
+    <string name="digest_channel_name">خلاصه‌ی هفتگی</string>
+    <string name="digest_channel_desc">جمعه‌ها عصر: این هفته چقدر خرج شد و بیشترش کجا رفت</string>
+    <string name="digest_title">این هفته %1$s تومان خرج کردی</string>
+    <string name="digest_more">%1$d٪ بیشتر از هفته‌ی قبل</string>
+    <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل</string>
+    <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
+    <string name="digest_top">بیشترین: %1$s</string>
+    <string name="settings_digest">خلاصه‌ی هفتگی</string>
+    <string name="settings_digest_hint">جمعه‌ها عصر یک نوتیفیکیشن کوتاه</string>
+
+    <!-- روند ماه‌ها -->
+    <string name="trend_title">روند خرج %1$d ماه اخیر</string>
+    <string name="vs_last_month_more">%1$d٪ بیشتر از همین موقعِ ماه قبل</string>
+    <string name="vs_last_month_less">%1$d٪ کمتر از همین موقعِ ماه قبل</string>
+    <string name="vs_last_month_same">تقریباً همون اندازه‌ی همین موقعِ ماه قبل</string>
+
     <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
 </resources>

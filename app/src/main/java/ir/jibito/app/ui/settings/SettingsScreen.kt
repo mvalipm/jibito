@@ -211,6 +211,16 @@ fun SettingsScreen() {
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.settings_open_app_settings)) }
             }
+            // خلاصه‌ی هفتگی (جمعه‌ها عصر)
+            val digest = app.container.weeklyDigest
+            val digestOn by digest.enabled.collectAsState()
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_digest), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                    Text(stringResource(R.string.settings_digest_hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                }
+                Switch(checked = digestOn, onCheckedChange = digest::setEnabled)
+            }
         }
 
         Spacer(Modifier.height(12.dp))
