@@ -43,7 +43,7 @@ import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.util.Jalali
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Snackbar
@@ -251,11 +251,22 @@ fun SmsListScreen(
                 // روزبه‌روز: سرتیتر چسبان «امروز · ۴۵۰ هزار خرج» و تراکنش‌های آن روز در یک سطح
                 groups.forEach { group ->
                     stickyHeader(key = "day-${group.dayStartMillis}") { DayHeader(group) }
-                    itemsIndexed(group.items, key = { _, sms -> sms.id }) { index, sms ->
+                    items(group.items, key = { sms -> sms.id }) { sms ->
+                        // پیشنهاد دسته با یک لمس (همان دسته‌ای که برگه هم اول پیشنهاد می‌دهد)
+                        val suggested = sms.suggestedCategory?.takeIf { sms.categoryId == null }?.let { name ->
+                            categories.firstOrNull { it.name == name && it.flowType == sms.transaction.type.code }
+                        }
                         TransactionRow(
                             sms = sms,
-                            position = groupPosition(index, group.items.size),
                             onClick = { selectedId = sms.id },
+                            onAcceptSuggestion = suggested?.let { category ->
+                                {
+                                    haptics.confirm()
+                                    viewModel.setCategory(sms, category.id) { before ->
+                                        offerUndo(categorizedMessage.format(category.name), before)
+                                    }
+                                }
+                            },
                         )
                     }
                 }

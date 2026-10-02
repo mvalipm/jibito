@@ -22,6 +22,8 @@ data class Transaction(
     val isSelfTransfer: Boolean = false,
     /** کاربر گفته «انتقال به خودم نیست» ← دیگر پیشنهاد انتقال برایش نمی‌آید */
     val isTransferRejected: Boolean = false,
+    /** رنگ دسته‌ی اصلی (همان کد رنگی که در دیتابیس است؛ برای نمایش از ChartColors رد می‌شود) */
+    val categoryColorHex: String? = null,
     /** ثبت دستی (نقدی)، نه از پیامک */
     val isManual: Boolean = false,
     /** کارمزد انتقال (جزو همین مبلغ) */

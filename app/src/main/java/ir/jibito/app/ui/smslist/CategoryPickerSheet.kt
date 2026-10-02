@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.summary.ChartColors
+import androidx.compose.ui.graphics.luminance
 import ir.jibito.app.domain.CategoryTree
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,6 +93,7 @@ fun CategoryPickerSheet(
 ) {
     var creating by remember { mutableStateOf<CreateTarget?>(null) }
     val colors = MaterialTheme.colorScheme
+    val darkSurface = colors.surface.luminance() < 0.5f
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
     var query by rememberSaveable(transaction.id) { mutableStateOf("") }
@@ -152,6 +155,8 @@ fun CategoryPickerSheet(
                         "$sign ${Money.toman(t.amountRial)}",
                         transaction.merchant ?: transaction.bank?.name,
                         Jalali.format(transaction.dateMillis),
+                        // مانده دیگر در ردیف فهرست نیست؛ اینجا (جزئیات همان تراکنش) می‌آید
+                        t.balanceRial?.takeIf { !transaction.isFailedPurchase }?.let { stringResource(R.string.tx_balance, Money.tomanNumber(it)) },
                     ).joinToString("  ·  "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
@@ -268,7 +273,7 @@ fun CategoryPickerSheet(
                                         CategoryTile(
                                             icon = root.icon ?: "•",
                                             name = root.name,
-                                            color = root.colorHex.toColorOrNull() ?: colors.primary,
+                                            color = if (root.colorHex != null) ChartColors.forCategory(root.colorHex, darkSurface) else colors.primary,
                                             selected = root.id == selectedRootId,
                                             open = root.id == openRootId,
                                             onClick = {
@@ -496,12 +501,6 @@ internal fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit,
 /** برای جست‌وجو: ی/ک عربی، نیم‌فاصله و فاصله یکسان می‌شوند */
 internal fun String.normalizedForSearch(): String =
     trim().replace('ي', 'ی').replace('ك', 'ک').replace("‌", "").replace(" ", "").lowercase()
-
-internal fun String?.toColorOrNull(): Color? = try {
-    this?.let { Color(android.graphics.Color.parseColor(it)) }
-} catch (e: IllegalArgumentException) {
-    null
-}
 
 @Composable
 private fun AddChip(label: String, onClick: () -> Unit) {

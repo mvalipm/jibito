@@ -16,11 +16,11 @@ import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.smslist.DayHeader
 import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.smslist.groupByDay
-import ir.jibito.app.ui.smslist.groupPosition
 import ir.jibito.app.ui.summary.AttentionCard
 import ir.jibito.app.ui.summary.AttentionItem
 import ir.jibito.app.ui.theme.AppThemeStyle
@@ -30,6 +30,8 @@ import ir.jibito.app.ui.welcome.WelcomeScreen
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import android.provider.Settings
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import ir.jibito.app.data.repository.MonthSpend
@@ -67,6 +69,12 @@ class ScreenshotTest {
     private val hour = 60 * 60 * 1000L
     private lateinit var savedZone: TimeZone
 
+    /** «حذف انیمیشن‌ها»: انیمیشن‌های بی‌پایان (تپش ردیف بی‌دسته) ثابت می‌مانند تا تصویر قطعی باشد */
+    @Before
+    fun disableAnimations() {
+        Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+    }
+
     @Before
     fun fixZone() {
         savedZone = TimeZone.getDefault()
@@ -90,16 +98,17 @@ class ScreenshotTest {
         failed: Boolean = false,
         selfTransfer: Boolean = false,
         balanceRial: Long? = null,
+        colorHex: String? = null,
     ) = Transaction(
         id = id, bank = BankDirectory.byId(bankId), body = "", dateMillis = now - hoursAgo * hour,
         transaction = ParsedTransaction(type, amountRial, balanceRial), merchant = merchant, suggestedCategory = suggested,
         isFailedPurchase = failed, categoryId = if (categoryName != null) id else null, categoryName = categoryName,
-        categoryIcon = categoryIcon, isAutoCategorized = auto, isSelfTransfer = selfTransfer,
+        categoryIcon = categoryIcon, categoryColorHex = colorHex, isAutoCategorized = auto, isSelfTransfer = selfTransfer,
     )
 
     private val sample = listOf(
-        tx(1, 0, 1_850_000, merchant = "کافه لمیز", categoryName = "کافه", categoryIcon = "☕", balanceRial = 412_300_000),
-        tx(2, 1, 4_200_000, merchant = "اسنپ", categoryName = "تاکسی اینترنتی", categoryIcon = "🚕", auto = true),
+        tx(1, 0, 1_850_000, merchant = "کافه لمیز", categoryName = "کافه", categoryIcon = "☕", balanceRial = 412_300_000, colorHex = CategoryPalette.LIGHT[1]),
+        tx(2, 1, 4_200_000, merchant = "اسنپ", categoryName = "تاکسی اینترنتی", categoryIcon = "🚕", auto = true, colorHex = CategoryPalette.LIGHT[2]),
         tx(3, 2, 250_000_000, type = FlowType.DEPOSIT, bankId = 15, balanceRial = 662_300_000),
         tx(4, 26, 12_750_000, merchant = "فروشگاه افق کوروش", suggested = "سوپرمارکت"),
         tx(5, 27, 3_000_000, merchant = "دیجی‌کالا", failed = true),
@@ -163,7 +172,7 @@ class ScreenshotTest {
             shot("transactions", style, dark) {
                 groups.forEach { group ->
                     DayHeader(group, now)
-                    group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
+                    group.items.forEach { t -> TransactionRow(t, onClick = {}, onAcceptSuggestion = {}) }
                 }
             }
         }
@@ -176,7 +185,7 @@ class ScreenshotTest {
         shot("transactions", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) {
             groups.take(1).forEach { group ->
                 DayHeader(group, now)
-                group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
+                group.items.forEach { t -> TransactionRow(t, onClick = {}, onAcceptSuggestion = {}) }
             }
         }
         shot("attention", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) { AttentionCard(attentionItems) }

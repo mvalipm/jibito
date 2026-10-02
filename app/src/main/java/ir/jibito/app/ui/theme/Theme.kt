@@ -23,7 +23,7 @@ val InkSoft = Color(0xFF2A2830)
 /**
  * رنگ‌هایی که در MaterialTheme جایی ندارند:
  * - گرادیان کارت بالای «خلاصه» (متن رویش سفید است)
- * - رنگ‌های معنایی: پول آمده (income)، انتقال به خودم (transfer)، هشدار نزدیک بودجه (warning).
+ * - رنگ‌های معنایی: پول آمده (income، تنها سبز اپ)، انتقال به خودم (transfer، کم‌رنگ چون خرج نیست)، هشدار نزدیک بودجه (warning).
  *   در هر سه پوسته یکی‌اند و فقط برای حالت تیره روشن‌تر می‌شوند تا روی زمینه‌ی تیره خوانا بمانند.
  */
 @Immutable
@@ -35,10 +35,10 @@ data class JibitoColors(
     val warning: Color = WarningLight,
 )
 
-private val IncomeLight = Color(0xFF1E9E6A)
+private val IncomeLight = Color(0xFF047857)
 private val IncomeDark = Color(0xFF4CC38A)
-private val TransferLight = Color(0xFF3A6FD8)
-private val TransferDark = Color(0xFF7FA4F0)
+private val TransferLight = Color(0xFF5A6B8C)
+private val TransferDark = Color(0xFF9FB0CF)
 private val WarningLight = Color(0xFFE0951F)
 private val WarningDark = Color(0xFFF2B45A)
 

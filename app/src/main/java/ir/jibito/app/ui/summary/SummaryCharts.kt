@@ -57,12 +57,12 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
 /**
- * رنگ‌های نمودار در حالت روشن/تیره. هر دسته‌ی اصلی یک رنگ ثابت از پالت اعتبارسنجی‌شده دارد
- * (CategoryPalette)؛ در حالت تیره همان رنگ، پله‌ی تیره‌اش را می‌گیرد.
+ * رنگ‌های دسته در حالت روشن/تیره (نمودارها، آواتار تراکنش‌ها، انتخاب دسته). هر دسته‌ی اصلی یک کلید رنگ ثابت
+ * در دیتابیس دارد (CategoryPalette.LIGHT)؛ رنگ دیده‌شده پالت نمایش هماهنگ همان اندیس است.
  */
 object ChartColors {
-    private val LIGHT = CategoryPalette.LIGHT.map { it.toColor() }
-    private val DARK = CategoryPalette.DARK.map { it.toColor() }
+    private val LIGHT = CategoryPalette.DISPLAY_LIGHT.map { it.toColor() }
+    private val DARK = CategoryPalette.DISPLAY_DARK.map { it.toColor() }
     private val NEUTRAL_LIGHT = Color(0xFFA3A29C)
     private val NEUTRAL_DARK = Color(0xFF6E6D68)
 

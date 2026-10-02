@@ -180,6 +180,7 @@ class TransactionRepositoryImpl(
                     // زیردسته‌ها آیکون ندارند ← آیکون دسته‌ی اصلی
                     categoryIcon = row.categoryIcon
                         ?: row.flow.categoryId?.let { id -> byId[id]?.let { SpendRollup.rootOf(it, byId).icon } },
+                    categoryColorHex = f.categoryId?.let { id -> byId[id]?.let { SpendRollup.rootOf(it, byId).colorHex } },
                     isAutoCategorized = f.isAutoCategorized,
                     isSelfTransfer = f.transferState == TransactionFlowEntity.TRANSFER_SELF,
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
