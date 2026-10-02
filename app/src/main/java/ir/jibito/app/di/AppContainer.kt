@@ -1,6 +1,9 @@
 package ir.jibito.app.di
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.security.AppLockSettings
@@ -23,6 +26,9 @@ import ir.jibito.app.ui.theme.ThemeSettings
  */
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
+
+    /** کارهای مشترک کل اپ (مثلاً فهرست مشترک تراکنش‌ها)؛ تا اپ زنده است زنده می‌ماند */
+    val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val database: AppDatabase by lazy { AppDatabase.build(appContext) }
 
@@ -49,6 +55,7 @@ class AppContainer(context: Context) {
             smsReader = SmsReader(appContext),
             syncState = SyncState(appContext),
             onCategoryChanged = { budgetAlerter.check() },
+            appScope = appScope,
         )
     }
 
