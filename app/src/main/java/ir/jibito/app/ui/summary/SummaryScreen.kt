@@ -103,12 +103,16 @@ fun SummaryScreen(
             .background(colors.background)
             .safeDrawingPadding()
     ) {
-        MonthSwitcher(
-            month = month,
-            canGoNext = month != JalaliMonth.current(),
-            onPrevious = viewModel::previousMonth,
-            onNext = viewModel::nextMonth,
-        )
+        // نمای «یک نگاه»: جابه‌جایی ماه داخل خود جیب است؛ فهرست کامل و حالت بارگذاری سرتیتر جدا دارند
+        val glance = !showAll && summary?.month == month
+        if (!glance) {
+            MonthSwitcher(
+                month = month,
+                canGoNext = month != JalaliMonth.current(),
+                onPrevious = viewModel::previousMonth,
+                onNext = viewModel::nextMonth,
+            )
+        }
 
         val s = summary
         if (s == null || s.month != month) {
@@ -117,42 +121,52 @@ fun SummaryScreen(
             if (!showAll) {
                 val attention = buildList {
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 100 }.forEach { c ->
-                        add(AttentionItem(JibitoIcons.Warning, stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
+                        val p = Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")
+                        add(AttentionItem(JibitoIcons.Warning, stringResource(R.string.attn_short_budget, c.name, p), stringResource(R.string.attn_over_budget, c.name, p), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
                     }
                     s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 80 }.forEach { c ->
-                        add(AttentionItem(JibitoIcons.Gauge, stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
+                        val p = Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")
+                        add(AttentionItem(JibitoIcons.Gauge, stringResource(R.string.attn_short_budget, c.name, p), stringResource(R.string.attn_near_budget, c.name, p), AttentionItem.Tone.WARN) { detailId = c.categoryId })
                     }
                     if (s.uncategorizedRial > 0 && s.month == JalaliMonth.current()) {
-                        add(AttentionItem(JibitoIcons.Tag, stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
+                        add(AttentionItem(JibitoIcons.Tag, stringResource(R.string.attn_short_uncategorized, Money.compact(s.uncategorizedRial)), stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
                     }
                     if (transferSuggestions.isNotEmpty()) {
-                        add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
+                        add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_short_transfers, transferSuggestions.size)), Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
                     }
                     recurringSuggestions.firstOrNull()?.let { r ->
-                        add(AttentionItem(JibitoIcons.Repeat, stringResource(R.string.attn_recurring, r.title), AttentionItem.Tone.NORMAL, onOpenSettings))
+                        add(AttentionItem(JibitoIcons.Repeat, stringResource(R.string.attn_short_recurring, r.title), stringResource(R.string.attn_recurring, r.title), AttentionItem.Tone.NORMAL, onOpenSettings))
                     }
                     if (pendingReview > 0) {
-                        add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
+                        add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_short_review, pendingReview)), Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
                     }
                     // نوتیفیکیشن خاموش: اول فهرست، چون بدونش «این خرج مال چی بود؟» و هشدارها نمی‌آیند
                     if (notificationPrompt.visible) {
-                        add(0, AttentionItem(JibitoIcons.Bell, stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
+                        add(0, AttentionItem(JibitoIcons.Bell, stringResource(R.string.attn_short_notifications), stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
                     }
-                }.take(4)
+                }.take(6)
+                // جیب تمام‌عرض است؛ بقیه فاصله‌ی کناری دارند
                 LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp + LocalBottomBarSpace.current),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp + LocalBottomBarSpace.current),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     item(key = "hero") {
                         GlanceHero(
                             s,
                             onEditBudget = { editingOverall = true },
                             vsLastMonthPercent = trend?.takeIf { it.months.lastOrNull()?.month == s.month }?.vsLastMonthPercent,
+                            canGoNext = month != JalaliMonth.current(),
+                            onPreviousMonth = viewModel::previousMonth,
+                            onNextMonth = viewModel::nextMonth,
                         )
                     }
-                    if (attention.isNotEmpty()) item(key = "attention") { AttentionCard(attention) }
+                    if (attention.isNotEmpty()) item(key = "attention") {
+                        Box(Modifier.padding(horizontal = 16.dp)) { AttentionCard(attention) }
+                    }
                     item(key = "where") {
-                        WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                        Box(Modifier.padding(horizontal = 16.dp)) {
+                            WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                        }
                     }
                 }
             } else {

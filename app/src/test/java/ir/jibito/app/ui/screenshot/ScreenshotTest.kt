@@ -37,6 +37,11 @@ import org.robolectric.annotation.GraphicsMode
 import ir.jibito.app.data.repository.MonthSpend
 import ir.jibito.app.data.repository.SpendTrend
 import ir.jibito.app.ui.summary.TrendCard
+import ir.jibito.app.ui.summary.GlanceHero
+import ir.jibito.app.ui.summary.WhereCard
+import ir.jibito.app.data.repository.MonthSummary
+import ir.jibito.app.data.repository.CategorySpend
+import androidx.compose.foundation.layout.Box
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.RevealStats
@@ -117,10 +122,29 @@ class ScreenshotTest {
     ).sortedByDescending { it.dateMillis }
 
     private val attentionItems = listOf(
-        AttentionItem(JibitoIcons.Bell, "نوتیفیکیشن‌ها خاموش‌اند", AttentionItem.Tone.WARN) {},
-        AttentionItem(JibitoIcons.Warning, "کافه: ۱۱۲٪ بودجه", AttentionItem.Tone.DANGER) {},
-        AttentionItem(JibitoIcons.Tag, "۸۵۰ هزار تومان خرج بی‌دسته", AttentionItem.Tone.NORMAL) {},
-        AttentionItem(JibitoIcons.Repeat, "«شارژ ساختمون» هر ماه پرداخت می‌شه؟ یادآوری بسازم", AttentionItem.Tone.NORMAL) {},
+        AttentionItem(JibitoIcons.Bell, "نوتیف خاموشه", "نوتیفیکیشن‌ها خاموش‌اند", AttentionItem.Tone.WARN) {},
+        AttentionItem(JibitoIcons.Warning, "کافه ۱۱۲٪", "کافه: ۱۱۲٪ بودجه", AttentionItem.Tone.DANGER) {},
+        AttentionItem(JibitoIcons.Tag, "۸۵۰ هزار بی‌دسته", "۸۵۰ هزار تومان خرج بی‌دسته", AttentionItem.Tone.NORMAL) {},
+        AttentionItem(JibitoIcons.Repeat, "شارژ ساختمون ماهانه؟", "«شارژ ساختمون» هر ماه پرداخت می‌شه؟ یادآوری بسازم", AttentionItem.Tone.NORMAL) {},
+    )
+
+    /** یک ماه گذشته (نوار «امروز» و سرعت ندارد، پس تصویر به ساعت اجرا بستگی ندارد) */
+    private fun monthSample(budgetRial: Long?) = MonthSummary(
+        month = JalaliMonth(1405, 6),
+        totalSpentRial = 184_000_000,
+        totalIncomeRial = 250_000_000,
+        uncategorizedRial = 8_500_000,
+        categories = listOf(
+            CategorySpend(1, "سوپرمارکت", "🛒", CategoryPalette.LIGHT[0], 52_000_000, 60_000_000),
+            CategorySpend(2, "رستوران و کافه", "🍽", CategoryPalette.LIGHT[1], 34_000_000, 30_000_000),
+            CategorySpend(3, "رفت‌وآمد", "🚕", CategoryPalette.LIGHT[2], 29_000_000, null),
+            CategorySpend(4, "خونه و قبض", "🏠", CategoryPalette.LIGHT[3], 26_000_000, null),
+            CategorySpend(5, "پوشاک", "👕", CategoryPalette.LIGHT[4], 21_000_000, null),
+            CategorySpend(6, "سلامت", "💊", CategoryPalette.LIGHT[5], 9_000_000, null),
+        ),
+        incomeCategories = emptyList(),
+        uncategorizedIncomeRial = 0,
+        overallBudgetRial = budgetRial,
     )
 
     private val trendSample = JalaliMonth(1405, 7).let { end ->
@@ -195,6 +219,28 @@ class ScreenshotTest {
     @Test
     fun attentionCard() {
         for ((style, dark) in variants) shot("attention", style, dark) { AttentionCard(attentionItems) }
+    }
+
+    /** صفحه‌ی خلاصه: جیب (آرام / رد شده / بدون بودجه) و «کجا رفت؟» */
+    @Test
+    fun summaryGlance() {
+        for ((style, dark) in variants) {
+            shot("summary", style, dark, padded = false) {
+                GlanceHero(monthSample(300_000_000), onEditBudget = {}, vsLastMonthPercent = -22)
+                Box(Modifier.padding(16.dp)) { WhereCard(monthSample(300_000_000), onOpenCategory = {}, onShowAll = {}) }
+            }
+        }
+        for (dark in listOf(false, true)) {
+            shot("summary_over", AppThemeStyle.DEFAULT, dark, padded = false) {
+                GlanceHero(monthSample(150_000_000), onEditBudget = {})
+            }
+            shot("summary_nobudget", AppThemeStyle.DEFAULT, dark, padded = false) {
+                GlanceHero(monthSample(null), onEditBudget = {})
+            }
+        }
+        shot("summary", AppThemeStyle.DEFAULT, false, padded = false, fontScale = 2f) {
+            GlanceHero(monthSample(300_000_000), onEditBudget = {}, vsLastMonthPercent = -22)
+        }
     }
 
     @Test

@@ -25,6 +25,8 @@ val InkSoft = Color(0xFF2A2830)
  * - گرادیان کارت بالای «خلاصه» (متن رویش سفید است)
  * - رنگ‌های معنایی: پول آمده (income، تنها سبز اپ)، انتقال به خودم (transfer، کم‌رنگ چون خرج نیست)، هشدار نزدیک بودجه (warning).
  *   در هر سه پوسته یکی‌اند و فقط برای حالت تیره روشن‌تر می‌شوند تا روی زمینه‌ی تیره خوانا بمانند.
+ * - «حال جیب» (رنگ بالای صفحه‌ی خلاصه وقتی بودجه هست): آرام (فیروزه‌ای)، نزدیک سقف (کهربایی)، رد شده (قرمز).
+ *   متن رویشان سفید است (کنتراست ≥ ۴٫۵)؛ در حالت تیره یک پله عمیق‌تر تا چشم را نزنند.
  */
 @Immutable
 data class JibitoColors(
@@ -33,6 +35,9 @@ data class JibitoColors(
     val income: Color = IncomeLight,
     val transfer: Color = TransferLight,
     val warning: Color = WarningLight,
+    val moodCalm: Color = MoodCalmLight,
+    val moodWarn: Color = MoodWarnLight,
+    val moodOver: Color = MoodOverLight,
 )
 
 private val IncomeLight = Color(0xFF047857)
@@ -41,6 +46,12 @@ private val TransferLight = Color(0xFF5A6B8C)
 private val TransferDark = Color(0xFF9FB0CF)
 private val WarningLight = Color(0xFFE0951F)
 private val WarningDark = Color(0xFFF2B45A)
+private val MoodCalmLight = Color(0xFF0E7C7B)
+private val MoodCalmDark = Color(0xFF0B5F5E)
+private val MoodWarnLight = Color(0xFFA85407)
+private val MoodWarnDark = Color(0xFF7E4306)
+private val MoodOverLight = Color(0xFFB42318)
+private val MoodOverDark = Color(0xFF8F1F14)
 
 val LocalJibitoColors = staticCompositionLocalOf { JibitoColors(Coral, Color(0xFFF08A4B)) }
 
@@ -190,7 +201,10 @@ fun JibitoTheme(
     content: @Composable () -> Unit,
 ) {
     val (scheme, hero) = schemeFor(style, darkTheme)
-    val extras = if (darkTheme) hero.copy(income = IncomeDark, transfer = TransferDark, warning = WarningDark) else hero
+    val extras = if (darkTheme) hero.copy(
+        income = IncomeDark, transfer = TransferDark, warning = WarningDark,
+        moodCalm = MoodCalmDark, moodWarn = MoodWarnDark, moodOver = MoodOverDark,
+    ) else hero
     CompositionLocalProvider(LocalJibitoColors provides extras) {
         MaterialTheme(colorScheme = scheme, typography = JibitoTypography, content = content)
     }

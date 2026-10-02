@@ -1,9 +1,12 @@
 package ir.jibito.app.ui.summary
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,12 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.repository.CategorySpend
@@ -52,7 +57,7 @@ private const val GLANCE_ROWS = 5
 @Composable
 fun WhereCard(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val dark = isSystemInDarkTheme()
+    val dark = colors.background.luminance() < 0.5f
     val total = s.totalSpentRial
     val spent = s.categories.filter { it.spentRial > 0 }.take(GLANCE_ROWS)
     val planned = s.categories.filter { it.spentRial == 0L && it.budgetRial != null }
@@ -60,45 +65,58 @@ fun WhereCard(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> 
     val rest = total - spent.sumOf { it.spentRial }
     var highlighted by rememberSaveable(s.month.key) { mutableStateOf<Long?>(null) }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(colors.surface, RoundedCornerShape(22.dp))
-            .padding(horizontal = 14.dp, vertical = 14.dp)
-    ) {
-        Text(
-            stringResource(R.string.chart_where_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = colors.onSurface,
-        )
-        Spacer(Modifier.height(10.dp))
+    // بدون کارت: مستقیم روی زمینه‌ی صفحه
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.chart_where_title),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+            )
+            if (total > 0) {
+                Text(
+                    stringResource(R.string.chart_where_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
 
         if (total > 0) {
-            // نوار سهم‌ها: فاصله‌ی ۲ پیکسلی بین تکه‌ها همان رنگ کارت است
+            // نوار سهم‌ها: تکه‌های گرد با فاصله؛ تکه‌ی انتخاب‌شده بلندتر می‌شود و بقیه کم‌رنگ
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(5.dp))
+                    .height(SEGMENT_TALL)
                     .semantics { contentDescription = spent.joinToString("، ") { "${it.name} ${share(it.spentRial, total)}" } },
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 val segments = spent.map { it.categoryId to (it.spentRial to ChartColors.forCategory(it.colorHex, dark)) } +
                     if (rest > 0) listOf(-1L to (rest to ChartColors.neutral(dark))) else emptyList()
-                segments.forEachIndexed { i, (key, value) ->
-                    if (i > 0) Spacer(Modifier.width(2.dp).fillMaxHeight().background(colors.surface))
-                    val a by animateFloatAsState(if (highlighted == null || highlighted == key) 1f else 0.3f, label = "seg")
+                segments.forEach { (key, value) ->
+                    val on = highlighted == key
+                    val a by animateFloatAsState(if (highlighted == null || on) 1f else 0.35f, label = "seg")
+                    val h by animateDpAsState(
+                        if (on) SEGMENT_TALL else SEGMENT_HEIGHT,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                        label = "segHeight",
+                    )
                     Box(
                         Modifier
                             .weight(maxOf(value.first.toFloat() / total, 0.02f))
-                            .fillMaxHeight()
+                            .height(h)
                             .alpha(a)
+                            .clip(RoundedCornerShape(7.dp))
                             .background(value.second)
-                            .clickable { highlighted = if (highlighted == key) null else key },
+                            .clickable { highlighted = if (on) null else key },
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
         } else {
             Text(
                 stringResource(R.string.glance_no_spend),
@@ -130,6 +148,10 @@ fun WhereCard(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> 
     }
 }
 
+/** بلندی تکه‌های نوار سهم (عادی / انتخاب‌شده) */
+private val SEGMENT_HEIGHT = 20.dp
+private val SEGMENT_TALL = 32.dp
+
 @Composable
 private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -147,15 +169,23 @@ private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted:
             .clip(RoundedCornerShape(12.dp))
             .background(if (highlighted) colors.surfaceVariant else Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 7.dp)
+            .padding(horizontal = 4.dp, vertical = 6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(base))
-            Spacer(Modifier.size(8.dp))
+            // آواتار دسته، مثل ردیف تراکنش‌ها: ایموجی روی رنگ دسته
+            Box(
+                Modifier.size(38.dp).background(base.copy(alpha = if (dark) 0.22f else 0.14f), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (c.icon != null) Text(c.icon, fontSize = 18.sp)
+                else Box(Modifier.size(12.dp).clip(RoundedCornerShape(4.dp)).background(base))
+            }
+            Spacer(Modifier.size(12.dp))
             Text(
-                listOfNotNull(c.icon, c.name).joinToString(" "),
+                c.name,
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -179,10 +209,11 @@ private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted:
             )
         }
         if (budget != null) {
-            // نوار باریک بودجه زیر همان خط
+            // نوار باریک بودجه زیر همان خط (هم‌تراز با متن، نه آواتار)
             Spacer(Modifier.height(5.dp))
             Box(
                 Modifier
+                    .padding(start = 50.dp)
                     .fillMaxWidth()
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
@@ -210,8 +241,11 @@ private fun GlanceRestRow(rest: Long, total: Long, dark: Boolean, highlighted: B
             .padding(horizontal = 4.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(ChartColors.neutral(dark)))
-        Spacer(Modifier.size(8.dp))
+        Box(
+            Modifier.size(38.dp).background(ChartColors.neutral(dark).copy(alpha = 0.18f), RoundedCornerShape(13.dp)),
+            contentAlignment = Alignment.Center,
+        ) { Box(Modifier.size(12.dp).clip(RoundedCornerShape(4.dp)).background(ChartColors.neutral(dark))) }
+        Spacer(Modifier.size(12.dp))
         Text(
             stringResource(R.string.chart_rest),
             modifier = Modifier.weight(1f),
