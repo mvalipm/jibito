@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +72,7 @@ fun SummaryScreen() {
     val month by viewModel.month.collectAsState()
     val summary by viewModel.summary.collectAsState()
     var editing by rememberSaveable { mutableStateOf<Long?>(null) }
+    var editingOverall by rememberSaveable { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
 
     Column(
@@ -94,7 +96,7 @@ fun SummaryScreen() {
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item { HeroCard(s) }
+                item { HeroCard(s, onEditBudget = { editingOverall = true }) }
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
                         Text(
@@ -134,12 +136,30 @@ fun SummaryScreen() {
 
             s.categories.firstOrNull { it.categoryId == editing }?.let { c ->
                 BudgetDialog(
-                    category = c,
+                    key = "cat-${c.categoryId}",
+                    title = stringResource(R.string.budget_dialog_title, listOfNotNull(c.icon, c.name).joinToString(" ")),
+                    hint = stringResource(R.string.budget_dialog_hint),
+                    initialRial = c.budgetRial,
+                    suggestionRial = null,
                     onSave = { rial ->
                         viewModel.setBudget(c.categoryId, rial)
                         editing = null
                     },
                     onDismiss = { editing = null },
+                )
+            }
+            if (editingOverall) {
+                BudgetDialog(
+                    key = "overall",
+                    title = stringResource(R.string.overall_dialog_title),
+                    hint = stringResource(R.string.overall_dialog_hint),
+                    initialRial = s.overallBudgetRial,
+                    suggestionRial = s.categoryBudgetsSumRial.takeIf { it > 0 && it != s.overallBudgetRial },
+                    onSave = { rial ->
+                        viewModel.setOverallBudget(rial)
+                        editingOverall = false
+                    },
+                    onDismiss = { editingOverall = false },
                 )
             }
         }
@@ -172,16 +192,19 @@ private fun MonthSwitcher(month: JalaliMonth, canGoNext: Boolean, onPrevious: ()
     }
 }
 
+/**
+ * کارت بالای داشبورد: کل خرج ماه، و اگر بودجه‌ی کل تعیین شده:
+ * نوار مصرف، «چقدر مونده» و «روزی چقدر تا آخر ماه». با زدن روی کارت، بودجه‌ی کل عوض می‌شود.
+ */
 @Composable
-private fun HeroCard(s: MonthSummary) {
+private fun HeroCard(s: MonthSummary, onEditBudget: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Box(
         Modifier
             .fillMaxWidth()
-            .background(
-                Brush.linearGradient(listOf(colors.primary, Color(0xFFF08A4B))),
-                RoundedCornerShape(28.dp),
-            )
+            .clip(RoundedCornerShape(28.dp))
+            .background(Brush.linearGradient(listOf(colors.primary, Color(0xFFF08A4B))))
+            .clickable(onClick = onEditBudget)
             .padding(22.dp)
     ) {
         Column {
@@ -206,6 +229,7 @@ private fun HeroCard(s: MonthSummary) {
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
             }
+            OverallBudgetPart(s, onEditBudget)
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 HeroPill(stringResource(R.string.summary_income), Money.toman(s.totalIncomeRial))
@@ -214,6 +238,73 @@ private fun HeroCard(s: MonthSummary) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun OverallBudgetPart(s: MonthSummary, onEditBudget: () -> Unit) {
+    val budget = s.overallBudgetRial
+    if (budget == null || budget <= 0) {
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.overall_set_budget),
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.22f))
+                .clickable(onClick = onEditBudget)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        return
+    }
+    val level = BudgetLevel.of(s.totalSpentRial, budget)
+    val fraction = (s.totalSpentRial.toFloat() / budget.toFloat()).coerceIn(0f, 1f)
+    val barColor = when (level) {
+        100 -> Color(0xFFFFE1E1)
+        80 -> Color(0xFFFFE08A)
+        else -> Color.White
+    }
+    Spacer(Modifier.height(12.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        LinearProgressIndicator(
+            progress = { fraction },
+            modifier = Modifier
+                .weight(1f)
+                .height(10.dp),
+            color = barColor,
+            trackColor = Color.White.copy(alpha = 0.25f),
+            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
+        Spacer(Modifier.size(10.dp))
+        Text(
+            Jalali.toPersianDigits("${(s.totalSpentRial * 100 / budget).coerceAtMost(999)}٪"),
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Black,
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+    val remaining = budget - s.totalSpentRial
+    Text(
+        if (remaining >= 0) {
+            stringResource(R.string.overall_remaining, Money.toman(remaining), Money.toman(budget))
+        } else {
+            stringResource(R.string.overall_over, Money.toman(-remaining), Money.toman(budget))
+        },
+        color = Color.White,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+    )
+    s.dailyAllowanceRial()?.let { daily ->
+        Text(
+            stringResource(R.string.overall_daily, Money.toman(daily)),
+            color = Color.White.copy(alpha = 0.88f),
+            style = MaterialTheme.typography.labelMedium,
+        )
     }
 }
 
@@ -356,24 +447,29 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
     }
 }
 
+/** پنجره‌ی تعیین بودجه (یک دسته، یا کل ماه). مبلغ به تومان وارد و به ریال ذخیره می‌شود. */
 @Composable
-private fun BudgetDialog(category: CategorySpend, onSave: (Long?) -> Unit, onDismiss: () -> Unit) {
-    val initial = category.budgetRial?.let { (it / 10).toString() }.orEmpty()
-    var text by rememberSaveable(category.categoryId) { mutableStateOf(initial) }
+private fun BudgetDialog(
+    key: String,
+    title: String,
+    hint: String,
+    initialRial: Long?,
+    /** پیشنهاد (مثلاً جمع بودجه‌ی دسته‌ها)؛ null یعنی نشان نده */
+    suggestionRial: Long?,
+    onSave: (Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val initial = initialRial?.let { (it / 10).toString() }.orEmpty()
+    var text by rememberSaveable(key) { mutableStateOf(initial) }
     val toman = text.toLatinDigits().filter { it in '0'..'9' }.take(12).toLongOrNull()
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(R.string.budget_dialog_title, listOfNotNull(category.icon, category.name).joinToString(" ")),
-                fontWeight = FontWeight.Bold,
-            )
-        },
+        title = { Text(title, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
-                    stringResource(R.string.budget_dialog_hint),
+                    hint,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -389,6 +485,19 @@ private fun BudgetDialog(category: CategorySpend, onSave: (Long?) -> Unit, onDis
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                suggestionRial?.let { sum ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.overall_dialog_sum, Money.toman(sum)),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = { text = (sum / 10).toString() }) {
+                            Text(stringResource(R.string.overall_dialog_use_sum))
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -399,7 +508,7 @@ private fun BudgetDialog(category: CategorySpend, onSave: (Long?) -> Unit, onDis
         },
         dismissButton = {
             Row {
-                if (category.budgetRial != null) {
+                if (initialRial != null) {
                     TextButton(onClick = { onSave(null) }) {
                         Text(stringResource(R.string.budget_dialog_remove), color = MaterialTheme.colorScheme.error)
                     }

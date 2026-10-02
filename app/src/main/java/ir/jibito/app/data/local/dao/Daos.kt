@@ -13,6 +13,7 @@ import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.OwnAccountEntity
+import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
 import kotlinx.coroutines.flow.Flow
@@ -195,6 +196,33 @@ interface SummaryDao {
 
     @Query("UPDATE budgets SET alertedMonthKey = :monthKey, alertedLevel = :level WHERE categoryId = :categoryId")
     suspend fun markAlerted(categoryId: Long, monthKey: Int, level: Int)
+
+    /** جمع واریز یا برداشت در یک بازه (یک بار، برای هشدار) */
+    @Query(
+        """
+        SELECT COALESCE(SUM(amount), 0) FROM transaction_flows
+        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
+          AND dateEpoch >= :from AND dateEpoch < :to
+        """
+    )
+    suspend fun total(flowType: Int, from: Long, to: Long): Long
+
+    // ── بودجه‌ی کل ماه ──
+
+    @Query("SELECT * FROM overall_budget WHERE id = 1")
+    fun observeOverallBudget(): Flow<OverallBudgetEntity?>
+
+    @Query("SELECT * FROM overall_budget WHERE id = 1")
+    suspend fun overallBudget(): OverallBudgetEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertOverallBudget(budget: OverallBudgetEntity)
+
+    @Query("DELETE FROM overall_budget")
+    suspend fun deleteOverallBudget()
+
+    @Query("UPDATE overall_budget SET alertedMonthKey = :monthKey, alertedLevel = :level WHERE id = 1")
+    suspend fun markOverallAlerted(monthKey: Int, level: Int)
 }
 
 @Dao

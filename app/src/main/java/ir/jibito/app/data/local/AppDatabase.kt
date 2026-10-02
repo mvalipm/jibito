@@ -11,6 +11,7 @@ import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.OwnAccountEntity
+import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.dao.TransactionFlowDao
 import ir.jibito.app.data.local.entity.CategoryEntity
@@ -34,8 +35,9 @@ import ir.jibito.app.data.local.migration.Migrations
         SenderRuleEntity::class,
         SmsTemplateEntity::class,
         OwnAccountEntity::class,
+        OverallBudgetEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

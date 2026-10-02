@@ -29,6 +29,24 @@ data class BudgetEntity(
     @ColumnInfo(defaultValue = "0") val alertedLevel: Int = 0,
 )
 
+/**
+ * بودجه‌ی کل ماه (همه‌ی خرج‌ها با هم). (از نسخه‌ی ۹ دیتابیس)
+ * فقط یک ردیف دارد (id = 1)؛ مبلغ به ریال.
+ */
+@Entity(tableName = "overall_budget")
+data class OverallBudgetEntity(
+    @PrimaryKey val id: Int = SINGLE_ROW_ID,
+    val monthlyLimitRial: Long,
+    /** ماهی که آخرین هشدار برایش داده شد، مثلاً 140507 */
+    val alertedMonthKey: Int? = null,
+    /** آخرین سطح هشدار داده‌شده در آن ماه: ۰، ۸۰ یا ۱۰۰ */
+    @ColumnInfo(defaultValue = "0") val alertedLevel: Int = 0,
+) {
+    companion object {
+        const val SINGLE_ROW_ID = 1
+    }
+}
+
 /** یک ردیف خلاصه‌ی ماه: دسته + خرجش + بودجه‌اش. */
 data class CategorySpendRow(
     val categoryId: Long,

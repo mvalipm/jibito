@@ -43,6 +43,10 @@ class SummaryViewModel(
         viewModelScope.launch { repository.setBudget(categoryId, monthlyLimitRial) }
     }
 
+    fun setOverallBudget(monthlyLimitRial: Long?) {
+        viewModelScope.launch { repository.setOverallBudget(monthlyLimitRial) }
+    }
+
     companion object {
         fun factory(repository: BudgetRepository): ViewModelProvider.Factory = viewModelFactory {
             initializer { SummaryViewModel(repository) }

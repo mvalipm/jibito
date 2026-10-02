@@ -92,6 +92,16 @@
     <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
     <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
     <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
+    <string name="budget_alert_overall_warning">۸۰٪ بودجه‌ی کل این ماه مصرف شد</string>
+    <string name="budget_alert_overall_over">بودجه‌ی کل این ماه تموم شد!</string>
+    <string name="overall_set_budget">+ تعیین بودجه‌ی کل ماه</string>
+    <string name="overall_remaining">%1$s مونده از %2$s</string>
+    <string name="overall_over">%1$s بیشتر از بودجه‌ی %2$s</string>
+    <string name="overall_daily">تا آخر ماه، روزی %1$s</string>
+    <string name="overall_dialog_title">بودجه‌ی کل ماه</string>
+    <string name="overall_dialog_hint">ماهی چقدر می‌خوای در کل خرج کنی؟ بالای صفحه می‌بینی چقدر مونده و روزی چقدر می‌تونی خرج کنی. به ۸۰٪ که برسی و وقتی تموم بشه، خبرت می‌کنیم.</string>
+    <string name="overall_dialog_sum">جمع بودجه‌ی دسته‌هات: %1$s</string>
+    <string name="overall_dialog_use_sum">همین رو بذار</string>
     <string name="sheet_title_income">این پول از کجا اومد؟</string>
     <string name="notif_question_income">این پول از کجا اومد؟</string>
     <string name="summary_income_categories">درآمدها</string>

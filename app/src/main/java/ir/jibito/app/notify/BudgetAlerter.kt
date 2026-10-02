@@ -42,6 +42,7 @@ class BudgetAlerter(
 
     suspend fun check() {
         val month = JalaliMonth.current()
+        checkOverall(month)
         val budgets = dao.budgets().associateBy { it.categoryId }
         if (budgets.isEmpty()) return
         val rows = dao.categorySpend(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())
@@ -57,19 +58,39 @@ class BudgetAlerter(
         }
     }
 
-    private fun show(categoryId: Long, name: String, icon: String?, level: Int, spent: Long, limit: Long) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
+    /** بودجه‌ی کل ماه: همان قانون ۸۰٪ و ۱۰۰٪، یک بار در ماه برای هر سطح */
+    private suspend fun checkOverall(month: JalaliMonth) {
+        val budget = dao.overallBudget() ?: return
+        val spent = dao.total(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())
+        val level = BudgetLevel.of(spent, budget.monthlyLimitRial)
+        val alreadyAlerted = if (budget.alertedMonthKey == month.key) budget.alertedLevel else 0
+        if (level > alreadyAlerted) {
+            val title = context.getString(
+                if (level >= 100) R.string.budget_alert_overall_over else R.string.budget_alert_overall_warning
+            )
+            notify(OVERALL_NOTIFICATION_ID, title, spent, budget.monthlyLimitRial)
+            dao.markOverallAlerted(month.key, level)
         }
-        ensureChannel()
+    }
+
+    private fun show(categoryId: Long, name: String, icon: String?, level: Int, spent: Long, limit: Long) {
         val label = listOfNotNull(icon, name).joinToString(" ")
         val title = if (level >= 100) {
             context.getString(R.string.budget_alert_over, label)
         } else {
             context.getString(R.string.budget_alert_warning, label)
         }
+        // یک نوتیفیکیشن ثابت برای هر دسته؛ هشدار ۱۰۰٪ جای هشدار ۸۰٪ را می‌گیرد
+        notify(NOTIFICATION_BASE + categoryId.toInt(), title, spent, limit)
+    }
+
+    private fun notify(id: Int, title: String, spent: Long, limit: Long) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        ensureChannel()
         val text = context.getString(R.string.budget_alert_body, Money.toman(spent), Money.toman(limit))
 
         val openApp = PendingIntent.getActivity(
@@ -87,8 +108,7 @@ class BudgetAlerter(
             .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
-        // یک نوتیفیکیشن ثابت برای هر دسته؛ هشدار ۱۰۰٪ جای هشدار ۸۰٪ را می‌گیرد
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_BASE + categoryId.toInt(), notification)
+        NotificationManagerCompat.from(context).notify(id, notification)
     }
 
     private fun ensureChannel() {
@@ -107,5 +127,6 @@ class BudgetAlerter(
     companion object {
         const val CHANNEL_ID = "budget"
         private const val NOTIFICATION_BASE = 1_000_000_000
+        private const val OVERALL_NOTIFICATION_ID = 999_999_999
     }
 }
