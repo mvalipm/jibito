@@ -13,8 +13,8 @@ android {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 43
-        versionName = "0.35.0"
+        versionCode = 44
+        versionName = "0.36.0"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود
@@ -59,6 +59,13 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    // Android Lint در هر ساخت CI. مشکلات قدیمی در lint-baseline.xml ثبت شده‌اند؛ فقط مشکل «تازه» ساخت را می‌شکند.
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkDependencies = false
+        htmlReport = true
     }
     testOptions {
         unitTests.all {

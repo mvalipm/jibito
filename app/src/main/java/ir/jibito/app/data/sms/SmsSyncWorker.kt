@@ -18,6 +18,7 @@ import ir.jibito.app.JibitoApplication
 import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.bank.SenderType
 import ir.jibito.app.notify.TransactionNotifier
+import ir.jibito.app.util.ErrorLog
 import java.util.concurrent.TimeUnit
 
 /**
@@ -61,13 +62,17 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             container.budgetAlerter.check()
             Result.success()
         } catch (e: Exception) {
-            Result.retry()
+            // قبلاً خطا بی‌صدا تکرار می‌شد و هیچ ردی نمی‌ماند؛ حالا ثبت می‌شود (تنظیمات ← گزارش خطا)
+            ErrorLog.record(applicationContext, "sync (attempt ${runAttemptCount + 1})", e)
+            // چند بار دوباره؛ بعد رها می‌شود (همگام‌سازی دوره‌ای ۱۵ دقیقه‌ای و پیامک بعدی دوباره امتحان می‌کنند)
+            if (runAttemptCount < MAX_ATTEMPTS - 1) Result.retry() else Result.failure()
         }
     }
 
     companion object {
         private const val UNIQUE_NAME = "sms-sync"
         private const val PERIODIC_NAME = "sms-sync-periodic"
+        private const val MAX_ATTEMPTS = 3
 
         /**
          * شبکه‌ی ایمنی: هر ۱۵ دقیقه (کمترین فاصله‌ی مجاز اندروید) پیامک‌های تازه خوانده می‌شوند،

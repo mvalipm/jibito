@@ -297,4 +297,13 @@
     <string name="backup_restore_ready_title">پشتیبان آماده‌ست</string>
     <string name="backup_restore_ready_body">%1$d تراکنش، پشتیبانِ %2$s. جیبیتو یه بار بسته و دوباره باز می‌شه تا داده‌ها جایگزین بشن؛ بعد پیامک‌ها دوباره خونده می‌شن.</string>
     <string name="backup_restore_restart">باز کردن دوباره</string>
+
+    <!-- گزارش خطا -->
+    <string name="errorlog_title">گزارش خطا</string>
+    <string name="errorlog_empty">خطایی ثبت نشده. 👌</string>
+    <string name="errorlog_summary">%1$d خطا ثبت شده؛ آخرینش %2$s.</string>
+    <string name="errorlog_send">ارسال گزارش</string>
+    <string name="errorlog_clear">پاک کردن</string>
+    <string name="errorlog_subject">گزارش خطای جیبیتو</string>
+    <string name="errorlog_privacy">گزارش فقط روی همین گوشیه و خودکار جایی فرستاده نمی‌شه. با «ارسال گزارش» خودت انتخاب می‌کنی کجا بره (و قبل از فرستادن می‌بینیش).</string>
 </resources>

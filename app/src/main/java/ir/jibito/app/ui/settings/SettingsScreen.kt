@@ -56,6 +56,8 @@ import androidx.compose.ui.draw.clip
 import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.util.Jalali
+import ir.jibito.app.util.ErrorLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
@@ -169,7 +171,17 @@ fun SettingsScreen() {
                 )
             } else {
                 Button(
-                    onClick = { scope.launch { repository.syncFromSms(forceFull = true) } },
+                    onClick = {
+                        scope.launch {
+                            try {
+                                repository.syncFromSms(forceFull = true)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                ErrorLog.record(context, "full rescan", e)
+                            }
+                        }
+                    },
                     enabled = smsOk,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -301,6 +313,9 @@ fun SettingsScreen() {
         Spacer(Modifier.height(12.dp))
         // قفل اپ و پشتیبان‌گیری
         SecurityBackupCard { title, content -> SettingsCard(title, content) }
+
+        Spacer(Modifier.height(12.dp))
+        ErrorLogCard { title, content -> SettingsCard(title, content) }
 
         Text(
             Jalali.toPersianDigits(stringResource(R.string.settings_version, version)),
