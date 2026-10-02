@@ -60,6 +60,9 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import ir.jibito.app.data.review.WrongReadingReport
 
 
 /**
@@ -341,6 +344,24 @@ fun CategoryPickerSheet(
                         Text(
                             text = transaction.body,
                             style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    // مبلغ یا نوع اشتباه خوانده شده؟ گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر همین بانک
+                    if (!transaction.isManual) {
+                        val context = LocalContext.current
+                        val chooserTitle = stringResource(R.string.review_share_title)
+                        TextButton(
+                            onClick = {
+                                val send = Intent(Intent.ACTION_SEND)
+                                    .setType("text/plain")
+                                    .putExtra(Intent.EXTRA_TEXT, WrongReadingReport.text(transaction))
+                                context.startActivity(Intent.createChooser(send, chooserTitle))
+                            },
+                        ) { Text(stringResource(R.string.sheet_report_wrong)) }
+                        Text(
+                            stringResource(R.string.review_share_hint),
+                            style = MaterialTheme.typography.labelSmall,
                             color = colors.onSurfaceVariant,
                         )
                     }

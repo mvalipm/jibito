@@ -359,4 +359,7 @@
     <string name="cd_selected">انتخاب‌شده</string>
     <string name="cd_pick_category">انتخاب دسته</string>
     <string name="cd_clear_filter">برداشتن فیلتر</string>
+
+    <!-- گزارش پیامکی که اشتباه خوانده شده -->
+    <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
 </resources>
