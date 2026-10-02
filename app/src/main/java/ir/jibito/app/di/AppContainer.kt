@@ -4,12 +4,16 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import ir.jibito.app.widget.SpendWidget
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
+import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.data.repository.ReviewRepository
+import ir.jibito.app.notify.RecurringReminder
 import ir.jibito.app.data.repository.ReviewRepositoryImpl
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.data.repository.TransactionRepositoryImpl
@@ -47,6 +51,10 @@ class AppContainer(context: Context) {
     /** پشتیبان‌گیری رمزدار و بازگردانی */
     val backupManager: BackupManager by lazy { BackupManager(appContext, database) }
 
+    /** پرداخت‌های تکراری و یادآوری‌شان */
+    val recurringRepository: RecurringRepository by lazy { RecurringRepository(database) }
+    val recurringReminder: RecurringReminder by lazy { RecurringReminder(appContext, database) }
+
     val budgetAlerter: BudgetAlerter by lazy { BudgetAlerter(appContext, database) }
 
     val transactionRepository: TransactionRepository by lazy {
@@ -54,16 +62,28 @@ class AppContainer(context: Context) {
             db = database,
             smsReader = SmsReader(appContext),
             syncState = SyncState(appContext),
-            onCategoryChanged = { budgetAlerter.check() },
+            onCategoryChanged = { onDataChanged() },
+            onSynced = { SpendWidget.refresh(appContext) },
             appScope = appScope,
         )
     }
 
     val reviewRepository: ReviewRepository by lazy {
-        ReviewRepositoryImpl(database, onTransactionAdded = { budgetAlerter.check() })
+        ReviewRepositoryImpl(database, onTransactionAdded = { onDataChanged() })
     }
 
     val budgetRepository: BudgetRepository by lazy {
-        BudgetRepositoryImpl(database, onBudgetsChanged = { budgetAlerter.check() })
+        BudgetRepositoryImpl(database, onBudgetsChanged = { onDataChanged() })
+    }
+
+    /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت */
+    suspend fun onDataChanged() {
+        budgetAlerter.check()
+        SpendWidget.refresh(appContext)
+    }
+
+    /** ویجت را بیرون از صفحه‌ها به‌روز می‌کند (مثلاً بعد از روشن/خاموش کردن قفل اپ) */
+    fun refreshWidget() {
+        appScope.launch { SpendWidget.refresh(appContext) }
     }
 }

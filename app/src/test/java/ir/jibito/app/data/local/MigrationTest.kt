@@ -56,6 +56,22 @@ class MigrationTest {
     @Test fun migrateFrom7() = migrateFrom(7)
     @Test fun migrateFrom8() = migrateFrom(8)
     @Test fun migrateFrom9() = migrateFrom(9)
+    @Test fun migrateFrom10() = migrateFrom(10)
+
+    @Test
+    fun recurringPaymentsTableUsableAfter10To11() {
+        createAt(10)
+        openWithRoom().use { db ->
+            kotlinx.coroutines.runBlocking {
+                db.recurringDao().insert(
+                    ir.jibito.app.data.local.entity.RecurringPaymentEntity(
+                        title = "اجاره", amountRial = 150_000_000, dayOfMonth = 5, lastRemindedMonthKey = null, createdAt = 1,
+                    )
+                )
+                assertEquals(listOf("اجاره"), db.recurringDao().all().map { it.title })
+            }
+        }
+    }
 
     @Test
     fun incomeCategoriesAddedFrom3To4() {

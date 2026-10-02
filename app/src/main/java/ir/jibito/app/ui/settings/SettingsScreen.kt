@@ -311,6 +311,14 @@ fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(12.dp))
+        // پرداخت‌های ماهانه (یادآوری)
+        RecurringCard { title, content -> SettingsCard(title, content) }
+
+        Spacer(Modifier.height(12.dp))
+        // خروجی اکسل
+        ExportCard { title, content -> SettingsCard(title, content) }
+
+        Spacer(Modifier.height(12.dp))
         // قفل اپ و پشتیبان‌گیری
         SecurityBackupCard { title, content -> SettingsCard(title, content) }
 

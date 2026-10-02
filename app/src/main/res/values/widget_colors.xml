@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- رنگ‌های ویجت صفحه‌ی اصلی (روشن) -->
+    <color name="widget_bg">#FFF8F3</color>
+    <color name="widget_text">#2B1D17</color>
+    <color name="widget_muted">#7A6359</color>
+    <color name="widget_accent">#E4572E</color>
+    <color name="widget_over">#C62828</color>
+</resources>

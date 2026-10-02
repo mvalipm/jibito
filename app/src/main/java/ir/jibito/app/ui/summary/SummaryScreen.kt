@@ -97,6 +97,7 @@ fun SummaryScreen(
     var showAll by rememberSaveable { mutableStateOf(false) }
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
+    val notificationPrompt = rememberNotificationPrompt()
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
 
@@ -133,6 +134,10 @@ fun SummaryScreen(
                     }
                     if (pendingReview > 0) {
                         add(AttentionItem("✉", Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
+                    }
+                    // نوتیفیکیشن خاموش: اول فهرست، چون بدونش «این خرج مال چی بود؟» و هشدارها نمی‌آیند
+                    if (notificationPrompt.visible) {
+                        add(0, AttentionItem("🔔", stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
                     }
                 }.take(4)
                 LazyColumn(

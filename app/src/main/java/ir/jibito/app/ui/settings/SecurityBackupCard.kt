@@ -75,6 +75,7 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
         if (ok) {
             AppLockSession.unlocked = true
             lockSettings.setEnabled(true)
+            container.refreshWidget()
         }
     }
 
@@ -123,7 +124,14 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
             Switch(
                 checked = lockEnabled,
                 enabled = lockEnabled || DeviceAuth.isAvailable(context),
-                onCheckedChange = { on -> if (on) turnOnLock() else lockSettings.setEnabled(false) },
+                onCheckedChange = { on ->
+                    if (on) {
+                        turnOnLock()
+                    } else {
+                        lockSettings.setEnabled(false)
+                        container.refreshWidget()
+                    }
+                },
             )
         }
 

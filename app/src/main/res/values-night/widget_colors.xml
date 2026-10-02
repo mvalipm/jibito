@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- رنگ‌های ویجت صفحه‌ی اصلی (تیره) -->
+    <color name="widget_bg">#231A16</color>
+    <color name="widget_text">#F6EDE8</color>
+    <color name="widget_muted">#BCA79D</color>
+    <color name="widget_accent">#FF8A65</color>
+    <color name="widget_over">#EF9A9A</color>
+</resources>
