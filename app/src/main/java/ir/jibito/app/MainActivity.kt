@@ -7,23 +7,33 @@ import java.util.Locale
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
+import ir.jibito.app.data.security.AppLockSession
+import ir.jibito.app.data.security.AppLockSettings
+import ir.jibito.app.ui.lock.DeviceAuth
+import ir.jibito.app.ui.lock.LockScreen
 import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -44,19 +54,67 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(newBase.createConfigurationContext(config))
     }
 
+    /** قفل اپ: true یعنی تا تأیید قفل گوشی، فقط صفحه‌ی قفل دیده می‌شود */
+    private var locked by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val themeSettings = (application as JibitoApplication).container.themeSettings
+        val container = (application as JibitoApplication).container
+        val themeSettings = container.themeSettings
+        val lockSettings = container.appLockSettings
+        refreshLock()
         setContent {
             val style by themeSettings.style.collectAsState()
+            val lockEnabled by lockSettings.enabled.collectAsState()
+            LaunchedEffect(lockEnabled) {
+                // وقتی قفل روشن است، تصویر اپ در «برنامه‌های اخیر» نشان داده نشود
+                if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(!lockEnabled)
+            }
             JibitoTheme(style = style) {
                 // فعلاً کل اپ را راست‌به‌چپ می‌کنیم؛ سوییچ زبان را بعداً اضافه می‌کنیم
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    JibitoApp()
+                    // اپ زیر صفحه‌ی قفل زنده می‌ماند (تا مثلاً جواب انتخاب فایل پشتیبان گم نشود)، ولی دیده و خوانده نمی‌شود
+                    Box(Modifier.fillMaxSize()) {
+                        Box(if (locked) Modifier.clearAndSetSemantics { } else Modifier) { JibitoApp() }
+                        if (locked) {
+                            LockScreen(onUnlocked = {
+                                AppLockSession.unlocked = true
+                                // اگر تأیید (مثلاً صفحه‌ی رمز گوشی) طول کشید، برگشتن از آن دوباره قفل نکند
+                                AppLockSession.backgroundedAt = 0
+                                locked = false
+                            })
+                        }
+                    }
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val session = AppLockSession
+        if (session.backgroundedAt > 0 &&
+            SystemClock.elapsedRealtime() - session.backgroundedAt > AppLockSettings.GRACE_MILLIS
+        ) {
+            session.unlocked = false
+        }
+        session.backgroundedAt = 0
+        refreshLock()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) AppLockSession.backgroundedAt = SystemClock.elapsedRealtime()
+    }
+
+    private fun refreshLock() {
+        val settings = (application as JibitoApplication).container.appLockSettings
+        if (settings.enabled.value && !DeviceAuth.isAvailable(this)) {
+            // کاربر قفل صفحه‌ی گوشی را برداشته: بدون آن قفل اپ باز نمی‌شود، پس خاموشش می‌کنیم تا کاربر پشت در نماند
+            settings.setEnabled(false)
+        }
+        locked = settings.enabled.value && !AppLockSession.unlocked
     }
 }
 

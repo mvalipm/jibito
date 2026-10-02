@@ -59,8 +59,8 @@ import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.launch
 
 /**
- * تنظیمات (نسخه‌ی اول، ساده): خواندن دوباره‌ی پیامک‌ها، وضعیت دسترسی‌ها، نسخه‌ی اپ.
- * بخش‌های بعدی (دسته‌ها، قفل اپ، پشتیبان) بعداً اضافه می‌شوند.
+ * تنظیمات: پوسته، خواندن دوباره‌ی پیامک‌ها، دسترسی‌ها، نمایش دسته‌ها، دسته‌های شخصی،
+ * قفل اپ و پشتیبان‌گیری، نسخه‌ی اپ.
  */
 @Composable
 fun SettingsScreen() {
@@ -299,13 +299,8 @@ fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(12.dp))
-        SettingsCard(stringResource(R.string.settings_soon_title)) {
-            Text(
-                stringResource(R.string.settings_soon_body),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-        }
+        // قفل اپ و پشتیبان‌گیری
+        SecurityBackupCard { title, content -> SettingsCard(title, content) }
 
         Text(
             Jalali.toPersianDigits(stringResource(R.string.settings_version, version)),

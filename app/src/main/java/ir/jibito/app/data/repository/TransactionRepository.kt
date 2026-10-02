@@ -8,6 +8,7 @@ import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.sms.SmsReader
+import ir.jibito.app.data.sms.SmsRowMatcher
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
@@ -357,12 +358,24 @@ class TransactionRepositoryImpl(
 
         var inserted = 0
         db.withTransaction {
-            val existing = dao.smsKeys().associateBy { it.smsId }
+            val rows = dao.smsKeys()
+            val rowsById = rows.associateBy { it.id }
+            // کدام ردیف مال کدام پیامک است (با در نظر گرفتن عوض شدن شناسه‌ها در گوشی تازه / بعد از بازگردانی پشتیبان).
+            // جستجو با «زمان + متن» فقط در اسکن کامل؛ اسکن افزایشی فقط شناسه + زمان.
+            val match = SmsRowMatcher.match(
+                scanned = items.map { SmsRowMatcher.Scanned(it.id, it.dateMillis, it.body) },
+                rows = rows.map { SmsRowMatcher.Row(it.id, it.smsId, it.dateEpoch) },
+                contentLookup = if (scan.scannedFromDate == null) {
+                    suspend { dao.smsContentKeys().associate { (it.dateEpoch to it.smsContent) to it.id } }
+                } else {
+                    null
+                },
+            )
             val toInsert = mutableListOf<TransactionFlowEntity>()
             val toUpdate = mutableListOf<TransactionFlowEntity>()
 
             for (item in items) {
-                val old = existing[item.id]
+                val old = match.matches[item.id]?.let { rowsById[it] }
                 if (old != null && (old.categoryId != null || old.transferState == TransactionFlowEntity.TRANSFER_SELF)) {
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
@@ -393,13 +406,15 @@ class TransactionRepositoryImpl(
             // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
             // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
             // در اسکن افزایشی فقط بازه‌ی خوانده‌شده بررسی می‌شود (پیامک‌های قدیمی‌تر اصلاً خوانده نشده‌اند).
-            val currentIds = items.mapTo(HashSet()) { it.id }
+            val matchedRows = match.matches.values.toHashSet()
             val from = scan.scannedFromDate
-            val gone = existing.values
-                .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.smsId !in currentIds }
-                .filter { from == null || (it.dateEpoch >= from && it.smsId <= scan.maxSmsId) }
+            val gone = rows
+                .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.id !in matchedRows }
+                .filter { from == null || (it.dateEpoch >= from && (it.smsId == null || it.smsId <= scan.maxSmsId)) }
                 .map { it.id }
 
+            // اول شناسه‌ی ردیف‌هایی که مال پیامک دیگری است آزاد شود، بعد نوشتن (وگرنه ایندکس یکتای smsId جلویش را می‌گیرد)
+            match.detach.chunked(500).forEach { dao.detachSms(it) }
             if (toInsert.isNotEmpty()) dao.insertAll(toInsert)
             if (toUpdate.isNotEmpty()) dao.updateAll(toUpdate)
             gone.chunked(500).forEach { dao.softDelete(it, now) }
@@ -407,6 +422,7 @@ class TransactionRepositoryImpl(
 
             // صندوق بررسی: پیامک‌های تازه‌ی خوانده‌نشده اضافه می‌شوند (تکراری‌ها نادیده)،
             // و آن‌هایی که حالا خودکار خوانده شده‌اند، دیگر منتظر نمی‌مانند
+            scan.reviewCandidates.forEach { reviewDao.deleteStale(it.smsId, it.dateMillis) }
             reviewDao.insertAll(scan.reviewCandidates.map {
                 ReviewSmsEntity(smsId = it.smsId, sender = it.sender, body = it.body, dateEpoch = it.dateMillis, bankId = it.bankId)
             })

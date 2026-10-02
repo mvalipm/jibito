@@ -11,6 +11,7 @@ import ir.jibito.app.data.local.entity.CategorySum
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
+import ir.jibito.app.data.local.entity.SmsContentKey
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.BankBalanceRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
@@ -33,8 +34,17 @@ interface TransactionFlowDao {
     )
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId FROM transaction_flows WHERE smsId IS NOT NULL")
+    /** همه‌ی ردیف‌های پیامکی (ثبت دستی نه)؛ smsId ردیفی که شناسه‌اش آزاد شده null است */
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId FROM transaction_flows WHERE source != 'MANUAL'")
     suspend fun smsKeys(): List<SmsFlowKey>
+
+    /** «زمان + متن» ردیف‌های پیامکی، برای پیدا کردن ردیف قبلی وقتی شناسه‌ی پیامک‌ها عوض شده (گوشی تازه) */
+    @Query("SELECT id, dateEpoch, smsContent FROM transaction_flows WHERE source != 'MANUAL' AND smsContent IS NOT NULL")
+    suspend fun smsContentKeys(): List<SmsContentKey>
+
+    /** شناسه‌ی پیامک این ردیف‌ها را آزاد می‌کند (چون در این گوشی مال پیامک دیگری است) */
+    @Query("UPDATE transaction_flows SET smsId = NULL WHERE id IN (:ids)")
+    suspend fun detachSms(ids: List<Long>)
 
     /** تراکنش‌های پیامکیِ تازه (برای نوتیفیکیشن). */
     @Query("SELECT * FROM transaction_flows WHERE smsId IS NOT NULL AND isDeleted = 0 AND dateEpoch >= :since")
@@ -310,6 +320,13 @@ interface ReviewDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<ReviewSmsEntity>)
+
+    /**
+     * ردیف بررسیِ کهنه با همین شناسه ولی زمان دیگر را پاک می‌کند: بعد از انتقال به گوشی تازه،
+     * این شناسه مال پیامک دیگری است و نباید جلوی ورود پیامک تازه به صندوق بررسی را بگیرد.
+     */
+    @Query("DELETE FROM review_sms WHERE smsId = :smsId AND dateEpoch != :dateEpoch")
+    suspend fun deleteStale(smsId: Long, dateEpoch: Long)
 
     @Query("SELECT * FROM review_sms WHERE smsId = :smsId")
     suspend fun byId(smsId: Long): ReviewSmsEntity?

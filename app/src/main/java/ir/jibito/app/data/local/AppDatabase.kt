@@ -37,7 +37,7 @@ import ir.jibito.app.data.local.migration.Migrations
         OwnAccountEntity::class,
         OverallBudgetEntity::class,
     ],
-    version = 10,
+    version = AppDatabase.VERSION,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,8 +48,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reviewDao(): ReviewDao
 
     companion object {
+        /** نسخه‌ی فعلی ساختار دیتابیس (برای Migration ها، پشتیبان‌گیری و تست‌ها) */
+        const val VERSION = 10
+
+        /** اسم فایل دیتابیس روی گوشی */
+        const val NAME = "jibito.db"
+
         fun build(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "jibito.db")
+            Room.databaseBuilder(context, AppDatabase::class.java, NAME)
                 .addMigrations(*Migrations.ALL) // هر نسخه‌ی جدید فقط این‌جا اضافه می‌شود
                 .build()
 
