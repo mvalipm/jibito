@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.haze
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.review.ReviewScreen
@@ -93,7 +93,7 @@ fun MainScreen() {
                 Modifier
                     .fillMaxSize()
                     .consumeWindowInsets(WindowInsets.navigationBars)
-                    .hazeSource(state = hazeState)
+                    .haze(state = hazeState)
             ) {
                 if (pending.isNotEmpty() && tab != Tab.Review) {
                     Box(Modifier.statusBarsPadding()) {
