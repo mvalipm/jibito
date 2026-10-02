@@ -371,9 +371,10 @@ class TransactionRepositoryImpl(
 
     private suspend fun doSync(forceFull: Boolean): Int {
         ensureDefaultCategories()
-        // دسته‌ی پیش‌فرض برای نوع‌هایی که جمع ماه را عوض می‌کنند (خودپرداز ← پول نقد، برگشت پول ← نه درآمد)
+        // برگشت پول خودکار دسته‌ی «برگشت پول» می‌گیرد تا درآمد ماه را بزرگ نکند.
+        // برداشت از خودپرداز عمداً خودکار نیست: خرج حساب می‌شود و کاربر با یک لمس دسته‌اش را می‌گوید
+        // (پول نقد بالاخره جایی خرج می‌شود؛ ثبت دستی دوباره‌اش اصطکاک اضافه است).
         val kindDefaults = mapOf(
-            EventKind.CASH_WITHDRAWAL to db.categoryDao().byCode(Taxonomy.CODE_CASH)?.id,
             EventKind.REFUND to db.categoryDao().byCode(Taxonomy.CODE_REFUND)?.id,
         )
         val ownAccounts = dao.ownAccounts().toHashSet()

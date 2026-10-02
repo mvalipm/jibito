@@ -169,7 +169,6 @@
     <string name="glance_net_plus">%1$s اضافه</string>
     <string name="glance_net_minus">%1$s کسری</string>
     <string name="glance_saved">پس‌انداز %1$s</string>
-    <string name="glance_cash">نقد %1$s</string>
     <string name="glance_refund">برگشت پول %1$s</string>
     <string name="glance_no_spend">این ماه هنوز خرجی نیست.</string>
     <string name="glance_of_budget">بودجه %1$s</string>

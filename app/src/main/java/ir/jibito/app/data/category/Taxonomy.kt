@@ -190,8 +190,6 @@ object Taxonomy {
                 c("electronics.smart", "تجهیزات هوشمند"),
             ),
         ),
-        // بیرون از خرج: برداشت از خودپرداز فقط پول را از حساب به جیب می‌برد (خرجِ پول نقد را کاربر دستی ثبت می‌کند)
-        CategoryDef("cash", "پول نقد (خودپرداز)", "💵", "#5E8C61", countsAsSpend = false),
         // بیرون از خرج: پول از دست نرفته، فقط جابه‌جا شده
         CategoryDef(
             "savings", "پس‌انداز و قرض", "💰", "#8C8C8C",
@@ -216,8 +214,7 @@ object Taxonomy {
         CategoryDef("income.refund", "برگشت پول", "↺", "#7A8C99", countsAsSpend = false),
     )
 
-    /** کد دسته‌ی پیش‌فرض برای هر نوع رویداد که خودکار گذاشته می‌شود (فقط آن‌هایی که جمع ماه را عوض می‌کنند) */
-    const val CODE_CASH = "cash"
+    /** دسته‌ای که برگشت پول خودکار می‌گیرد (درآمد حساب نمی‌شود) */
     const val CODE_REFUND = "income.refund"
 
     /**

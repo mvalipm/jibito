@@ -19,6 +19,7 @@ class CategorySeeder(private val db: AppDatabase) {
         // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
         if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
             addMissingDefaults()
+            retireCashCategory()
             mergeDuplicates()
             syncColors()
             return
@@ -95,6 +96,21 @@ class CategorySeeder(private val db: AppDatabase) {
 
             addTree(Taxonomy.expense, null, flowType = 2, inheritedSpend = true)
             addTree(Taxonomy.income, null, flowType = 1, inheritedSpend = true)
+        }
+    }
+
+    /**
+     * دسته‌ی «پول نقد (خودپرداز)» فقط در یک نسخه‌ی آزمایشی (0.38.0) بود و خودپرداز را از خرج بیرون می‌برد.
+     * تصمیم نهایی: خودپرداز خرج است. اگر این دسته روی گوشی هست، بایگانی می‌شود و تراکنش‌هایش بی‌دسته می‌شوند
+     * (تا دوباره خرج حساب شوند و کاربر دسته‌شان را بگوید).
+     */
+    private suspend fun retireCashCategory() {
+        val cash = db.categoryDao().byCode("cash") ?: return
+        if (cash.isArchived) return
+        db.withTransaction {
+            db.transactionFlowDao().reassign(listOf(cash.id), null)
+            db.summaryDao().deleteBudget(cash.id)
+            db.categoryDao().archive(cash.id)
         }
     }
 

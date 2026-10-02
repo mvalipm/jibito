@@ -5,7 +5,6 @@ import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.entity.CategorySum
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
-import ir.jibito.app.data.category.Taxonomy
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
@@ -29,8 +28,6 @@ data class MonthSummary(
     val overallBudgetRial: Long? = null,
     /** پس‌انداز و قرض دادن: از حساب رفته ولی خرج حساب نمی‌شود */
     val excludedRial: Long = 0,
-    /** برداشت از خودپرداز (پول نقد): خرج حساب نمی‌شود؛ جزو excludedRial هم نیست */
-    val cashRial: Long = 0,
     /** برگشت پول: درآمد حساب نمی‌شود (پولِ خود کاربر بود که برگشت) */
     val refundRial: Long = 0,
 ) {
@@ -180,12 +177,6 @@ class BudgetRepositoryImpl(
                 .sortedByDescending { it.first.spentRial }
                 .map { it.first }
 
-            // پول نقد (خودپرداز) جدا از پس‌انداز نشان داده می‌شود
-            val cashIds = expenseCategories.filter { c ->
-                SpendRollup.rootOf(c, expenseCategories.associateBy { it.id }).code == Taxonomy.CODE_CASH
-            }.mapTo(HashSet()) { it.id }
-            val cash = spendSums.filter { it.categoryId in cashIds }.sumOf { it.totalRial }
-
             return MonthSummary(
                 month = month,
                 totalSpentRial = spend.total,
@@ -196,8 +187,7 @@ class BudgetRepositoryImpl(
                 incomeCategories = incomeRoots,
                 uncategorizedIncomeRial = income.uncategorized,
                 overallBudgetRial = overallBudgetRial,
-                excludedRial = spend.excluded - cash,
-                cashRial = cash,
+                excludedRial = spend.excluded,
                 refundRial = income.excluded,
             )
         }
