@@ -34,7 +34,9 @@
     <string name="tx_balance">مانده: %1$s</string>
     <string name="notif_channel_name">تراکنش‌های تازه</string>
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
-    <string name="notif_question">این خرج مال چی بود؟</string>
+    <string name="notif_question">مال چی بود؟ یه لمس کافیه</string>
+    <string name="notif_confirmed">✓ رفت تو «%1$s»</string>
+    <string name="notif_undo">برگردون</string>
     <string name="tx_ask_expense">مال چی بود؟</string>
     <string name="tx_ask_income">از کجا اومد؟</string>
     <string name="tx_failed_meta">ناموفق · پول برگشت</string>
@@ -218,11 +220,14 @@
     <string name="budget_dialog_cancel">انصراف</string>
     <string name="budget_channel_name">هشدار بودجه</string>
     <string name="budget_channel_desc">وقتی خرج یک دسته به ۸۰٪ بودجه برسه یا ازش رد بشه</string>
-    <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
-    <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
-    <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
-    <string name="budget_alert_overall_warning">۸۰٪ بودجه‌ی کل این ماه مصرف شد</string>
-    <string name="budget_alert_overall_over">بودجه‌ی کل این ماه تموم شد!</string>
+    <string name="budget_alert_warning">%1$s به ۸۰٪ بودجه‌ش رسید</string>
+    <string name="budget_alert_over">%1$s این ماه یه کم شیطونی کرد</string>
+    <string name="budget_alert_body">%1$s از سقف %2$s خرج شده</string>
+    <string name="budget_alert_days_left">%1$d روز تا آخر ماه</string>
+    <string name="budget_alert_mute">تا آخر ماه ساکت</string>
+    <string name="budget_alert_open">ببینم کجاها</string>
+    <string name="budget_alert_overall_warning">به ۸۰٪ بودجه‌ی کل ماه رسیدی</string>
+    <string name="budget_alert_overall_over">این ماه از بودجه‌ی کل زدی بیرون</string>
     <string name="overall_set_budget">+ تعیین بودجه‌ی کل ماه</string>
     <string name="overall_remaining">%1$s مونده از %2$s</string>
     <string name="overall_over">%1$s بیشتر از بودجه‌ی %2$s</string>
@@ -392,9 +397,11 @@
     <!-- خلاصه‌ی هفتگی -->
     <string name="digest_channel_name">خلاصه‌ی هفتگی</string>
     <string name="digest_channel_desc">جمعه‌ها عصر: این هفته چقدر خرج شد و بیشترش کجا رفت</string>
-    <string name="digest_title">این هفته %1$s تومان خرج کردی</string>
+    <string name="digest_title">هفته‌ای که گذشت: %1$s تومان</string>
     <string name="digest_more">%1$d٪ بیشتر از هفته‌ی قبل</string>
     <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل</string>
+    <string name="digest_less_cheer">%1$d٪ کمتر از هفته‌ی قبل؛ آفرین!</string>
+    <string name="digest_bars">۷ روز اخیر: %1$s</string>
     <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
     <string name="digest_top">بیشترین: %1$s</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>

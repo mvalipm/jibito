@@ -51,4 +51,28 @@ object WeeklyDigestRule {
         val changePercent: Int?
             get() = if (lastWeekRial < 1_000_000L) null else Math.round((thisWeekRial - lastWeekRial) * 100.0 / lastWeekRial).toInt()
     }
+
+    /** خرج هر کدام از ۷ روز اخیر (۲۴ ساعت‌های منتهی به now)، قدیمی‌ترین اول */
+    fun dailyTotals(spends: List<Triple<Long, Long, Long?>>, now: Long): List<Long> {
+        val totals = LongArray(7)
+        for ((time, amount, _) in spends) {
+            val daysAgo = ((now - 1 - time) / DAY_MS).toInt()
+            if (time < now && daysAgo in 0..6) totals[6 - daysAgo] += amount
+        }
+        return totals.toList()
+    }
+
+    /**
+     * نمودار کوچک متنی «▂▅▃▇▄█▁» برای متن نوتیفیکیشن (بدون نمای سفارشی، روی همه‌ی گوشی‌ها یکسان).
+     * روز بی‌خرج پایین‌ترین پله را می‌گیرد تا جای روز خالی نماند.
+     */
+    fun sparkline(values: List<Long>): String {
+        val max = values.maxOrNull()?.takeIf { it > 0 } ?: return ""
+        return values.joinToString("") { v ->
+            val step = ((v.toDouble() / max) * (BARS.length - 1)).let { Math.round(it).toInt() }
+            BARS[step.coerceIn(0, BARS.length - 1)].toString()
+        }
+    }
+
+    private const val BARS = "▁▂▃▄▅▆▇█"
 }

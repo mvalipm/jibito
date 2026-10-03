@@ -61,6 +61,11 @@
         <receiver
             android:name=".notify.CategoryActionReceiver"
             android:exported="false" />
+
+        <!-- «تا آخر ماه ساکت» روی هشدار بودجه -->
+        <receiver
+            android:name=".notify.BudgetMuteReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

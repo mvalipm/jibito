@@ -21,7 +21,8 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.Money
 
 /**
- * نوتیفیکیشن «این خرج مال چی بود؟» (یا برای واریز: «این پول از کجا اومد؟») با ۳ دکمه‌ی دسته.
+ * نوتیفیکیشن «مال چی بود؟» (یا برای واریز: «این پول از کجا اومد؟») با ۳ دکمه‌ی دسته؛
+ * بعد از انتخاب، چند ثانیه «✓ رفت تو …» با «برگردون» نشان می‌دهد.
  *
  * قانون‌ها:
  * - فقط برای تراکنش‌های تازه (حداکثر ۳۰ دقیقه‌ی اخیر) که هنوز دسته ندارند و قبلاً نوتیفیکیشن نگرفته‌اند.
@@ -49,7 +50,7 @@ class TransactionNotifier(
                 flow.notifiedAt != null -> Unit
                 // بی‌دسته ← «مال چی بود؟» با دکمه‌ها
                 flow.categoryId == null -> {
-                    if (show(flow)) dao.markNotified(flow.id, now)
+                    if (showQuestion(flow)) dao.markNotified(flow.id, now)
                 }
                 // اپ خودش دسته گذاشته ← یک خبر آرام: «✓ رفت‌وآمد (خودکار)»؛ برای تغییر، روی آن بزن
                 flow.isAutoCategorized -> {
@@ -61,32 +62,38 @@ class TransactionNotifier(
         }
     }
 
-    private suspend fun show(flow: TransactionFlowEntity): Boolean {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return false
-        }
-
+    /** عنوان مثل ردیف فهرست: «−۱۸۵٬۰۰۰ تومان · کافه لمیز» (بدون طرف حساب: «… · برداشت از بانک ملت») */
+    private fun titleOf(flow: TransactionFlowEntity): String {
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
         val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
-        val bankName = BankDirectory.byId(flow.bankId)?.name
-        // مثل فهرست تراکنش‌ها: «برداشت» یا «واریز»، نه «خرید از …»
-        val kind = context.getString(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal)
-        val title = listOfNotNull(amount, kind, bankName).joinToString(" · ")
-
-        val openApp = PendingIntent.getActivity(
-            context,
-            notificationId(flow.id),
-            MainActivity.openTransactionIntent(context, flow.id),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        val bankName = BankDirectory.byId(flow.bankId)?.name ?: context.getString(R.string.bank_unknown)
+        val who = flow.merchant ?: context.getString(
+            if (isDeposit) R.string.tx_deposit_to else R.string.tx_withdrawal_from,
+            bankName,
         )
+        return "$amount · $who"
+    }
 
+    private fun openIntent(flow: TransactionFlowEntity): PendingIntent = PendingIntent.getActivity(
+        context,
+        notificationId(flow.id),
+        MainActivity.openTransactionIntent(context, flow.id),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    private fun canPost(): Boolean = Build.VERSION.SDK_INT < 33 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    /** «مال چی بود؟ یه لمس کافیه» با ۳ دکمه‌ی دسته (برگرداندن از «برگردون» هم همین را دوباره نشان می‌دهد) */
+    internal suspend fun showQuestion(flow: TransactionFlowEntity): Boolean {
+        if (!canPost()) return false
+        ensureChannel()
+        val isDeposit = flow.flowType == FlowType.DEPOSIT.code
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
-            .setContentTitle(title)
+            .setContentTitle(titleOf(flow))
             .setContentText(context.getString(if (isDeposit) R.string.notif_question_income else R.string.notif_question))
-            .setContentIntent(openApp)
+            .setContentIntent(openIntent(flow))
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -98,7 +105,7 @@ class TransactionNotifier(
             builder.addAction(
                 0,
                 listOfNotNull(category.icon, category.name).joinToString(" "),
-                CategoryActionReceiver.pendingIntent(context, flow.id, category.id),
+                CategoryActionReceiver.pickIntent(context, flow.id, category.id),
             )
         }
 
@@ -106,12 +113,33 @@ class TransactionNotifier(
         return true
     }
 
+    /**
+     * بعد از زدن یکی از دکمه‌های دسته: همان نوتیفیکیشن (بی‌صدا) می‌شود «✓ رفت تو «کافه»» با دکمه‌ی «برگردون»
+     * و چند ثانیه بعد خودش بسته می‌شود؛ حس «کار تمام شد» به‌جای ناپدید شدن ناگهانی.
+     */
+    internal fun showConfirmed(flow: TransactionFlowEntity, category: CategoryEntity) {
+        if (!canPost()) return
+        ensureChannel()
+        val label = listOfNotNull(category.icon, category.name).joinToString(" ")
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(context.getString(R.string.notif_confirmed, label))
+            .setContentText(titleOf(flow))
+            .setContentIntent(openIntent(flow))
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setTimeoutAfter(CONFIRM_VISIBLE_MILLIS)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .setWhen(flow.dateEpoch)
+            .setShowWhen(true)
+            .addAction(0, context.getString(R.string.notif_undo), CategoryActionReceiver.undoIntent(context, flow.id))
+            .build()
+        NotificationManagerCompat.from(context).notify(notificationId(flow.id), notification)
+    }
+
     private suspend fun showAutoConfirm(flow: TransactionFlowEntity): Boolean {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return false
-        }
+        if (!canPost()) return false
         ensureAutoChannel()
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
         val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
@@ -179,6 +207,8 @@ class TransactionNotifier(
         const val CHANNEL_ID = "transactions"
         const val AUTO_CHANNEL_ID = "auto_categorized"
         private const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
+        /** نوتیفیکیشن «✓ رفت تو …» چقدر بماند */
+        private const val CONFIRM_VISIBLE_MILLIS = 5_000L
 
         fun notificationId(transactionId: Long): Int = (transactionId % Int.MAX_VALUE).toInt()
     }

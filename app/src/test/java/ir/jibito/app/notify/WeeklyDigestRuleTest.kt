@@ -59,4 +59,25 @@ class WeeklyDigestRuleTest {
         assertEquals(40, d.changePercent)
         assertNull(WeeklyDigestRule.Digest(5, 0, null).changePercent)
     }
+
+    @Test
+    fun `خرج هر روز از ۷ روز اخیر، قدیمی‌ترین اول`() {
+        val now = at(3, 19)
+        val spends = listOf(
+            Triple(at(3, 10), 100L, null),        // امروز
+            Triple(at(3, 18, 59), 50L, null),     // امروز
+            Triple(at(2, 12), 30L, 1L),           // ۳۱ ساعت پیش: روز قبل
+            Triple(now - 6 * WeeklyDigestRule.DAY_MS - 1000, 7L, null), // ابتدای پنجره‌ی ۷ روزه
+            Triple(now - 7 * WeeklyDigestRule.DAY_MS - 1000, 999L, null), // بیرون پنجره
+            Triple(now + 1000, 999L, null),       // آینده
+        )
+        assertEquals(listOf(7L, 0L, 0L, 0L, 0L, 30L, 150L), WeeklyDigestRule.dailyTotals(spends, now))
+    }
+
+    @Test
+    fun `نمودار متنی ۷ روز`() {
+        assertEquals("▁▅█", WeeklyDigestRule.sparkline(listOf(0L, 50L, 100L)))
+        assertEquals("", WeeklyDigestRule.sparkline(listOf(0L, 0L)))
+        assertEquals("", WeeklyDigestRule.sparkline(emptyList()))
+    }
 }

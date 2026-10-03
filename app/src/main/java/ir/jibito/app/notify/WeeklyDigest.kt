@@ -53,13 +53,15 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
         }
         val digest = WeeklyDigestRule.summarize(spends, now)
         // هفته‌ی بی‌خرج: چیزی برای گفتن نیست (و نوتیفیکیشن بی‌فایده نمی‌فرستیم)
-        if (digest.thisWeekRial == 0L || show(digest, digest.topRootId?.let { byId[it]?.name })) {
+        val bars = WeeklyDigestRule.sparkline(WeeklyDigestRule.dailyTotals(spends, now))
+        if (digest.thisWeekRial == 0L || show(digest, digest.topRootId?.let { byId[it]?.name }, bars)) {
             prefs.edit().putLong(KEY_LAST_SLOT, WeeklyDigestRule.lastSlot(now)).apply()
         }
     }
 
     /** true اگر نشان داده شد (بدون اجازه‌ی نوتیفیکیشن، دفعه‌ی بعد دوباره امتحان می‌شود) */
-    private fun show(d: WeeklyDigestRule.Digest, topName: String?): Boolean {
+    /** @param bars نمودار متنی ۷ روز («▂▅▃▇▄█▁»)؛ در متن بازشده‌ی نوتیفیکیشن می‌آید */
+    private fun show(d: WeeklyDigestRule.Digest, topName: String?, bars: String): Boolean {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -70,6 +72,7 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
             when {
                 kotlin.math.abs(p) < 3 -> context.getString(R.string.digest_same)
                 p > 0 -> context.getString(R.string.digest_more, p)
+                p <= -10 -> context.getString(R.string.digest_less_cheer, -p)
                 else -> context.getString(R.string.digest_less, -p)
             }
         }
@@ -86,6 +89,13 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
             .setSmallIcon(R.drawable.ic_stat_jibito)
             .setContentTitle(context.getString(R.string.digest_title, Money.compact(d.thisWeekRial)))
             .apply { if (body.isNotBlank()) setContentText(body) }
+            .apply {
+                // بازشده: نمودار ۷ روز بالای متن (در متن راست‌به‌چپ، قدیمی‌ترین روز سمت راست)
+                if (bars.isNotEmpty()) {
+                    val expanded = listOf(context.getString(R.string.digest_bars, bars), body).filter { it.isNotBlank() }.joinToString("\n")
+                    setStyle(NotificationCompat.BigTextStyle().bigText(expanded))
+                }
+            }
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setColor(ContextCompat.getColor(context, R.color.jibito_primary))

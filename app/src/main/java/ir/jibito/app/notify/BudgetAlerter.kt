@@ -16,6 +16,7 @@ import ir.jibito.app.R
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.SpendRollup
+import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 
@@ -70,7 +71,7 @@ class BudgetAlerter(
             val title = context.getString(
                 if (level >= 100) R.string.budget_alert_overall_over else R.string.budget_alert_overall_warning
             )
-            notify(OVERALL_NOTIFICATION_ID, title, spent, budget.monthlyLimitRial)
+            notify(OVERALL_NOTIFICATION_ID, title, spent, budget.monthlyLimitRial, month, categoryId = null)
             dao.markOverallAlerted(month.key, level)
         }
     }
@@ -83,17 +84,29 @@ class BudgetAlerter(
             context.getString(R.string.budget_alert_warning, label)
         }
         // یک نوتیفیکیشن ثابت برای هر دسته؛ هشدار ۱۰۰٪ جای هشدار ۸۰٪ را می‌گیرد
-        notify(NOTIFICATION_BASE + categoryId.toInt(), title, spent, limit)
+        notify(notificationId(categoryId), title, spent, limit, JalaliMonth.current(), categoryId)
     }
 
-    private fun notify(id: Int, title: String, spent: Long, limit: Long) {
+    /**
+     * نوار پیشرفت (چقدر از سقف رفته)، «۲٫۲ میلیون از سقف ۲ میلیون · ۱۲ روز تا آخر ماه»
+     * و دو دکمه: «ببینم کجاها» و «تا آخر ماه ساکت» (برای همین دسته، فقط همین ماه).
+     * @param categoryId null یعنی بودجه‌ی کل ماه
+     */
+    private fun notify(id: Int, title: String, spent: Long, limit: Long, month: JalaliMonth, categoryId: Long?) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }
         ensureChannel()
-        val text = context.getString(R.string.budget_alert_body, Money.toman(spent), Money.toman(limit))
+        val body = context.getString(R.string.budget_alert_body, Money.compact(spent), Money.compact(limit))
+        val daysLeft = ((month.endMillis() - System.currentTimeMillis()) / DAY_MS + 1).toInt()
+        val text = if (daysLeft > 0) {
+            "$body · " + Jalali.toPersianDigits(context.getString(R.string.budget_alert_days_left, daysLeft))
+        } else {
+            body
+        }
+        val percent = if (limit > 0) (spent * 100 / limit).toInt().coerceIn(0, 100) else 100
 
         val openApp = PendingIntent.getActivity(
             context,
@@ -105,10 +118,14 @@ class BudgetAlerter(
             .setSmallIcon(R.drawable.ic_stat_jibito)
             .setContentTitle(title)
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setProgress(100, percent, false)
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .addAction(0, context.getString(R.string.budget_alert_open), openApp)
+            .addAction(0, context.getString(R.string.budget_alert_mute), BudgetMuteReceiver.intent(context, id, categoryId, month.key))
             .build()
         NotificationManagerCompat.from(context).notify(id, notification)
     }
@@ -130,5 +147,8 @@ class BudgetAlerter(
         const val CHANNEL_ID = "budget"
         private const val NOTIFICATION_BASE = 1_000_000_000
         private const val OVERALL_NOTIFICATION_ID = 999_999_999
+        private const val DAY_MS = 24L * 60 * 60 * 1000
+
+        fun notificationId(categoryId: Long): Int = NOTIFICATION_BASE + categoryId.toInt()
     }
 }
