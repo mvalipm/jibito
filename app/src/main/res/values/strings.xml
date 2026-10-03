@@ -415,7 +415,9 @@
     <string name="report_reason_merchant">طرف حساب غلطه</string>
     <string name="report_reason_transfer">باید انتقال به حساب خودم باشه</string>
     <string name="report_reason_other">چیز دیگه</string>
-    <string name="report_send">ارسال</string>
+    <string name="report_send_bale">ارسال در بله</string>
+    <string name="report_send_other">راه دیگه…</string>
+    <string name="report_copied_paste">متن گزارش کپی شد؛ در چت پشتیبانی بچسبون و بفرست.</string>
     <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
 
     <!-- طرح «جیبی»: روشن/تیره و پنهان کردن مبلغ‌ها -->
