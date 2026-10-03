@@ -68,6 +68,8 @@ enum class MascotFace {
     UNSURE,
     /** چشم‌های باز و دهان باز: در حال خواندن پیامک‌ها */
     CHOMP,
+    /** کنجکاو («این چیه؟»)، مثل UNSURE */
+    CURIOUS,
 }
 
 /**
@@ -85,10 +87,10 @@ fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = 
             drawRoundRect(MascotFlap, topLeft = Offset(14f, 34f), size = Size(92f, 16f), cornerRadius = CornerRadius(5f, 5f))
             when (face) {
                 MascotFace.HAPPY -> drawPath(smilePath, Color.White, style = Stroke(width = smileStroke, cap = StrokeCap.Round))
-                MascotFace.UNSURE, MascotFace.CHOMP -> {
+                MascotFace.UNSURE, MascotFace.CURIOUS, MascotFace.CHOMP -> {
                     drawOval(Color.White, topLeft = Offset(38f, 71f), size = Size(16f, 18f))
                     drawOval(Color.White, topLeft = Offset(66f, 71f), size = Size(16f, 18f))
-                    if (face == MascotFace.UNSURE) {
+                    if (face != MascotFace.CHOMP) {
                         drawCircle(MascotInk, radius = 4f, center = Offset(48f, 76f))
                         drawCircle(MascotInk, radius = 4f, center = Offset(76f, 76f))
                         drawLine(Color.White, Offset(54f, 100f), Offset(66f, 100f), strokeWidth = 4f, cap = StrokeCap.Round)
@@ -100,6 +102,19 @@ fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = 
                 }
             }
         }
+    }
+}
+
+/** همان [Mascot] با امضای صفحه‌های خوش‌آمد، اجازه و تنظیمات */
+@Composable
+fun PocketMascot(face: MascotFace, size: Dp = 140.dp, modifier: Modifier = Modifier) = Mascot(size, face, modifier)
+
+/** «حذف انیمیشن‌ها»ی گوشی روشن است؟ */
+@Composable
+fun rememberMotionOff(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember {
+        android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     }
 }
 

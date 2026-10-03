@@ -35,6 +35,19 @@ import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.welcome.WelcomeScreen
 import org.junit.Test
+import android.provider.Settings
+import org.robolectric.RuntimeEnvironment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.FrameLayout
+import ir.jibito.app.widget.SpendWidget
+import ir.jibito.app.ui.settings.PermissionBanner
+import ir.jibito.app.ui.settings.SettingsSection
+import ir.jibito.app.ui.settings.ThemePicker
+import ir.jibito.app.ui.theme.JibitoIcons
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -78,6 +91,12 @@ class ScreenshotTest {
     fun fixZone() {
         savedZone = TimeZone.getDefault()
         TimeZone.setDefault(TimeZone.getTimeZone(ZONE))
+    }
+
+    /** «حذف انیمیشن‌ها»ی گوشی: دموی خوش‌آمد و انیمیشن‌های بی‌پایان ثابت می‌مانند تا تصویرها هر بار یکی باشند */
+    @Before
+    fun disableAnimations() {
+        Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
     }
 
     @After
@@ -269,6 +288,50 @@ class ScreenshotTest {
         }
         for ((style, dark) in variants) {
             shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت"), onDone = {}) }
+        }
+    }
+
+    @Test
+    fun widget() {
+        val cases = listOf(
+            "calm" to SpendWidget.Numbers(6_050_000, 60_000_000, 300_000_000),
+            "warn" to SpendWidget.Numbers(6_050_000, 255_000_000, 300_000_000),
+            "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000),
+            "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null),
+            "locked" to null,
+        )
+        for (dark in listOf(false, true)) {
+            RuntimeEnvironment.setQualifiers(if (dark) "+night" else "+notnight")
+            for ((name, n) in cases) {
+                val context = RuntimeEnvironment.getApplication()
+                val views = SpendWidget.views(context, n, now)
+                captureRoboImage(
+                    "src/test/screenshots/widget_${name}_${if (dark) "dark" else "light"}.png",
+                    roborazziOptions = options,
+                ) {
+                    Box(Modifier.padding(12.dp)) {
+                        AndroidView(
+                            factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
+                            modifier = Modifier.size(width = 260.dp, height = 115.dp),
+                        )
+                    }
+                }
+            }
+        }
+        RuntimeEnvironment.setQualifiers("+notnight")
+    }
+
+    @Test
+    fun settingsParts() {
+        for ((style, dark) in variants) {
+            shot("settings", style, dark) {
+                PermissionBanner(smsOk = true, notifyOk = false, onFix = {})
+                Spacer(Modifier.height(24.dp))
+                SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(style, onSelect = {}) }
+            }
+        }
+        shot("settings", AppThemeStyle.DEFAULT, false, fontScale = 2f) {
+            SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(AppThemeStyle.DEFAULT, onSelect = {}) }
         }
     }
 }
