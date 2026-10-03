@@ -46,6 +46,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.FrameLayout
 import ir.jibito.app.widget.SpendWidget
+import ir.jibito.app.ui.settings.PermissionBanner
+import ir.jibito.app.ui.settings.SettingsSection
+import ir.jibito.app.ui.settings.ThemePicker
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import ir.jibito.app.ui.common.MascotEmptyState
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.util.JalaliMonth
@@ -290,6 +295,21 @@ class ScreenshotTest {
                     MascotEmptyState(MascotFace.CURIOUS, "هنوز تراکنشی نیست", "پیامک بانک که بیاد، خودم ثبتش می‌کنم.", mascotSize = 96.dp)
                 }
             }
+        }
+    }
+
+    /** تنظیمات: بنر دسترسی، بخش بدون کارت با انتخاب پوسته (هر پوسته، روشن و تیره) */
+    @Test
+    fun settingsParts() {
+        for ((style, dark) in variants) {
+            shot("settings", style, dark) {
+                PermissionBanner(smsOk = true, notifyOk = false, onFix = {})
+                Spacer(Modifier.height(24.dp))
+                SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(style, onSelect = {}) }
+            }
+        }
+        shot("settings", AppThemeStyle.DEFAULT, false, fontScale = 2f) {
+            SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(AppThemeStyle.DEFAULT, onSelect = {}) }
         }
     }
 

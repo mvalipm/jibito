@@ -162,7 +162,9 @@
     <string name="settings_perm_notify">نوتیفیکیشن</string>
     <string name="settings_perm_ok">✓ فعال</string>
     <string name="settings_perm_missing">غیرفعال</string>
-    <string name="settings_open_app_settings">باز کردن تنظیمات اپ در گوشی</string>
+    <string name="settings_banner_sms">جیبیتو نمی‌تونه پیامک‌های بانکت رو بخونه؛ خرج‌ها خودکار ثبت نمی‌شن.</string>
+    <string name="settings_banner_notify">نوتیف خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود.</string>
+    <string name="settings_banner_fix">درستش کن</string>
     <string name="settings_version">جیبیتو · نسخه‌ی %1$s</string>
     <string name="summary_prev_month">ماه قبل</string>
     <string name="summary_next_month">ماه بعد</string>

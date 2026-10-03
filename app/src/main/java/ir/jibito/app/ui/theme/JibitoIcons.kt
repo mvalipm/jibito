@@ -203,4 +203,50 @@ object JibitoIcons {
             moveTo(3.5f, 20f); lineTo(20.5f, 20f)
         }
     }
+
+    /** پوسته / رنگ‌ها: پالت نقاشی */
+    val Palette: ImageVector by lazy {
+        lineIcon("palette") {
+            moveTo(12f, 3.5f)
+            arcTo(8.5f, 8.5f, 0f, isMoreThanHalf = true, isPositiveArc = false, x1 = 12.5f, y1 = 20.5f)
+            curveTo(14f, 20.5f, 14.5f, 19.5f, 13.8f, 18.4f)
+            curveTo(13f, 17.2f, 13.8f, 15.5f, 15.5f, 15.5f)
+            lineTo(17.5f, 15.5f)
+            curveTo(19.2f, 15.5f, 20.5f, 14.2f, 20.5f, 12f)
+            curveTo(20.5f, 7.3f, 16.7f, 3.5f, 12f, 3.5f)
+            close()
+            dot(8f, 10f)
+            dot(12f, 7.5f)
+            dot(16f, 10f)
+        }
+    }
+
+    /** لایه‌ها (نمایش دسته‌ها) */
+    val Layers: ImageVector by lazy {
+        lineIcon("layers") {
+            moveTo(12f, 4f); lineTo(20.5f, 8.5f); lineTo(12f, 13f); lineTo(3.5f, 8.5f); close()
+            moveTo(3.5f, 12.5f); lineTo(12f, 17f); lineTo(20.5f, 12.5f)
+            moveTo(3.5f, 16.5f); lineTo(12f, 21f); lineTo(20.5f, 16.5f)
+        }
+    }
+
+    /** قفل (قفل اپ و پشتیبان) */
+    val Lock: ImageVector by lazy {
+        lineIcon("lock") {
+            moveTo(5.5f, 11f); lineTo(18.5f, 11f); lineTo(18.5f, 20f); lineTo(5.5f, 20f); close()
+            moveTo(8f, 11f); lineTo(8f, 8f)
+            arcTo(4f, 4f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 16f, y1 = 8f)
+            lineTo(16f, 11f)
+            moveTo(12f, 14.5f); lineTo(12f, 16.5f)
+        }
+    }
+
+    /** خروجی گرفتن (فایل) */
+    val Export: ImageVector by lazy {
+        lineIcon("export") {
+            moveTo(12f, 3.5f); lineTo(12f, 14.5f)
+            moveTo(7.5f, 8f); lineTo(12f, 3.5f); lineTo(16.5f, 8f)
+            moveTo(4.5f, 13f); lineTo(4.5f, 19.5f); lineTo(19.5f, 19.5f); lineTo(19.5f, 13f)
+        }
+    }
 }
