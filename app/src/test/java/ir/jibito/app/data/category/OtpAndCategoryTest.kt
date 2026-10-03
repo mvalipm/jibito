@@ -49,6 +49,8 @@ class OtpAndCategoryTest {
         assertEquals("اقامت", CategorySuggester.suggest("اسنپ تریپ"))
         assertNull(CategorySuggester.suggest("فروشگاه اینترنتی دیجی کالا"))
         assertEquals("شارژ موبایل", CategorySuggester.suggest("ایرانسل"))
+        assertEquals("بسته اینترنت موبایل", CategorySuggester.suggest("ایرانسل - بسته اینترنت"))
+        assertEquals("اینترنت خانگی", CategorySuggester.suggest("شاتل"))
         assertNull(CategorySuggester.suggest("کارت/حساب …5678"))
         assertNull(CategorySuggester.suggest(null))
     }

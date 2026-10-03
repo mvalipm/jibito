@@ -18,8 +18,8 @@ class TaxonomyTest {
     }
 
     @Test
-    fun `۱۳ دسته‌ی اصلی خرج + پس‌انداز و قرض، بدون «سایر»`() {
-        assertEquals(13, Taxonomy.expense.count { it.countsAsSpend })
+    fun `۱۴ دسته‌ی اصلی خرج + پس‌انداز و قرض، بدون «سایر»`() {
+        assertEquals(14, Taxonomy.expense.count { it.countsAsSpend })
         assertFalse(all.any { it.name == "سایر" })
         assertFalse(Taxonomy.expense.single { it.code == "savings" }.countsAsSpend)
     }
@@ -41,6 +41,10 @@ class TaxonomyTest {
         val names = all.map { it.name }.toSet()
         for (t in CategorySuggester.targets) assertTrue("پیشنهاد «$t» در ساختار نیست", t in names)
         for (code in Taxonomy.OLD_TO_NEW.values.filterNotNull()) assertTrue(code, Taxonomy.byCode(code) != null)
+        for ((old, new) in Taxonomy.MOVED) {
+            assertTrue(old, Taxonomy.byCode(old) == null)
+            assertTrue(new, Taxonomy.byCode(new) != null)
+        }
     }
 
     @Test

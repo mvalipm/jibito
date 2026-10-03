@@ -25,6 +25,7 @@ object CategoryPalette {
         "finance" to LIGHT[6],
         "fun" to LIGHT[7],
         "education" to LIGHT[0],
+        "internet" to LIGHT[1],
         "pets" to LIGHT[3],
         "beauty" to LIGHT[4],
         "sport" to LIGHT[2],
