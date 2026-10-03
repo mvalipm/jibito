@@ -192,6 +192,38 @@ class PurchaseLinkerTest {
     }
 
     @Test
+    fun `پیامک‌های واقعی ملی - دو برداشت و یک اصلاحیه ← اصلاحیه برگشتِ برداشتِ دوم است`() {
+        val bank = BankDirectory.byId(melli)!!
+        val bodies = listOf(
+            "بانك ملي ايران\nبرداشت:1,000,000-\nحساب:41007\nمانده:21,814,555\n0524-19:00",
+            "بانك ملي ايران\nبرداشت:1,000,000-\nحساب:41007\nمانده:20,814,555\n0524-19:01",
+            "بانك ملي ايران\nاصـلاحيه:1,000,000+\nحساب:41007\nمانده:21,814,555\n0524-19:02",
+        )
+        val txs = bodies.mapIndexed { i, body ->
+            TxRecord(
+                i + 1L, t0 + i * min, melli, TransactionParser.parse(bank, body)!!,
+                PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+            )
+        }
+        val result = PurchaseLinker.link(txs, emptyList()).associateBy { it.record.id }
+        assertEquals(setOf(1L, 2L), result.keys) // اصلاحیه جدا نشان داده نمی‌شود
+        assertFalse(result.getValue(1).isFailedPurchase) // برداشت اول واقعاً خرج شده
+        assertEquals(3L, result.getValue(2).refund!!.id)
+    }
+
+    @Test
+    fun `چند برداشتِ ممکن بدون زنجیره‌ی مانده ← نزدیک‌ترین برداشت`() {
+        val txs = listOf(
+            tx(1, t0, FlowType.WITHDRAWAL, 1_000_000, balance = null),
+            tx(2, t0 + min, FlowType.WITHDRAWAL, 1_000_000, balance = null),
+            tx(3, t0 + 2 * min, FlowType.DEPOSIT, 1_000_000, balance = null, isCorrection = true),
+        )
+        val result = PurchaseLinker.link(txs, emptyList()).associateBy { it.record.id }
+        assertFalse(result.getValue(1).isFailedPurchase)
+        assertEquals(3L, result.getValue(2).refund!!.id)
+    }
+
+    @Test
     fun `خروجی از جدید به قدیم مرتب است`() {
         val txs = listOf(withdraw(2, t0), deposit(3, t0 + 10 * min, amount = 5))
         val result = PurchaseLinker.link(txs, emptyList())

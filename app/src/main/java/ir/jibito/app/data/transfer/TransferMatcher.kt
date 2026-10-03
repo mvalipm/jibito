@@ -12,6 +12,8 @@ data class TransferCandidate(
     val balanceRial: Long? = null,
     /** متن پیامک از پایا/ساتنا/حواله می‌گوید ← انتقال بین‌بانکی که دیر می‌نشیند */
     val isInterbank: Boolean = false,
+    /** پیامکِ «اصلاحیه» (برگشت پول از طرف بانک) ← هیچ‌وقت انتقال نیست */
+    val isCorrection: Boolean = false,
 )
 
 /** یک پیشنهاد: «این برداشت و این واریز احتمالاً انتقال بین حساب‌های خودت است». */
@@ -26,6 +28,7 @@ data class TransferPair(val withdrawalId: Long, val depositId: Long)
  *   اگر متن یکی از دو پیامک از پایا/ساتنا/حواله بگوید، حداکثر ۷۲ ساعت (تعطیلات آخر هفته).
  * - برداشت و واریز روی «همان حساب» جفت نمی‌شوند: هم‌بانک و مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت
  *   ← پول برگشته، نه انتقال.
+ * - واریزِ «اصلاحیه» هیچ‌وقت انتقال نیست (بانک پولِ تراکنشی را برگردانده).
  * - هر تراکنش حداکثر در یک جفت.
  * - برداشت‌ها به ترتیب زمان؛ هر برداشت نزدیک‌ترین واریزِ مناسبِ آزاد بعد از خودش را می‌گیرد.
  *
@@ -67,7 +70,7 @@ object TransferMatcher {
     fun findPairs(items: List<TransferCandidate>): List<TransferPair> {
         val order = compareBy<TransferCandidate>({ it.dateMillis }, { it.id })
         val withdrawals = items.filter { it.isWithdrawal }.sortedWith(order)
-        val deposits = items.filter { !it.isWithdrawal }.sortedWith(order)
+        val deposits = items.filter { !it.isWithdrawal && !it.isCorrection }.sortedWith(order)
         val depositsByAmount = deposits.groupBy { it.amountRial }
         val datesByAmount = depositsByAmount.mapValues { (_, list) -> LongArray(list.size) { list[it].dateMillis } }
         val depositDates = LongArray(deposits.size) { deposits[it].dateMillis }

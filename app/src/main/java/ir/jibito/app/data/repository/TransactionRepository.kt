@@ -17,6 +17,8 @@ import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
+import ir.jibito.app.data.linking.PurchaseLinker
+import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.transfer.TransferCandidate
 import ir.jibito.app.data.transfer.TransferMatcher
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
@@ -199,6 +201,7 @@ class TransactionRepositoryImpl(
             val byId = rows.associateBy { it.id }
             TransferMatcher.findPairs(
                 rows.map {
+                    val text = SmsTextNormalizer.normalize(it.body)
                     TransferCandidate(
                         id = it.id,
                         isWithdrawal = it.transaction.type == FlowType.WITHDRAWAL,
@@ -206,7 +209,8 @@ class TransactionRepositoryImpl(
                         dateMillis = it.dateMillis,
                         bankId = it.bank?.id,
                         balanceRial = it.transaction.balanceRial,
-                        isInterbank = TransferMatcher.isInterbankText(it.body),
+                        isInterbank = TransferMatcher.isInterbankText(text),
+                        isCorrection = PurchaseLinker.isCorrectionText(text),
                     )
                 }
             ).mapNotNull { p ->

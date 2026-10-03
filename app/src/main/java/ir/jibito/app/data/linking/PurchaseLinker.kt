@@ -83,7 +83,11 @@ object PurchaseLinker {
         if (delay < 0) return false
         if (d.isCorrection && delay <= CORRECTION_WINDOW_MILLIS) return true
         if (delay > WINDOW_MILLIS) return false
-        if (linkedToOtp) return true
+        return linkedToOtp || balancesChain(w, d)
+    }
+
+    /** مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت ← هر دو روی یک حساب، پشت سر هم */
+    private fun balancesChain(w: TxRecord, d: TxRecord): Boolean {
         val wb = w.tx.balanceRial ?: return false
         val db = d.tx.balanceRial ?: return false
         return db - d.tx.amountRial == wb
@@ -119,15 +123,18 @@ object PurchaseLinker {
             if (fee > 0) feeOf[w.id] = fee
         }
 
-        // مرحله‌ی ۲: برداشت ← واریز همان مبلغ به همان بانک = برگشت پول
-        // (خریدِ تأییدشده: تا ۳ دقیقه؛ بقیه: همان حساب تا ۳ دقیقه، یا «اصلاحیه» تا ۷۲ ساعت)
+        // مرحله‌ی ۲: واریز همان مبلغ به همان بانک = برگشت پولِ یک برداشت
+        // (خریدِ تأییدشده: تا ۳ دقیقه؛ بقیه: همان حساب تا ۳ دقیقه، یا «اصلاحیه» تا ۷۲ ساعت).
+        // اگر چند برداشت ممکن است، اول برداشتی که مانده‌ها نشان می‌دهند همین واریز برگشتش است، وگرنه نزدیک‌ترین.
         val refundOf = HashMap<Long, TxRecord>()
-        for (w in txs) {
-            if (w.tx.type != FlowType.WITHDRAWAL) continue
-            val withOtp = w.id in linkedToOtp
-            val refund = txs.firstOrNull { d -> d.id !in usedRefunds && isRefund(w, d, withOtp) } ?: continue
-            usedRefunds += refund.id
-            refundOf[w.id] = refund
+        for (d in txs) {
+            if (d.tx.type != FlowType.DEPOSIT) continue
+            val candidates = txs.filter { w ->
+                w.tx.type == FlowType.WITHDRAWAL && w.id !in refundOf && isRefund(w, d, w.id in linkedToOtp)
+            }
+            val w = candidates.lastOrNull { balancesChain(it, d) } ?: candidates.lastOrNull() ?: continue
+            usedRefunds += d.id
+            refundOf[w.id] = d
         }
 
         return txs

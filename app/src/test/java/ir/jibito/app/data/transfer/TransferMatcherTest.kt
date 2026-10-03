@@ -104,6 +104,17 @@ class TransferMatcherTest {
     }
 
     @Test
+    fun `اصلاحیه هیچ‌وقت انتقال نیست، حتی وقتی برداشتِ دیگری وسطش آمده`() {
+        // ردیف‌های قدیمی: دو برداشت ۱ میلیونی و یک اصلاحیه که هنوز به برداشتِ دوم وصل نشده
+        val items = listOf(
+            TransferCandidate(1, true, 1_000_000, 0, bankId = 1, balanceRial = 21_814_555),
+            TransferCandidate(2, true, 1_000_000, min, bankId = 1, balanceRial = 20_814_555),
+            TransferCandidate(3, false, 1_000_000, 2 * min, bankId = 1, balanceRial = 21_814_555, isCorrection = true),
+        )
+        assertEquals(emptyList<TransferPair>(), TransferMatcher.findPairs(items))
+    }
+
+    @Test
     fun `هر واریز فقط یک بار جفت می‌شود و نزدیک‌ترین گرفته می‌شود`() {
         val pairs = TransferMatcher.findPairs(
             listOf(
@@ -119,7 +130,7 @@ class TransferMatcherTest {
     /** همان الگوریتم قبلی (همه‌ی واریزها برای هر برداشت)؛ نسخه‌ی سریع باید دقیقاً همین جواب را بدهد */
     private fun naive(items: List<TransferCandidate>): List<TransferPair> {
         val withdrawals = items.filter { it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
-        val deposits = items.filter { !it.isWithdrawal }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
+        val deposits = items.filter { !it.isWithdrawal && !it.isCorrection }.sortedWith(compareBy({ it.dateMillis }, { it.id }))
         val byAmount = deposits.groupBy { it.amountRial }
         val used = HashSet<Long>()
         val pairs = mutableListOf<TransferPair>()
@@ -152,6 +163,7 @@ class TransferMatcherTest {
                     bankId = random.nextInt(3),
                     balanceRial = listOf(null, 0L, 1_000_000L, 2_000_000L)[random.nextInt(4)],
                     isInterbank = random.nextInt(4) == 0,
+                    isCorrection = random.nextInt(6) == 0,
                 )
             }
             assertEquals("round $round", naive(items), TransferMatcher.findPairs(items))
