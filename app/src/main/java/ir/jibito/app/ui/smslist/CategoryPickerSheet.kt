@@ -46,6 +46,11 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.CategoryTint
+import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.common.amount
+import androidx.compose.foundation.layout.width
 import ir.jibito.app.domain.CategoryTree
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -126,7 +131,18 @@ fun CategoryPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = colors.surface,
+        containerColor = JibitoTheme.colors.sheet,
+        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
+        scrimColor = JibitoTheme.colors.scrim,
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 10.dp, bottom = 12.dp)
+                    .size(width = 40.dp, height = 5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(JibitoTheme.colors.handle)
+            )
+        },
     ) {
         // برگه در لایه‌ی جدایی کشیده می‌شود؛ جهت راست‌به‌چپ را دوباره تنظیم می‌کنیم
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -138,23 +154,38 @@ fun CategoryPickerSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp)
             ) {
-                // خلاصه‌ی تراکنش
+                // خلاصه‌ی تراکنش: طرف حساب · ساعت · بانک، مبلغ درشت، و سؤال
                 val t = transaction.transaction
-                val sign = if (t.type == FlowType.DEPOSIT) "+" else "−"
-                Text(
-                    text = stringResource(if (isDeposit) R.string.sheet_title_income else R.string.sheet_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                    color = colors.onSurface,
-                )
+                val jt = JibitoTheme.colors
                 Text(
                     text = listOfNotNull(
-                        "$sign ${Money.toman(t.amountRial)}",
-                        transaction.merchant ?: transaction.bank?.name,
-                        Jalali.format(transaction.dateMillis),
-                    ).joinToString("  ·  "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
+                        transaction.merchant,
+                        Jalali.time(transaction.dateMillis),
+                        transaction.bank?.name?.let(::shortBankName),
+                    ).joinToString(" · "),
+                    fontSize = 13.sp,
+                    color = jt.muted,
+                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    val amountColor = if (isDeposit) jt.income else colors.onSurface
+                    Text(if (isDeposit) "+" else "−", fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
+                    Spacer(Modifier.width(6.dp))
+                    Text(amount(Money.tomanNumber(t.amountRial)), fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        stringResource(R.string.unit_toman),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = jt.muted,
+                        modifier = Modifier.padding(bottom = 7.dp),
+                    )
+                }
+                Text(
+                    text = stringResource(if (isDeposit) R.string.sheet_title_income else R.string.sheet_title),
+                    modifier = Modifier.padding(top = 6.dp),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Black,
+                    color = colors.onSurface,
                 )
                 Spacer(Modifier.height(10.dp))
 
@@ -256,9 +287,8 @@ fun CategoryPickerSheet(
                                 Box(Modifier.weight(1f)) {
                                     if (root == null) {
                                         CategoryTile(
-                                            icon = "＋",
+                                            tint = CategoryTint(JibitoTheme.colors.chip, colors.primary, JibitoIcons.Plus, null),
                                             name = stringResource(if (isDeposit) R.string.custom_add_income_short else R.string.custom_add_root_short),
-                                            color = colors.primary,
                                             selected = false,
                                             open = false,
                                             onClick = { creating = CreateTarget(parentId = null) },
@@ -266,9 +296,8 @@ fun CategoryPickerSheet(
                                     } else {
                                         val hasSubs = childrenOf[root.id].orEmpty().isNotEmpty()
                                         CategoryTile(
-                                            icon = root.icon ?: "•",
+                                            tint = categoryTint(root.colorHex, root.icon),
                                             name = root.name,
-                                            color = root.colorHex.toColorOrNull() ?: colors.primary,
                                             selected = root.id == selectedRootId,
                                             open = root.id == openRootId,
                                             onClick = {
@@ -380,35 +409,36 @@ fun CategoryPickerSheet(
 
 private const val GRID_COLUMNS = 4
 
-/** کاشیِ یک دسته‌ی اصلی در شبکه: آیکون در دایره‌ی رنگی + اسم */
+/** کاشیِ یک دسته‌ی اصلی در شبکه (طرح «جیبی»): مربع گرد‌گوشه‌ی رنگی با آیکون خطی + اسم */
 @Composable
-private fun CategoryTile(icon: String, name: String, color: Color, selected: Boolean, open: Boolean, onClick: () -> Unit) {
+private fun CategoryTile(tint: CategoryTint, name: String, selected: Boolean, open: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (open) colors.surfaceVariant else Color.Transparent)
+            .background(if (open) JibitoTheme.colors.chip else Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 2.dp),
+            .padding(vertical = 7.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(if (selected) colors.primary else color.copy(alpha = 0.16f)),
-            contentAlignment = Alignment.Center,
-        ) { Text(icon, fontSize = 20.sp, color = if (selected) colors.onPrimary else colors.onSurface) }
-        Spacer(Modifier.height(4.dp))
+        CategoryIconTile(
+            tint,
+            size = 60.dp,
+            radius = 20.dp,
+            iconSize = 28.dp,
+            modifier = if (selected) Modifier.border(2.5.dp, tint.fg, RoundedCornerShape(20.dp)) else Modifier,
+        )
+        Spacer(Modifier.height(6.dp))
         Text(
             name,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected || open) FontWeight.Bold else FontWeight.Normal,
+            fontSize = 13.sp,
+            fontWeight = if (selected || open) FontWeight.Bold else FontWeight.Medium,
             color = colors.onSurface,
             maxLines = 2,
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
+            lineHeight = 18.sp,
         )
     }
 }
@@ -483,10 +513,11 @@ internal fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit,
         selected = selected,
         onClick = onClick,
         label = { Text(label, fontWeight = if (selected || highlighted) FontWeight.Bold else FontWeight.Normal) },
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(17.dp),
+        border = null,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = if (highlighted) colors.primary.copy(alpha = 0.10f) else Color.Transparent,
-            labelColor = if (highlighted) colors.primary else colors.onSurface,
+            containerColor = if (highlighted) JibitoTheme.colors.sugBg else JibitoTheme.colors.chip,
+            labelColor = if (highlighted) JibitoTheme.colors.sugFg else colors.onSurface,
             selectedContainerColor = colors.primary,
             selectedLabelColor = colors.onPrimary,
         ),

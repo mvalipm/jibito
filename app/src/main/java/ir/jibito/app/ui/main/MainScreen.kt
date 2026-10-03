@@ -193,7 +193,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                         composable(Tab.Transactions.route) {
                             SmsListScreen(
                                 onlyUncategorized = onlyUncategorized,
-                                onClearFilter = { onlyUncategorized = false },
+                                onFilterChange = { onlyUncategorized = it },
                                 openTransactionId = pendingOpen,
                                 onOpened = { pendingOpen = null },
                             )

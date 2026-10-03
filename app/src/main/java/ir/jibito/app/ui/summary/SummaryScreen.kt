@@ -2,7 +2,6 @@ package ir.jibito.app.ui.summary
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,6 +43,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.DarkMode
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.common.StatusBarOnColor
+import ir.jibito.app.ui.common.amount
+import ir.jibito.app.data.parser.FlowType
+import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.remember
 import androidx.activity.compose.BackHandler
 import ir.jibito.app.ui.main.LocalBottomBarSpace
@@ -59,8 +62,9 @@ import ir.jibito.app.util.Money
 import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
- * صفحه‌ی «خلاصه»، طرح «یک نگاه، بدون اسکرول»:
- * ۱) چقدر خرج کردم؟ ۲) تا آخر ماه می‌رسم؟ ۳) چه کاری لازم است؟ + خرج‌ها کجا رفته (۵ دسته‌ی اول).
+ * صفحه‌ی «خلاصه» (طرح «جیبی»):
+ * ۱) سرصفحه‌ی رنگی: خرج این ماه، بودجه و حال جیب. ۲) «کارهای لازم» به شکل استوری.
+ * ۳) «کجا رفت؟» با نوار سهم دسته‌ها. ۴) روند ۶ ماه اخیر.
  * فهرست کامل دسته‌ها، بودجه‌ها و درآمدها یک لمس دورتر است («همه‌ی دسته‌ها و بودجه‌ها»).
  */
 @Composable
@@ -87,78 +91,122 @@ fun SummaryScreen(
     // دسته‌ای که جزئیاتش باز است
     var detailId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showIdle by rememberSaveable { mutableStateOf(false) }
-    // فهرست کامل دسته‌ها و بودجه‌ها (به‌جای نمای «یک نگاه»)
+    // فهرست کامل دسته‌ها و بودجه‌ها (به‌جای نمای اصلی)
     var showAll by rememberSaveable { mutableStateOf(false) }
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
     val recurringFlow = remember { app.container.recurringSuggestions.observe() }
     val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
+    // چند خرج این ماه هنوز دسته ندارند (عدد استوری «خرج بی‌دسته»)
+    val uncategorizedFlow = remember {
+        app.container.transactionRepository.observeTransactions().map { list ->
+            val m = JalaliMonth.current()
+            val from = m.startMillis()
+            val to = m.endMillis()
+            list.count {
+                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
+                    it.transaction.type == FlowType.WITHDRAWAL && it.dateMillis in from until to
+            }
+        }
+    }
+    val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
     val notificationPrompt = rememberNotificationPrompt()
+    val themeSettings = app.container.themeSettings
+    val hidden by themeSettings.hideAmounts.collectAsState()
+    val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
 
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
             .background(colors.background)
-            .safeDrawingPadding()
     ) {
-        MonthSwitcher(
-            month = month,
-            canGoNext = month != JalaliMonth.current(),
-            onPrevious = viewModel::previousMonth,
-            onNext = viewModel::nextMonth,
-        )
-
         val s = summary
         if (s == null || s.month != month) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else {
-            if (!showAll) {
-                val attention = buildList {
-                    s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 100 }.forEach { c ->
-                        add(AttentionItem(JibitoIcons.Warning, stringResource(R.string.attn_over_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.DANGER) { detailId = c.categoryId })
-                    }
-                    s.categories.filter { c -> c.budgetRial?.let { BudgetLevel.of(c.spentRial, it) } == 80 }.forEach { c ->
-                        add(AttentionItem(JibitoIcons.Gauge, stringResource(R.string.attn_near_budget, c.name, Jalali.toPersianDigits("${c.spentRial * 100 / c.budgetRial!!}")), AttentionItem.Tone.WARN) { detailId = c.categoryId })
-                    }
-                    if (s.uncategorizedRial > 0 && s.month == JalaliMonth.current()) {
-                        add(AttentionItem(JibitoIcons.Tag, stringResource(R.string.attn_uncategorized, Money.compact(s.uncategorizedRial)), AttentionItem.Tone.NORMAL, onOpenUncategorized))
-                    }
-                    if (transferSuggestions.isNotEmpty()) {
-                        add(AttentionItem(JibitoIcons.Transfer, Jalali.toPersianDigits(stringResource(R.string.attn_transfers, transferSuggestions.size)), AttentionItem.Tone.NORMAL, onOpenTransactions))
-                    }
-                    recurringSuggestions.firstOrNull()?.let { r ->
-                        add(AttentionItem(JibitoIcons.Repeat, stringResource(R.string.attn_recurring, r.title), AttentionItem.Tone.NORMAL, onOpenSettings))
-                    }
-                    if (pendingReview > 0) {
-                        add(AttentionItem(JibitoIcons.Message, Jalali.toPersianDigits(stringResource(R.string.attn_review, pendingReview)), AttentionItem.Tone.NORMAL, onOpenReview))
-                    }
-                    // نوتیفیکیشن خاموش: اول فهرست، چون بدونش «این خرج مال چی بود؟» و هشدارها نمی‌آیند
-                    if (notificationPrompt.visible) {
-                        add(0, AttentionItem(JibitoIcons.Bell, stringResource(R.string.attn_notifications_off), AttentionItem.Tone.WARN, notificationPrompt.fix))
-                    }
-                }.take(4)
-                LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp + LocalBottomBarSpace.current),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    item(key = "hero") {
-                        GlanceHero(
-                            s,
-                            onEditBudget = { editingOverall = true },
-                            vsLastMonthPercent = trend?.takeIf { it.months.lastOrNull()?.month == s.month }?.vsLastMonthPercent,
+        } else if (!showAll) {
+            // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
+            StatusBarOnColor()
+            val stories = buildList {
+                if (notificationPrompt.visible) {
+                    add(TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, stringResource(R.string.todo_notif_off), notificationPrompt.fix))
+                }
+                if (uncategorizedCount > 0 && s.month == JalaliMonth.current()) {
+                    add(
+                        TodoStory(
+                            "uncat", t.coral, t.uncatBg, t.uncatFg, null,
+                            Jalali.toPersianDigits(uncategorizedCount.coerceAtMost(99).toString()),
+                            stringResource(R.string.todo_uncategorized), onOpenUncategorized,
+                        )
+                    )
+                }
+                s.categories.forEach { c ->
+                    val budget = c.budgetRial ?: return@forEach
+                    val level = BudgetLevel.of(c.spentRial, budget)
+                    if (level >= 80) {
+                        val tint = categoryTint(c.colorHex, c.icon)
+                        add(
+                            TodoStory(
+                                "budget-${c.categoryId}", if (level >= 100) t.alert else t.amber, tint.bg, tint.fg, tint.icon, tint.glyph,
+                                Jalali.toPersianDigits("${c.name} ${c.spentRial * 100 / budget}٪"),
+                            ) { detailId = c.categoryId }
                         )
                     }
-                    if (attention.isNotEmpty()) item(key = "attention") { AttentionCard(attention) }
-                    item(key = "where") {
-                        WhereCard(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                }
+                if (pendingReview > 0) {
+                    add(
+                        TodoStory(
+                            "review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null,
+                            Jalali.toPersianDigits(stringResource(R.string.todo_review, pendingReview)), onOpenReview,
+                        )
+                    )
+                }
+                if (transferSuggestions.isNotEmpty()) {
+                    add(TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, stringResource(R.string.todo_transfer), onOpenTransactions))
+                }
+                recurringSuggestions.firstOrNull()?.let { r ->
+                    add(TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, stringResource(R.string.todo_recurring, r.title), onOpenSettings))
+                }
+            }
+            val heroLine = moodOf(s, System.currentTimeMillis())
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp + LocalBottomBarSpace.current),
+            ) {
+                item(key = "hero") {
+                    SummaryHero(
+                        s,
+                        onPickMonth = viewModel::setMonth,
+                        onEditBudget = { editingOverall = true },
+                        dark = t.dark,
+                        onToggleDark = { themeSettings.setDarkMode(if (t.dark) DarkMode.LIGHT else DarkMode.DARK) },
+                        onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
+                    )
+                }
+                if (stories.isNotEmpty()) item(key = "todo") { TodoSection(stories) }
+                item(key = "where") {
+                    WhereSection(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                }
+                trend?.takeIf { tr -> tr.months.lastOrNull()?.month == s.month && tr.months.any { it.spentRial > 0 } }?.let { tr ->
+                    item(key = "trend") {
+                        TrendCard(
+                            tr,
+                            highlight = when (heroLine.mood) {
+                                Mood.CALM -> t.moodCalm
+                                Mood.WARN -> t.moodWarn
+                                Mood.OVER -> t.moodOver
+                            },
+                        )
                     }
                 }
-            } else {
+            }
+        } else {
+            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .padding(top = 12.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { showAll = false }
                     .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -168,7 +216,7 @@ fun SummaryScreen(
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.glance_all_title),
-                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
                 )
@@ -177,23 +225,18 @@ fun SummaryScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + LocalBottomBarSpace.current),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // روند ۶ ماه اخیر (لمس هر ستون، مبلغ همان ماه را نشان می‌دهد)
-                trend?.takeIf { t -> t.months.lastOrNull()?.month == s.month && t.months.any { it.spentRial > 0 } }?.let { t ->
-                    item(key = "trend") { TrendCard(t) }
-                }
-
                 item {
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
                         Text(
-                            stringResource(R.string.summary_categories),
-                            style = MaterialTheme.typography.titleMedium,
+                            stringResource(R.string.summary_categories) + " · " + s.month.title,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = colors.onBackground,
                         )
                         Text(
                             stringResource(R.string.summary_tap_for_detail),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = colors.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            color = t.muted,
                         )
                     }
                 }
@@ -214,7 +257,7 @@ fun SummaryScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable { showIdle = !showIdle }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
-                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.primary,
                         )
@@ -232,19 +275,20 @@ fun SummaryScreen(
                         Text(
                             stringResource(R.string.summary_income_categories),
                             modifier = Modifier.padding(top = 18.dp, start = 4.dp, end = 4.dp),
-                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = colors.onBackground,
                         )
                     }
-                    items(s.incomeCategories, key = { "in-" + it.categoryId }) { c -> IncomeRow(c.icon, c.name, c.spentRial) }
+                    items(s.incomeCategories, key = { "in-" + it.categoryId }) { c -> IncomeRow(c.colorHex, c.icon, c.name, c.spentRial) }
                     if (s.uncategorizedIncomeRial > 0) {
-                        item { IncomeRow("•", stringResource(R.string.summary_uncategorized), s.uncategorizedIncomeRial) }
+                        item { IncomeRow(null, null, stringResource(R.string.summary_uncategorized), s.uncategorizedIncomeRial) }
                     }
                 }
             }
-
             }
+        }
+        if (s != null && s.month == month) {
             s.categories.firstOrNull { it.categoryId == detailId }?.let { c ->
                 CategoryDetailSheet(
                     c = c,
@@ -256,7 +300,7 @@ fun SummaryScreen(
             s.categories.firstOrNull { it.categoryId == editing }?.let { c ->
                 BudgetDialog(
                     key = "cat-${c.categoryId}",
-                    title = stringResource(R.string.budget_dialog_title, listOfNotNull(c.icon, c.name).joinToString(" ")),
+                    title = stringResource(R.string.budget_dialog_title, c.name),
                     hint = stringResource(R.string.budget_dialog_hint),
                     initialRial = c.budgetRial,
                     suggestionRial = null,
@@ -286,40 +330,15 @@ fun SummaryScreen(
 }
 
 @Composable
-private fun MonthSwitcher(month: JalaliMonth, canGoNext: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // در چیدمان راست‌به‌چپ این آیکون‌ها خودشان آینه می‌شوند: «ماه قبل» سمت راست، «ماه بعد» سمت چپ
-        IconButton(onClick = onPrevious) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.summary_prev_month))
-        }
-        Text(
-            text = month.title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Black,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        IconButton(onClick = onNext, enabled = canGoNext) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.summary_next_month))
-        }
-    }
-}
-
-@Composable
 private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val base = ChartColors.forCategory(c.colorHex, isSystemInDarkTheme())
+    val tint = categoryTint(c.colorHex, c.icon)
+    val base = tint.fg
     val budget = c.budgetRial
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
     val barColor = when (level) {
-        100 -> colors.error
-        80 -> JibitoTheme.colors.warning
+        100 -> JibitoTheme.colors.alert
+        80 -> JibitoTheme.colors.amber
         else -> base
     }
     val idle = c.spentRial == 0L && budget == null
@@ -328,20 +347,13 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (idle) 0.dp else 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(40.dp)
-                        .background(base.copy(alpha = 0.16f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(c.icon ?: "•", fontSize = 18.sp)
-                }
+                CategoryIconTile(tint, size = 44.dp, radius = 15.dp, iconSize = 22.dp)
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -353,8 +365,8 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
                     Text(
                         text = when {
                             budget == null -> stringResource(R.string.summary_no_budget)
-                            level == 100 -> stringResource(R.string.summary_over_budget, Money.toman(c.spentRial - budget))
-                            else -> stringResource(R.string.summary_remaining, Money.toman(budget - c.spentRial))
+                            level == 100 -> stringResource(R.string.summary_over_budget, amount(Money.toman(c.spentRial - budget)))
+                            else -> stringResource(R.string.summary_remaining, amount(Money.toman(budget - c.spentRial)))
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (level == 100) colors.error else colors.onSurfaceVariant,
@@ -362,14 +374,14 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        Money.toman(c.spentRial),
+                        amount(Money.toman(c.spentRial)),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
                         color = if (idle) colors.onSurfaceVariant else colors.onSurface,
                     )
                     if (budget != null) {
                         Text(
-                            stringResource(R.string.summary_of_budget, Money.toman(budget)),
+                            stringResource(R.string.summary_of_budget, amount(Money.toman(budget))),
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.onSurfaceVariant,
                         )
@@ -404,21 +416,16 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
 }
 
 @Composable
-private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
+private fun IncomeRow(colorHex: String?, icon: String?, name: String, amountRial: Long) {
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier
             .fillMaxWidth()
-            .background(colors.surface, RoundedCornerShape(20.dp))
+            .background(colors.surface, RoundedCornerShape(22.dp))
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
-                .size(40.dp)
-                .background(JibitoTheme.colors.income.copy(alpha = 0.14f), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) { Text(icon ?: "•", fontSize = 18.sp) }
+        CategoryIconTile(categoryTint(colorHex, icon), size = 44.dp, radius = 15.dp, iconSize = 22.dp)
         Spacer(Modifier.size(12.dp))
         Text(
             name,
@@ -428,7 +435,7 @@ private fun IncomeRow(icon: String?, name: String, amountRial: Long) {
             color = colors.onSurface,
         )
         Text(
-            "+ " + Money.toman(amountRial),
+            amount("+ " + Money.toman(amountRial)),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Black,
             color = JibitoTheme.colors.income,

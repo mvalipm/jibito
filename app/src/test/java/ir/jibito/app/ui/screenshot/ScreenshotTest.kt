@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.screenshot
 
+import ir.jibito.app.ui.common.LocalLoopingMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,14 +21,33 @@ import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.smslist.DayHeader
 import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.smslist.groupByDay
-import ir.jibito.app.ui.smslist.groupPosition
-import ir.jibito.app.ui.summary.AttentionCard
-import ir.jibito.app.ui.summary.AttentionItem
+import ir.jibito.app.ui.summary.SummaryHero
+import ir.jibito.app.ui.summary.TodoSection
+import ir.jibito.app.ui.summary.TodoStory
+import ir.jibito.app.ui.summary.WhereSection
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.data.category.CategoryPalette
+import ir.jibito.app.data.repository.CategorySpend
+import ir.jibito.app.data.repository.MonthSummary
+import ir.jibito.app.data.repository.SubSpend
 import ir.jibito.app.ui.theme.AppThemeStyle
-import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.welcome.WelcomeScreen
 import org.junit.Test
+import android.provider.Settings
+import org.robolectric.RuntimeEnvironment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.FrameLayout
+import ir.jibito.app.widget.SpendWidget
+import ir.jibito.app.ui.settings.PermissionBanner
+import ir.jibito.app.ui.settings.SettingsSection
+import ir.jibito.app.ui.settings.ThemePicker
+import ir.jibito.app.ui.theme.JibitoIcons
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -73,6 +93,12 @@ class ScreenshotTest {
         TimeZone.setDefault(TimeZone.getTimeZone(ZONE))
     }
 
+    /** «حذف انیمیشن‌ها»ی گوشی: دموی خوش‌آمد و انیمیشن‌های بی‌پایان ثابت می‌مانند تا تصویرها هر بار یکی باشند */
+    @Before
+    fun disableAnimations() {
+        Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+    }
+
     @After
     fun restoreZone() = TimeZone.setDefault(savedZone)
 
@@ -107,11 +133,43 @@ class ScreenshotTest {
         tx(7, 29, 900_000),
     ).sortedByDescending { it.dateMillis }
 
-    private val attentionItems = listOf(
-        AttentionItem(JibitoIcons.Bell, "نوتیفیکیشن‌ها خاموش‌اند", AttentionItem.Tone.WARN) {},
-        AttentionItem(JibitoIcons.Warning, "کافه: ۱۱۲٪ بودجه", AttentionItem.Tone.DANGER) {},
-        AttentionItem(JibitoIcons.Tag, "۸۵۰ هزار تومان خرج بی‌دسته", AttentionItem.Tone.NORMAL) {},
-        AttentionItem(JibitoIcons.Repeat, "«شارژ ساختمون» هر ماه پرداخت می‌شه؟ یادآوری بسازم", AttentionItem.Tone.NORMAL) {},
+    /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */
+    @Composable
+    private fun stories(): List<TodoStory> {
+        val t = JibitoTheme.colors
+        val cafe = categoryTint(CategoryPalette.LIGHT[1], "🍽")
+        return listOf(
+            TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته") {},
+            TodoStory("budget", t.alert, cafe.bg, cafe.fg, cafe.icon, null, "رستوران ۱۱۲٪") {},
+            TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ساختمون ماهانه؟") {},
+            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه") {},
+        )
+    }
+
+    private fun cat(id: Long, name: String, icon: String, palette: Int, spentToman: Long, budgetToman: Long? = null, vararg subs: Pair<String, Long>) =
+        CategorySpend(
+            categoryId = id, name = name, icon = icon, colorHex = CategoryPalette.LIGHT[palette],
+            spentRial = spentToman * 10, budgetRial = budgetToman?.let { it * 10 },
+            children = subs.map { SubSpend(it.first, it.second * 10) },
+        )
+
+    /** مهر ۱۴۰۵ با بودجه‌ی ۳۰ میلیونی؛ [spentToman] حال جیب را عوض می‌کند */
+    private fun summary(spentToman: Long) = MonthSummary(
+        month = JalaliMonth(1405, 7),
+        totalSpentRial = spentToman * 10,
+        totalIncomeRial = 250_000_000,
+        uncategorizedRial = 8_500_000,
+        categories = listOf(
+            cat(1, "خوراک", "🛒", 0, 5_200_000, null, "سوپرمارکت" to 4_000_000L, "نان" to 600_000L),
+            cat(2, "رستوران و کافه", "🍽", 1, 3_400_000, 3_000_000),
+            cat(3, "حمل‌ونقل", "🚗", 2, 2_900_000, null, "تاکسی اینترنتی" to 2_500_000L),
+            cat(4, "خانه و خانواده", "🏠", 3, 2_600_000),
+            cat(5, "پوشاک", "👕", 4, 2_100_000),
+            cat(6, "سلامت", "💊", 5, 1_200_000),
+        ),
+        incomeCategories = emptyList(),
+        uncategorizedIncomeRial = 0,
+        overallBudgetRial = 300_000_000,
     )
 
     private val trendSample = JalaliMonth(1405, 7).let { end ->
@@ -144,6 +202,8 @@ class ScreenshotTest {
                 CompositionLocalProvider(
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     LocalDensity provides Density(density.density, fontScale),
+                    // انیمیشن‌های بی‌پایان خاموش، تا صفحه آرام شود و عکس گرفته شود
+                    LocalLoopingMotion provides false,
                 ) {
                     Column(
                         Modifier
@@ -163,7 +223,7 @@ class ScreenshotTest {
             shot("transactions", style, dark) {
                 groups.forEach { group ->
                     DayHeader(group, now)
-                    group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
+                    group.items.forEach { t -> TxRow(t) }
                 }
             }
         }
@@ -176,21 +236,48 @@ class ScreenshotTest {
         shot("transactions", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) {
             groups.take(1).forEach { group ->
                 DayHeader(group, now)
-                group.items.forEachIndexed { i, t -> TransactionRow(t, groupPosition(i, group.items.size), onClick = {}) }
+                group.items.forEach { t -> TxRow(t) }
             }
         }
-        shot("attention", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) { AttentionCard(attentionItems) }
-        shot("trend", AppThemeStyle.DEFAULT, dark = false, fontScale = 2f) { TrendCard(trendSample) }
+        shot("todo", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { TodoSection(stories()) }
+        shot("hero", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { Hero(7_200_000) }
+        shot("trend", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { TrendCard(trendSample) }
+    }
+
+    @Composable
+    private fun TxRow(t: Transaction) {
+        TransactionRow(t, categoryTint(null, t.categoryIcon), onClick = {}, onAcceptSuggestion = if (t.suggestedCategory != null) ({}) else null)
+    }
+
+    /** سرصفحه‌ی «خلاصه»، ۹ روز از مهر گذشته */
+    @Composable
+    private fun Hero(spentToman: Long) {
+        SummaryHero(summary(spentToman), onPickMonth = {}, onEditBudget = {}, dark = false, onToggleDark = {}, onToggleHidden = {}, nowMillis = now)
     }
 
     @Test
-    fun attentionCard() {
-        for ((style, dark) in variants) shot("attention", style, dark) { AttentionCard(attentionItems) }
+    fun todo() {
+        for ((style, dark) in variants) shot("todo", style, dark, padded = false) { TodoSection(stories()) }
+    }
+
+    /** سه حال جیب: آروم، یواش‌تر، بیرون زد */
+    @Test
+    fun hero() {
+        for ((style, dark) in variants) shot("hero", style, dark, padded = false) { Hero(7_200_000) }
+        shot("hero_warn", AppThemeStyle.DEFAULT, dark = false, padded = false) { Hero(26_400_000) }
+        shot("hero_over", AppThemeStyle.DEFAULT, dark = false, padded = false) { Hero(33_600_000) }
+    }
+
+    @Test
+    fun where() {
+        for ((style, dark) in variants) shot("where", style, dark, padded = false) {
+            WhereSection(summary(17_400_000), onOpenCategory = {}, onShowAll = {})
+        }
     }
 
     @Test
     fun trend() {
-        for ((style, dark) in variants) shot("trend", style, dark) { TrendCard(trendSample) }
+        for ((style, dark) in variants) shot("trend", style, dark, padded = false) { TrendCard(trendSample) }
     }
 
     @Test
@@ -200,7 +287,51 @@ class ScreenshotTest {
             shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}) }
         }
         for ((style, dark) in variants) {
-            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3), onDone = {}) }
+            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت"), onDone = {}) }
+        }
+    }
+
+    @Test
+    fun widget() {
+        val cases = listOf(
+            "calm" to SpendWidget.Numbers(6_050_000, 60_000_000, 300_000_000),
+            "warn" to SpendWidget.Numbers(6_050_000, 255_000_000, 300_000_000),
+            "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000),
+            "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null),
+            "locked" to null,
+        )
+        for (dark in listOf(false, true)) {
+            RuntimeEnvironment.setQualifiers(if (dark) "+night" else "+notnight")
+            for ((name, n) in cases) {
+                val context = RuntimeEnvironment.getApplication()
+                val views = SpendWidget.views(context, n, now)
+                captureRoboImage(
+                    "src/test/screenshots/widget_${name}_${if (dark) "dark" else "light"}.png",
+                    roborazziOptions = options,
+                ) {
+                    Box(Modifier.padding(12.dp)) {
+                        AndroidView(
+                            factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
+                            modifier = Modifier.size(width = 260.dp, height = 115.dp),
+                        )
+                    }
+                }
+            }
+        }
+        RuntimeEnvironment.setQualifiers("+notnight")
+    }
+
+    @Test
+    fun settingsParts() {
+        for ((style, dark) in variants) {
+            shot("settings", style, dark) {
+                PermissionBanner(smsOk = true, notifyOk = false, onFix = {})
+                Spacer(Modifier.height(24.dp))
+                SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(style, onSelect = {}) }
+            }
+        }
+        shot("settings", AppThemeStyle.DEFAULT, false, fontScale = 2f) {
+            SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(AppThemeStyle.DEFAULT, onSelect = {}) }
         }
     }
 }

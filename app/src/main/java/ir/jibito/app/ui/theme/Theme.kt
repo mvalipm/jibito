@@ -12,37 +12,131 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// رنگ‌های اصلی جیبیتو: مرجانیِ گرم + فیروزه‌ای برای تأکید
+// رنگ‌های اصلی جیبیتو: مرجانیِ گرم (برند و نشان) + فیروزه‌ای برای «حال خوب»
 val Coral = Color(0xFFE4572E)
 val CoralDark = Color(0xFFFF8A65)
 val Teal = Color(0xFF17BEBB)
-val Cream = Color(0xFFFFF8F3)
+val Cream = Color(0xFFFBF6F2)
 val Ink = Color(0xFF1C1B22)
-val InkSoft = Color(0xFF2A2830)
+val InkSoft = Color(0xFF1E1B22)
 
 /**
- * رنگ‌هایی که در MaterialTheme جایی ندارند:
- * - گرادیان کارت بالای «خلاصه» (متن رویش سفید است)
- * - رنگ‌های معنایی: پول آمده (income)، انتقال به خودم (transfer)، هشدار نزدیک بودجه (warning).
- *   در هر سه پوسته یکی‌اند و فقط برای حالت تیره روشن‌تر می‌شوند تا روی زمینه‌ی تیره خوانا بمانند.
+ * رنگ‌هایی که در MaterialTheme جایی ندارند (توکن‌های طرح «جیبی»):
+ * قرمز فقط برای هشدار (alert)، سبز فقط برای «پول اومد» (income)، فیروزه‌ای برای حال خوب (teal).
+ * رنگ دسته‌ها جدا (CategoryStyle) است: روشنایی و شدت هم‌اندازه، فقط فام فرق می‌کند.
  */
 @Immutable
 data class JibitoColors(
-    val heroStart: Color,
-    val heroEnd: Color,
-    val income: Color = IncomeLight,
-    val transfer: Color = TransferLight,
-    val warning: Color = WarningLight,
+    val dark: Boolean = false,
+    val heroStart: Color = Coral,
+    val heroEnd: Color = Color(0xFFF08A4B),
+    val income: Color = Color(0xFF047857),
+    val transfer: Color = Color(0xFF5A6B8C),
+    val warning: Color = Color(0xFFA85407),
+    /** متن کم‌رنگ (توضیح‌ها) */
+    val muted: Color = Color(0xFF6B625E),
+    /** کم‌رنگ‌تر (برچسب‌های غیرفعال) */
+    val faint: Color = Color(0xFF8A817C),
+    /** زمینه‌ی دکمه‌های کپسولی و ریل نوارها */
+    val chip: Color = Color(0xFFF1E8E2),
+    val border: Color = Color(0xFFEADFD8),
+    /** برگه‌ی پایین صفحه */
+    val sheet: Color = Color(0xFFFFFCFA),
+    val handle: Color = Color(0xFFE2D6CF),
+    val scrim: Color = Color(0x731C1418),
+    val navBg: Color = Color(0xDBFFFCFA),
+    val navInd: Color = Color(0xFFFFE1D4),
+    val navOn: Color = Color(0xFFC2410C),
+    val navOff: Color = Color(0xFF6B625E),
+    val badge: Color = Color(0xFFC2410C),
+    val badgeFg: Color = Color.White,
+    val uncatBorder: Color = Coral,
+    val uncatBg: Color = Color(0xFFFFF1EB),
+    val uncatFg: Color = Color(0xFFC2410C),
+    val alert: Color = Color(0xFFB42318),
+    val teal: Color = Color(0xFF0E7C7B),
+    val coral: Color = Coral,
+    val amber: Color = Color(0xFFA85407),
+    val transferBg: Color = Color(0xFFE6EAF2),
+    val transferFg: Color = Color(0xFF5A6B8C),
+    val failBg: Color = Color(0xFFEFEAE6),
+    val failFg: Color = Color(0xFF6B625E),
+    /** پیشنهاد دسته («سوپرمارکته؟ آره») */
+    val sugBg: Color = Color(0xFFDDF3F2),
+    val sugFg: Color = Color(0xFF0B5E5D),
+    val trendOff: Color = Color(0xFFE8DCD4),
+    val seenRing: Color = Color(0xFFE2D6CF),
+    val toastBg: Color = Ink,
+    val toastFg: Color = Color.White,
+    val btnBg: Color = Color(0xFFC2410C),
+    val btnFg: Color = Color.White,
+    val smsBg: Color = Color.White,
+    /** دکمه‌ی انتخاب‌شده (مثلاً فیلتر «همه») */
+    val onBg: Color = Ink,
+    val onFg: Color = Color.White,
+    val tealTint: Color = Color(0xFFD5F1F0),
+    val tealTintFg: Color = Color(0xFF0B5E5D),
+    val amberTint: Color = Color(0xFFFCEBCF),
+    val amberTintFg: Color = Color(0xFF8A4A08),
+    /** رنگ سرصفحه‌ی «خلاصه» بسته به حال جیب: آروم، یواش‌تر، بیرون زد */
+    val moodCalm: Color = Color(0xFF0E7C7B),
+    val moodWarn: Color = Color(0xFFA85407),
+    val moodOver: Color = Color(0xFFB42318),
 )
 
-private val IncomeLight = Color(0xFF1E9E6A)
-private val IncomeDark = Color(0xFF4CC38A)
-private val TransferLight = Color(0xFF3A6FD8)
-private val TransferDark = Color(0xFF7FA4F0)
-private val WarningLight = Color(0xFFE0951F)
-private val WarningDark = Color(0xFFF2B45A)
+private val LightTokens = JibitoColors()
 
-val LocalJibitoColors = staticCompositionLocalOf { JibitoColors(Coral, Color(0xFFF08A4B)) }
+private val DarkTokens = JibitoColors(
+    dark = true,
+    heroStart = CoralDark,
+    income = Color(0xFF5FD3A0),
+    transfer = Color(0xFF9FB0CF),
+    warning = Color(0xFFF2B45A),
+    muted = Color(0xFFB3A9A4),
+    faint = Color(0xFF8F8590),
+    chip = Color(0xFF2A262E),
+    border = Color(0xFF322D36),
+    sheet = InkSoft,
+    handle = Color(0xFF3F3944),
+    scrim = Color(0x99000000),
+    navBg = Color(0xDB1E1B22),
+    navInd = Color(0xFF4A2418),
+    navOn = Color(0xFFFF9B7A),
+    navOff = Color(0xFFB3A9A4),
+    badge = CoralDark,
+    badgeFg = Color(0xFF2A0A00),
+    uncatBorder = CoralDark,
+    uncatBg = Color(0xFF3A2119),
+    uncatFg = Color(0xFFFF9B7A),
+    alert = Color(0xFFF47C6B),
+    teal = Color(0xFF3FD0CC),
+    coral = CoralDark,
+    amber = Color(0xFFF2B45A),
+    transferBg = Color(0xFF232A38),
+    transferFg = Color(0xFF9FB0CF),
+    failBg = Color(0xFF2A262E),
+    failFg = Color(0xFFB3A9A4),
+    sugBg = Color(0xFF143634),
+    sugFg = Color(0xFF7FE0DC),
+    trendOff = Color(0xFF3A343F),
+    seenRing = Color(0xFF3A343F),
+    toastBg = Color(0xFFF3ECE8),
+    toastFg = Ink,
+    btnBg = CoralDark,
+    btnFg = Color(0xFF2A0A00),
+    smsBg = InkSoft,
+    onBg = Color(0xFFF3ECE8),
+    onFg = Ink,
+    tealTint = Color(0xFF143634),
+    tealTintFg = Color(0xFF7FE0DC),
+    amberTint = Color(0xFF35260F),
+    amberTintFg = Color(0xFFF2B45A),
+    moodCalm = Color(0xFF0B5F5E),
+    moodWarn = Color(0xFF7E4306),
+    moodOver = Color(0xFF8F1F14),
+)
+
+val LocalJibitoColors = staticCompositionLocalOf { LightTokens }
 
 /** دسترسی کوتاه: JibitoTheme.colors.income */
 object JibitoTheme {
@@ -50,40 +144,58 @@ object JibitoTheme {
         @Composable @ReadOnlyComposable get() = LocalJibitoColors.current
 }
 
-// ── مرجانی (پیش‌فرض) ──
+// ── مرجانی (پیش‌فرض)، همان رنگ‌های طرح ──
 
 private val DefaultLight = lightColorScheme(
-    primary = Coral,
+    primary = Color(0xFFC2410C),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFDBCF),
+    primaryContainer = Color(0xFFFFE1D4),
     onPrimaryContainer = Color(0xFF3A0B00),
-    secondary = Teal,
+    secondary = Color(0xFF0E7C7B),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFCFF5F4),
-    onSecondaryContainer = Color(0xFF00403F),
+    secondaryContainer = Color(0xFFD5F1F0),
+    onSecondaryContainer = Color(0xFF0B5E5D),
     background = Cream,
     onBackground = Ink,
-    surface = Color.White,
+    surface = Color(0xFFFFFCFA),
     onSurface = Ink,
-    surfaceVariant = Color(0xFFF5EDE8),
-    onSurfaceVariant = Color(0xFF5B5450),
+    surfaceVariant = Color(0xFFF1E8E2),
+    onSurfaceVariant = Color(0xFF6B625E),
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFFFCFA),
+    surfaceContainer = Color(0xFFFFFCFA),
+    surfaceContainerHigh = Color(0xFFFFFCFA),
+    surfaceContainerHighest = Color(0xFFF1E8E2),
+    outline = Color(0xFF8A817C),
+    outlineVariant = Color(0xFFEADFD8),
+    error = Color(0xFFB42318),
+    onError = Color.White,
 )
 
 private val DefaultDark = darkColorScheme(
     primary = CoralDark,
-    onPrimary = Color(0xFF3A0B00),
-    primaryContainer = Color(0xFF6B2410),
+    onPrimary = Color(0xFF2A0A00),
+    primaryContainer = Color(0xFF4A2418),
     onPrimaryContainer = Color(0xFFFFDBCF),
-    secondary = Teal,
-    onSecondary = Color(0xFF00302F),
-    secondaryContainer = Color(0xFF005653),
-    onSecondaryContainer = Color(0xFFCFF5F4),
-    background = Ink,
-    onBackground = Color(0xFFEDE6E2),
+    secondary = Color(0xFF3FD0CC),
+    onSecondary = Color(0xFF0B302F),
+    secondaryContainer = Color(0xFF143634),
+    onSecondaryContainer = Color(0xFF7FE0DC),
+    background = Color(0xFF141217),
+    onBackground = Color(0xFFF3ECE8),
     surface = InkSoft,
-    onSurface = Color(0xFFEDE6E2),
-    surfaceVariant = Color(0xFF38343C),
-    onSurfaceVariant = Color(0xFFCFC6C1),
+    onSurface = Color(0xFFF3ECE8),
+    surfaceVariant = Color(0xFF2A262E),
+    onSurfaceVariant = Color(0xFFB3A9A4),
+    surfaceContainerLowest = Color(0xFF141217),
+    surfaceContainerLow = InkSoft,
+    surfaceContainer = InkSoft,
+    surfaceContainerHigh = InkSoft,
+    surfaceContainerHighest = Color(0xFF2A262E),
+    outline = Color(0xFF8F8590),
+    outlineVariant = Color(0xFF322D36),
+    error = Color(0xFFF47C6B),
+    onError = Color(0xFF2A0A00),
 )
 
 // ── گرم: #C78997 #F5B297 #F5D6A2 #F5E4C4 #8A99B1 ──
@@ -163,22 +275,54 @@ private val CoolDark = darkColorScheme(
     onSurfaceVariant = Color(0xFFC3C4DA),
 )
 
-/** رنگ‌های هر پوسته؛ کنتراست متن‌ها بررسی شده (متن اصلی ≥ ۱۲، دکمه‌ها ≥ ۴٫۵، گرادیان ≥ ۴) */
-private fun schemeFor(style: AppThemeStyle, dark: Boolean): Pair<ColorScheme, JibitoColors> = when (style) {
-    AppThemeStyle.DEFAULT ->
-        if (dark) DefaultDark to JibitoColors(CoralDark, Color(0xFFF08A4B))
-        else DefaultLight to JibitoColors(Coral, Color(0xFFF08A4B))
-    AppThemeStyle.WARM ->
-        if (dark) WarmDark to JibitoColors(Color(0xFF6E3A47), Color(0xFFA85F70))
-        else WarmLight to JibitoColors(Color(0xFFA85F70), Color(0xFFB06A7A))
-    AppThemeStyle.COOL ->
-        if (dark) CoolDark to JibitoColors(Color(0xFF24305A), Color(0xFF3D5387))
-        else CoolLight to JibitoColors(Color(0xFF182346), Color(0xFF3D5387))
+/**
+ * رنگ‌های هر پوسته؛ کنتراست متن‌ها بررسی شده (متن اصلی ≥ ۱۲، دکمه‌ها ≥ ۴٫۵).
+ * پوسته‌های گرم و سرد همان توکن‌های طرح را دارند، فقط رنگ برند (دکمه، نوار پایین، سطح‌ها) از خودشان است.
+ */
+private fun schemeFor(style: AppThemeStyle, dark: Boolean): Pair<ColorScheme, JibitoColors> {
+    val base = if (dark) DarkTokens else LightTokens
+    return when (style) {
+        AppThemeStyle.DEFAULT -> (if (dark) DefaultDark else DefaultLight) to base
+        AppThemeStyle.WARM -> {
+            val s = if (dark) WarmDark else WarmLight
+            s to base.branded(s, if (dark) Color(0xFF6E3A47) else Color(0xFFA85F70), if (dark) Color(0xFFA85F70) else Color(0xFFB06A7A))
+        }
+        AppThemeStyle.COOL -> {
+            val s = if (dark) CoolDark else CoolLight
+            s to base.branded(s, if (dark) Color(0xFF24305A) else Color(0xFF182346), Color(0xFF3D5387))
+        }
+    }
 }
+
+/** توکن‌های طرح، با رنگ برند و سطح‌های یک پوسته‌ی دیگر */
+private fun JibitoColors.branded(s: ColorScheme, heroStart: Color, heroEnd: Color) = copy(
+    heroStart = heroStart,
+    heroEnd = heroEnd,
+    muted = s.onSurfaceVariant,
+    chip = s.surfaceVariant,
+    border = s.surfaceVariant,
+    sheet = s.surface,
+    handle = s.outline.copy(alpha = 0.4f),
+    navBg = s.surface.copy(alpha = 0.86f),
+    navInd = s.primaryContainer,
+    navOn = s.primary,
+    navOff = s.onSurfaceVariant,
+    badge = s.primary,
+    badgeFg = s.onPrimary,
+    uncatBorder = s.primary,
+    uncatBg = s.primaryContainer,
+    uncatFg = if (dark) s.onPrimaryContainer else s.primary,
+    coral = s.primary,
+    trendOff = s.surfaceVariant,
+    seenRing = s.surfaceVariant,
+    btnBg = s.primary,
+    btnFg = s.onPrimary,
+    smsBg = s.surface,
+)
 
 /** رنگ‌های نمونه‌ی هر پوسته (برای انتخابگر در تنظیمات) */
 fun previewColors(style: AppThemeStyle): List<Color> = when (style) {
-    AppThemeStyle.DEFAULT -> listOf(Coral, Color(0xFFF08A4B), Teal, Cream)
+    AppThemeStyle.DEFAULT -> listOf(Coral, Color(0xFF0E7C7B), Color(0xFFFF9B7A), Cream)
     AppThemeStyle.WARM -> listOf(Color(0xFFC78997), Color(0xFFF5B297), Color(0xFFF5D6A2), Color(0xFF8A99B1))
     AppThemeStyle.COOL -> listOf(Color(0xFF182346), Color(0xFF3D5387), Color(0xFF7C83AD), Color(0xFFBFA9BA))
 }
@@ -189,8 +333,7 @@ fun JibitoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val (scheme, hero) = schemeFor(style, darkTheme)
-    val extras = if (darkTheme) hero.copy(income = IncomeDark, transfer = TransferDark, warning = WarningDark) else hero
+    val (scheme, extras) = schemeFor(style, darkTheme)
     CompositionLocalProvider(LocalJibitoColors provides extras) {
         MaterialTheme(colorScheme = scheme, typography = JibitoTypography, content = content)
     }

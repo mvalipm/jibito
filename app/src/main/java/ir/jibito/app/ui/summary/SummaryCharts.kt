@@ -3,7 +3,6 @@ package ir.jibito.app.ui.summary
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,7 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
-import ir.jibito.app.data.category.CategoryPalette
+import ir.jibito.app.ui.theme.CategoryStyle
+import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.common.amount
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.notify.BudgetLevel
@@ -57,27 +59,13 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
 /**
- * رنگ‌های نمودار در حالت روشن/تیره. هر دسته‌ی اصلی یک رنگ ثابت از پالت اعتبارسنجی‌شده دارد
- * (CategoryPalette)؛ در حالت تیره همان رنگ، پله‌ی تیره‌اش را می‌گیرد.
+ * رنگ‌های نمودار در حالت روشن/تیره: همان رنگ پررنگ دسته در طرح «جیبی» (CategoryStyle)،
+ * تا نوار سهم‌ها، کاشی‌ها و نمودارها همه یک رنگ باشند.
  */
 object ChartColors {
-    private val LIGHT = CategoryPalette.LIGHT.map { it.toColor() }
-    private val DARK = CategoryPalette.DARK.map { it.toColor() }
-    private val NEUTRAL_LIGHT = Color(0xFFA3A29C)
-    private val NEUTRAL_DARK = Color(0xFF6E6D68)
+    fun forCategory(hex: String?, dark: Boolean): Color = CategoryStyle.color(hex, dark)
 
-    fun forCategory(hex: String?, dark: Boolean): Color {
-        val i = CategoryPalette.LIGHT.indexOfFirst { it.equals(hex, ignoreCase = true) }
-        return when {
-            i >= 0 -> if (dark) DARK[i] else LIGHT[i]
-            hex == null || hex.equals(CategoryPalette.NEUTRAL, ignoreCase = true) -> neutral(dark)
-            else -> runCatching { hex.toColor() }.getOrElse { neutral(dark) }
-        }
-    }
-
-    fun neutral(dark: Boolean): Color = if (dark) NEUTRAL_DARK else NEUTRAL_LIGHT
-
-    private fun String.toColor(): Color = Color(android.graphics.Color.parseColor(this))
+    fun neutral(dark: Boolean): Color = CategoryStyle.neutral(dark)
 }
 
 private fun percentOf(amount: Long, total: Long): String {
@@ -98,7 +86,7 @@ fun CategoryDetailSheet(
     onDismiss: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    val dark = isSystemInDarkTheme()
+    val dark = JibitoTheme.colors.dark
     val base = ChartColors.forCategory(c.colorHex, dark)
     val budget = c.budgetRial
     val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
@@ -106,7 +94,8 @@ fun CategoryDetailSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = colors.surface,
+        containerColor = JibitoTheme.colors.sheet,
+        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
     ) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
             Column(
@@ -118,12 +107,7 @@ fun CategoryDetailSheet(
                     .padding(bottom = 20.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(44.dp)
-                            .background(base.copy(alpha = 0.16f), CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) { Text(c.icon ?: "•", fontSize = 20.sp) }
+                    CategoryIconTile(categoryTint(c.colorHex, c.icon), size = 52.dp, radius = 18.dp, iconSize = 26.dp)
                     Spacer(Modifier.size(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(c.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = colors.onSurface)
@@ -133,7 +117,7 @@ fun CategoryDetailSheet(
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    Text(Money.toman(c.spentRial), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = colors.onSurface)
+                    Text(amount(Money.toman(c.spentRial)), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = colors.onSurface)
                 }
 
                 // بودجه
@@ -141,8 +125,8 @@ fun CategoryDetailSheet(
                 if (budget != null && budget > 0) {
                     val fraction = (c.spentRial.toFloat() / budget).coerceIn(0f, 1f)
                     val barColor = when (level) {
-                        100 -> colors.error
-                        80 -> JibitoTheme.colors.warning
+                        100 -> JibitoTheme.colors.alert
+                        80 -> JibitoTheme.colors.amber
                         else -> base
                     }
                     LinearProgressIndicator(

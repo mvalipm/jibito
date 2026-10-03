@@ -25,6 +25,31 @@ object Money {
         return Jalali.toPersianDigits(sign + text)
     }
 
+    /**
+     * عدد بزرگ سرصفحه، جدا از واحدش: «۱۸٫۴» + «میلیون»، «۸۵۰» + «هزار»، «۹۰۰» + "".
+     * (طرح: عدد درشت و «میلیون تومان» کنارش با اندازه‌ی کوچک‌تر)
+     */
+    fun compactParts(rial: Long): Pair<String, String> {
+        val text = compact(rial)
+        val cut = text.lastIndexOf(' ')
+        return if (cut < 0) text to "" else text.substring(0, cut) to text.substring(cut + 1)
+    }
+
+    /** «بودجه‌ی ۳۰ میلیونی»: همان عدد کوتاه با «ی» نسبت (برای عدد بی‌واحد: «۹۰۰ تومانی») */
+    fun compactAdjective(rial: Long): String {
+        val (number, unit) = compactParts(rial)
+        return if (unit.isEmpty()) "$number تومانی" else "$number ${unit}ی"
+    }
+
+    /** خیلی کوتاه، برای کارت‌های کوچک مانده‌ی بانک‌ها: «۴۱٫۲ م»، «۹۸۱ هزار»، «۱٫۲ میلیارد» */
+    fun short(rial: Long): String = compact(rial).replace(" میلیون", " م")
+
+    /** عدد ستون نمودار به واحد داده‌شده با یک رقم اعشار: ۲۳٬۶۰۰٬۰۰۰ تومان با واحد میلیون ← «۲۳٫۶» */
+    fun inUnit(rial: Long, unitToman: Long): String {
+        val toman = kotlin.math.abs(rial / 10)
+        return Jalali.toPersianDigits(oneDecimal(toman, unitToman))
+    }
+
     /** مثلاً ۴۸٬۹۵۲٬۲۵۰ ÷ ۱٬۰۰۰٬۰۰۰ ← «48٫9»؛ اعشار صفر نوشته نمی‌شود */
     private fun oneDecimal(value: Long, unit: Long): String {
         val tenths = value * 10 / unit

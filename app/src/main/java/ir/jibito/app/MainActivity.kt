@@ -38,6 +38,12 @@ import ir.jibito.app.ui.lock.LockScreen
 import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.DarkMode
+import ir.jibito.app.ui.common.LocalHideAmounts
+import ir.jibito.app.ui.common.LocalStatusBarOnColor
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.remember
+import androidx.core.view.WindowCompat
 import ir.jibito.app.ui.welcome.WelcomeScreen
 
 class MainActivity : ComponentActivity() {
@@ -82,14 +88,33 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) readOpenRequest(intent)
         setContent {
             val style by themeSettings.style.collectAsState()
+            val darkMode by themeSettings.darkMode.collectAsState()
+            val hideAmounts by themeSettings.hideAmounts.collectAsState()
+            val dark = when (darkMode) {
+                DarkMode.SYSTEM -> isSystemInDarkTheme()
+                DarkMode.LIGHT -> false
+                DarkMode.DARK -> true
+            }
+            // آیکون‌های نوار وضعیت: تیره روی زمینه‌ی روشن، سفید در حالت تیره یا روی سرصفحه‌ی رنگی «خلاصه»
+            val statusOnColor = remember { mutableStateOf(false) }
+            LaunchedEffect(dark, statusOnColor.value) {
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !dark && !statusOnColor.value
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
             val lockEnabled by lockSettings.enabled.collectAsState()
             LaunchedEffect(lockEnabled) {
                 // وقتی قفل روشن است، تصویر اپ در «برنامه‌های اخیر» نشان داده نشود
                 if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(!lockEnabled)
             }
-            JibitoTheme(style = style) {
+            JibitoTheme(style = style, darkTheme = dark) {
                 // فعلاً کل اپ را راست‌به‌چپ می‌کنیم؛ سوییچ زبان را بعداً اضافه می‌کنیم
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides LayoutDirection.Rtl,
+                    LocalHideAmounts provides hideAmounts,
+                    LocalStatusBarOnColor provides statusOnColor,
+                ) {
                     // اپ زیر صفحه‌ی قفل زنده می‌ماند (تا مثلاً جواب انتخاب فایل پشتیبان گم نشود)، ولی دیده و خوانده نمی‌شود
                     Box(Modifier.fillMaxSize()) {
                         Box(if (locked) Modifier.clearAndSetSemantics { } else Modifier) {

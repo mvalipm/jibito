@@ -6,6 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
@@ -14,6 +16,7 @@ import ir.jibito.app.R
 import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.ErrorLog
+import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +26,8 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * ویجت صفحه‌ی اصلی: «امروز چقدر خرج کردم» + خرج این ماه + باقی‌مانده‌ی بودجه‌ی کل ماه.
+ * ویجت صفحه‌ی اصلی: «امروز چقدر خرج کردم» + خرج این ماه + باقی‌مانده و حلقه‌ی بودجه‌ی کل ماه.
+ * رنگ زمینه «حال جیب» است (آرام / نزدیک سقف / رد شده، مثل صفحه‌ی خلاصه) و جیبی کوچک کنار عنوان، رد شدن از بودجه نگران می‌شود.
  * بعد از هر همگام‌سازی و هر تغییر دسته به‌روز می‌شود (و هر ۳۰ دقیقه، توسط خود اندروید).
  * اگر قفل اپ روشن باشد، مبلغ‌ها روی صفحه‌ی اصلی نشان داده نمی‌شوند.
  */
@@ -65,6 +69,35 @@ class SpendWidget : AppWidgetProvider() {
 
         private suspend fun build(context: Context): RemoteViews {
             val container = (context.applicationContext as JibitoApplication).container
+            val locked = container.appLockSettings.enabled.value
+            val now = System.currentTimeMillis()
+            val n = if (locked) null else numbers(container.database, now)
+            return views(context, n, now)
+        }
+
+        /** حال جیب، مثل بالای صفحه‌ی خلاصه */
+        internal enum class Mood { NONE, CALM, WARN, OVER }
+
+        /** کمتر از این فاصله بین «خرج» و «زمان» یعنی «طبق برنامه» (مثل صفحه‌ی خلاصه) */
+        private const val ON_TRACK_MARGIN = 0.05
+
+        internal fun moodOf(n: Numbers, now: Long): Mood {
+            val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return Mood.NONE
+            val month = JalaliMonth.of(now)
+            val time = (now - month.startMillis()).toDouble() / (month.endMillis() - month.startMillis())
+            val spent = n.monthRial.toDouble() / budget
+            return when {
+                n.monthRial >= budget -> Mood.OVER
+                spent >= 0.8 || spent - time >= ON_TRACK_MARGIN -> Mood.WARN
+                else -> Mood.CALM
+            }
+        }
+
+        /**
+         * ظاهر ویجت از روی عددها (بدون دیتابیس؛ تست اسکرین‌شات هم همین را می‌کشد).
+         * @param n null یعنی قفل اپ روشن است: مبلغ‌ها نشان داده نمی‌شوند
+         */
+        internal fun views(context: Context, n: Numbers?, now: Long): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_spend)
             val open = PendingIntent.getActivity(
                 context,
@@ -74,32 +107,70 @@ class SpendWidget : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.widget_root, open)
 
-            if (container.appLockSettings.enabled.value) {
+            if (n == null) {
                 views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_locked_label))
                 views.setTextViewText(R.id.widget_today, "🔒")
+                views.setViewVisibility(R.id.widget_unit, View.GONE)
                 views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_locked_hint))
-                views.setTextViewText(R.id.widget_left, "")
                 return views
             }
 
-            val n = numbers(container.database, System.currentTimeMillis())
-            views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_today))
-            views.setTextViewText(R.id.widget_today, context.getString(R.string.widget_amount, Money.compact(n.todayRial)))
-            views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
-            val left = n.overallBudgetRial?.let { it - n.monthRial }
-            when {
-                left == null -> views.setTextViewText(R.id.widget_left, "")
-                left >= 0 -> {
-                    views.setTextViewText(R.id.widget_left, context.getString(R.string.widget_left, Money.compact(left)))
-                    views.setTextColor(R.id.widget_left, ContextCompat.getColor(context, R.color.widget_accent))
-                }
-                else -> {
-                    views.setTextViewText(R.id.widget_left, context.getString(R.string.widget_over, Money.compact(-left)))
-                    views.setTextColor(R.id.widget_left, ContextCompat.getColor(context, R.color.widget_over))
-                }
+            val mood = moodOf(n, now)
+            val onMood = mood != Mood.NONE
+            views.setInt(
+                R.id.widget_root,
+                "setBackgroundResource",
+                when (mood) {
+                    Mood.NONE -> R.drawable.widget_bg
+                    Mood.CALM -> R.drawable.widget_bg_calm
+                    Mood.WARN -> R.drawable.widget_bg_warn
+                    Mood.OVER -> R.drawable.widget_bg_over
+                },
+            )
+            val text = if (onMood) Color.WHITE else ContextCompat.getColor(context, R.color.widget_text)
+            val muted = if (onMood) MUTED_ON_MOOD else ContextCompat.getColor(context, R.color.widget_muted)
+            views.setImageViewResource(
+                R.id.widget_mascot,
+                if (mood == Mood.OVER) R.drawable.widget_mascot_worried else R.drawable.widget_mascot_happy,
+            )
+            views.setTextColor(R.id.widget_label, muted)
+
+            // «۶۰۵ هزار» ← عدد درشت + «هزار تومان» کوچک کنارش
+            val compact = Money.compact(n.todayRial)
+            val split = compact.lastIndexOf(' ')
+            val number = if (split > 0) compact.substring(0, split) else compact
+            val unit = listOfNotNull(compact.substring(split + 1).takeIf { split > 0 }, context.getString(R.string.unit_toman))
+                .joinToString(" ")
+            views.setTextViewText(R.id.widget_today, number)
+            views.setTextColor(R.id.widget_today, text)
+            views.setTextViewText(R.id.widget_unit, unit)
+            views.setTextColor(R.id.widget_unit, muted)
+            // یک خط زیر عدد (جای ویجت کوچک است): با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه»
+            val budget = n.overallBudgetRial?.takeIf { it > 0 }
+            if (budget == null) {
+                views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
+                views.setTextColor(R.id.widget_month, muted)
+                views.setViewVisibility(R.id.widget_ring_box, View.GONE)
+                return views
             }
+            val left = budget - n.monthRial
+            views.setTextViewText(
+                R.id.widget_month,
+                if (left >= 0) context.getString(R.string.widget_left, Money.compact(left))
+                else context.getString(R.string.widget_over, Money.compact(-left)),
+            )
+            views.setTextColor(R.id.widget_month, text)
+            val percent = (n.monthRial * 100 / budget).toInt()
+            val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
+            views.setViewVisibility(R.id.widget_ring_box, View.VISIBLE)
+            views.setProgressBar(R.id.widget_ring, 100, percent.coerceIn(0, 100), false)
+            views.setTextViewText(R.id.widget_percent, percentText)
+            views.setContentDescription(R.id.widget_ring_box, context.getString(R.string.widget_ring_cd, percentText))
             return views
         }
+
+        /** متن کم‌رنگ روی زمینه‌ی رنگی: سفید ۸۵٪ */
+        private const val MUTED_ON_MOOD = 0xD9FFFFFF.toInt()
 
         /** خرج امروز و این ماه با همان قانون‌های صفحه‌ی خلاصه (انتقال به خودم و دسته‌های «خرج نیست» حساب نمی‌شوند) */
         suspend fun numbers(db: ir.jibito.app.data.local.AppDatabase, now: Long): Numbers {

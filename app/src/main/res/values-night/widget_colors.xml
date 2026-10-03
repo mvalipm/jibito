@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- رنگ‌های ویجت صفحه‌ی اصلی (تیره) -->
-    <color name="widget_bg">#231A16</color>
-    <color name="widget_text">#F6EDE8</color>
-    <color name="widget_muted">#BCA79D</color>
-    <color name="widget_accent">#FF8A65</color>
-    <color name="widget_over">#EF9A9A</color>
+    <color name="widget_bg">#1E1B22</color>
+    <color name="widget_text">#F3ECE8</color>
+    <color name="widget_muted">#B3A9A4</color>
+    <!-- «حال جیب»: آرام، نزدیک سقف، رد شده (متن رویشان سفید) -->
+    <color name="widget_mood_calm">#0B5F5E</color>
+    <color name="widget_mood_warn">#7E4306</color>
+    <color name="widget_mood_over">#8F1F14</color>
+    <!-- پس‌زمینه‌ی پنجره‌ی اپ در حالت تیره -->
+    <color name="jibito_background">#141217</color>
 </resources>

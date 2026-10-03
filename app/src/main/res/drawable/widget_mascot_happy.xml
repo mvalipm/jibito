@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- «جیبی» خندان (همان PocketMascot اپ) برای ویجت -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="26dp"
+    android:viewportWidth="120"
+    android:viewportHeight="130">
+    <path android:fillColor="#17BEBB" android:pathData="M67,22a13,13 0,1 0,26 0a13,13 0,1 0,-26 0z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:pathData="M74,22a6,6 0,1 0,12 0a6,6 0,1 0,-12 0z" />
+    <path android:fillColor="#E4572E" android:pathData="M14,34L106,34L106,68C106,96 80,116 60,126C40,116 14,96 14,68Z" />
+    <path android:fillColor="#FF9B7A" android:pathData="M19,34h82a5,5 0,0 1,5 5v6a5,5 0,0 1,-5 5h-82a5,5 0,0 1,-5 -5v-6a5,5 0,0 1,5 -5z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M40,82Q46,74 52,82M68,82Q74,74 80,82M46,96Q60,110 74,96" />
+</vector>

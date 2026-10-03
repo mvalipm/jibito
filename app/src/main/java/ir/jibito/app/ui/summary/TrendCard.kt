@@ -1,13 +1,14 @@
 package ir.jibito.app.ui.summary
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,108 +16,130 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.SpendTrend
+import ir.jibito.app.ui.common.LocalHideAmounts
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+/** کمتر از این درصد اختلاف = «تقریباً همون اندازه» */
+private const val SAME_PERCENT = 3
+
+/** بلندترین ستون (بقیه نسبت به آن) */
+private val MAX_BAR = 104.dp
 
 /**
- * روند خرج چند ماه اخیر: ستون‌های باریک با یک رنگ (یک سری داده، پس بدون راهنما).
- * فقط مبلغ ماه انتخاب‌شده نوشته می‌شود (پیش‌فرض: همین ماه)؛ لمس هر ستون آن ماه را انتخاب می‌کند.
- * هر ستون برای صفحه‌خوان «ماه: مبلغ» را می‌گوید.
+ * «۶ ماه اخیر» (طرح «جیبی»): ستون‌های گرد، عدد هر ماه بالایش و اسم ماه زیرش.
+ * ماه انتخاب‌شده به رنگ حال جیب ([highlight]) و پررنگ؛ بقیه کم‌رنگ. ستون‌ها موقع آمدن یکی‌یکی قد می‌کشند.
+ * کنار عنوان: چند درصد کمتر/بیشتر از ماه قبل (برای ماه جاری: تا همین موقعِ ماه قبل).
  */
 @Composable
-fun TrendCard(trend: SpendTrend) {
+fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm) {
+    val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     val months = trend.months
-    var selected by remember(trend) { mutableIntStateOf(months.lastIndex) }
+    if (months.isEmpty()) return
+    val hidden = LocalHideAmounts.current
     val max = months.maxOf { it.spentRial }.coerceAtLeast(1L)
-    val picked = months[selected.coerceIn(0, months.lastIndex)]
-    val toman = stringResource(R.string.unit_toman)
+    // یک واحد برای همه‌ی ستون‌ها: میلیون، یا هزار اگر همه کمتر از یک میلیون‌اند
+    val unit = if (max / 10 >= 1_000_000L) 1_000_000L else 1_000L
     val largeText = LocalDensity.current.fontScale >= 1.5f
+    val toman = stringResource(R.string.unit_toman)
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp)
-            .background(colors.surface, RoundedCornerShape(22.dp))
-            .padding(16.dp)
-    ) {
-        Text(
-            Jalali.toPersianDigits(stringResource(R.string.trend_title, months.size)),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = colors.onSurface,
+    // مقایسه با ماه قبل
+    val previous = months.getOrNull(months.lastIndex - 1)
+    val percent: Int? = trend.vsLastMonthPercent ?: previous?.takeIf { it.spentRial > 0 }?.let {
+        ((months.last().spentRial - it.spentRial) * 100.0 / it.spentRial).roundToInt()
+    }
+
+    Column(Modifier.padding(top = 26.dp)) {
+        SectionHeader(
+            title = Jalali.toPersianDigits(stringResource(R.string.trend_title, months.size)),
+            note = if (percent != null && previous != null) {
+                val name = Jalali.MONTH_NAMES[previous.month.month - 1]
+                when {
+                    abs(percent) < SAME_PERCENT -> stringResource(R.string.trend_same, name)
+                    percent < 0 -> Jalali.toPersianDigits(stringResource(R.string.trend_less, -percent, name))
+                    else -> Jalali.toPersianDigits(stringResource(R.string.trend_more, percent, name))
+                }
+            } else null,
+            noteColor = if (percent != null && percent >= SAME_PERCENT) t.alert else t.teal,
+            noteBold = true,
         )
-        Text(
-            "${picked.month.title}: ${Money.compact(picked.spentRial)} $toman",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(14.dp))
         Row(
             Modifier
                 .fillMaxWidth()
-                .height(112.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp)
+                .height(if (largeText) 196.dp else 172.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
             months.forEachIndexed { i, m ->
+                val current = i == months.lastIndex
                 val label = "${m.month.title}: ${Money.compact(m.spentRial)} $toman"
-                Box(
+                val grow = remember(trend) { Animatable(0f) }
+                LaunchedEffect(trend) {
+                    grow.animateTo(1f, tween(800, delayMillis = i * 70, easing = CubicBezierEasing(0.34f, 1.4f, 0.64f, 1f)))
+                }
+                Column(
                     Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { selected = i }
-                        .semantics {
-                            contentDescription = label
-                            this.selected = i == selected
-                        },
-                    contentAlignment = Alignment.BottomCenter,
+                        .clearAndSetSemantics { contentDescription = if (hidden) m.month.title else label },
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    val fraction = if (m.spentRial == 0L) 0.02f else (m.spentRial.toFloat() / max).coerceIn(0.04f, 1f)
+                    Text(
+                        if (hidden) "••" else Money.inUnit(m.spentRial, unit),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (current) (if (t.dark) colors.onBackground else highlight) else t.faint,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val h = if (m.spentRial == 0L) 4.dp else MAX_BAR * (m.spentRial.toFloat() / max).coerceIn(0.05f, 1f)
                     Box(
                         Modifier
-                            .fillMaxWidth(0.6f)
-                            .fillMaxHeight(fraction)
-                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(if (i == selected) colors.primary else colors.primary.copy(alpha = 0.32f))
+                            .fillMaxWidth()
+                            .height(h)
+                            .graphicsLayer {
+                                scaleY = grow.value
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                            }
+                            .background(
+                                if (current) highlight else t.trendOff,
+                                RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                            )
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        // فونت بزرگ گوشی: شماره‌ی ماه به جای اسم
+                        if (largeText) Jalali.toPersianDigits(m.month.month.toString()) else Jalali.MONTH_NAMES[m.month.month - 1],
+                        fontSize = 12.sp,
+                        fontWeight = if (current) FontWeight.Black else FontWeight.Medium,
+                        color = if (current) colors.onBackground else t.muted,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            months.forEachIndexed { i, m ->
-                Text(
-                    // فونت بزرگ گوشی: شماره‌ی ماه به جای اسم (اسم کامل ماه انتخاب‌شده بالای نمودار هست)
-                    if (largeText) Jalali.toPersianDigits(m.month.month.toString()) else Jalali.MONTH_NAMES[m.month.month - 1],
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (i == selected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (i == selected) colors.onSurface else colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
         }
     }
