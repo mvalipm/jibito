@@ -2,6 +2,14 @@ package ir.jibito.app.ui.main
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,7 +73,7 @@ val FloatingNavBarBottomMargin = 12.dp
  * نوار پایینِ شناور و کپسولی:
  * - از لبه‌ها فاصله دارد و دو سرش کاملاً گرد است.
  * - پس‌زمینه‌اش شیشه‌ای مات است: محتوای صفحه زیرش تار دیده می‌شود (اندروید ۱۲+؛ در قدیمی‌ترها نیمه‌شفاف).
- * - دکمه‌ی فعال یک کپسول کم‌رنگ به رنگ اصلی اپ پشتش دارد.
+ * - دکمه‌ی فعال یک کپسول کم‌رنگ به رنگ اصلی اپ پشتش دارد که با فنر بین دکمه‌ها سُر می‌خورد؛ آیکونش کمی می‌جهد.
  */
 @Composable
 fun FloatingNavBar(
@@ -80,7 +88,7 @@ fun FloatingNavBar(
     val glass = colors.surface
     val edge = if (dark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.85f)
 
-    Row(
+    BoxWithConstraints(
         modifier
             .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, bottom = FloatingNavBarBottomMargin)
@@ -106,27 +114,51 @@ fun FloatingNavBar(
             )
             .border(1.dp, edge, CircleShape)
             .padding(6.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEachIndexed { index, item ->
-            NavButton(
-                item = item,
-                selected = index == selectedIndex,
-                onClick = { onSelect(index) },
-                modifier = Modifier.weight(1f),
+        // یک کپسول برای دکمه‌ی فعال که با فنر بین دکمه‌ها سُر می‌خورد (offset در راست‌به‌چپ خودش قرینه است)
+        val itemWidth = (maxWidth - ItemGap * (items.size - 1)) / items.size
+        val pillX by animateDpAsState(
+            (itemWidth + ItemGap) * selectedIndex.coerceAtLeast(0),
+            animationSpec = spring(dampingRatio = 0.68f, stiffness = Spring.StiffnessMediumLow),
+            label = "pillX",
+        )
+        if (selectedIndex >= 0) {
+            Box(
+                Modifier
+                    .offset(x = pillX)
+                    .width(itemWidth)
+                    .fillMaxHeight()
+                    .clip(CircleShape)
+                    .background(colors.primary.copy(alpha = 0.14f))
             )
+        }
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(ItemGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEachIndexed { index, item ->
+                NavButton(
+                    item = item,
+                    selected = index == selectedIndex,
+                    onClick = { onSelect(index) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
 
+private val ItemGap = 2.dp
+
 @Composable
 private fun NavButton(item: NavItem, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
-    val pill by animateColorAsState(
-        if (selected) colors.primary.copy(alpha = 0.14f) else Color.Transparent,
-        animationSpec = tween(220),
-        label = "pill",
+    // آیکون تازه‌انتخاب‌شده یک جهش کوچک می‌کند
+    val iconScale by animateFloatAsState(
+        if (selected) 1.12f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "iconScale",
     )
     val content by animateColorAsState(
         if (selected) colors.primary else colors.onSurface.copy(alpha = 0.72f),
@@ -137,13 +169,12 @@ private fun NavButton(item: NavItem, selected: Boolean, onClick: () -> Unit, mod
         modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(percent = 50))
-            .background(pill)
             .clickable(role = Role.Tab, onClick = onClick)
             .semantics { this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box {
+        Box(Modifier.scale(iconScale)) {
             Icon(item.icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
             if (item.badge > 0) {
                 // عدد کوچک روی گوشه‌ی آیکون؛ متن بدون فاصله‌ی اضافه‌ی فونت، تا دقیقاً وسط دایره بنشیند

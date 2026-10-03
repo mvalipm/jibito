@@ -181,4 +181,26 @@ object JibitoIcons {
             moveTo(12f, 3.5f); lineTo(12f, 12f); lineTo(3.5f, 12f)
         }
     }
+
+    /** تقویم (چند ماه) */
+    val Calendar: ImageVector by lazy {
+        lineIcon("calendar") {
+            moveTo(5f, 6f); lineTo(19f, 6f); lineTo(19f, 20f); lineTo(5f, 20f); close()
+            moveTo(5f, 10f); lineTo(19f, 10f)
+            moveTo(9f, 3.5f); lineTo(9f, 7.5f)
+            moveTo(15f, 3.5f); lineTo(15f, 7.5f)
+        }
+    }
+
+    /** بانک (ستون‌دار) */
+    val Bank: ImageVector by lazy {
+        lineIcon("bank") {
+            moveTo(3.5f, 9.5f); lineTo(12f, 4f); lineTo(20.5f, 9.5f)
+            moveTo(6f, 10.5f); lineTo(6f, 17f)
+            moveTo(10f, 10.5f); lineTo(10f, 17f)
+            moveTo(14f, 10.5f); lineTo(14f, 17f)
+            moveTo(18f, 10.5f); lineTo(18f, 17f)
+            moveTo(3.5f, 20f); lineTo(20.5f, 20f)
+        }
+    }
 }
