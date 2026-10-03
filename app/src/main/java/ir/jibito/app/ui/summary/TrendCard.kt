@@ -89,7 +89,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
             Modifier
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, top = 14.dp)
-                .height(if (largeText) 176.dp else 150.dp),
+                .height(if (largeText) 196.dp else 172.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
