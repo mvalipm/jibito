@@ -75,6 +75,11 @@ object CategoryStyle {
         "⭐" to (DesignIcons.STAR to "gold"),
         "🔧" to (DesignIcons.WRENCH to "home"),
         "🌱" to (DesignIcons.LEAF to "grocery"),
+        "🎯" to (DesignIcons.TARGET to "food"),
+        "🧒" to (DesignIcons.CHILD to "health"),
+        "🚬" to (DesignIcons.CIGARETTE to "other"),
+        "✂" to (DesignIcons.SCISSORS to "shop"),
+        "🕌" to (DesignIcons.MOSQUE to "gold"),
     )
 
     private val iconCache = HashMap<String, ImageVector>()

@@ -56,6 +56,11 @@ object DesignIcons {
     const val STAR = "M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6-5-2.9-5 2.9 1.2-5.6L4 9.6 9.6 9z"
     const val WRENCH = "M14.5 4a4.5 4.5 0 0 0-4.2 6.1L4 16.4V20h3.6l6.3-6.3A4.5 4.5 0 0 0 20 9.5l-3 1-2.5-2.5 1-3z"
     const val LEAF = "M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"
+    const val TARGET = "M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0M12 12h.01"
+    const val CHILD = "M9.5 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M6 12l3-2.5h6l3 2.5M9 9.5V15l-1 5M15 9.5V15l1 5M9 15h6"
+    const val CIGARETTE = "M3 14h18v3H3zM16 14v3M18 11c0-2-2-2-2-4M21 11c0-2-2-2-2-4"
+    const val SCISSORS = "M4 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M8.6 8.4L20 18M8.6 15.6L20 6"
+    const val MOSQUE = "M5 20v-7a7 5 0 0 1 14 0v7M12 4v4M3 20h18M10 20v-3a2 2 0 0 1 4 0v3"
 
     // ── حال جیب و چیزهای دیگر ──
     const val BELL = "M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"

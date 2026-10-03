@@ -507,19 +507,28 @@ private fun SubPanel(
 }
 
 @Composable
-internal fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit, highlighted: Boolean = false) {
+internal fun CategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    highlighted: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
+) {
     val colors = MaterialTheme.colorScheme
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(label, fontWeight = if (selected || highlighted) FontWeight.Bold else FontWeight.Normal) },
+        leadingIcon = leadingIcon,
         shape = RoundedCornerShape(17.dp),
         border = null,
         colors = FilterChipDefaults.filterChipColors(
             containerColor = if (highlighted) JibitoTheme.colors.sugBg else JibitoTheme.colors.chip,
             labelColor = if (highlighted) JibitoTheme.colors.sugFg else colors.onSurface,
+            iconColor = colors.primary,
             selectedContainerColor = colors.primary,
             selectedLabelColor = colors.onPrimary,
+            selectedLeadingIconColor = colors.onPrimary,
         ),
     )
 }
