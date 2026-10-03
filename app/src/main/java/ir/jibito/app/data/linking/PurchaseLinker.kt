@@ -10,6 +10,8 @@ data class TxRecord(
     val timeMillis: Long,
     val bankId: Int,
     val tx: ParsedTransaction,
+    /** متن پیامک «اصلاحیه» است (بانک تراکنشی را برگردانده) */
+    val isCorrection: Boolean = false,
 )
 
 /** یک پیامک رمز دوم خرید. */
@@ -43,6 +45,10 @@ data class LinkedTransaction(
  *    مقصد خرید از پیامک رمز به برداشت اضافه می‌شود. (مبلغ‌ها هر دو به ریال مقایسه می‌شوند.)
  * ۳. بعد از آن برداشت، اگر تا ۳ دقیقه همان مبلغ به همان بانک واریز شد ← خرید ناموفق، پول برگشته.
  *    (این دو پیامک یک «خرید ناموفق» می‌شوند، نه یک خرج و یک درآمد.)
+ *
+ * برگشت پولِ هر برداشتی (حتی بدون رمز دوم، مثل انتقالِ ناموفق) هم همین‌طور حساب می‌شود، اگر واریزِ هم‌مبلغ به همان بانک:
+ * - تا ۳ دقیقه بعد آمد و مانده‌ها نشان می‌دهند همان حساب است (مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت)، یا
+ * - پیامکش «اصلاحیه» است و تا ۷۲ ساعت بعد آمد.
  */
 object PurchaseLinker {
 
@@ -62,6 +68,26 @@ object PurchaseLinker {
 
     /** مهلت رمز دوم و مهلت برگشت پول. */
     const val WINDOW_MILLIS: Long = 3 * 60 * 1000L
+
+    /** مهلت پیامک «اصلاحیه» برای برگشت پول (برگشتِ تراکنش‌های ناموفق شاپرک تا چند روز طول می‌کشد) */
+    const val CORRECTION_WINDOW_MILLIS: Long = 72 * 60 * 60 * 1000L
+
+    /** متنِ نرمال‌شده‌ی پیامک «اصلاحیه» است؟ (کشیده‌ی «اصـلاحیه» هم حساب است) */
+    fun isCorrectionText(normalizedBody: String): Boolean =
+        normalizedBody.replace("\u0640", "").contains("اصلاحیه")
+
+    /** واریزِ [d] پولِ برگشتیِ برداشتِ [w] است؟ */
+    private fun isRefund(w: TxRecord, d: TxRecord, linkedToOtp: Boolean): Boolean {
+        if (d.tx.type != FlowType.DEPOSIT || d.bankId != w.bankId || d.tx.amountRial != w.tx.amountRial) return false
+        val delay = d.timeMillis - w.timeMillis
+        if (delay < 0) return false
+        if (d.isCorrection && delay <= CORRECTION_WINDOW_MILLIS) return true
+        if (delay > WINDOW_MILLIS) return false
+        if (linkedToOtp) return true
+        val wb = w.tx.balanceRial ?: return false
+        val db = d.tx.balanceRial ?: return false
+        return db - d.tx.amountRial == wb
+    }
 
     fun link(transactions: List<TxRecord>, otps: List<OtpRecord>): List<LinkedTransaction> {
         val txs = transactions.sortedBy { it.timeMillis }
@@ -93,18 +119,13 @@ object PurchaseLinker {
             if (fee > 0) feeOf[w.id] = fee
         }
 
-        // مرحله‌ی ۲: خریدِ تأییدشده ← واریز همان مبلغ به همان بانک تا ۳ دقیقه بعد = برگشت پول
+        // مرحله‌ی ۲: برداشت ← واریز همان مبلغ به همان بانک = برگشت پول
+        // (خریدِ تأییدشده: تا ۳ دقیقه؛ بقیه: همان حساب تا ۳ دقیقه، یا «اصلاحیه» تا ۷۲ ساعت)
         val refundOf = HashMap<Long, TxRecord>()
         for (w in txs) {
-            if (w.id !in linkedToOtp) continue
-            val refund = txs.firstOrNull { d ->
-                d.id !in usedRefunds &&
-                    d.tx.type == FlowType.DEPOSIT &&
-                    d.bankId == w.bankId &&
-                    d.tx.amountRial == w.tx.amountRial &&
-                    d.timeMillis >= w.timeMillis &&
-                    d.timeMillis - w.timeMillis <= WINDOW_MILLIS
-            } ?: continue
+            if (w.tx.type != FlowType.WITHDRAWAL) continue
+            val withOtp = w.id in linkedToOtp
+            val refund = txs.firstOrNull { d -> d.id !in usedRefunds && isRefund(w, d, withOtp) } ?: continue
             usedRefunds += refund.id
             refundOf[w.id] = refund
         }

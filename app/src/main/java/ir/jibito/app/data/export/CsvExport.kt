@@ -31,7 +31,7 @@ object CsvExport {
         val (jy, jm, jd) = Jalali.fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         val isDeposit = t.transaction.type == FlowType.DEPOSIT
         val type = when {
-            t.isFailedPurchase -> "خرید ناموفق (برگشت پول)"
+            t.isFailedPurchase -> "تراکنش ناموفق (برگشت پول)"
             t.isSelfTransfer -> "انتقال به حساب خودم"
             isDeposit -> "درآمد"
             else -> "خرج"

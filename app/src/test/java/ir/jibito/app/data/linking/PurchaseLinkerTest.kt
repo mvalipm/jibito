@@ -1,8 +1,11 @@
 package ir.jibito.app.data.linking
 
+import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.PurchaseOtp
+import ir.jibito.app.data.parser.SmsTextNormalizer
+import ir.jibito.app.data.parser.TransactionParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,6 +16,7 @@ class PurchaseLinkerTest {
 
     private val mellat = 11
     private val saman = 15
+    private val melli = 1
     private val min = 60_000L
     private val t0 = 1_700_000_000_000L
 
@@ -116,6 +120,75 @@ class PurchaseLinkerTest {
         val txs = listOf(withdraw(2, t0), deposit(3, t0 + min))
         val result = PurchaseLinker.link(txs, emptyList())
         assertEquals(2, result.size)
+    }
+
+    private fun tx(id: Long, at: Long, type: FlowType, amount: Long, balance: Long?, isCorrection: Boolean = false, bank: Int = melli) =
+        TxRecord(id, at, bank, ParsedTransaction(type, amount, balance), isCorrection)
+
+    @Test
+    fun `برداشت بدون رمز و واریز هم‌مبلغ روی همان حساب تا ۳ دقیقه ← پول برگشته`() {
+        val txs = listOf(
+            tx(1, t0, FlowType.WITHDRAWAL, 15_012_200, balance = 2_204_355),
+            tx(2, t0 + min, FlowType.DEPOSIT, 15_012_200, balance = 17_216_555),
+        )
+        val result = PurchaseLinker.link(txs, emptyList())
+        assertEquals(1, result.size)
+        assertTrue(result[0].isFailedPurchase)
+        assertEquals(2L, result[0].refund!!.id)
+    }
+
+    @Test
+    fun `همان حساب ولی بعد از ۳ دقیقه، یا حساب دیگر، یا مانده‌ی نامعلوم ← برگشت نیست`() {
+        val w = tx(1, t0, FlowType.WITHDRAWAL, 15_012_200, balance = 2_204_355)
+        val late = tx(2, t0 + 4 * min, FlowType.DEPOSIT, 15_012_200, balance = 17_216_555)
+        val otherAccount = tx(2, t0 + min, FlowType.DEPOSIT, 15_012_200, balance = 40_000_000)
+        val noBalance = tx(2, t0 + min, FlowType.DEPOSIT, 15_012_200, balance = null)
+        val otherBank = tx(2, t0 + min, FlowType.DEPOSIT, 15_012_200, balance = 17_216_555, bank = mellat)
+        for (d in listOf(late, otherAccount, noBalance, otherBank)) {
+            val result = PurchaseLinker.link(listOf(w, d), emptyList())
+            assertEquals(d.toString(), 2, result.size)
+            assertFalse(result.any { it.isFailedPurchase })
+        }
+    }
+
+    @Test
+    fun `اصلاحیه‌ی هم‌مبلغ به همان بانک تا ۷۲ ساعت ← پول برگشته، حتی با تراکنش‌های وسطش`() {
+        val w = tx(1, t0, FlowType.WITHDRAWAL, 15_012_200, balance = 2_204_355)
+        val fix = tx(2, t0 + 70 * 60 * min, FlowType.DEPOSIT, 15_012_200, balance = 5_000_000, isCorrection = true)
+        val result = PurchaseLinker.link(listOf(w, fix), emptyList())
+        assertEquals(1, result.size)
+        assertEquals(2L, result[0].refund!!.id)
+
+        val tooLate = fix.copy(timeMillis = t0 + 73 * 60 * min)
+        assertEquals(2, PurchaseLinker.link(listOf(w, tooLate), emptyList()).size)
+        val otherAmount = fix.copy(tx = fix.tx.copy(amountRial = 15_000_000))
+        assertEquals(2, PurchaseLinker.link(listOf(w, otherAmount), emptyList()).size)
+    }
+
+    @Test
+    fun `تشخیص اصلاحیه از متن، حتی با کشیده و ی عربی`() {
+        assertTrue(PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize("بانك ملي ايران\nاصـلاحيه:15,012,200+")))
+        assertTrue(PurchaseLinker.isCorrectionText("اصلاحیه:1,000+"))
+        assertFalse(PurchaseLinker.isCorrectionText("واریز:1,000+"))
+    }
+
+    @Test
+    fun `پیامک‌های واقعی ملی - انتقال و اصلاحیه‌ی همان دقیقه ← یک تراکنش ناموفق`() {
+        val bank = BankDirectory.byId(melli)!!
+        val bodies = listOf(
+            "بانك ملي ايران\nانتقال:15,012,200-\nحساب:41007\nمانده:2,204,355\n0528-19:26",
+            "بانك ملي ايران\nاصـلاحيه:15,012,200+\nحساب:41007\nمانده:17,216,555\n0528-19:26",
+        )
+        val txs = bodies.mapIndexed { i, body ->
+            TxRecord(
+                i + 1L, t0, melli, TransactionParser.parse(bank, body)!!,
+                PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+            )
+        }
+        val result = PurchaseLinker.link(txs, emptyList())
+        assertEquals(1, result.size)
+        assertEquals(1L, result[0].record.id)
+        assertTrue(result[0].isFailedPurchase)
     }
 
     @Test

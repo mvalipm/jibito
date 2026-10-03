@@ -176,7 +176,7 @@ class SmsReader(private val context: Context) {
                     ?: templates[normalizedSender]?.let { TemplateMatcher.match(SmsTextNormalizer.normalize(body), it) }
                 if (tx != null) {
                     raws[raw.id] = raw
-                    txRecords += TxRecord(raw.id, raw.date, raw.bank.id, tx)
+                    txRecords += TxRecord(raw.id, raw.date, raw.bank.id, tx, PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)))
                     continue
                 }
                 val otp = TransactionParser.parseOtp(body)
