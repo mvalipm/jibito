@@ -409,6 +409,13 @@
     <string name="vs_last_month_less">%1$d٪ کمتر از همین موقعِ ماه قبل</string>
     <string name="vs_last_month_same">تقریباً همون اندازه‌ی همین موقعِ ماه قبل</string>
 
+    <string name="report_reason_title">چی غلط خونده شده؟</string>
+    <string name="report_reason_amount">مبلغ غلطه</string>
+    <string name="report_reason_type">نوع غلطه (خرج/درآمد)</string>
+    <string name="report_reason_merchant">طرف حساب غلطه</string>
+    <string name="report_reason_transfer">باید انتقال به حساب خودم باشه</string>
+    <string name="report_reason_other">چیز دیگه</string>
+    <string name="report_send">ارسال</string>
     <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
 
     <!-- طرح «جیبی»: روشن/تیره و پنهان کردن مبلغ‌ها -->

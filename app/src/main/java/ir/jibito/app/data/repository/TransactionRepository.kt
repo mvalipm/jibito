@@ -188,6 +188,7 @@ class TransactionRepositoryImpl(
                     isTransferRejected = f.transferState == TransactionFlowEntity.TRANSFER_REJECTED,
                     isManual = f.source == SOURCE_MANUAL,
                     feeRial = f.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull(),
+                    smsId = f.smsId,
                 )
             }
         }
