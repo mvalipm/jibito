@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -93,7 +94,7 @@ import ir.jibito.app.ui.common.MascotFace
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val app = context.applicationContext as JibitoApplication
     val repository = app.container.transactionRepository
@@ -119,13 +120,28 @@ fun SettingsScreen() {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
-        Text(
-            stringResource(R.string.settings_title),
-            modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 16.dp),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            color = colors.onBackground,
-        )
+        // از چرخ‌دنده‌ی «خلاصه» باز می‌شود (دیگر تب نیست): دکمه‌ی برگشت کنار عنوان
+        Row(Modifier.padding(top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = stringResource(R.string.cd_back), onClick = onBack),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.cd_back), tint = colors.onBackground, modifier = Modifier.size(24.dp))
+                }
+                Spacer(Modifier.width(4.dp))
+            }
+            Text(
+                stringResource(R.string.settings_title),
+                modifier = Modifier.padding(start = 4.dp),
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+            )
+        }
         // مشکل‌ها اول: بدون این دسترسی‌ها اپ کار اصلی‌اش را نمی‌کند
         if (!smsOk || !notifyOk) {
             PermissionBanner(smsOk = smsOk, notifyOk = notifyOk, onFix = {

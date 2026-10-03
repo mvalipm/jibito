@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.ui.common.LocalHideAmounts
+import ir.jibito.app.ui.main.NavIcons
 import ir.jibito.app.ui.common.HIDDEN_AMOUNT
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -119,7 +120,7 @@ private val CURVE = 76.dp
 
 /**
  * سرصفحه‌ی رنگی «خلاصه» (طرح «جیبی»): رنگش حال جیب است (آروم/یواش‌تر/بیرون زد).
- * دکمه‌ی ماه، روشن/تیره و پنهان کردن مبلغ‌ها؛ عدد درشت خرج ماه که از صفر بالا می‌آید؛
+ * دکمه‌ی ماه، روشن/تیره، پنهان کردن مبلغ‌ها و تنظیمات؛ عدد درشت خرج ماه که از صفر بالا می‌آید؛
  * نوار بودجه با خط «امروز»؛ و یک جمله که حال جیب را می‌گوید. لمس عدد ← تعیین بودجه‌ی کل.
  */
 @Composable
@@ -130,6 +131,7 @@ fun SummaryHero(
     dark: Boolean,
     onToggleDark: () -> Unit,
     onToggleHidden: () -> Unit,
+    onOpenSettings: () -> Unit = {},
     nowMillis: Long = System.currentTimeMillis(),
 ) {
     val t = JibitoTheme.colors
@@ -187,7 +189,7 @@ fun SummaryHero(
             .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = CURVE + 4.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // ماه + روشن/تیره + چشم
+            // ماه + روشن/تیره + چشم + تنظیمات
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 MonthPill(s.month, onPickMonth)
                 Spacer(Modifier.weight(1f))
@@ -202,6 +204,9 @@ fun SummaryHero(
                     stringResource(if (hidden) R.string.cd_show_amounts else R.string.cd_hide_amounts),
                     onToggleHidden,
                 )
+                // تنظیمات دیگر تب نیست: گوشه‌ی بالا-چپ (در راست‌به‌چپ، ته ردیف)
+                Spacer(Modifier.width(8.dp))
+                HeroButton(NavIcons.Settings.normal, stringResource(R.string.settings_title), onOpenSettings)
             }
 
             // «خرج این ماه» و عدد درشت، وسط سرصفحه
