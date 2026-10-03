@@ -33,7 +33,7 @@ object WrongReadingReport {
         sender?.takeIf { it.isNotBlank() }?.let { appendLine("سرشماره: ${maskSender(it)}") }
         appVersion?.takeIf { it.isNotBlank() }?.let { appendLine("نسخه‌ی اپ: $it") }
         appendLine("اپ خواند: " + if (t.transaction.type == FlowType.DEPOSIT) "واریز" else "برداشت")
-        if (t.isFailedPurchase) appendLine("اپ خواند: خرید ناموفق")
+        if (t.isFailedPurchase) appendLine("اپ خواند: تراکنش ناموفق (پول برگشت)")
         t.merchant?.let { appendLine("طرف حساب: ${maskDigits(it)}") }
         appendLine("———")
         append(labelAndMask(t.body, t.transaction.amountRial, t.transaction.balanceRial))

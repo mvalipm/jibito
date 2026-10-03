@@ -27,7 +27,7 @@
     <string name="list_empty">هنوز هیچ تراکنشی توی پیامک‌های بانکت پیدا نکردم.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
-    <string name="tx_failed_purchase">خرید ناموفق</string>
+    <string name="tx_failed_purchase">تراکنش ناموفق</string>
     <string name="tx_refunded">پول به حسابت برگشت — این مبلغ خرج حساب نمی‌شه.</string>
     <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
     <string name="unit_toman">تومان</string>
@@ -492,7 +492,7 @@
     <string name="tx_withdrawal_from">برداشت از %1$s</string>
     <string name="tx_meta_ask">مال چی بود؟</string>
     <string name="tx_meta_ask_income">از کجا اومد؟</string>
-    <string name="tx_meta_failed">خرید ناموفق · پول برگشت</string>
+    <string name="tx_meta_failed">ناموفق · پول برگشت</string>
     <string name="tx_meta_transfer">جابه‌جایی، خرج نیست</string>
     <string name="tx_suggest_other">یه چیز دیگه</string>
     <string name="uncat_empty_title">همه دسته دارن!</string>
