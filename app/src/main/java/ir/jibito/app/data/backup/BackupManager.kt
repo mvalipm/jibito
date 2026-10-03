@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import android.database.sqlite.SQLiteDatabase
 import ir.jibito.app.data.local.AppDatabase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -38,6 +40,17 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
     /** فایل باز شد ولی محتوایش سالم نیست */
     class DamagedException(message: String) : Exception(message)
 
+    private val statePrefs = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
+    private val _lastExportAt = MutableStateFlow(statePrefs.getLong(KEY_LAST_EXPORT, 0L).takeIf { it > 0 })
+
+    /** آخرین باری که روی همین گوشی پشتیبان گرفته شد (null = هیچ‌وقت)؛ برای یادآوری در تنظیمات */
+    val lastExportAt: StateFlow<Long?> = _lastExportAt
+
+    private fun markExported(at: Long) {
+        statePrefs.edit().putLong(KEY_LAST_EXPORT, at).apply()
+        _lastExportAt.value = at
+    }
+
     /** کل داده‌ها را رمزدار در [out] می‌نویسد. */
     suspend fun export(out: OutputStream, password: CharArray) = withContext(Dispatchers.IO) {
         val work = freshDir("backup_work")
@@ -62,6 +75,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             }
             out.write(BackupCrypto.encrypt(zipped.toByteArray(), password))
             out.flush()
+            markExported(System.currentTimeMillis())
         } finally {
             work.deleteRecursively()
         }
@@ -141,6 +155,9 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         private const val ENTRY_META = "meta.properties"
         private const val ENTRY_DB = "jibito.db"
         private const val ENTRY_PREFS = "prefs.json"
+        // جدا از BACKED_UP_PREFS: تاریخ پشتیبانِ همین گوشی نباید با بازگردانی عوض شود
+        private const val STATE_PREFS = "backup_state"
+        private const val KEY_LAST_EXPORT = "last_export_at"
         private const val META_FORMAT = "format"
         private const val META_DB_VERSION = "dbVersion"
         private const val META_CREATED_AT = "createdAt"

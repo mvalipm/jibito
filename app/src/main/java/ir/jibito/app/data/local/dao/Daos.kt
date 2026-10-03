@@ -257,6 +257,9 @@ interface CategoryDao {
     @Query("UPDATE categories SET isArchived = 1 WHERE id = :id")
     suspend fun archive(id: Long)
 
+    @Query("UPDATE categories SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String)
+
     /** دسته‌ی قدیمی‌ای که جای مشخصی در ساختار جدید ندارد ← دسته‌ی شخصی کاربر */
     @Query("UPDATE categories SET isCustom = 1, sortOrder = :sortOrder WHERE id = :id")
     suspend fun markCustom(id: Long, sortOrder: Int)

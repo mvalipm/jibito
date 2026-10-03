@@ -104,6 +104,9 @@ interface TransactionRepository {
     /** حذف دسته‌ی شخصی (و زیردسته‌هایش): تراکنش‌هایشان به دسته‌ی بالاتر یا بی‌دسته می‌روند */
     suspend fun deleteCustomCategory(categoryId: Long)
 
+    /** عوض کردن اسم دسته‌ی شخصی؛ همان قانون‌های ساختن (خالی، بلند، تکراری) */
+    suspend fun renameCustomCategory(categoryId: Long, name: String): CreateCategoryResult
+
     /**
      * ثبت دستی یک خرج یا درآمد. شناسه‌ی تراکنش تازه را برمی‌گرداند.
      * @param note «برای چی بود؟» — مثل طرف حساب رفتار می‌کند (پیشنهاد و یادگیری دسته)
@@ -369,6 +372,20 @@ class TransactionRepositoryImpl(
         }
         onCategoryChanged()
     }
+
+    override suspend fun renameCustomCategory(categoryId: Long, name: String): CreateCategoryResult =
+        db.withTransaction {
+            val categoryDao = db.categoryDao()
+            val all = categoryDao.all()
+            val target = all.firstOrNull { it.id == categoryId && it.isCustom && !it.isArchived }
+                ?: return@withTransaction CreateCategoryResult.Created(categoryId)
+            val others = all.filter { it.flowType == target.flowType && !it.isArchived && it.id != target.id }
+            CustomCategories.validate(name, others.map { it.name })?.let {
+                return@withTransaction CreateCategoryResult.Invalid(it)
+            }
+            categoryDao.rename(target.id, CustomCategories.clean(name))
+            CreateCategoryResult.Created(target.id)
+        }
 
     /** کارت/حساب مقصد ← «مال خودم»؛ برداشت‌های عادیِ دیگر به همین مقصد هم انتقال به خودم می‌شوند */
     private suspend fun learnOwnAccount(merchant: String, now: Long) {
