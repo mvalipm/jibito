@@ -22,14 +22,7 @@ fun visibleTransactions(
     search: TxSearch,
     now: Long = System.currentTimeMillis(),
 ): VisibleTransactions {
-    val base = if (onlyUncategorized) {
-        all.filter {
-            it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                it.transaction.type == FlowType.WITHDRAWAL
-        }
-    } else {
-        all
-    }
+    val base = if (onlyUncategorized) all.filter(::isUncategorizedSpend) else all
     val list = if (search.isActive) {
         val range = search.range(now)
         base.filter { search.matches(it, range) }
@@ -37,6 +30,21 @@ fun visibleTransactions(
         base
     }
     return VisibleTransactions(list, groupByDay(list, nonSpendCategoryIds(categories)))
+}
+
+/** خرجی که هنوز دسته ندارد (فیلتر «بی‌دسته») */
+fun isUncategorizedSpend(t: Transaction): Boolean =
+    t.categoryId == null && !t.isSelfTransfer && !t.isFailedPurchase && t.transaction.type == FlowType.WITHDRAWAL
+
+/** چند تراکنش با این جست‌وجو پیدا می‌شود (دکمه‌ی «نمایش ۴۸ تراکنش» در برگه‌ی فیلتر، پیش از اعمال) */
+fun countMatching(
+    all: List<Transaction>,
+    onlyUncategorized: Boolean,
+    search: TxSearch,
+    now: Long = System.currentTimeMillis(),
+): Int {
+    val range = search.range(now)
+    return all.count { (!onlyUncategorized || isUncategorizedSpend(it)) && (!search.isActive || search.matches(it, range)) }
 }
 
 /** دسته‌هایی مثل پس‌انداز (یا زیردسته‌هایشان) که در جمع خرج روز حساب نمی‌شوند، مثل صفحه‌ی خلاصه */

@@ -49,4 +49,18 @@ class TransactionFilterTest {
         assertEquals(setOf(20L, 21L), nonSpendCategoryIds(categories))
         assertEquals(1_250_000L + 500_000L, v.groups.sumOf { it.spendRial })
     }
+
+    @Test
+    fun `فقط خرج و فقط درآمد`() {
+        assertEquals(listOf(3L), visibleTransactions(all, categories, false, TxSearch(flow = FlowType.DEPOSIT), day).list.map { it.id })
+        assertEquals(listOf(1L, 2L, 4L), visibleTransactions(all, categories, false, TxSearch(flow = FlowType.WITHDRAWAL), day).list.map { it.id })
+    }
+
+    @Test
+    fun `شمارش پیش از اعمال، با فیلتر بی‌دسته`() {
+        assertEquals(4, countMatching(all, onlyUncategorized = false, search = TxSearch(), now = day))
+        assertEquals(1, countMatching(all, onlyUncategorized = true, search = TxSearch(), now = day))
+        // مبلغ به تومان: ۳۰ هزار تا ۱۲۵ هزار (هر دو سر بازه حساب است)
+        assertEquals(3, countMatching(all, false, TxSearch(minToman = 30_000, maxToman = 125_000), day))
+    }
 }

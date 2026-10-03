@@ -10,7 +10,9 @@ object MerchantExtractor {
     /** کلیدهایی که بعدشان اسم طرف حساب می‌آید. ترتیب مهم است: دقیق‌ترها اول. */
     private val keys = listOf(
         "نام پذیرنده", "پذیرنده", "نام فروشگاه", "فروشگاه", "خرید از", "پرداخت به",
-        "انتقال به", "بابت", "مقصد", "در وجه", "به نام", "از طرف", "واریز کننده", "واریزکننده",
+        // «به نام / در وجه» (اسم گیرنده) پیش از «مقصد»: در رمز «انتقال بین بانکی پل» مفید، خط مقصد فقط
+        // «شبا + اسم بانک» است و اسم بانک برای همه‌ی گیرنده‌های آن بانک یکی است
+        "انتقال به", "بابت", "در وجه", "به نام", "مقصد", "از طرف", "واریز کننده", "واریزکننده",
     )
 
     /** اگر مقدار با این‌ها شروع شود، اسم طرف حساب نیست. */
@@ -55,8 +57,14 @@ object MerchantExtractor {
             return "کارت/حساب …" + compact.takeLast(4)
         }
         // تکه‌هایی که عدد دارند (تاریخ، ساعت، شماره پیگیری) حذف می‌شوند تا اسم همیشه یکسان بماند
-        val words = v.split(Regex("\\s+")).filter { w -> w.none { it.isDigit() } }
+        val tokens = v.split(Regex("\\s+"))
+        val words = tokens.filter { w -> w.none { it.isDigit() } }
         val name = words.joinToString(" ").trim().trimEnd(':', '-', '.', '،').trim()
+        // «IR720*74001 بانک اقتصاد نوین»: اسم بانک گیرنده را مشخص نمی‌کند ← شماره‌ی حساب
+        val account = tokens.firstOrNull { it.count(Char::isDigit) >= 4 && it.matches(Regex("(?:IR)?[\\dXx*]+", RegexOption.IGNORE_CASE)) }
+        if (account != null && name.startsWith("بانک")) {
+            return "کارت/حساب …" + account.filter { it.isDigit() }.takeLast(4)
+        }
         return name.takeIf { it.length >= 2 }?.take(40)
     }
 }

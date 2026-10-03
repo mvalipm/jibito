@@ -40,6 +40,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -132,6 +135,8 @@ internal fun TransactionRow(
     tint: CategoryTint?,
     onClick: () -> Unit,
     onAcceptSuggestion: (() -> Unit)? = null,
+    /** متن جست‌وجو: هر جای عنوان و توضیح که پیدا شد، پررنگ می‌شود */
+    highlight: String? = null,
 ) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
@@ -195,7 +200,7 @@ internal fun TransactionRow(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    title,
+                    highlighted(title, highlight, t.amberTint),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.onBackground,
@@ -205,7 +210,7 @@ internal fun TransactionRow(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    meta,
+                    highlighted(meta, highlight, t.amberTint),
                     fontSize = 13.sp,
                     color = if (uncategorized) t.uncatFg else t.muted,
                     maxLines = if (largeText) 4 else 1,
@@ -248,6 +253,26 @@ internal fun TransactionRow(
                     maxLines = 1,
                 )
             }
+        }
+    }
+}
+
+/** جاهایی از [text] که [query] (بی‌توجه به ی/ک عربی و بزرگی حروف) در آن هست، با زمینه‌ی [bg] */
+internal fun highlighted(text: String, query: String?, bg: Color): AnnotatedString {
+    val q = query?.trim().orEmpty()
+    if (q.isEmpty()) return AnnotatedString(text)
+    fun norm(s: String) = s.replace('ي', 'ی').replace('ك', 'ک').lowercase()
+    val hay = norm(text)
+    val needle = norm(q)
+    if (hay.length != text.length) return AnnotatedString(text)
+    return buildAnnotatedString {
+        append(text)
+        var from = 0
+        while (true) {
+            val i = hay.indexOf(needle, from)
+            if (i < 0) break
+            addStyle(SpanStyle(background = bg, fontWeight = FontWeight.Black), i, i + needle.length)
+            from = i + needle.length
         }
     }
 }

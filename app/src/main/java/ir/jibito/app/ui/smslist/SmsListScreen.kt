@@ -1,6 +1,27 @@
 package ir.jibito.app.ui.smslist
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -144,76 +165,135 @@ fun SmsListScreen(
         }
     }
     val uncategorizedCount = remember(messages) {
-        messages.orEmpty().count {
-            it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase && it.transaction.type == FlowType.WITHDRAWAL
+        messages.orEmpty().count(::isUncategorizedSpend)
+    }
+
+    // فهرست؛ و کارت «کیف پول» که با اسکرول رو به بالا جمع می‌شود (جمعش کنار عنوان می‌ماند) و با کشیدن در بالای فهرست باز می‌شود
+    val listState = rememberLazyListState()
+    val walletFull = remember { IntArray(1) }
+    var collapse by remember { mutableFloatStateOf(0f) }
+    val collapseConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y >= 0f) return Offset.Zero
+                val old = collapse
+                collapse = (old - available.y).coerceIn(0f, walletFull[0].toFloat())
+                return Offset(0f, old - collapse)
+            }
+
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (available.y <= 0f) return Offset.Zero
+                val old = collapse
+                collapse = (old - available.y).coerceAtLeast(0f)
+                return Offset(0f, old - collapse)
+            }
         }
     }
+    val collapsed by remember { derivedStateOf { walletFull[0] > 0 && collapse >= walletFull[0] * 0.7f } }
+    val showWallet = bankBalances.isNotEmpty() && !showSearch
+    // بی کارت، چیزی برای جمع شدن نیست (اسکرول نباید صرف کارت پنهان شود)
+    if (!showWallet) walletFull[0] = 0
+    val titleSize by animateFloatAsState(if (collapsed && showWallet) 21f else 30f, tween(220), label = "titleSize")
+
+    // اگر کاربر هنوز دست به فهرست نزده، بالای آن دیده شود (کارت انتقال که دیرتر از دیتابیس می‌رسد، بالای فهرست پنهان نماند)
+    var userScrolled by remember { mutableStateOf(false) }
+    LaunchedEffect(listState.isScrollInProgress) { if (listState.isScrollInProgress) userScrolled = true }
+    val hasSuggestion = transferSuggestions.isNotEmpty() && !showSearch
+    LaunchedEffect(hasSuggestion, visible?.list?.isNotEmpty()) { if (!userScrolled) listState.scrollToItem(0) }
+    // فیلتر یا جست‌وجوی تازه: از اول فهرست
+    LaunchedEffect(onlyUncategorized, search) { listState.scrollToItem(0) }
+
+    fun closeSearch() {
+        viewModel.setSearch(TxSearch())
+        showSearch = false
+    }
+    BackHandler(enabled = showSearch) { closeSearch() }
 
     Box(Modifier.fillMaxSize().background(colors.background)) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .safeDrawingPadding(),
+            .safeDrawingPadding()
+            .nestedScroll(collapseConnection),
     ) {
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        if (showSearch) {
+            SearchTopBar(
+                search = search,
+                onChange = viewModel::setSearch,
+                onClose = { closeSearch() },
+                onlyUncategorized = onlyUncategorized,
+                onUncategorizedChange = onFilterChange,
+                results = visible?.list,
+                countFor = { s -> countMatching(messages.orEmpty(), onlyUncategorized, s) },
+            )
+        } else {
+            Row(
+                Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = stringResource(R.string.list_title),
                     modifier = Modifier.weight(1f),
-                    fontSize = 30.sp,
+                    fontSize = titleSize.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
+                    maxLines = 1,
                 )
+                AnimatedVisibility(
+                    visible = collapsed && showWallet,
+                    enter = fadeIn() + expandHorizontally(),
+                    exit = fadeOut() + shrinkHorizontally(),
+                ) {
+                    Row {
+                        BalanceMiniPill(bankBalances)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                }
                 // جست‌وجو (تاریخ، مبلغ، اسم)
                 Box(
                     Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (search.isActive) colors.primaryContainer else t.chip)
-                        .clickable(onClickLabel = stringResource(if (showSearch) R.string.cd_close_search else R.string.cd_search)) {
-                            if (showSearch) viewModel.setSearch(TxSearch())
-                            showSearch = !showSearch
-                        },
+                        .background(t.chip)
+                        .clickable(onClickLabel = stringResource(R.string.cd_search)) { showSearch = true },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        if (showSearch) JibitoIcons.Close else DesignIcons.Search,
-                        contentDescription = null,
-                        tint = colors.onBackground,
-                        modifier = Modifier.size(22.dp),
-                    )
+                    Icon(DesignIcons.Search, contentDescription = null, tint = colors.onBackground, modifier = Modifier.size(22.dp))
                 }
             }
-            if (isSyncing && !messages.isNullOrEmpty()) {
-                Spacer(Modifier.height(8.dp))
+            if (showWallet) {
+                Box(
+                    Modifier
+                        .clipToBounds()
+                        .layout { measurable, constraints ->
+                            val p = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+                            walletFull[0] = p.height
+                            val h = (p.height - collapse.roundToInt()).coerceIn(0, p.height)
+                            layout(p.width, h) { p.place(0, h - p.height) }
+                        }
+                        .graphicsLayer { alpha = if (walletFull[0] > 0) (1f - collapse / walletFull[0]).coerceIn(0f, 1f) else 1f },
+                ) {
+                    WalletCard(bankBalances, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                }
+            }
+            // «همه | بی‌دسته»: سوییچ دوقسمتی که همیشه بالای فهرست می‌ماند
+            SegmentedFilter(
+                onlyUncategorized = onlyUncategorized,
+                uncategorizedCount = uncategorizedCount,
+                onChange = onFilterChange,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+            )
+        }
+        if (isSyncing && !messages.isNullOrEmpty()) {
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.list_syncing),
-                    fontSize = 12.sp,
-                    color = t.muted,
-                )
-            }
-            // «همه» / «بی‌دسته»
-            Row(Modifier.padding(top = 14.dp)) {
-                FilterPill(stringResource(R.string.filter_all), selected = !onlyUncategorized, onClick = { onFilterChange(false) })
-                Spacer(Modifier.width(8.dp))
-                FilterPill(
-                    stringResource(R.string.filter_uncategorized),
-                    selected = onlyUncategorized,
-                    badge = uncategorizedCount,
-                    onClick = { onFilterChange(true) },
-                )
+                Text(text = stringResource(R.string.list_syncing), fontSize = 12.sp, color = t.muted)
             }
         }
         // فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel و بیرون از رشته‌ی اصلی انجام می‌شود
         val list = visible?.list
         val groups = visible?.groups.orEmpty()
-        if (showSearch) {
-            Box(Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
-                SearchPanel(search = search, onChange = viewModel::setSearch, results = list)
-            }
-        }
         when {
             list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -235,16 +315,13 @@ fun SmsListScreen(
                 )
             }
             else -> LazyColumn(
-                contentPadding = PaddingValues(top = 14.dp, bottom = 88.dp + LocalBottomBarSpace.current),
+                state = listState,
+                contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp + LocalBottomBarSpace.current),
             ) {
-                // «چقد دارم؟»: آخرین مانده‌ی هر بانک
-                if (bankBalances.isNotEmpty() && !search.isActive) {
-                    item(key = "balances") { BankBalancesRow(bankBalances) }
-                }
-                // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
-                transferSuggestions.firstOrNull()?.takeIf { !search.isActive }?.let { suggestion ->
+                // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی و فشرده، بالای فهرست
+                transferSuggestions.firstOrNull()?.takeIf { !showSearch }?.let { suggestion ->
                     item(key = "transfer-suggestion") {
-                        Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+                        Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
                             TransferSuggestionCard(
                                 suggestion = suggestion,
                                 total = transferSuggestions.size,
@@ -264,6 +341,7 @@ fun SmsListScreen(
                 val maxDay = groups.maxOfOrNull { it.spendRial }?.coerceAtLeast(1L) ?: 1L
                 val spendDays = groups.filter { it.spendRial > 0 }
                 val avgDay = if (spendDays.isEmpty()) 0L else spendDays.sumOf { it.spendRial } / spendDays.size
+                val highlight = search.text.takeIf { showSearch }
                 groups.forEach { group ->
                     stickyHeader(key = "day-${group.dayStartMillis}") {
                         Box(Modifier.padding(horizontal = 20.dp)) {
@@ -284,6 +362,7 @@ fun SmsListScreen(
                                 tint = tintOf(sms, byId),
                                 onClick = { selectedId = sms.id },
                                 onAcceptSuggestion = suggestedId?.let { id -> { pickCategory(sms, id) } },
+                                highlight = highlight,
                             )
                         }
                     }
@@ -385,29 +464,56 @@ private fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
     return categoryTint(root.colorHex, CategoryTree.iconOf(c, byId))
 }
 
-/** کپسول فیلتر «همه» / «بی‌دسته» (انتخاب‌شده: تیره) */
+/** سوییچ دوقسمتی «همه | بی‌دسته ۹۹+» (قسمت انتخاب‌شده: کارت روشن روی ریل) */
 @Composable
-private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, badge: Int = 0) {
+private fun SegmentedFilter(
+    onlyUncategorized: Boolean,
+    uncategorizedCount: Int,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val t = JibitoTheme.colors
-    val bg by animateColorAsState(if (selected) t.onBg else t.chip, tween(300), label = "pillBg")
-    val fg by animateColorAsState(if (selected) t.onFg else MaterialTheme.colorScheme.onBackground, tween(300), label = "pillFg")
     Row(
-        Modifier
-            .height(38.dp)
-            .clip(RoundedCornerShape(19.dp))
+        modifier
+            .fillMaxWidth()
+            .height(46.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(t.chip)
+            .padding(4.dp),
+    ) {
+        Segment(stringResource(R.string.filter_all), selected = !onlyUncategorized, onClick = { onChange(false) }, modifier = Modifier.weight(1f))
+        Segment(
+            stringResource(R.string.filter_uncategorized),
+            selected = onlyUncategorized,
+            badge = uncategorizedCount,
+            onClick = { onChange(true) },
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier, badge: Int = 0) {
+    val t = JibitoTheme.colors
+    val bg by animateColorAsState(if (selected) t.sheet else t.chip, tween(250), label = "segBg")
+    val fg by animateColorAsState(if (selected) MaterialTheme.colorScheme.onBackground else t.muted, tween(250), label = "segFg")
+    Row(
+        modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(12.dp))
             .background(bg)
             .clickable(onClick = onClick)
-            .semantics { this.selected = selected }
-            .padding(horizontal = if (badge > 0) 14.dp else 16.dp),
+            .semantics { this.selected = selected },
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         if (badge > 0) {
             Spacer(Modifier.width(8.dp))
             Box(
                 Modifier
-                    .height(22.dp)
-                    .defaultMinSize(minWidth = 22.dp)
+                    .height(20.dp)
+                    .defaultMinSize(minWidth = 20.dp)
                     .clip(CircleShape)
                     .background(t.badge)
                     .padding(horizontal = 6.dp),
@@ -416,7 +522,7 @@ private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, ba
                 Text(
                     Jalali.toPersianDigits(if (badge > 99) "99+" else badge.toString()),
                     color = t.badgeFg,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }

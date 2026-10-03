@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.smslist
 
+import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
@@ -22,9 +23,15 @@ data class TxSearch(
     val day: Int? = null,
     val minToman: Long? = null,
     val maxToman: Long? = null,
+    /** «فقط خرج» / «فقط درآمد»؛ null یعنی هر دو */
+    val flow: FlowType? = null,
 ) {
     val isActive: Boolean
-        get() = text.isNotBlank() || preset != DatePreset.ALL || minToman != null || maxToman != null
+        get() = text.isNotBlank() || preset != DatePreset.ALL || minToman != null || maxToman != null || flow != null
+
+    /** بازه‌ی تاریخ یا مبلغ انتخاب شده (چیپ «تاریخ/مبلغ» روشن است) */
+    val hasDate: Boolean get() = preset != DatePreset.ALL
+    val hasAmount: Boolean get() = minToman != null || maxToman != null
 
     /** بازه‌ی زمانی [از، تا) به میلی‌ثانیه؛ null یعنی همه‌ی زمان‌ها */
     fun range(now: Long = System.currentTimeMillis()): Pair<Long, Long>? {
@@ -52,6 +59,7 @@ data class TxSearch(
     }
 
     fun matches(t: Transaction, range: Pair<Long, Long>?): Boolean {
+        if (flow != null && t.transaction.type != flow) return false
         if (range != null && (t.dateMillis < range.first || t.dateMillis >= range.second)) return false
         val toman = t.transaction.amountRial / 10
         if (minToman != null && toman < minToman) return false
