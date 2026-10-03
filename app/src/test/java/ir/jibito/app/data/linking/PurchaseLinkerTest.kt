@@ -1,6 +1,7 @@
 package ir.jibito.app.data.linking
 
 import ir.jibito.app.data.bank.BankDirectory
+import ir.jibito.app.data.parser.AccountExtractor
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.PurchaseOtp
@@ -122,8 +123,10 @@ class PurchaseLinkerTest {
         assertEquals(2, result.size)
     }
 
-    private fun tx(id: Long, at: Long, type: FlowType, amount: Long, balance: Long?, isCorrection: Boolean = false, bank: Int = melli) =
-        TxRecord(id, at, bank, ParsedTransaction(type, amount, balance), isCorrection)
+    private fun tx(
+        id: Long, at: Long, type: FlowType, amount: Long, balance: Long?,
+        isCorrection: Boolean = false, bank: Int = melli, account: String? = null,
+    ) = TxRecord(id, at, bank, ParsedTransaction(type, amount, balance), isCorrection, account)
 
     @Test
     fun `برداشت بدون رمز و واریز هم‌مبلغ روی همان حساب تا ۳ دقیقه ← پول برگشته`() {
@@ -182,7 +185,8 @@ class PurchaseLinkerTest {
         val txs = bodies.mapIndexed { i, body ->
             TxRecord(
                 i + 1L, t0, melli, TransactionParser.parse(bank, body)!!,
-                PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+                isCorrection = PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+                account = AccountExtractor.find(SmsTextNormalizer.normalize(body)),
             )
         }
         val result = PurchaseLinker.link(txs, emptyList())
@@ -202,7 +206,8 @@ class PurchaseLinkerTest {
         val txs = bodies.mapIndexed { i, body ->
             TxRecord(
                 i + 1L, t0 + i * min, melli, TransactionParser.parse(bank, body)!!,
-                PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+                isCorrection = PurchaseLinker.isCorrectionText(SmsTextNormalizer.normalize(body)),
+                account = AccountExtractor.find(SmsTextNormalizer.normalize(body)),
             )
         }
         val result = PurchaseLinker.link(txs, emptyList()).associateBy { it.record.id }
@@ -221,6 +226,27 @@ class PurchaseLinkerTest {
         val result = PurchaseLinker.link(txs, emptyList()).associateBy { it.record.id }
         assertFalse(result.getValue(1).isFailedPurchase)
         assertEquals(3L, result.getValue(2).refund!!.id)
+    }
+
+    @Test
+    fun `اصلاحیه به حسابِ دیگرِ همان بانک ← برگشت نیست`() {
+        val w = tx(1, t0, FlowType.WITHDRAWAL, 1_000_000, balance = null, account = "41007")
+        val fix = tx(2, t0 + min, FlowType.DEPOSIT, 1_000_000, balance = null, isCorrection = true, account = "55555")
+        val result = PurchaseLinker.link(listOf(w, fix), emptyList())
+        assertEquals(2, result.size)
+        assertFalse(result.any { it.isFailedPurchase })
+    }
+
+    @Test
+    fun `چند برداشت از حساب‌های مختلف ← اصلاحیه مال برداشتِ همان شماره‌حساب`() {
+        val txs = listOf(
+            tx(1, t0, FlowType.WITHDRAWAL, 1_000_000, balance = null, account = "41007"),
+            tx(2, t0 + min, FlowType.WITHDRAWAL, 1_000_000, balance = null, account = "99999"),
+            tx(3, t0 + 2 * min, FlowType.DEPOSIT, 1_000_000, balance = null, isCorrection = true, account = "41007"),
+        )
+        val result = PurchaseLinker.link(txs, emptyList()).associateBy { it.record.id }
+        assertEquals(3L, result.getValue(1).refund!!.id)
+        assertFalse(result.getValue(2).isFailedPurchase)
     }
 
     @Test

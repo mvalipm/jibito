@@ -14,6 +14,8 @@ data class TransferCandidate(
     val isInterbank: Boolean = false,
     /** پیامکِ «اصلاحیه» (برگشت پول از طرف بانک) ← هیچ‌وقت انتقال نیست */
     val isCorrection: Boolean = false,
+    /** شماره‌ی حساب/کارتِ خود پیامک، اگر در متن بود */
+    val account: String? = null,
 )
 
 /** یک پیشنهاد: «این برداشت و این واریز احتمالاً انتقال بین حساب‌های خودت است». */
@@ -26,8 +28,8 @@ data class TransferPair(val withdrawalId: Long, val depositId: Long)
  * - مبلغ دقیقاً برابر، یا برداشت = واریز + کارمزد که بین ۵۰۰ تا ۵۰٬۰۰۰ تومان است (و کمتر از خود مبلغ).
  * - واریز بعد از برداشت (یا هم‌زمان): حداکثر ۳۰ دقیقه بعد (کارت‌به‌کارت و انتقال داخلی فوری‌اند)؛
  *   اگر متن یکی از دو پیامک از پایا/ساتنا/حواله بگوید، حداکثر ۷۲ ساعت (تعطیلات آخر هفته).
- * - برداشت و واریز روی «همان حساب» جفت نمی‌شوند: هم‌بانک و مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت
- *   ← پول برگشته، نه انتقال.
+ * - برداشت و واریز روی «همان حساب» جفت نمی‌شوند: هم‌بانک و (شماره‌حساب یکی، یا مانده‌ی قبل از واریز =
+ *   مانده‌ی بعد از برداشت) ← پول برگشته، نه انتقال. انتقال از یک حساب به خودش معنی ندارد.
  * - واریزِ «اصلاحیه» هیچ‌وقت انتقال نیست (بانک پولِ تراکنشی را برگردانده).
  * - هر تراکنش حداکثر در یک جفت.
  * - برداشت‌ها به ترتیب زمان؛ هر برداشت نزدیک‌ترین واریزِ مناسبِ آزاد بعد از خودش را می‌گیرد.
@@ -58,9 +60,10 @@ object TransferMatcher {
     fun windowFor(w: TransferCandidate, d: TransferCandidate): Long =
         if (w.isInterbank || d.isInterbank) INTERBANK_WINDOW_MILLIS else WINDOW_MILLIS
 
-    /** هم‌بانک و مانده‌ها پشت سر هم ← واریز روی همان حسابی نشسته که برداشت از آن بوده */
+    /** هم‌بانک و (شماره‌حساب یکی، یا مانده‌ها پشت سر هم) ← واریز روی همان حسابی نشسته که برداشت از آن بوده */
     fun isSameAccount(w: TransferCandidate, d: TransferCandidate): Boolean {
         if (w.bankId == null || w.bankId != d.bankId) return false
+        if (w.account != null && d.account != null) return w.account == d.account
         val wb = w.balanceRial ?: return false
         val db = d.balanceRial ?: return false
         return db - d.amountRial == wb

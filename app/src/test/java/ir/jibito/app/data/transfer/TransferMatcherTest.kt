@@ -115,6 +115,16 @@ class TransferMatcherTest {
     }
 
     @Test
+    fun `همان شماره‌حساب ← انتقال نیست، حساب دیگرِ همان بانک ← هست`() {
+        val wd = TransferCandidate(1, true, 1_000_000, 0, bankId = 1, account = "41007")
+        val same = TransferCandidate(2, false, 1_000_000, min, bankId = 1, account = "41007")
+        assertEquals(0, TransferMatcher.findPairs(listOf(wd, same)).size)
+        // شماره‌حساب‌ها فرق دارند ← حتی اگر مانده‌ها تصادفاً پشت سر هم باشند، جفت است
+        val other = TransferCandidate(2, false, 1_000_000, min, bankId = 1, account = "55555")
+        assertEquals(1, TransferMatcher.findPairs(listOf(wd, other)).size)
+    }
+
+    @Test
     fun `هر واریز فقط یک بار جفت می‌شود و نزدیک‌ترین گرفته می‌شود`() {
         val pairs = TransferMatcher.findPairs(
             listOf(
@@ -164,6 +174,7 @@ class TransferMatcherTest {
                     balanceRial = listOf(null, 0L, 1_000_000L, 2_000_000L)[random.nextInt(4)],
                     isInterbank = random.nextInt(4) == 0,
                     isCorrection = random.nextInt(6) == 0,
+                    account = listOf(null, "1", "2")[random.nextInt(3)],
                 )
             }
             assertEquals("round $round", naive(items), TransferMatcher.findPairs(items))

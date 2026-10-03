@@ -12,6 +12,8 @@ data class TxRecord(
     val tx: ParsedTransaction,
     /** متن پیامک «اصلاحیه» است (بانک تراکنشی را برگردانده) */
     val isCorrection: Boolean = false,
+    /** شماره‌ی حساب/کارتِ خود پیامک، اگر در متن بود (AccountExtractor) */
+    val account: String? = null,
 )
 
 /** یک پیامک رمز دوم خرید. */
@@ -49,6 +51,7 @@ data class LinkedTransaction(
  * برگشت پولِ هر برداشتی (حتی بدون رمز دوم، مثل انتقالِ ناموفق) هم همین‌طور حساب می‌شود، اگر واریزِ هم‌مبلغ به همان بانک:
  * - تا ۳ دقیقه بعد آمد و مانده‌ها نشان می‌دهند همان حساب است (مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت)، یا
  * - پیامکش «اصلاحیه» است و تا ۷۲ ساعت بعد آمد.
+ * اگر شماره‌ی حساب هر دو پیامک معلوم و متفاوت باشد، برگشت نیست.
  */
 object PurchaseLinker {
 
@@ -79,6 +82,7 @@ object PurchaseLinker {
     /** واریزِ [d] پولِ برگشتیِ برداشتِ [w] است؟ */
     private fun isRefund(w: TxRecord, d: TxRecord, linkedToOtp: Boolean): Boolean {
         if (d.tx.type != FlowType.DEPOSIT || d.bankId != w.bankId || d.tx.amountRial != w.tx.amountRial) return false
+        if (w.account != null && d.account != null && w.account != d.account) return false
         val delay = d.timeMillis - w.timeMillis
         if (delay < 0) return false
         if (d.isCorrection && delay <= CORRECTION_WINDOW_MILLIS) return true
@@ -125,14 +129,18 @@ object PurchaseLinker {
 
         // مرحله‌ی ۲: واریز همان مبلغ به همان بانک = برگشت پولِ یک برداشت
         // (خریدِ تأییدشده: تا ۳ دقیقه؛ بقیه: همان حساب تا ۳ دقیقه، یا «اصلاحیه» تا ۷۲ ساعت).
-        // اگر چند برداشت ممکن است، اول برداشتی که مانده‌ها نشان می‌دهند همین واریز برگشتش است، وگرنه نزدیک‌ترین.
+        // اگر چند برداشت ممکن است: اول برداشتی که مانده‌ها نشان می‌دهند همین واریز برگشتش است،
+        // بعد برداشت از همان شماره‌حساب، وگرنه نزدیک‌ترین.
         val refundOf = HashMap<Long, TxRecord>()
         for (d in txs) {
             if (d.tx.type != FlowType.DEPOSIT) continue
             val candidates = txs.filter { w ->
                 w.tx.type == FlowType.WITHDRAWAL && w.id !in refundOf && isRefund(w, d, w.id in linkedToOtp)
             }
-            val w = candidates.lastOrNull { balancesChain(it, d) } ?: candidates.lastOrNull() ?: continue
+            val w = candidates.lastOrNull { balancesChain(it, d) }
+                ?: candidates.lastOrNull { it.account != null && it.account == d.account }
+                ?: candidates.lastOrNull()
+                ?: continue
             usedRefunds += d.id
             refundOf[w.id] = d
         }

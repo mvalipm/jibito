@@ -18,6 +18,7 @@ import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.linking.PurchaseLinker
+import ir.jibito.app.data.parser.AccountExtractor
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.transfer.TransferCandidate
 import ir.jibito.app.data.transfer.TransferMatcher
@@ -211,6 +212,7 @@ class TransactionRepositoryImpl(
                         balanceRial = it.transaction.balanceRial,
                         isInterbank = TransferMatcher.isInterbankText(text),
                         isCorrection = PurchaseLinker.isCorrectionText(text),
+                        account = AccountExtractor.find(text),
                     )
                 }
             ).mapNotNull { p ->
