@@ -43,6 +43,17 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.theme.DarkMode
@@ -80,6 +91,7 @@ import ir.jibito.app.ui.common.MascotFace
  * تنظیمات: پوسته، خواندن دوباره‌ی پیامک‌ها، دسترسی‌ها، نمایش دسته‌ها، دسته‌های شخصی،
  * قفل اپ و پشتیبان‌گیری، نسخه‌ی اپ.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
@@ -109,8 +121,8 @@ fun SettingsScreen() {
     ) {
         Text(
             stringResource(R.string.settings_title),
-            modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 16.dp),
-            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 16.dp),
+            fontSize = 30.sp,
             fontWeight = FontWeight.Black,
             color = colors.onBackground,
         )
@@ -190,9 +202,10 @@ fun SettingsScreen() {
                         }
                     },
                     enabled = smsOk,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.settings_rescan_button), fontWeight = FontWeight.Bold) }
+                    shape = RoundedCornerShape(26.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = JibitoTheme.colors.btnBg, contentColor = JibitoTheme.colors.btnFg),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                ) { Text(stringResource(R.string.settings_rescan_button), fontWeight = FontWeight.Black) }
             }
         }
 
@@ -229,61 +242,110 @@ fun SettingsScreen() {
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
-            Spacer(Modifier.height(8.dp))
-            listOf(
+            Spacer(Modifier.height(12.dp))
+            // چند لایه: سه کپسول کنار هم، توضیح گزینه‌ی انتخاب‌شده زیرشان
+            val depthOptions = listOf(
                 Triple(1, R.string.settings_depth_1, R.string.settings_depth_1_hint),
                 Triple(2, R.string.settings_depth_2, R.string.settings_depth_2_hint),
                 Triple(3, R.string.settings_depth_3, R.string.settings_depth_3_hint),
-            ).forEach { (d, label, hint) ->
-                val selected = depth == d
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 3.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(if (selected) colors.primary.copy(alpha = 0.12f) else Color.Transparent)
-                        .border(
-                            width = if (selected) 1.5.dp else 1.dp,
-                            color = if (selected) colors.primary else colors.outlineVariant,
-                            shape = RoundedCornerShape(14.dp),
-                        )
-                        .clickable { display.setDepth(d) }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(label), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                        Text(stringResource(hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                    }
-                    if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                depthOptions.forEach { (d, label, _) ->
+                    val on = depth == d
+                    Text(
+                        stringResource(label),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(19.dp))
+                            .background(if (on) JibitoTheme.colors.onBg else JibitoTheme.colors.chip)
+                            .selectable(selected = on, role = Role.RadioButton, onClick = { display.setDepth(d) })
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        color = if (on) JibitoTheme.colors.onFg else colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                    )
                 }
             }
+            depthOptions.firstOrNull { it.first == depth }?.let { (_, _, hint) ->
+                Text(
+                    stringResource(hint),
+                    modifier = Modifier.padding(top = 8.dp, start = 4.dp, end = 4.dp),
+                    fontSize = 12.sp,
+                    color = JibitoTheme.colors.muted,
+                )
+            }
 
-            Spacer(Modifier.height(14.dp))
-            Text(
-                stringResource(R.string.settings_roots_title),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = colors.onSurface,
-            )
-            categories.filter { it.parentId == null && it.flowType == 2 }.forEach { root ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { display.setRootVisible(root.id, root.id in hidden) }
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            // کدام دسته‌های اصلی دیده شوند: تاشو، چون ۱۳ تاست؛ هر دسته یک کپسول که با لمس روشن/خاموش می‌شود
+            val roots = categories.filter { it.parentId == null && it.flowType == 2 }
+            var rootsOpen by rememberSaveable { mutableStateOf(false) }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(JibitoTheme.colors.chip)
+                    .clickable { rootsOpen = !rootsOpen }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.settings_roots_title),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                )
+                Text(
+                    Jalali.toPersianDigits(stringResource(R.string.settings_roots_count, roots.count { it.id !in hidden }, roots.size)),
+                    fontSize = 13.sp,
+                    color = JibitoTheme.colors.muted,
+                )
+                Spacer(Modifier.size(6.dp))
+                Icon(
+                    DesignIcons.ChevronDown,
+                    contentDescription = null,
+                    tint = JibitoTheme.colors.muted,
+                    modifier = Modifier.size(18.dp).graphicsLayer { rotationZ = if (rootsOpen) 180f else 0f },
+                )
+            }
+            AnimatedVisibility(rootsOpen) {
+                FlowRow(
+                    Modifier.padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        listOfNotNull(root.icon, root.name).joinToString(" "),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (root.id in hidden) colors.onSurfaceVariant else colors.onSurface,
-                    )
-                    Switch(
-                        checked = root.id !in hidden,
-                        onCheckedChange = { display.setRootVisible(root.id, it) },
-                    )
+                    roots.forEach { root ->
+                        val visible = root.id !in hidden
+                        val tint = categoryTint(root.colorHex, root.icon)
+                        Row(
+                            Modifier
+                                .height(36.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(if (visible) tint.bg else Color.Transparent)
+                                .border(1.dp, if (visible) Color.Transparent else JibitoTheme.colors.border, RoundedCornerShape(18.dp))
+                                .toggleable(value = visible, role = Role.Checkbox, onValueChange = { display.setRootVisible(root.id, it) })
+                                .padding(start = 10.dp, end = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            val icon = tint.icon
+                            if (icon != null) {
+                                Icon(icon, contentDescription = null, tint = if (visible) tint.fg else JibitoTheme.colors.faint, modifier = Modifier.size(18.dp))
+                            } else {
+                                Text(tint.glyph.orEmpty(), fontSize = 14.sp)
+                            }
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                root.name,
+                                fontSize = 13.sp,
+                                fontWeight = if (visible) FontWeight.Bold else FontWeight.Normal,
+                                color = if (visible) tint.fg else JibitoTheme.colors.faint,
+                                textDecoration = if (visible) null else TextDecoration.LineThrough,
+                                maxLines = 1,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -299,8 +361,11 @@ fun SettingsScreen() {
                 )
             }
             custom.forEach { c ->
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    val path = listOfNotNull(c.icon ?: rootIcon(c, byId), c.name, c.parentId?.let { byId[it]?.name }?.let { "· $it" })
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val root = generateSequence(c) { x -> x.parentId?.let { byId[it] } }.take(10).last()
+                    CategoryIconTile(categoryTint(root.colorHex, c.icon ?: root.icon), size = 36.dp, radius = 12.dp, iconSize = 18.dp)
+                    Spacer(Modifier.size(10.dp))
+                    val path = listOfNotNull(c.name, c.parentId?.let { byId[it]?.name }?.let { "· $it" })
                     Text(
                         path.joinToString(" "),
                         modifier = Modifier.weight(1f),
@@ -371,20 +436,10 @@ fun SettingsScreen() {
     }
 }
 
-/** آیکون دسته‌ی اصلی (زیردسته‌ها آیکون ندارند) */
-private fun rootIcon(c: Category, byId: Map<Long, Category>): String? {
-    var current = c
-    var steps = 0
-    while (current.parentId != null && steps < 10) {
-        current = byId[current.parentId] ?: break
-        steps++
-    }
-    return current.icon
-}
 
 /** فاصله‌ی بین بخش‌ها (به‌جای کارت، فضای خالی جدا می‌کند) */
 @Composable
-private fun SectionGap() = Spacer(Modifier.height(30.dp))
+private fun SectionGap() = Spacer(Modifier.height(12.dp))
 
 /**
  * یک بخش تنظیمات، بدون کارت: سرتیتر با آیکون رنگی کم‌رنگ، و محتوا زیرش.
@@ -392,7 +447,14 @@ private fun SectionGap() = Spacer(Modifier.height(30.dp))
 @Composable
 internal fun SettingsSection(title: String, icon: ImageVector, content: @Composable () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth()) {
+    // هر بخش یک کارت گرد روی زمینه‌ی کرم، مثل بقیه‌ی صفحه‌های طرح
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(JibitoTheme.colors.sheet)
+            .padding(18.dp)
+    ) {
         Row(
             Modifier.fillMaxWidth().semantics { heading() },
             verticalAlignment = Alignment.CenterVertically,
@@ -402,9 +464,9 @@ internal fun SettingsSection(title: String, icon: ImageVector, content: @Composa
                 contentAlignment = Alignment.Center,
             ) { Icon(icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.size(12.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = colors.onBackground)
+            Text(title, fontSize = 17.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
         content()
     }
 }

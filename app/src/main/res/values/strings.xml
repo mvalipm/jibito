@@ -87,7 +87,7 @@
     <string name="settings_depth_2_hint">مثلاً «خوراک ← سوپرمارکت»</string>
     <string name="settings_depth_3">همه‌ی جزئیات</string>
     <string name="settings_depth_3_hint">مثلاً «حمل‌ونقل ← خودرو شخصی ← سوخت»</string>
-    <string name="settings_roots_title">کدام دسته‌های اصلی دیده شوند؟</string>
+    <string name="settings_roots_title">کدوم دسته‌ها دیده بشن؟</string>
     <string name="custom_add_root">+ دسته‌ی اصلی جدید</string>
     <string name="custom_add_income">+ دسته‌ی درآمد جدید</string>
     <string name="custom_create_named">+ بساز «%1$s»</string>
@@ -479,4 +479,5 @@
     <string name="settings_banner_sms">جیبیتو نمی‌تونه پیامک‌های بانکت رو بخونه؛ خرج‌ها خودکار ثبت نمی‌شن.</string>
     <string name="tx_ask_expense">مال چی بود؟</string>
     <string name="widget_ring_cd">%1$s بودجه‌ی ماه خرج شده</string>
+    <string name="settings_roots_count">%1$d از %2$d</string>
 </resources>
