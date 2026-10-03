@@ -24,12 +24,19 @@ object MellatParser : SmsParser {
 
     override fun parse(text: String): ParsedTransaction? = parseByLineStart(text) ?: parseByPosition(text)
 
+    /**
+     * مبلغ در همان خط نوع: «برداشت150,000» یا «واریز: 150,000 ریال».
+     * فقط وقتی کل باقی خط یک عدد است؛ «برداشت از 1234567890» (شماره حساب) مبلغ نیست.
+     */
+    private val amountOnTypeLine = Regex("^(?:برداشت|واریز)\\s*:?\\s*([0-9][0-9,٬]*)\\s*(?:ریال)?\\s*[-+]?$")
+
     /** قالب ۱: هر خط با کلیدش شروع می‌شود (واریز.../برداشت.../مبلغ.../موجودی...). */
     private fun parseByLineStart(text: String): ParsedTransaction? {
         var type: FlowType? = null
         var amount: Long? = null
         var balance: Long? = null
         for (line in Kw.lines(text)) {
+            if (amount == null) amountOnTypeLine.find(line)?.let { amount = digitsToLong(it.groupValues[1]) }
             when {
                 line.startsWith("واریز") -> type = FlowType.DEPOSIT
                 line.startsWith("برداشت") -> type = FlowType.WITHDRAWAL
