@@ -143,6 +143,14 @@
     <string name="theme_warm_hint">کرم، صورتی‌گلی و هلویی؛ نرم و دلنشین</string>
     <string name="theme_cool">سرد</string>
     <string name="theme_cool_hint">سرمه‌ای، آبی و یاسی؛ آرام و جدی</string>
+    <string name="theme_matcha">ماچا لاته</string>
+    <string name="theme_matcha_hint">سبز مریمی و کرم شیری؛ آروم و بی‌استرس</string>
+    <string name="theme_lavender">لوندر</string>
+    <string name="theme_lavender_hint">بنفش اسطوخودوسی با کمی صورتی؛ کیوت ولی جدی</string>
+    <string name="theme_cherry">گیلاسی</string>
+    <string name="theme_cherry_hint">قرمز گیلاسی روی صورتی کم‌رنگ؛ جسور و شیک</string>
+    <string name="theme_dusk">غروب آینده</string>
+    <string name="theme_dusk_hint">نیلی و هلویی غروب؛ رؤیایی، و در حالت تیره از همه قشنگ‌تر</string>
     <string name="settings_rescan_title">دوباره خوندن پیامک‌ها</string>
     <string name="settings_rescan_hint">جیبیتو هر ۱۵ دقیقه خودش پیامک‌های تازه رو می‌خونه. اگه حس کردی تراکنشی جا افتاده، از این‌جا کل صندوق پیامک رو دوباره بخون.</string>
     <string name="settings_rescan_button">همین الان دوباره بخون</string>

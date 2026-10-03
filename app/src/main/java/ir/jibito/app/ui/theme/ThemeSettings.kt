@@ -14,6 +14,14 @@ enum class AppThemeStyle(val label: Int, val hint: Int) {
     WARM(R.string.theme_warm, R.string.theme_warm_hint),
     /** سرد: سرمه‌ای، آبی، یاسی */
     COOL(R.string.theme_cool, R.string.theme_cool_hint),
+    /** ماچا لاته: سبز مریمی و کرم شیری */
+    MATCHA(R.string.theme_matcha, R.string.theme_matcha_hint),
+    /** لوندر دیجیتال: بنفش اسطوخودوسی با کمی صورتی */
+    LAVENDER(R.string.theme_lavender, R.string.theme_lavender_hint),
+    /** گیلاسی: قرمز گیلاسی روی صورتی خیلی کم‌رنگ */
+    CHERRY(R.string.theme_cherry, R.string.theme_cherry_hint),
+    /** غروب آینده: نیلی و هلویی غروب */
+    DUSK(R.string.theme_dusk, R.string.theme_dusk_hint),
 }
 
 /** روشن یا تیره: مثل گوشی، یا همیشه یکی (دکمه‌ی ماه/خورشید بالای «خلاصه») */

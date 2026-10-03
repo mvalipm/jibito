@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -298,41 +300,45 @@ internal fun SettingsSection(title: String, icon: ImageVector, content: @Composa
 }
 
 /**
- * پوسته‌ها کنار هم: هر کدام یک «جیب» کوچک به رنگ‌های خودش؛ انتخاب‌شده حلقه‌ی رنگی و تیک دارد،
- * و توضیحش زیر ردیف می‌آید.
+ * پوسته‌ها کنار هم، چهارتا در هر ردیف: هر کدام یک «جیب» کوچک به رنگ‌های خودش؛ انتخاب‌شده حلقه‌ی رنگی و تیک دارد،
+ * و توضیحش زیر ردیف‌ها می‌آید.
  */
 @Composable
 internal fun ThemePicker(current: AppThemeStyle, onSelect: (AppThemeStyle) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            AppThemeStyle.entries.forEach { style ->
-                val selected = style == current
-                // گزینه‌های انتخاب‌نشده هم قاب کم‌رنگ دارند تا معلوم باشد لمس‌شدنی‌اند
-                val ring by animateColorAsState(if (selected) colors.primary else JibitoTheme.colors.border, label = "themeRing")
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .border(if (selected) 2.dp else 1.dp, ring, RoundedCornerShape(20.dp))
-                        .selectable(selected = selected, role = Role.RadioButton, onClick = { onSelect(style) })
-                        .padding(vertical = 12.dp, horizontal = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    ThemeSwatch(previewColors(style), selected)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        stringResource(style.label),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
-                        color = colors.onBackground,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                    )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        AppThemeStyle.entries.chunked(THEMES_PER_ROW).forEach { row ->
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { style ->
+                    val selected = style == current
+                    // گزینه‌های انتخاب‌نشده هم قاب کم‌رنگ دارند تا معلوم باشد لمس‌شدنی‌اند
+                    val ring by animateColorAsState(if (selected) colors.primary else JibitoTheme.colors.border, label = "themeRing")
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(if (selected) 2.dp else 1.dp, ring, RoundedCornerShape(20.dp))
+                            .selectable(selected = selected, role = Role.RadioButton, onClick = { onSelect(style) })
+                            .padding(vertical = 12.dp, horizontal = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        ThemeSwatch(previewColors(style), selected)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(style.label),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                            color = colors.onBackground,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                        )
+                    }
                 }
+                // ردیف آخر ناقص: جای خالی، تا همه‌ی گزینه‌ها هم‌عرض بمانند
+                repeat(THEMES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
-        Spacer(Modifier.height(8.dp))
         Text(
             stringResource(current.hint),
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -341,6 +347,8 @@ internal fun ThemePicker(current: AppThemeStyle, onSelect: (AppThemeStyle) -> Un
         )
     }
 }
+
+private const val THEMES_PER_ROW = 4
 
 /** نمونه‌ی یک پوسته: جیب کوچک به رنگ اول، دو سکه به رنگ‌های بعدی، تیک وقتی انتخاب شده */
 @Composable
