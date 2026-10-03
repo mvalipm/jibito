@@ -208,6 +208,10 @@ class ScreenshotTest {
         AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true,
         AppThemeStyle.WARM to false, AppThemeStyle.WARM to true,
         AppThemeStyle.COOL to false, AppThemeStyle.COOL to true,
+        AppThemeStyle.MATCHA to false, AppThemeStyle.MATCHA to true,
+        AppThemeStyle.LAVENDER to false, AppThemeStyle.LAVENDER to true,
+        AppThemeStyle.CHERRY to false, AppThemeStyle.CHERRY to true,
+        AppThemeStyle.DUSK to false, AppThemeStyle.DUSK to true,
     )
 
     private fun shot(
