@@ -149,7 +149,7 @@
     <string name="settings_permissions_title">دسترسی‌ها</string>
     <string name="settings_perm_sms">خواندن پیامک</string>
     <string name="settings_perm_notify">نوتیفیکیشن</string>
-    <string name="settings_perm_ok">✓ فعال</string>
+    <string name="settings_perm_ok">فعال</string>
     <string name="settings_perm_missing">غیرفعال</string>
     <string name="settings_open_app_settings">باز کردن تنظیمات اپ در گوشی</string>
     <string name="settings_version">جیبیتو · نسخه‌ی %1$s</string>

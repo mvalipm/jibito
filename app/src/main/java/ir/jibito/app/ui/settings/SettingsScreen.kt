@@ -588,11 +588,23 @@ private fun PermissionRow(label: String, ok: Boolean) {
     val colors = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-        Text(
-            stringResource(if (ok) R.string.settings_perm_ok else R.string.settings_perm_missing),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = if (ok) JibitoTheme.colors.income else colors.error,
-        )
+        // کپسول وضعیت با آیکون خطی (تیک یا هشدار)، به‌جای نویسه‌ی ✓
+        val tint = if (ok) JibitoTheme.colors.income else JibitoTheme.colors.alert
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(tint.copy(alpha = 0.12f))
+                .padding(start = 8.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(if (ok) DesignIcons.Check else DesignIcons.Warn, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.size(4.dp))
+            Text(
+                stringResource(if (ok) R.string.settings_perm_ok else R.string.settings_perm_missing),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = tint,
+            )
+        }
     }
 }
