@@ -365,7 +365,6 @@
 
     <!-- گزارش پیامکی که اشتباه خوانده شده -->
     <!-- اولین آشنایی، بعد از اولین خواندن پیامک‌ها -->
-    <string name="reveal_found">تراکنش از پیامک‌های بانکت پیدا شد</string>
     <string name="reveal_span">از %1$d ماه گذشته</string>
     <string name="reveal_span_banks">از %1$d ماه گذشته، در %2$d بانک</string>
     <string name="reveal_next">از این به بعد هر خرج تازه خودش ثبت می‌شه؛ تو فقط با یه لمس می‌گی مال چی بود.</string>
@@ -463,9 +462,13 @@
     <!-- اولین آشنایی -->
     <string name="reveal_caption_reading">دارم پیامک‌های بانکت رو می‌خونم…</string>
     <string name="reveal_caption_done">تموم شد! جیبت رو شناختم</string>
-    <string name="reveal_fact_months">از %1$d ماه گذشته</string>
-    <string name="reveal_fact_banks">توی %1$d بانک</string>
-    <string name="reveal_fact_top">بیشترین خرج: %1$s</string>
+    <string name="reveal_unit_transactions">تراکنش</string>
+    <string name="reveal_found_sub">از پیامک‌های بانکت پیدا و مرتب شد</string>
+    <string name="reveal_unit_months">ماه</string>
+    <string name="reveal_label_months">سابقه‌ی خرج</string>
+    <string name="reveal_unit_banks">بانک</string>
+    <string name="reveal_label_banks">حساب شناسایی‌شده</string>
+    <string name="reveal_label_top">بیشترین خرج</string>
     <string name="reveal_replay">دوباره ببین</string>
 
     <!-- نوتیفیکیشن بعد از انتخاب دسته -->
