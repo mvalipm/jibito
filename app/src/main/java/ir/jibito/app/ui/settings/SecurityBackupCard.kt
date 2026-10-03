@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,12 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -46,19 +42,18 @@ import ir.jibito.app.data.security.AppLockSession
 import ir.jibito.app.ui.lock.DeviceAuth
 import ir.jibito.app.ui.lock.rememberDeviceAuthenticator
 import ir.jibito.app.util.Jalali
+import ir.jibito.app.ui.theme.JibitoTheme
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
-/** کارت «امنیت و پشتیبان» در تنظیمات: قفل اپ، گرفتن پشتیبان رمزدار، بازگردانی. */
+/** «پشتیبان‌گیری» در تنظیمات: آخرین پشتیبان، گرفتن پشتیبان رمزدار، بازگردانی. */
 @Composable
-fun SecurityBackupCard(card: @Composable (title: String, content: @Composable () -> Unit) -> Unit) {
+fun BackupCard(card: @Composable (title: String, content: @Composable () -> Unit) -> Unit) {
     val context = LocalContext.current
     // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
     val resources = LocalResources.current
     val container = (context.applicationContext as JibitoApplication).container
-    val lockSettings = container.appLockSettings
     val backup = container.backupManager
-    val lockEnabled by lockSettings.enabled.collectAsState()
     val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
 
@@ -70,17 +65,6 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
     var restored by remember { mutableStateOf<BackupManager.Summary?>(null) }
     // رمز فقط تا وقتی فایل انتخاب شود در حافظه می‌ماند
     var pendingPassword by remember { mutableStateOf<CharArray?>(null) }
-
-    val turnOnLock = rememberDeviceAuthenticator(
-        title = stringResource(R.string.lock_prompt_title),
-        subtitle = stringResource(R.string.lock_enable_subtitle),
-    ) { ok ->
-        if (ok) {
-            AppLockSession.unlocked = true
-            lockSettings.setEnabled(true)
-            container.refreshWidget()
-        }
-    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/octet-stream")
@@ -106,47 +90,22 @@ fun SecurityBackupCard(card: @Composable (title: String, content: @Composable ()
         if (uri != null) restoreUri = uri
     }
 
+    val lastExportAt by backup.lastExportAt.collectAsState()
+
     card(stringResource(R.string.security_title)) {
-        // قفل اپ
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.lock_setting_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                )
-                Text(
-                    stringResource(
-                        if (DeviceAuth.isAvailable(context)) R.string.lock_setting_hint else R.string.lock_setting_unavailable
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = lockEnabled,
-                enabled = lockEnabled || DeviceAuth.isAvailable(context),
-                onCheckedChange = { on ->
-                    if (on) {
-                        turnOnLock()
-                    } else {
-                        lockSettings.setEnabled(false)
-                        container.refreshWidget()
-                    }
-                },
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider(color = colors.outlineVariant)
-        Spacer(Modifier.height(12.dp))
-
         // پشتیبان
         Text(
             stringResource(R.string.backup_hint),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            lastExportAt?.let { Jalali.toPersianDigits(stringResource(R.string.settings_backup_last, Jalali.format(it))) }
+                ?: stringResource(R.string.settings_backup_last_never),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = if (backupOverdue(lastExportAt)) JibitoTheme.colors.warning else colors.onSurface,
         )
         Spacer(Modifier.height(12.dp))
         if (busy) {
@@ -362,4 +321,42 @@ private fun restartApp(context: Context) {
         context.startActivity(Intent.makeRestartActivityTask(launch.component))
     }
     exitProcess(0)
+}
+
+/** پشتیبانی که هیچ‌وقت گرفته نشده یا بیشتر از [BACKUP_REMIND_DAYS] روز از آن گذشته */
+internal fun backupOverdue(lastExportAt: Long?, now: Long = System.currentTimeMillis()): Boolean =
+    lastExportAt == null || daysSince(lastExportAt, now) > BACKUP_REMIND_DAYS
+
+internal fun daysSince(at: Long, now: Long = System.currentTimeMillis()): Int =
+    ((now - at).coerceAtLeast(0) / (24L * 60 * 60 * 1000)).toInt()
+
+internal const val BACKUP_REMIND_DAYS = 30
+
+/** قفل اپ: روشن/خاموش (روشن کردن با تأیید قفل گوشی)، برای ردیف کلیدی صفحه‌ی تنظیمات */
+internal class AppLockState(val enabled: Boolean, val available: Boolean, val set: (Boolean) -> Unit)
+
+@Composable
+internal fun rememberAppLock(): AppLockState {
+    val context = LocalContext.current
+    val container = (context.applicationContext as JibitoApplication).container
+    val lockSettings = container.appLockSettings
+    val enabled by lockSettings.enabled.collectAsState()
+    val turnOn = rememberDeviceAuthenticator(
+        title = stringResource(R.string.lock_prompt_title),
+        subtitle = stringResource(R.string.lock_enable_subtitle),
+    ) { ok ->
+        if (ok) {
+            AppLockSession.unlocked = true
+            lockSettings.setEnabled(true)
+            container.refreshWidget()
+        }
+    }
+    return AppLockState(enabled = enabled, available = DeviceAuth.isAvailable(context)) { on ->
+        if (on) {
+            turnOn()
+        } else {
+            lockSettings.setEnabled(false)
+            container.refreshWidget()
+        }
+    }
 }

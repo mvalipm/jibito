@@ -80,7 +80,7 @@
     <string name="sheet_quick_title">پیشنهاد و پرکاربردها</string>
     <string name="sheet_all_title">همه‌ی دسته‌ها</string>
     <string name="settings_display_title">نمایش دسته‌ها</string>
-    <string name="settings_display_hint">هنگام انتخاب دسته برای یک تراکنش، چه چیزهایی دیده شود. تراکنش‌ها و جمع‌های قبلی دست نمی‌خورند.</string>
+    <string name="settings_display_hint">موقع انتخاب دسته برای یه تراکنش، چیا دیده بشن. به تراکنش‌ها و جمع‌های قبلی دست نمی‌خوره.</string>
     <string name="settings_depth_1">فقط دسته‌ی اصلی</string>
     <string name="settings_depth_1_hint">سریع‌ترین: لمس دسته = ثبت (مثلاً «خوراک»)</string>
     <string name="settings_depth_2">تا زیردسته</string>
@@ -102,9 +102,9 @@
     <string name="custom_error_long">حداکثر ۳۰ حرف</string>
     <string name="custom_error_duplicate">این اسم قبلاً هست؛ از جست‌وجو پیداش کن</string>
     <string name="settings_custom_title">دسته‌های شخصی</string>
-    <string name="settings_custom_empty">هنوز دسته‌ی شخصی نساختی. موقع انتخاب دسته برای یک تراکنش، «+ دسته‌ی شخصی» رو بزن.</string>
+    <string name="settings_custom_empty">هنوز دسته‌ی شخصی نساختی. از دکمه‌ی پایین بساز، یا موقع انتخاب دسته برای یه تراکنش «+ دسته‌ی شخصی» رو بزن.</string>
     <string name="settings_custom_delete">حذف</string>
-    <string name="settings_custom_delete_title">حذف «%1$s»؟</string>
+    <string name="settings_custom_delete_title">«%1$s» پاک بشه؟</string>
     <string name="settings_custom_delete_to_parent">تراکنش‌هاش می‌رن به «%1$s».</string>
     <string name="settings_custom_delete_to_none">تراکنش‌هاش بی‌دسته می‌شن.</string>
     <string name="sheet_search_hint">جست‌وجوی دسته… مثلاً سوخت</string>
@@ -143,14 +143,14 @@
     <string name="theme_warm_hint">کرم، صورتی‌گلی و هلویی؛ نرم و دلنشین</string>
     <string name="theme_cool">سرد</string>
     <string name="theme_cool_hint">سرمه‌ای، آبی و یاسی؛ آرام و جدی</string>
-    <string name="settings_rescan_title">خواندن دوباره‌ی پیامک‌ها</string>
-    <string name="settings_rescan_hint">جیبیتو هر ۱۵ دقیقه پیامک‌های تازه رو خودش می‌خونه. اگه حس کردی تراکنشی جا افتاده، از این‌جا کل صندوق پیامک رو دوباره بخون.</string>
+    <string name="settings_rescan_title">دوباره خوندن پیامک‌ها</string>
+    <string name="settings_rescan_hint">جیبیتو هر ۱۵ دقیقه خودش پیامک‌های تازه رو می‌خونه. اگه حس کردی تراکنشی جا افتاده، از این‌جا کل صندوق پیامک رو دوباره بخون.</string>
     <string name="settings_rescan_button">همین الان دوباره بخون</string>
-    <string name="settings_permissions_title">دسترسی‌ها</string>
-    <string name="settings_perm_sms">خواندن پیامک</string>
-    <string name="settings_perm_notify">نوتیفیکیشن</string>
-    <string name="settings_perm_ok">فعال</string>
-    <string name="settings_perm_missing">غیرفعال</string>
+    <string name="settings_permissions_title">نوتیف و دسترسی‌ها</string>
+    <string name="settings_perm_sms">خوندن پیامک</string>
+    <string name="settings_perm_notify">نوتیف</string>
+    <string name="settings_perm_ok">روشنه</string>
+    <string name="settings_perm_missing">خاموشه</string>
     <string name="settings_open_app_settings">باز کردن تنظیمات اپ در گوشی</string>
     <string name="settings_version">جیبیتو · نسخه‌ی %1$s</string>
     <string name="summary_prev_month">ماه قبل</string>
@@ -264,54 +264,54 @@
     <string name="lock_prompt_subtitle">با اثر انگشت یا قفل گوشی</string>
     <string name="lock_enable_subtitle">برای روشن کردن قفل اپ، قفل گوشی رو تأیید کن</string>
     <string name="lock_setting_title">قفل اپ</string>
-    <string name="lock_setting_hint">موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی خواسته می‌شه.</string>
-    <string name="lock_setting_unavailable">اول برای گوشی قفل صفحه (رمز، الگو یا اثر انگشت) بذار.</string>
+    <string name="lock_setting_hint">موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.</string>
+    <string name="lock_setting_unavailable">اول برای گوشیت قفل صفحه بذار (رمز، الگو یا اثر انگشت).</string>
 
     <!-- پشتیبان‌گیری -->
-    <string name="security_title">امنیت و پشتیبان</string>
-    <string name="backup_hint">همه‌ی داده‌ها (تراکنش‌ها، دسته‌ها، بودجه‌ها و چیزهایی که جیبیتو یاد گرفته) در یک فایل رمزدار ذخیره می‌شن. فایل رو جای امنی نگه دار؛ با گوشی تازه یا بعد از نصب دوباره، از همین‌جا برش گردون.</string>
+    <string name="security_title">پشتیبان‌گیری</string>
+    <string name="backup_hint">همه‌چی (تراکنش‌ها، دسته‌ها، بودجه‌ها و چیزایی که جیبیتو یاد گرفته) توی یه فایل رمزدار ذخیره می‌شه. فایل رو یه جای امن نگه دار؛ رو گوشی تازه یا بعد از نصب دوباره، از همین‌جا برش گردون.</string>
     <string name="backup_export_button">گرفتن پشتیبان</string>
-    <string name="backup_restore_button">بازگردانی از پشتیبان</string>
+    <string name="backup_restore_button">برگردوندن از پشتیبان</string>
     <string name="backup_working">دارم کار می‌کنم…</string>
     <string name="backup_export_done">✓ پشتیبان ذخیره شد.</string>
-    <string name="backup_export_failed">ذخیره‌ی پشتیبان نشد. یه جای دیگه رو امتحان کن.</string>
+    <string name="backup_export_failed">پشتیبان ذخیره نشد. یه جای دیگه رو امتحان کن.</string>
     <string name="backup_export_password_title">رمز فایل پشتیبان</string>
     <string name="backup_export_password_body">این رمز جایی ذخیره نمی‌شه و بدونش فایل باز نمی‌شه. حتماً یادت بمونه.</string>
-    <string name="backup_export_continue">ادامه و انتخاب محل ذخیره</string>
+    <string name="backup_export_continue">ادامه و انتخاب جای ذخیره</string>
     <string name="backup_password_label">رمز</string>
     <string name="backup_password_repeat">تکرار رمز</string>
     <string name="backup_password_short">دست‌کم %1$d حرف</string>
     <string name="backup_password_mismatch">دو رمز یکی نیستن</string>
-    <string name="backup_restore_confirm_title">بازگردانی از پشتیبان؟</string>
-    <string name="backup_restore_confirm_body">همه‌ی داده‌های فعلی جیبیتو با داده‌های فایل پشتیبان جایگزین می‌شن. اگه لازمه، اول از وضع فعلی پشتیبان بگیر.</string>
+    <string name="backup_restore_confirm_title">از پشتیبان برگردونیم؟</string>
+    <string name="backup_restore_confirm_body">همه‌ی داده‌های الان جیبیتو با داده‌های فایل پشتیبان عوض می‌شن. اگه لازمه، اول از وضع فعلی پشتیبان بگیر.</string>
     <string name="backup_restore_choose_file">انتخاب فایل</string>
     <string name="backup_restore_password_title">رمز فایل پشتیبان</string>
     <string name="backup_restore_password_body">رمزی که موقع گرفتن پشتیبان گذاشتی.</string>
-    <string name="backup_restore_go">بازگردانی</string>
+    <string name="backup_restore_go">برگردون</string>
     <string name="backup_error_password">رمز اشتباهه (یا فایل خراب شده).</string>
     <string name="backup_error_not_backup">این فایل پشتیبان جیبیتو نیست.</string>
     <string name="backup_error_too_new">این پشتیبان از نسخه‌ی جدیدتر جیبیتوئه. اول اپ رو به‌روز کن.</string>
-    <string name="backup_error_damaged">فایل پشتیبان سالم نیست.</string>
+    <string name="backup_error_damaged">فایل پشتیبان خرابه.</string>
     <string name="backup_restore_ready_title">پشتیبان آماده‌ست</string>
     <string name="backup_restore_ready_body">%1$d تراکنش، پشتیبانِ %2$s. جیبیتو یه بار بسته و دوباره باز می‌شه تا داده‌ها جایگزین بشن؛ بعد پیامک‌ها دوباره خونده می‌شن.</string>
     <string name="backup_restore_restart">باز کردن دوباره</string>
 
     <!-- گزارش خطا -->
     <string name="errorlog_title">گزارش خطا</string>
-    <string name="errorlog_empty">خطایی ثبت نشده.</string>
-    <string name="errorlog_summary">%1$d خطا ثبت شده؛ آخرینش %2$s.</string>
-    <string name="errorlog_send">ارسال گزارش</string>
-    <string name="errorlog_clear">پاک کردن</string>
+    <string name="errorlog_empty">خطایی ثبت نشده؛ همه‌چی رواله.</string>
+    <string name="errorlog_summary">%1$d تا خطا ثبت شده؛ آخریش %2$s.</string>
+    <string name="errorlog_send">فرستادن گزارش</string>
+    <string name="errorlog_clear">پاکش کن</string>
     <string name="errorlog_subject">گزارش خطای جیبیتو</string>
-    <string name="errorlog_privacy">گزارش فقط روی همین گوشیه و خودکار جایی فرستاده نمی‌شه. با «ارسال گزارش» خودت انتخاب می‌کنی کجا بره (و قبل از فرستادن می‌بینیش).</string>
+    <string name="errorlog_privacy">گزارش فقط رو همین گوشیه و خودبه‌خود جایی نمی‌ره. با «فرستادن گزارش» خودت انتخاب می‌کنی کجا بره (و قبلش می‌بینیش).</string>
 
     <!-- خروجی اکسل -->
     <string name="export_title">خروجی اکسل</string>
-    <string name="export_hint">تراکنش‌ها در یک فایل CSV که با اکسل یا Google Sheets باز می‌شه: تاریخ شمسی، مبلغ به تومان، دسته و زیردسته، طرف حساب، بانک.</string>
+    <string name="export_hint">تراکنش‌ها توی یه فایل CSV که با اکسل یا Google Sheets باز می‌شه: تاریخ شمسی، مبلغ به تومان، دسته و زیردسته، طرف حساب، بانک.</string>
     <string name="export_this_month">این ماه</string>
     <string name="export_all">همه‌ی تراکنش‌ها</string>
     <string name="export_done">✓ %1$d تراکنش ذخیره شد.</string>
-    <string name="export_failed">ذخیره‌ی فایل نشد.</string>
+    <string name="export_failed">فایل ذخیره نشد. یه جای دیگه رو امتحان کن.</string>
 
     <!-- ویجت -->
     <string name="widget_name">خرج امروز</string>
@@ -381,7 +381,7 @@
     <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
     <string name="digest_top">بیشترش رفت تو %1$s</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>
-    <string name="settings_digest_hint">جمعه‌ها عصر یک نوتیفیکیشن کوتاه</string>
+    <string name="settings_digest_hint">جمعه‌ها عصر یه نوتیف کوتاه از خرج‌های هفته</string>
 
     <!-- روند ماه‌ها -->
     <string name="trend_title">%1$d ماه اخیر</string>
@@ -480,4 +480,54 @@
     <string name="tx_ask_expense">مال چی بود؟</string>
     <string name="widget_ring_cd">%1$s بودجه‌ی ماه خرج شده</string>
     <string name="settings_roots_count">%1$d از %2$d</string>
+
+    <!-- تنظیمات: صفحه‌ی اصلی (گروه‌ها و ردیف‌ها) و زیرصفحه‌ها -->
+    <string name="settings_back">برگشت</string>
+    <string name="settings_group_data">داده‌هات</string>
+    <string name="settings_group_categories">دسته‌ها و پرداخت‌ها</string>
+    <string name="settings_group_alerts">نوتیف و دسترسی‌ها</string>
+    <string name="settings_group_look">ظاهر</string>
+    <string name="settings_group_about">جیبیتو</string>
+    <string name="settings_backup_never">هنوز پشتیبان نگرفتی</string>
+    <string name="settings_backup_today">آخرین پشتیبان: امروز</string>
+    <string name="settings_backup_yesterday">آخرین پشتیبان: دیروز</string>
+    <string name="settings_backup_days">آخرین پشتیبان: %1$d روز پیش</string>
+    <string name="settings_backup_old">%1$d روزه پشتیبان نگرفتی؛ وقتشه!</string>
+    <string name="settings_backup_last">آخرین پشتیبان رو %1$s گرفتی.</string>
+    <string name="settings_backup_last_never">هنوز از این گوشی پشتیبان نگرفتی. یه بار بگیر که خیالت راحت باشه.</string>
+    <string name="settings_export_sub">این ماه یا همه‌ش، برای اکسل</string>
+    <string name="settings_display_sub">%1$s · %2$d از %3$d دسته</string>
+    <string name="settings_custom_count">%1$d دسته</string>
+    <string name="settings_custom_none">هنوز نساختی</string>
+    <string name="settings_custom_hint">دسته‌هایی که خودت ساختی. اسمشون رو عوض کن یا پاکشون کن؛ تراکنش‌هاشون گم نمی‌شن.</string>
+    <string name="settings_custom_new">+ دسته‌ی جدید</string>
+    <string name="settings_custom_more">گزینه‌های «%1$s»</string>
+    <string name="settings_custom_rename">عوض کردن اسم</string>
+    <string name="settings_custom_rename_title">اسم تازه برای «%1$s»</string>
+    <string name="settings_custom_rename_duplicate">یه دسته با همین اسم داری</string>
+    <string name="settings_save">ذخیره</string>
+    <string name="settings_recurring_none">اجاره، قسط، شهریه… یادت می‌ندازم</string>
+    <string name="settings_recurring_count">%1$d پرداخت</string>
+    <string name="settings_recurring_suggest">%1$d پیشنهاد تازه</string>
+    <string name="settings_sms_sub_ok">خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن</string>
+    <string name="settings_notify_sub_ok">خرج تازه که بیاد، می‌پرسم مال چی بود</string>
+    <string name="settings_perm_tap_fix">بزن تا روشنش کنیم</string>
+    <string name="settings_theme_sub">%1$s · %2$s</string>
+    <string name="settings_privacy_title">حریم خصوصی</string>
+    <string name="settings_privacy_sub">داده‌هات فقط رو گوشی خودته</string>
+    <string name="settings_privacy_intro">جیبیتو از پول تو سر در میاره، پس باید خیالت راحت باشه. این‌ها قول‌های ماست:</string>
+    <string name="settings_privacy_local">جیبیتو سرور نداره؛ تراکنش‌ها و پیامک‌هات فقط رو همین گوشی می‌مونن.</string>
+    <string name="settings_privacy_bank_only">فقط پیامک‌های بانکی بررسی می‌شن؛ بقیه‌ی پیامک‌هات به کار جیبیتو نمیاد.</string>
+    <string name="settings_privacy_no_send">جیبیتو هیچ پیامکی نمی‌فرسته.</string>
+    <string name="settings_privacy_backup">فایل پشتیبان رمزداره و دست خودته؛ بدون رمزت باز نمی‌شه.</string>
+    <string name="settings_privacy_errorlog">گزارش خطا فقط وقتی خودت بخوای فرستاده می‌شه.</string>
+    <string name="settings_privacy_hide">کسی کنارت نشسته؟ با دکمه‌ی چشم بالای «خلاصه» مبلغ‌ها رو قایم کن.</string>
+    <string name="settings_feedback_title">نظرت رو بگو</string>
+    <string name="settings_feedback_sub">چی خوبه، چی اذیتت می‌کنه؟</string>
+    <string name="settings_feedback_subject">نظر درباره‌ی جیبیتو</string>
+    <string name="settings_feedback_body">سلام!\n\n\n—\nنسخه‌ی جیبیتو: %1$s · اندروید %2$s</string>
+    <string name="settings_advanced_title">پیشرفته</string>
+    <string name="settings_advanced_sub">دوباره خوندن پیامک‌ها، گزارش خطا</string>
+    <string name="settings_advanced_errors">%1$d تا خطا ثبت شده</string>
+    <string name="settings_rescan_needs_sms">برای این کار اول باید «خوندن پیامک» روشن باشه.</string>
 </resources>

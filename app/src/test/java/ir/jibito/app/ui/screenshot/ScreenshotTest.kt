@@ -45,6 +45,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.FrameLayout
 import ir.jibito.app.widget.SpendWidget
 import ir.jibito.app.ui.settings.PermissionBanner
+import ir.jibito.app.ui.settings.RowDivider
+import ir.jibito.app.ui.settings.RowTrailing
+import ir.jibito.app.ui.settings.SettingsGroup
+import ir.jibito.app.ui.settings.SettingsIcons
+import ir.jibito.app.ui.settings.SettingsRow
 import ir.jibito.app.ui.settings.SettingsSection
 import ir.jibito.app.ui.settings.ThemePicker
 import ir.jibito.app.ui.theme.JibitoIcons
@@ -332,6 +337,42 @@ class ScreenshotTest {
         }
         shot("settings", AppThemeStyle.DEFAULT, false, fontScale = 2f) {
             SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(AppThemeStyle.DEFAULT, onSelect = {}) }
+        }
+    }
+
+    /** صفحه‌ی اصلی تنظیمات: گروه با ردیف‌های زیرصفحه، کلید و وضعیت دسترسی */
+    @Test
+    fun settingsHub() {
+        for ((style, dark) in variants) {
+            shot("settings_hub", style, dark) { SettingsHubSample() }
+        }
+        shot("settings_hub", AppThemeStyle.DEFAULT, false, fontScale = 2f) { SettingsHubSample() }
+    }
+
+    @Composable
+    private fun SettingsHubSample() {
+        val tones = JibitoTheme.colors
+        SettingsGroup("داده‌هات") {
+            SettingsRow(SettingsIcons.Backup, tones.teal, "پشتیبان‌گیری", "۴۵ روزه پشتیبان نگرفتی؛ وقتشه!", attention = true, onClick = {})
+            RowDivider()
+            SettingsRow(
+                JibitoIcons.Lock, tones.transfer, "قفل اپ", "موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.",
+                trailing = RowTrailing.Toggle(checked = true, onChange = {}),
+            )
+        }
+        Spacer(Modifier.height(22.dp))
+        SettingsGroup("نوتیف و دسترسی‌ها") {
+            SettingsRow(
+                JibitoIcons.Message, MaterialTheme.colorScheme.primary, "خوندن پیامک", "خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن",
+                trailing = RowTrailing.Status(true),
+            )
+            RowDivider()
+            SettingsRow(
+                JibitoIcons.Bell, tones.amber, "نوتیف", "بزن تا روشنش کنیم", attention = true,
+                trailing = RowTrailing.Status(false), onClick = {},
+            )
+            RowDivider()
+            SettingsRow(JibitoIcons.Palette, MaterialTheme.colorScheme.primary, "پوسته", "مرجانی · مثل گوشی", onClick = {})
         }
     }
 }
