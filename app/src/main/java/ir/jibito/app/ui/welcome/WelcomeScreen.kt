@@ -51,6 +51,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.common.PocketMascot
 import ir.jibito.app.ui.common.rememberMotionOff
@@ -207,8 +209,12 @@ private fun DemoRow(picked: Int?) {
                 },
             contentAlignment = Alignment.Center,
         ) {
-            if (category != null) Text(category.first, fontSize = 22.sp)
-            else Text("؟", fontSize = 22.sp, fontWeight = FontWeight.Black, color = accent)
+            if (category != null) {
+                val tint = categoryTint(null, category.first)
+                CategoryIconTile(tint, size = 48.dp, radius = 16.dp, iconSize = 24.dp)
+            } else {
+                Text("؟", fontSize = 22.sp, fontWeight = FontWeight.Black, color = accent)
+            }
         }
         Spacer(Modifier.size(14.dp))
         Column(Modifier.weight(1f)) {
@@ -246,26 +252,34 @@ private fun DemoChips(picked: Int?, onPick: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(start = 62.dp)) {
         DemoCategories.forEachIndexed { i, (emoji, label) ->
+            // مثل دکمه‌های نوتیفیکیشن طرح: زمینه‌ی کم‌رنگ دسته و آیکون خطی؛ انتخاب‌شده پررنگ
+            val tint = categoryTint(null, emoji)
             val selected = picked == i
-            val bg by animateColorAsState(if (selected) colors.primary else colors.surfaceVariant, label = "chip")
-            val fg by animateColorAsState(if (selected) colors.onPrimary else colors.onSurface, label = "chipText")
-            Text(
-                "$emoji ${stringResource(label)}",
-                modifier = Modifier
+            val bg by animateColorAsState(if (selected) tint.fg else tint.bg, label = "chip")
+            val fg by animateColorAsState(if (selected) tint.bg else tint.fg, label = "chipText")
+            Row(
+                Modifier
                     .clip(RoundedCornerShape(50))
                     .background(bg)
                     .clickable(role = Role.Button) { onPick(i) }
                     .heightIn(min = 40.dp)
                     .padding(horizontal = 14.dp, vertical = 9.dp),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = fg,
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                tint.icon?.let { Icon(it, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp)) }
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    stringResource(label),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = fg,
+                )
+            }
         }
     }
 }
 
-/** ایموجی و اسم دسته‌های نمونه */
+/** ایموجی دسته (کلید آیکون خطی و رنگش در CategoryStyle) و اسم دسته‌های نمونه */
 private val DemoCategories = listOf(
     "🍽" to R.string.cat_food,
     "🚕" to R.string.cat_transport,
