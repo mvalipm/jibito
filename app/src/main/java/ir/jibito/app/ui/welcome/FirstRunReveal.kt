@@ -305,8 +305,8 @@ private data class Fact(val text: String, val icon: ImageVector, val bg: Color, 
 private fun FactChip(f: Fact, delayMillis: Int) {
     val pop = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(delayMillis.toLong())
-        pop.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 400f))
+        // تأخیر داخل خود انیمیشن (نه delay جدا)، تا با ساعت انیمیشن‌ها جلو برود
+        pop.animateTo(1f, tween(550, delayMillis = delayMillis, easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)))
     }
     Row(
         Modifier
