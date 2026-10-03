@@ -54,6 +54,10 @@ import ir.jibito.app.ui.review.ReviewScreen
 import ir.jibito.app.ui.settings.SettingsScreen
 import ir.jibito.app.ui.smslist.SmsListScreen
 import ir.jibito.app.ui.summary.SummaryScreen
+import ir.jibito.app.ui.summary.SummaryViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import ir.jibito.app.ui.summary.rememberTodoStories
+import ir.jibito.app.ui.todo.TodoScreen
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -63,9 +67,12 @@ import ir.jibito.app.ui.welcome.RevealStats
 private enum class Tab(val route: String, val label: Int) {
     Summary("summary", R.string.tab_summary),
     Transactions("transactions", R.string.tab_transactions),
-    Review("review", R.string.tab_review),
-    Settings("settings", R.string.tab_settings),
+    Todo("todo", R.string.tab_todo),
 }
+
+/** صفحه‌هایی که تب نیستند: «بررسی» از داخل «کارها» و «تنظیمات» از چرخ‌دنده‌ی «خلاصه» باز می‌شوند */
+private const val ROUTE_REVIEW = "review"
+private const val ROUTE_SETTINGS = "settings"
 
 /**
  * فضای خالی‌ای که صفحه‌ها باید پایین فهرستشان بگذارند تا آخرین مورد زیر نوار شناور گم نشود
@@ -74,12 +81,13 @@ private enum class Tab(val route: String, val label: Int) {
 val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 
 /**
- * صفحه‌ی اصلی اپ با نوار پایینِ شناور: خلاصه، تراکنش‌ها، بررسی، تنظیمات.
+ * صفحه‌ی اصلی اپ با نوار پایینِ شناور: خلاصه، تراکنش‌ها، کارها.
+ * «بررسی» یکی از کارهای تب «کارها» است و «تنظیمات» با دکمه‌ی بالای «خلاصه» باز می‌شود.
  * تب‌ها با Navigation-Compose عوض می‌شوند: هر تب حالت خودش (جای اسکرول، جست‌وجو، برگه‌ی باز) را نگه می‌دارد
  * و دکمه‌ی برگشت از هر تب به «خلاصه» و از خلاصه به بیرون می‌رود.
  * محتوای صفحه تا پایین کشیده می‌شود و زیر نوار شیشه‌ای (تار) دیده می‌شود.
  * موقع باز شدن اپ: پیامک‌ها خوانده می‌شوند؛ اگر پیامک تازه‌ای در «صندوق بررسی» باشد،
- * اول تب «بررسی» باز می‌شود (به‌جای نوتیفیکیشن — تا نوتیفیکیشن‌های اپ همیشه معتبر بمانند).
+ * اول صندوق «بررسی» (داخل تب «کارها») باز می‌شود (به‌جای نوتیفیکیشن — تا نوتیفیکیشن‌های اپ همیشه معتبر بمانند).
  *
  * @param openTransactionId تراکنشی که باید باز شود (لمس نوتیفیکیشن «این خرج مال چی بود؟»)
  * @param onOpenHandled بعد از رسیدگی به openTransactionId صدا زده می‌شود تا دوباره باز نشود
@@ -89,7 +97,10 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
     val nav = rememberNavController()
     val backStackEntry by nav.currentBackStackEntryAsState()
-    val tab = Tab.entries.firstOrNull { it.route == backStackEntry?.destination?.route } ?: Tab.Summary
+    val route = backStackEntry?.destination?.route
+    // «بررسی» زیرمجموعه‌ی «کارها»ست؛ در «تنظیمات» نوار پایین پنهان است
+    val tab = if (route == ROUTE_REVIEW) Tab.Todo else Tab.entries.firstOrNull { it.route == route } ?: Tab.Summary
+    val showBar = route != ROUTE_SETTINGS
     fun go(target: Tab) {
         nav.navigate(target.route) {
             // الگوی استاندارد نوار پایین: پشته همیشه «خلاصه ← تب فعلی» است و حالت هر تب ذخیره و برگردانده می‌شود
@@ -98,6 +109,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
             restoreState = true
         }
     }
+    fun openReview() {
+        go(Tab.Todo)
+        nav.navigate(ROUTE_REVIEW) { launchSingleTop = true }
+    }
+    fun openSettings() = nav.navigate(ROUTE_SETTINGS) { launchSingleTop = true }
     // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
     var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
     // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
@@ -105,6 +121,18 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
+    // عدد روی تب «کارها»: همه‌ی کارهای لازم (نه فقط پیامک‌های مبهم)
+    val todoSummaryVm: SummaryViewModel = viewModel(key = "todo-count", factory = SummaryViewModel.factory(container.budgetRepository))
+    val todoSummary by todoSummaryVm.summary.collectAsState()
+    val todoCount = rememberTodoStories(
+        todoSummary,
+        pendingReview = pending.size,
+        onOpenReview = {},
+        onOpenUncategorized = {},
+        onOpenTransactions = {},
+        onOpenSettings = {},
+        onOpenCategory = {},
+    ).size
 
     LaunchedEffect(openTransactionId) {
         val id = openTransactionId ?: return@LaunchedEffect
@@ -143,12 +171,12 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
             // اگر کاربر از نوتیفیکیشن یک تراکنش آمده، همان مهم‌تر است
-            if (pendingOpen == null) go(Tab.Review)
+            if (pendingOpen == null) openReview()
         }
     }
 
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottomSpace = FloatingNavBarHeight + FloatingNavBarBottomMargin + navInset + 8.dp
+    val bottomSpace = if (showBar) FloatingNavBarHeight + FloatingNavBarBottomMargin + navInset + 8.dp else navInset + 8.dp
 
     Box(Modifier.fillMaxSize()) {
         // محتوا: تا پایین صفحه کشیده می‌شود؛ فاصله‌ی پایین را خود صفحه‌ها با LocalBottomBarSpace می‌گذارند
@@ -178,7 +206,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                         composable(Tab.Summary.route) {
                             SummaryScreen(
                                 pendingReview = pending.size,
-                                onOpenReview = { go(Tab.Review) },
+                                onOpenReview = ::openReview,
                                 onOpenUncategorized = {
                                     onlyUncategorized = true
                                     go(Tab.Transactions)
@@ -187,7 +215,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                     onlyUncategorized = false
                                     go(Tab.Transactions)
                                 },
-                                onOpenSettings = { go(Tab.Settings) },
+                                onOpenSettings = ::openSettings,
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -198,8 +226,25 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpened = { pendingOpen = null },
                             )
                         }
-                        composable(Tab.Review.route) { ReviewScreen(onClose = { go(Tab.Summary) }) }
-                        composable(Tab.Settings.route) { SettingsScreen() }
+                        composable(Tab.Todo.route) {
+                            TodoScreen(
+                                pendingReview = pending.size,
+                                onOpenReview = ::openReview,
+                                onOpenUncategorized = {
+                                    onlyUncategorized = true
+                                    go(Tab.Transactions)
+                                },
+                                onOpenTransactions = {
+                                    onlyUncategorized = false
+                                    go(Tab.Transactions)
+                                },
+                                onOpenSettings = ::openSettings,
+                                // جزئیات دسته در «خلاصه» است
+                                onOpenCategory = { go(Tab.Summary) },
+                            )
+                        }
+                        composable(ROUTE_REVIEW) { ReviewScreen(onClose = { nav.popBackStack() }) }
+                        composable(ROUTE_SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
                     }
                 }
             }
@@ -215,18 +260,19 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 .background(Brush.verticalGradient(listOf(fadeColor.copy(alpha = 0f), fadeColor.copy(alpha = 0.92f))))
         )
 
-        FloatingNavBar(
-            items = listOf(
-                NavItem(NavIcons.Summary, stringResource(Tab.Summary.label)),
-                NavItem(NavIcons.Transactions, stringResource(Tab.Transactions.label)),
-                NavItem(NavIcons.Review, stringResource(Tab.Review.label), badge = pending.size),
-                NavItem(NavIcons.Settings, stringResource(Tab.Settings.label)),
-            ),
-            selectedIndex = tab.ordinal,
-            onSelect = { go(Tab.entries[it]) },
-            hazeState = hazeState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+        if (showBar) {
+            FloatingNavBar(
+                items = listOf(
+                    NavItem(NavIcons.Summary, stringResource(Tab.Summary.label)),
+                    NavItem(NavIcons.Transactions, stringResource(Tab.Transactions.label)),
+                    NavItem(NavIcons.Todo, stringResource(Tab.Todo.label), badge = todoCount),
+                ),
+                selectedIndex = tab.ordinal,
+                onSelect = { go(Tab.entries[it]) },
+                hazeState = hazeState,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
 
         reveal?.let { stats -> FirstRunReveal(stats, onDone = { reveal = null }) }
     }

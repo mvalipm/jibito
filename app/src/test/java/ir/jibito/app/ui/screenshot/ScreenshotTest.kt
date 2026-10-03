@@ -65,6 +65,18 @@ import java.util.Calendar
 import java.util.TimeZone
 import org.junit.After
 import org.junit.Before
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import ir.jibito.app.ui.main.FloatingNavBar
+import ir.jibito.app.ui.main.LocalBottomBarSpace
+import ir.jibito.app.ui.main.NavIcons
+import ir.jibito.app.ui.main.NavItem
+import ir.jibito.app.ui.todo.TodoList
 
 /**
  * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره، و با فونت بزرگ.
@@ -334,4 +346,62 @@ class ScreenshotTest {
             SettingsSection("پوسته", JibitoIcons.Palette) { ThemePicker(AppThemeStyle.DEFAULT, onSelect = {}) }
         }
     }
+
+    /** نوار پایینِ سه‌تبی؛ عدد «کارها» همه‌ی کارهای لازم است */
+    @Composable
+    private fun BoxScope.TabBar(selected: Int, haze: HazeState) {
+        FloatingNavBar(
+            items = listOf(
+                NavItem(NavIcons.Summary, "خلاصه"),
+                NavItem(NavIcons.Transactions, "تراکنش‌ها"),
+                NavItem(NavIcons.Todo, "کارها", badge = 6),
+            ),
+            selectedIndex = selected,
+            onSelect = {},
+            hazeState = haze,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    /** صفحه‌ی اول کامل: سرصفحه با دکمه‌ی تنظیمات، کارهای لازم، کجا رفت و نوار پایین */
+    @Test
+    fun home() {
+        for (dark in listOf(false, true)) shot("home", AppThemeStyle.DEFAULT, dark, padded = false) {
+            val haze = remember { HazeState() }
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                Column(Modifier.hazeSource(haze).verticalScroll(rememberScrollState())) {
+                    Hero(18_400_000)
+                    TodoSection(stories())
+                    Spacer(Modifier.height(14.dp))
+                    WhereSection(summary(18_400_000), onOpenCategory = {}, onShowAll = {})
+                }
+                TabBar(selected = 0, haze = haze)
+            }
+        }
+    }
+
+    /** تب «کارها»: پیامک‌های مبهم (بررسی) هم یکی از کارهاست */
+    @Test
+    fun todoTab() {
+        for (dark in listOf(false, true)) shot("todotab", AppThemeStyle.DEFAULT, dark, padded = false) {
+            val t = JibitoTheme.colors
+            val cafe = categoryTint(CategoryPalette.LIGHT[1], "☕")
+            val items = listOf(
+                TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
+                TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
+                TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
+                TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.") {},
+                TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
+                TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.") {},
+            )
+            val haze = remember { HazeState() }
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                CompositionLocalProvider(LocalBottomBarSpace provides 110.dp) {
+                    TodoList(items, Modifier.hazeSource(haze))
+                }
+                TabBar(selected = 2, haze = haze)
+            }
+        }
+    }
 }
+

@@ -76,7 +76,7 @@ fun SummaryScreen(
     onOpenUncategorized: () -> Unit = {},
     /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
     onOpenTransactions: () -> Unit = {},
-    /** رفتن به تنظیمات (مثلاً برای پیشنهاد پرداخت ماهانه) */
+    /** رفتن به تنظیمات (دکمه‌ی بالای سرصفحه، یا پیشنهاد پرداخت ماهانه) */
     onOpenSettings: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
@@ -93,24 +93,6 @@ fun SummaryScreen(
     var showIdle by rememberSaveable { mutableStateOf(false) }
     // فهرست کامل دسته‌ها و بودجه‌ها (به‌جای نمای اصلی)
     var showAll by rememberSaveable { mutableStateOf(false) }
-    val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
-    val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
-    val recurringFlow = remember { app.container.recurringSuggestions.observe() }
-    val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
-    // چند خرج این ماه هنوز دسته ندارند (عدد استوری «خرج بی‌دسته»)
-    val uncategorizedFlow = remember {
-        app.container.transactionRepository.observeTransactions().map { list ->
-            val m = JalaliMonth.current()
-            val from = m.startMillis()
-            val to = m.endMillis()
-            list.count {
-                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                    it.transaction.type == FlowType.WITHDRAWAL && it.dateMillis in from until to
-            }
-        }
-    }
-    val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
-    val notificationPrompt = rememberNotificationPrompt()
     val themeSettings = app.container.themeSettings
     val hidden by themeSettings.hideAmounts.collectAsState()
     val t = JibitoTheme.colors
@@ -128,47 +110,15 @@ fun SummaryScreen(
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
-            val stories = buildList {
-                if (notificationPrompt.visible) {
-                    add(TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, stringResource(R.string.todo_notif_off), notificationPrompt.fix))
-                }
-                if (uncategorizedCount > 0 && s.month == JalaliMonth.current()) {
-                    add(
-                        TodoStory(
-                            "uncat", t.coral, t.uncatBg, t.uncatFg, null,
-                            Jalali.toPersianDigits(uncategorizedCount.coerceAtMost(99).toString()),
-                            stringResource(R.string.todo_uncategorized), onOpenUncategorized,
-                        )
-                    )
-                }
-                s.categories.forEach { c ->
-                    val budget = c.budgetRial ?: return@forEach
-                    val level = BudgetLevel.of(c.spentRial, budget)
-                    if (level >= 80) {
-                        val tint = categoryTint(c.colorHex, c.icon)
-                        add(
-                            TodoStory(
-                                "budget-${c.categoryId}", if (level >= 100) t.alert else t.amber, tint.bg, tint.fg, tint.icon, tint.glyph,
-                                Jalali.toPersianDigits("${c.name} ${c.spentRial * 100 / budget}٪"),
-                            ) { detailId = c.categoryId }
-                        )
-                    }
-                }
-                if (pendingReview > 0) {
-                    add(
-                        TodoStory(
-                            "review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null,
-                            Jalali.toPersianDigits(stringResource(R.string.todo_review, pendingReview)), onOpenReview,
-                        )
-                    )
-                }
-                if (transferSuggestions.isNotEmpty()) {
-                    add(TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, stringResource(R.string.todo_transfer), onOpenTransactions))
-                }
-                recurringSuggestions.firstOrNull()?.let { r ->
-                    add(TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, stringResource(R.string.todo_recurring, r.title), onOpenSettings))
-                }
-            }
+            val stories = rememberTodoStories(
+                s,
+                pendingReview = pendingReview,
+                onOpenReview = onOpenReview,
+                onOpenUncategorized = onOpenUncategorized,
+                onOpenTransactions = onOpenTransactions,
+                onOpenSettings = onOpenSettings,
+                onOpenCategory = { detailId = it },
+            )
             val heroLine = moodOf(s, System.currentTimeMillis())
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -182,6 +132,7 @@ fun SummaryScreen(
                         dark = t.dark,
                         onToggleDark = { themeSettings.setDarkMode(if (t.dark) DarkMode.LIGHT else DarkMode.DARK) },
                         onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
+                        onOpenSettings = onOpenSettings,
                     )
                 }
                 if (stories.isNotEmpty()) item(key = "todo") { TodoSection(stories) }

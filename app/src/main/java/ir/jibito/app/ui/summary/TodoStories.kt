@@ -57,6 +57,8 @@ data class TodoStory(
     val icon: ImageVector?,
     val text: String?,
     val label: String,
+    /** یک جمله‌ی توضیح برای فهرست تب «کارها» (در استوری‌ها دیده نمی‌شود) */
+    val detail: String? = null,
     val onClick: () -> Unit,
 )
 
