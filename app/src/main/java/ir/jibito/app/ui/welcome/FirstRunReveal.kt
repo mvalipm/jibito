@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.welcome
 
+import ir.jibito.app.ui.common.loopingValue
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
@@ -206,13 +207,7 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
 /** جیبی: موقع خواندن دهانش می‌جنبد؛ آخرش یک پرش شاد */
 @Composable
 private fun RevealMascot(done: Boolean, modifier: Modifier) {
-    val chomp = rememberInfiniteTransition(label = "chomp")
-    val squash by chomp.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(580, easing = LinearEasing), RepeatMode.Restart),
-        label = "chompPhase",
-    )
+    val squash = if (done) 0f else loopingValue(0f, 1f, 580, label = "chomp", reverse = false, easing = LinearEasing)
     val jump = remember { Animatable(0f) }
     LaunchedEffect(done) {
         if (done) {
@@ -252,8 +247,7 @@ private fun jumpOffset(p: Float): Float {
 /** هاله‌ی گرم پشت جیبی که آرام نفس می‌کشد */
 @Composable
 private fun Glow(modifier: Modifier) {
-    val glow = rememberInfiniteTransition(label = "glow")
-    val p by glow.animateFloat(0f, 1f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "glowP")
+    val p = loopingValue(0f, 1f, 1200, label = "glow")
     Box(
         modifier
             .size(200.dp)
@@ -269,8 +263,7 @@ private fun Glow(modifier: Modifier) {
 /** ۹ حباب پیامک که از بالا، در سه ستون، به سمت دهان جیبی پرواز می‌کنند و کوچک و محو می‌شوند */
 @Composable
 private fun FlyingBubbles() {
-    val fly = rememberInfiniteTransition(label = "fly")
-    val phase by fly.animateFloat(0f, 1f, infiniteRepeatable(tween(1150, easing = LinearEasing)), label = "flyPhase")
+    val phase = loopingValue(0f, 1f, 1150, label = "fly", reverse = false, easing = LinearEasing)
     val easing = CubicBezierEasing(0.5f, 0f, 0.8f, 0.6f)
     val tints = listOf(TintTeal, TintPeach, TintGold)
     // ستون‌ها نسبت به وسط صفحه: راست، وسط، چپ (همان جای طرح ۳۹۰ پیکسلی)

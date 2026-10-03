@@ -106,13 +106,7 @@ fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = 
 /** جیبی که آرام بالا و پایین می‌رود (حالت‌های خالی صفحه‌ها) */
 @Composable
 fun BobbingMascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "bob")
-    val y by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = -6f,
-        animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
-        label = "bobY",
-    )
+    val y = loopingValue(0f, -6f, 1200, label = "bob")
     Mascot(width, face, modifier.graphicsLayer { translationY = y * density })
 }
 

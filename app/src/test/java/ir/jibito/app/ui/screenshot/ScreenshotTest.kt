@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.screenshot
 
+import ir.jibito.app.ui.common.LocalLoopingMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -182,6 +183,8 @@ class ScreenshotTest {
                 CompositionLocalProvider(
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     LocalDensity provides Density(density.density, fontScale),
+                    // انیمیشن‌های بی‌پایان خاموش، تا صفحه آرام شود و عکس گرفته شود
+                    LocalLoopingMotion provides false,
                 ) {
                     Column(
                         Modifier

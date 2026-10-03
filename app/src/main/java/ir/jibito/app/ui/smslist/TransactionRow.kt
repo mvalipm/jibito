@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.smslist
 
+import ir.jibito.app.ui.common.loopingValue
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -277,8 +278,7 @@ private fun Amount(sign: String, amountRial: Long, color: Color, strike: TextDec
 @Composable
 private fun UncategorizedTile() {
     val t = JibitoTheme.colors
-    val pulse = rememberInfiniteTransition(label = "uncatPulse")
-    val scale by pulse.animateFloat(1f, 1.07f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "uncatScale")
+    val scale = loopingValue(1f, 1.07f, 800, label = "uncatPulse")
     Box(
         Modifier
             .size(52.dp)
