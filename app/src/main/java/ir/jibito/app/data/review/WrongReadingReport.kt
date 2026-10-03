@@ -1,5 +1,6 @@
 package ir.jibito.app.data.review
 
+import ir.jibito.app.data.bank.SenderClassifier
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Transaction
 
@@ -10,11 +11,27 @@ import ir.jibito.app.domain.Transaction
  */
 object WrongReadingReport {
 
+    /** کاربر می‌گوید چه چیزی غلط است (برچسب‌ها همان متن گزارش‌اند) */
+    enum class Reason(val label: String) {
+        AMOUNT("مبلغ غلطه"),
+        TYPE("نوع غلطه"),
+        MERCHANT("طرف حساب غلطه"),
+        SHOULD_BE_TRANSFER("باید انتقال باشه"),
+        OTHER("چیز دیگه"),
+    }
+
     private val number = Regex("[0-9۰-۹٠-٩][0-9۰-۹٠-٩,٬،.]*")
 
-    fun text(t: Transaction): String = buildString {
+    /**
+     * @param sender سرشماره‌ی پیامک؛ شماره‌ی شبه‌موبایل (شخصی) پوشانده می‌شود
+     * @param appVersion نسخه‌ی اپ، تا معلوم باشد گزارش مال کدام پارسر است
+     */
+    fun text(t: Transaction, reason: Reason? = null, sender: String? = null, appVersion: String? = null): String = buildString {
         appendLine("پیامک اشتباه خوانده‌شده — جیبیتو")
+        reason?.let { appendLine("مشکل: ${it.label}") }
         t.bank?.let { appendLine("بانک: ${it.name}") }
+        sender?.takeIf { it.isNotBlank() }?.let { appendLine("سرشماره: ${maskSender(it)}") }
+        appVersion?.takeIf { it.isNotBlank() }?.let { appendLine("نسخه‌ی اپ: $it") }
         appendLine("اپ خواند: " + if (t.transaction.type == FlowType.DEPOSIT) "واریز" else "برداشت")
         if (t.isFailedPurchase) appendLine("اپ خواند: خرید ناموفق")
         t.merchant?.let { appendLine("طرف حساب: ${maskDigits(it)}") }
@@ -36,6 +53,10 @@ object WrongReadingReport {
         }
         return maskDigits(labeled)
     }
+
+    /** سرشماره‌ی بانکی (مثل 200033 یا MofidCard) عمومی است؛ شماره‌ی موبایل شخصی نه */
+    internal fun maskSender(sender: String): String =
+        if (SenderClassifier.isPersonalMobileNumber(sender)) maskDigits(sender) else sender.trim()
 
     private fun matches(value: Long, rial: Long) = value == rial || value * 10 == rial
 

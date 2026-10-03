@@ -105,4 +105,23 @@ class TransactionParserTest {
         assertEquals(FlowType.WITHDRAWAL, t.type)
         assertEquals(700_000L, t.amountRial)
     }
+
+    @Test
+    fun `ملت با مبلغ چسبیده به برداشت، مانده مبلغ خوانده نمی‌شود`() {
+        // از گزارش کاربر: «مانده» به‌جای مبلغ خوانده می‌شد
+        val sms = "حساب1234567890\nبرداشت150,000\nمانده2,345,000\n05/07/04-18:24"
+        val t = TransactionParser.parse(mellat, sms)!!
+        assertEquals(FlowType.WITHDRAWAL, t.type)
+        assertEquals(150_000L, t.amountRial)
+        assertEquals(2_345_000L, t.balanceRial)
+    }
+
+    @Test
+    fun `ملت واریز با مبلغ در همان خط`() {
+        val sms = "حساب1234567890\nواریز:3,000,000\nمانده5,000,000\n05/07/04-18:24"
+        val t = TransactionParser.parse(mellat, sms)!!
+        assertEquals(FlowType.DEPOSIT, t.type)
+        assertEquals(3_000_000L, t.amountRial)
+        assertEquals(5_000_000L, t.balanceRial)
+    }
 }

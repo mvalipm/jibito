@@ -1,5 +1,11 @@
 package ir.jibito.app.ui.smslist
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import ir.jibito.app.data.sms.SmsSenderLookup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -64,6 +70,11 @@ import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
 import android.content.Intent
+import android.widget.Toast
+import android.net.Uri
+import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
 import androidx.compose.ui.platform.LocalContext
 import ir.jibito.app.data.review.WrongReadingReport
 
@@ -378,18 +389,13 @@ fun CategoryPickerSheet(
                             color = colors.onSurfaceVariant,
                         )
                     }
-                    // مبلغ یا نوع اشتباه خوانده شده؟ گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر همین بانک
+                    // مبلغ یا نوع اشتباه خوانده شده؟ اول «چه چیزی غلطه؟»، بعد گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر
                     if (!transaction.isManual) {
-                        val context = LocalContext.current
-                        val chooserTitle = stringResource(R.string.review_share_title)
-                        TextButton(
-                            onClick = {
-                                val send = Intent(Intent.ACTION_SEND)
-                                    .setType("text/plain")
-                                    .putExtra(Intent.EXTRA_TEXT, WrongReadingReport.text(transaction))
-                                context.startActivity(Intent.createChooser(send, chooserTitle))
-                            },
-                        ) { Text(stringResource(R.string.sheet_report_wrong)) }
+                        var reporting by rememberSaveable { mutableStateOf(false) }
+                        TextButton(onClick = { reporting = true }) { Text(stringResource(R.string.sheet_report_wrong)) }
+                        if (reporting) {
+                            WrongReadingDialog(transaction, onDismiss = { reporting = false })
+                        }
                         Text(
                             stringResource(R.string.review_share_hint),
                             style = MaterialTheme.typography.labelSmall,
@@ -563,3 +569,94 @@ private fun AddChip(label: String, onClick: () -> Unit) {
         fontWeight = FontWeight.Bold,
     )
 }
+
+/** «چه چیزی غلط خونده شده؟» و بعد ارسال گزارش (رقم‌ها پوشیده، به‌علاوه‌ی علت، سرشماره و نسخه‌ی اپ) */
+@Composable
+private fun WrongReadingDialog(transaction: Transaction, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val chooserTitle = stringResource(R.string.review_share_title)
+    var reason by rememberSaveable { mutableStateOf<WrongReadingReport.Reason?>(null) }
+    val labels = mapOf(
+        WrongReadingReport.Reason.AMOUNT to R.string.report_reason_amount,
+        WrongReadingReport.Reason.TYPE to R.string.report_reason_type,
+        WrongReadingReport.Reason.MERCHANT to R.string.report_reason_merchant,
+        WrongReadingReport.Reason.SHOULD_BE_TRANSFER to R.string.report_reason_transfer,
+        WrongReadingReport.Reason.OTHER to R.string.report_reason_other,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.report_reason_title), fontWeight = FontWeight.Bold) },
+        text = {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            Column(Modifier.selectableGroup()) {
+                labels.forEach { (r, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .selectable(selected = reason == r, role = Role.RadioButton, onClick = { reason = r })
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = reason == r, onClick = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(label))
+                    }
+                }
+            }
+            }
+        },
+        confirmButton = {
+            // اصلی: چت پشتیبانی در بله (متن گزارش کپی می‌شود تا کاربر فقط بچسباند و بفرستد)؛ فرعی: هر راه دیگری
+            val copiedHint = stringResource(R.string.report_copied_paste)
+            Row {
+                TextButton(
+                    enabled = reason != null,
+                    onClick = {
+                        val text = reportText(context, transaction, reason)
+                        val shared = Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
+                            chooserTitle,
+                        )
+                        context.startActivity(shared)
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.report_send_other)) }
+                TextButton(
+                    enabled = reason != null,
+                    onClick = {
+                        val text = reportText(context, transaction, reason)
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("jibito report", text))
+                        val opened = runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SUPPORT_BALE_URL)))
+                        }.isSuccess
+                        if (opened) {
+                            Toast.makeText(context, copiedHint, Toast.LENGTH_LONG).show()
+                        } else {
+                            // بله (و مرورگر) نیست: همان صفحه‌ی اشتراک‌گذاری، تا گزارش از دست نرود
+                            context.startActivity(
+                                Intent.createChooser(
+                                    Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
+                                    chooserTitle,
+                                )
+                            )
+                        }
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.report_send_bale), fontWeight = FontWeight.Bold) }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.budget_dialog_cancel)) } },
+    )
+}
+
+/** چت پشتیبانی جیبیتو در پیام‌رسان بله */
+private const val SUPPORT_BALE_URL = "https://ble.ir/jibito_support"
+
+private fun reportText(context: Context, transaction: Transaction, reason: WrongReadingReport.Reason?): String {
+    val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
+    val sender = SmsSenderLookup.sender(context, transaction.smsId)
+    return WrongReadingReport.text(transaction, reason, sender, version)
+}
+
