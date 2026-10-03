@@ -382,7 +382,7 @@ private const val TOAST_MILLIS = 4_000L
 private fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
     val c = sms.categoryId?.let { byId[it] } ?: return null
     val root = CategoryTree.rootOf(c, byId)
-    return categoryTint(root.colorHex, root.icon)
+    return categoryTint(root.colorHex, CategoryTree.iconOf(c, byId))
 }
 
 /** کپسول فیلتر «همه» / «بی‌دسته» (انتخاب‌شده: تیره) */

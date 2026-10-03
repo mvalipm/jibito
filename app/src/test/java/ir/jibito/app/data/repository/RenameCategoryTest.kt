@@ -66,6 +66,15 @@ class RenameCategoryTest {
     }
 
     @Test
+    fun subcategoryKeepsChosenIconOrInheritsParents() = runBlocking {
+        val parent = create("باشگاه شنا")
+        val withIcon = (repo.createCategory("عینک شنا", parent, 2, "🎯") as CreateCategoryResult.Created).id
+        val without = (repo.createCategory("بلیت استخر", parent, 2, null) as CreateCategoryResult.Created).id
+        assertEquals("🎯", db.categoryDao().byId(withIcon)!!.icon)
+        assertEquals(null, db.categoryDao().byId(without)!!.icon)
+    }
+
+    @Test
     fun keepingTheSameNameIsAllowed() = runBlocking {
         val id = create("باشگاه شنا")
         assertTrue(repo.renameCustomCategory(id, "باشگاه شنا") is CreateCategoryResult.Created)

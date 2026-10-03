@@ -26,6 +26,17 @@ object CategoryTree {
         return current
     }
 
+    /** آیکون نزدیک‌ترین دسته‌ی بالادستی که آیکون دارد (زیردسته‌ی شخصی می‌تواند آیکون خودش را داشته باشد) */
+    fun iconOf(c: Category, byId: Map<Long, Category>): String? {
+        var current = c
+        var steps = 0
+        while (current.icon == null && current.parentId != null && steps < 10) {
+            current = byId[current.parentId] ?: break
+            steps++
+        }
+        return current.icon
+    }
+
     /**
      * دسته‌ی هم‌ارز در عمق مجاز: اگر کاربر فقط «دسته‌ی اصلی» را می‌بیند، پیشنهادِ «سوخت» ← «حمل‌ونقل».
      */
