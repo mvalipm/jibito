@@ -76,7 +76,7 @@ class BudgetAlerter(
     }
 
     private fun show(categoryId: Long, name: String, icon: String?, level: Int, spent: Long, limit: Long) {
-        val label = listOfNotNull(icon, name).joinToString(" ")
+        val label = name
         val title = if (level >= 100) {
             context.getString(R.string.budget_alert_over, label)
         } else {
@@ -93,7 +93,7 @@ class BudgetAlerter(
             return
         }
         ensureChannel()
-        val text = context.getString(R.string.budget_alert_body, Money.toman(spent), Money.toman(limit))
+        val text = context.getString(R.string.budget_alert_body, Money.compact(spent), Money.compactAdjective(limit))
 
         val openApp = PendingIntent.getActivity(
             context,

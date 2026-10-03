@@ -51,6 +51,22 @@ import ir.jibito.app.util.Jalali
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.common.rememberHaptics
+import ir.jibito.app.ui.common.BobbingMascot
+import ir.jibito.app.ui.common.Mascot
+import ir.jibito.app.ui.common.MascotFace
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.unit.sp
 
 /**
  * «صندوق بررسی»: پیامک‌هایی که شبیه تراکنش‌اند ولی خودکار خوانده نشدند، یکی‌یکی.
@@ -80,30 +96,37 @@ fun ReviewScreen(onClose: () -> Unit) {
             .safeDrawingPadding()
     ) {
         // سرصفحه
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 8.dp, top = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
+        Text(
+            stringResource(R.string.review_title),
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp),
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Black,
+            color = colors.onBackground,
+        )
+        pending?.takeIf { it.isNotEmpty() }?.let {
+            // جیبی با چشم‌های گرد: «مطمئن نیستم»
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                BobbingMascot(84.dp, MascotFace.UNSURE)
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    stringResource(R.string.review_title),
-                    style = MaterialTheme.typography.headlineSmall,
+                    Jalali.toPersianDigits(stringResource(R.string.review_unsure, it.size)),
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
                 )
-                pending?.takeIf { it.isNotEmpty() }?.let {
-                    Text(
-                        Jalali.toPersianDigits(stringResource(R.string.review_count, it.size)) +
-                            if (it.size > 1) "  ·  " + stringResource(R.string.review_swipe_card_hint) else "",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = colors.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                Text(
+                    stringResource(R.string.review_help_me) +
+                        if (it.size > 1) "  ·  " + stringResource(R.string.review_swipe_card_hint) else "",
+                    fontSize = 14.sp,
+                    color = JibitoTheme.colors.muted,
+                    textAlign = TextAlign.Center,
+                )
             }
-            TextButton(onClick = onClose) { Text(stringResource(R.string.review_later)) }
         }
 
         val list = pending
@@ -181,8 +204,8 @@ private fun ReviewPager(
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(bottom = bottomSpace),
-            contentPadding = PaddingValues(horizontal = 22.dp),
-            pageSpacing = 10.dp,
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            pageSpacing = 24.dp,
             key = { index -> currentList.getOrNull(index)?.smsId ?: -index.toLong() },
             verticalAlignment = Alignment.Top,
         ) { page ->
@@ -205,9 +228,7 @@ private fun ReviewPager(
                         alpha = 1f - 0.45f * distance
                         rotationZ = offset.coerceIn(-1f, 1f) * 2.5f
                     }
-                    .shadow(10.dp, RoundedCornerShape(28.dp), clip = false)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(colors.surface)
+
             ) {
                 ReviewCard(
                     item = item,
@@ -222,24 +243,74 @@ private fun ReviewPager(
     }
 }
 
+/** صندوق خالی: جیبی خوشحال با کاغذرنگی */
 @Composable
 private fun AllDone(onClose: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(JibitoIcons.Check, contentDescription = null, tint = JibitoTheme.colors.income, modifier = Modifier.size(56.dp))
-        Spacer(Modifier.height(12.dp))
-        Text(
-            stringResource(R.string.review_all_done),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = onClose, shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.review_back)) }
+    val t = JibitoTheme.colors
+    val pop = remember { Animatable(0.6f) }
+    LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.4f, stiffness = 400f)) }
+    Box(Modifier.fillMaxSize()) {
+        Confetti(Modifier.fillMaxWidth().height(260.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 30.dp, end = 30.dp, top = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Mascot(150.dp, MascotFace.HAPPY, Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value })
+            Spacer(Modifier.height(18.dp))
+            Text(
+                stringResource(R.string.review_all_done),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                stringResource(R.string.review_all_done_body),
+                fontSize = 15.sp,
+                lineHeight = 27.sp,
+                textAlign = TextAlign.Center,
+                color = t.muted,
+            )
+            Spacer(Modifier.height(24.dp))
+            Text(
+                stringResource(R.string.review_back),
+                modifier = Modifier
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(t.chip)
+                    .clickable(onClick = onClose)
+                    .padding(horizontal = 18.dp, vertical = 10.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+    }
+}
+
+/** ۱۸ تکه کاغذرنگی که یک بار از پشت جیبی بالا می‌پرند و محو می‌شوند */
+@Composable
+private fun Confetti(modifier: Modifier) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, tween(2100, easing = LinearEasing)) }
+    val palette = listOf(Color(0xFFE4572E), Color(0xFF17BEBB), Color(0xFFF5B83D), Color(0xFF6D3FC0))
+    Canvas(modifier) {
+        val sx = size.width / 390f
+        for (i in 0 until 18) {
+            val delay = (i % 6) * 90f / 2100f
+            val p = ((progress.value - delay) / (1600f / 2100f)).coerceIn(0f, 1f)
+            if (p <= 0f || p >= 1f) continue
+            val alpha = if (p < 0.2f) p / 0.2f else 1f - (p - 0.2f) / 0.8f
+            val x = (40 + (i * 53) % 300) * sx
+            val y = 150.dp.toPx() - 120.dp.toPx() * p
+            val side = (6 + (i % 3) * 3).dp.toPx() * (0.4f + 0.6f * p)
+            val color = palette[i % palette.size].copy(alpha = alpha.coerceIn(0f, 1f))
+            rotate(200f * p, pivot = Offset(x, y)) {
+                if (i % 2 == 1) drawCircle(color, radius = side / 2, center = Offset(x, y))
+                else drawRect(color, topLeft = Offset(x - side / 2, y - side / 2), size = Size(side, side))
+            }
+        }
     }
 }

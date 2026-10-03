@@ -41,11 +41,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.AppThemeStyle
+import ir.jibito.app.ui.theme.DarkMode
 import ir.jibito.app.ui.theme.previewColors
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,8 +98,8 @@ fun SettingsScreen() {
     ) {
         Text(
             stringResource(R.string.settings_title),
-            modifier = Modifier.padding(start = 4.dp, top = 20.dp, bottom = 16.dp),
-            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 16.dp),
+            fontSize = 30.sp,
             fontWeight = FontWeight.Black,
             color = colors.onBackground,
         )
@@ -150,6 +152,32 @@ fun SettingsScreen() {
                         )
                     }
                     if (selected) Icon(JibitoIcons.Check, contentDescription = stringResource(R.string.cd_selected), tint = colors.primary, modifier = Modifier.size(22.dp))
+                }
+            }
+            // روشن / تیره / مثل گوشی
+            val darkMode by themeSettings.darkMode.collectAsState()
+            Text(
+                stringResource(R.string.settings_dark_title),
+                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurface,
+            )
+            Row {
+                DarkMode.entries.forEach { mode ->
+                    val on = mode == darkMode
+                    Text(
+                        stringResource(mode.label),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .clip(RoundedCornerShape(19.dp))
+                            .background(if (on) JibitoTheme.colors.onBg else JibitoTheme.colors.chip)
+                            .clickable { themeSettings.setDarkMode(mode) }
+                            .padding(horizontal = 16.dp, vertical = 9.dp),
+                        color = if (on) JibitoTheme.colors.onFg else colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
                 }
             }
         }
@@ -392,10 +420,10 @@ private fun SettingsCard(title: String, content: @Composable () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(colors.surface, RoundedCornerShape(20.dp))
-            .padding(16.dp)
+            .background(colors.surface, RoundedCornerShape(22.dp))
+            .padding(18.dp)
     ) {
-        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = colors.onSurface)
+        Text(title, fontSize = 17.sp, fontWeight = FontWeight.Black, color = colors.onSurface)
         Spacer(Modifier.height(8.dp))
         content()
     }

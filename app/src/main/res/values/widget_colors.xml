@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- رنگ‌های ویجت صفحه‌ی اصلی (روشن) -->
-    <color name="widget_bg">#FFF8F3</color>
-    <color name="widget_text">#2B1D17</color>
-    <color name="widget_muted">#7A6359</color>
-    <color name="widget_accent">#E4572E</color>
-    <color name="widget_over">#C62828</color>
+    <!-- رنگ‌های ویجت صفحه‌ی اصلی (روشن)، همان توکن‌های طرح «جیبی» -->
+    <color name="widget_bg">#FBF6F2</color>
+    <color name="widget_text">#1C1B22</color>
+    <color name="widget_muted">#6B625E</color>
+    <color name="widget_accent">#0E7C7B</color>
+    <color name="widget_over">#B42318</color>
 </resources>

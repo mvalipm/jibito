@@ -48,6 +48,11 @@ import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.vector.ImageVector
 import ir.jibito.app.ui.theme.JibitoIcons
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -76,40 +81,33 @@ internal fun ReviewCard(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 18.dp)
+            .padding(top = 14.dp, bottom = 18.dp)
     ) {
 
-        // متن پیامک
-        Column(
-            Modifier
+        // متن پیامک، مثل حباب پیام
+        val jt = JibitoTheme.colors
+        Text(
+            item.body,
+            modifier = Modifier
                 .fillMaxWidth()
-                .background(colors.surfaceVariant.copy(alpha = 0.55f), RoundedCornerShape(20.dp))
-                .padding(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.bankName ?: item.sender,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                )
-                Text(
-                    Jalali.format(item.dateMillis),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            if (item.bankName == null) {
-                Text(
-                    stringResource(R.string.review_unknown_sender),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(item.body, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-        }
+                .then(if (jt.dark) Modifier.border(1.dp, jt.border, BubbleShape) else Modifier.shadow(1.dp, BubbleShape))
+                .clip(BubbleShape)
+                .background(jt.smsBg)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            fontSize = 15.sp,
+            lineHeight = 28.sp,
+            color = colors.onBackground,
+        )
+        Text(
+            listOf(item.bankName ?: item.sender, Jalali.format(item.dateMillis)).joinToString(" · ") +
+                if (item.bankName == null) " · " + stringResource(R.string.review_unknown_sender) else "",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp),
+            fontSize = 12.sp,
+            color = jt.muted,
+            textAlign = TextAlign.End,
+        )
 
         // فرستنده‌ی ناشناس: مال کدام بانک/موسسه است؟ (یک بار؛ از این به بعد خودکار شناخته می‌شود)
         if (needsBank) {
@@ -160,19 +158,16 @@ internal fun ReviewCard(
         val chosenType = type
         val chosenAmount = amountIndex
         val ready = chosenType != null && chosenAmount != null && (!needsBank || bankId != null)
-        Button(
-            onClick = {
-                if (chosenType != null && chosenAmount != null) {
-                    onConfirm(chosenType, g.numbers[chosenAmount], balanceIndex?.let { g.numbers[it] }, bankId)
-                }
-            },
+        BigPill(
+            text = stringResource(if (type == FlowType.DEPOSIT) R.string.review_yes_income else R.string.review_yes_spend),
+            container = JibitoTheme.colors.btnBg,
+            content = JibitoTheme.colors.btnFg,
+            bold = true,
             enabled = ready,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(18.dp),
         ) {
-            Text(stringResource(R.string.review_confirm), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            if (chosenType != null && chosenAmount != null) {
+                onConfirm(chosenType, g.numbers[chosenAmount], balanceIndex?.let { g.numbers[it] }, bankId)
+            }
         }
 
         Text(
@@ -217,15 +212,12 @@ internal fun ReviewCard(
             }
             Spacer(Modifier.height(8.dp))
         }
-        OutlinedButton(
-            onClick = { onDismiss(ignoreSender) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(18.dp),
-        ) {
-            Text(stringResource(R.string.review_not_transaction))
-        }
+        BigPill(
+            text = stringResource(R.string.review_not_transaction),
+            container = JibitoTheme.colors.chip,
+            content = colors.onBackground,
+            bold = false,
+        ) { onDismiss(ignoreSender) }
 
         Spacer(Modifier.height(6.dp))
         TextButton(onClick = onShare, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -311,4 +303,27 @@ private fun NumberChips(raws: List<String>, selected: Int?, disabled: Int?, onCl
             )
         }
     }
+}
+
+/** حباب پیامک: گوشه‌ی پایینِ سمت راست تیز (مثل پیامی که آمده) */
+private val BubbleShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 22.dp, bottomStart = 6.dp)
+
+/** دکمه‌ی کپسولی بزرگ (۵۶) طرح «جیبی» */
+@Composable
+private fun BigPill(text: String, container: Color, content: Color, bold: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+    Text(
+        text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .alpha(if (enabled) 1f else 0.45f)
+            .clip(RoundedCornerShape(28.dp))
+            .background(container)
+            .clickable(enabled = enabled, onClick = onClick)
+            .wrapContentHeight(Alignment.CenterVertically),
+        color = content,
+        fontSize = if (bold) 17.sp else 16.sp,
+        fontWeight = if (bold) FontWeight.Black else FontWeight.Bold,
+        textAlign = TextAlign.Center,
+    )
 }

@@ -46,16 +46,32 @@ import ir.jibito.app.util.Jalali
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import ir.jibito.app.data.repository.UndoSnapshot
 import ir.jibito.app.ui.common.rememberHaptics
 import ir.jibito.app.ui.theme.JibitoIcons
+import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.CategoryTint
+import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.ui.common.BobbingMascot
+import ir.jibito.app.ui.common.JibiToast
+import ir.jibito.app.ui.common.ToastMessage
+import ir.jibito.app.domain.Category
+import ir.jibito.app.domain.CategoryTree
+import ir.jibito.app.domain.Transaction
+import ir.jibito.app.data.parser.FlowType
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.ExperimentalFoundationApi
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -63,7 +79,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 fun SmsListScreen(
     /** فقط خرج‌های بی‌دسته (از «کارهای لازم» در خلاصه) */
     onlyUncategorized: Boolean = false,
-    onClearFilter: () -> Unit = {},
+    /** فیلتر «همه» / «بی‌دسته» */
+    onFilterChange: (Boolean) -> Unit = {},
     /** تراکنشی که برگه‌ی دسته‌اش باید باز شود (از نوتیفیکیشن) */
     openTransactionId: Long? = null,
     onOpened: () -> Unit = {},
@@ -98,67 +115,74 @@ fun SmsListScreen(
     LaunchedEffect(onlyUncategorized) { viewModel.setOnlyUncategorized(onlyUncategorized) }
     val bottomSpace = LocalBottomBarSpace.current
 
-    // «برگردان» بعد از دسته‌بندی یا حذف، و لرزش کوتاه موقع تأیید
-    val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    // «رفت تو کافه» بالای صفحه، با «برگردون»؛ و لرزش کوتاه موقع تأیید
+    var toast by remember { mutableStateOf<ToastMessage?>(null) }
     val haptics = rememberHaptics()
     val undoLabel = stringResource(R.string.undo)
     val categorizedMessage = stringResource(R.string.undo_categorized)
     val uncategorizedMessage = stringResource(R.string.undo_uncategorized)
     val deletedMessage = stringResource(R.string.undo_deleted)
     fun offerUndo(message: String, snapshot: UndoSnapshot) {
-        scope.launch {
-            snackbar.currentSnackbarData?.dismiss()
-            val result = snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Short)
-            if (result == SnackbarResult.ActionPerformed) {
-                haptics.tick()
-                viewModel.undo(snapshot)
-            }
+        toast = ToastMessage(message, undoLabel, onAction = {
+            haptics.tick()
+            viewModel.undo(snapshot)
+        })
+    }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            delay(TOAST_MILLIS)
+            toast = null
+        }
+    }
+    val t = JibitoTheme.colors
+    val byId = remember(categories) { categories.associateBy { it.id } }
+    fun pickCategory(sms: Transaction, categoryId: Long?) {
+        haptics.confirm()
+        val name = categoryId?.let { byId[it]?.name }
+        viewModel.setCategory(sms, categoryId) { before ->
+            offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
+        }
+    }
+    val uncategorizedCount = remember(messages) {
+        messages.orEmpty().count {
+            it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase && it.transaction.type == FlowType.WITHDRAWAL
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(colors.background)) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
             .safeDrawingPadding(),
     ) {
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp)) {
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.list_title),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.headlineMedium,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
                 )
                 // جست‌وجو (تاریخ، مبلغ، اسم)
-                IconButton(
-                    onClick = {
-                        if (showSearch) viewModel.setSearch(TxSearch())
-                        showSearch = !showSearch
-                    },
-                    modifier = Modifier
+                Box(
+                    Modifier
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (search.isActive) colors.primary.copy(alpha = 0.15f) else colors.surface),
+                        .background(if (search.isActive) colors.primaryContainer else t.chip)
+                        .clickable(onClickLabel = stringResource(if (showSearch) R.string.cd_close_search else R.string.cd_search)) {
+                            if (showSearch) viewModel.setSearch(TxSearch())
+                            showSearch = !showSearch
+                        },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        if (showSearch) JibitoIcons.Close else JibitoIcons.Search,
-                        contentDescription = stringResource(if (showSearch) R.string.cd_close_search else R.string.cd_search),
-                        tint = colors.onSurface,
+                        if (showSearch) JibitoIcons.Close else DesignIcons.Search,
+                        contentDescription = null,
+                        tint = colors.onBackground,
                         modifier = Modifier.size(22.dp),
                     )
                 }
-            }
-            messages?.takeIf { it.isNotEmpty() }?.let {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = Jalali.toPersianDigits(stringResource(R.string.list_count, it.size)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.primary,
-                    fontWeight = FontWeight.Bold,
-                )
             }
             if (isSyncing && !messages.isNullOrEmpty()) {
                 Spacer(Modifier.height(8.dp))
@@ -166,73 +190,61 @@ fun SmsListScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.list_syncing),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    color = t.muted,
                 )
             }
-        }
-
-        if (onlyUncategorized) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(colors.primary.copy(alpha = 0.14f))
-                    .clickable(onClickLabel = stringResource(R.string.cd_clear_filter), onClick = onClearFilter)
-                    .padding(start = 14.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.tx_filter_uncategorized),
-                    color = colors.primary,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+            // «همه» / «بی‌دسته»
+            Row(Modifier.padding(top = 14.dp)) {
+                FilterPill(stringResource(R.string.filter_all), selected = !onlyUncategorized, onClick = { onFilterChange(false) })
+                Spacer(Modifier.width(8.dp))
+                FilterPill(
+                    stringResource(R.string.filter_uncategorized),
+                    selected = onlyUncategorized,
+                    badge = uncategorizedCount,
+                    onClick = { onFilterChange(true) },
                 )
-                Spacer(Modifier.size(6.dp))
-                Icon(JibitoIcons.Close, contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
             }
         }
         // فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel و بیرون از رشته‌ی اصلی انجام می‌شود
         val list = visible?.list
         val groups = visible?.groups.orEmpty()
         if (showSearch) {
-            SearchPanel(search = search, onChange = viewModel::setSearch, results = list)
-            Spacer(Modifier.height(6.dp))
+            Box(Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
+                SearchPanel(search = search, onChange = viewModel::setSearch, results = list)
+            }
         }
         when {
             list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.list_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                    )
+                    Text(text = stringResource(R.string.list_loading), fontSize = 14.sp, color = t.muted)
                 }
             }
+            list.isEmpty() && onlyUncategorized && !search.isActive -> AllCategorized()
             list.isEmpty() -> Box(
                 Modifier.fillMaxSize().padding(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(R.string.list_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurfaceVariant,
+                    fontSize = 15.sp,
+                    color = t.muted,
                     textAlign = TextAlign.Center,
                 )
             }
             else -> LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp + LocalBottomBarSpace.current),
+                contentPadding = PaddingValues(top = 14.dp, bottom = 88.dp + LocalBottomBarSpace.current),
             ) {
                 // «چقد دارم؟»: آخرین مانده‌ی هر بانک
                 if (bankBalances.isNotEmpty() && !search.isActive) {
-                    item(key = "balances") { Box(Modifier.padding(bottom = 10.dp)) { BankBalancesRow(bankBalances) } }
+                    item(key = "balances") { BankBalancesRow(bankBalances) }
                 }
                 // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی، بالای فهرست
                 transferSuggestions.firstOrNull()?.takeIf { !search.isActive }?.let { suggestion ->
                     item(key = "transfer-suggestion") {
-                        Box(Modifier.padding(bottom = 4.dp)) {
+                        Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
                             TransferSuggestionCard(
                                 suggestion = suggestion,
                                 total = transferSuggestions.size,
@@ -248,21 +260,37 @@ fun SmsListScreen(
                         }
                     }
                 }
-                // روزبه‌روز: سرتیتر چسبان «امروز · ۴۵۰ هزار خرج» و تراکنش‌های آن روز در یک سطح
+                // روزبه‌روز: سرتیتر چسبان «امروز ━━━ ۶۰۵ هزار» و تراکنش‌های آن روز
+                val maxDay = groups.maxOfOrNull { it.spendRial }?.coerceAtLeast(1L) ?: 1L
+                val spendDays = groups.filter { it.spendRial > 0 }
+                val avgDay = if (spendDays.isEmpty()) 0L else spendDays.sumOf { it.spendRial } / spendDays.size
                 groups.forEach { group ->
-                    stickyHeader(key = "day-${group.dayStartMillis}") { DayHeader(group) }
-                    itemsIndexed(group.items, key = { _, sms -> sms.id }) { index, sms ->
-                        TransactionRow(
-                            sms = sms,
-                            position = groupPosition(index, group.items.size),
-                            onClick = { selectedId = sms.id },
-                        )
+                    stickyHeader(key = "day-${group.dayStartMillis}") {
+                        Box(Modifier.padding(horizontal = 20.dp)) {
+                            DayHeader(
+                                group,
+                                fraction = group.spendRial.toFloat() / maxDay,
+                                heavy = spendDays.size > 1 && group.spendRial > avgDay * 5 / 4,
+                            )
+                        }
+                    }
+                    items(group.items, key = { it.id }) { sms ->
+                        val suggestedId = sms.suggestedCategory?.let { name ->
+                            categories.firstOrNull { it.name == name && it.flowType == sms.transaction.type.code }?.id
+                        }
+                        Box(Modifier.padding(horizontal = 20.dp)) {
+                            TransactionRow(
+                                sms = sms,
+                                tint = tintOf(sms, byId),
+                                onClick = { selectedId = sms.id },
+                                onAcceptSuggestion = suggestedId?.let { id -> { pickCategory(sms, id) } },
+                            )
+                        }
                     }
                 }
             }
         }
     }
-
 
     // «+» ثبت دستی: پایین صفحه، بالای نوار شناور (روی چیزی نمی‌افتد؛ فهرست جای خالی دارد)
     FloatingActionButton(
@@ -270,21 +298,21 @@ fun SmsListScreen(
         modifier = Modifier
             .align(Alignment.BottomEnd)
             .padding(end = 20.dp, bottom = bottomSpace + 12.dp),
-        containerColor = colors.primary,
-        contentColor = colors.onPrimary,
+        containerColor = t.btnBg,
+        contentColor = t.btnFg,
         shape = RoundedCornerShape(20.dp),
     ) {
         Icon(JibitoIcons.Plus, contentDescription = stringResource(R.string.cd_add_manual), modifier = Modifier.size(26.dp))
     }
 
-    // جای «برگردان»: کنار دکمه‌ی «+»، بالای نوار شناور
-    SnackbarHost(
-        hostState = snackbar,
+    JibiToast(
+        message = toast,
+        onDismiss = { toast = null },
         modifier = Modifier
-            .align(Alignment.BottomStart)
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 20.dp + 56.dp + 8.dp, bottom = bottomSpace + 12.dp),
-    ) { data -> Snackbar(data, shape = RoundedCornerShape(16.dp)) }
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+    )
     }
 
     // برگه‌ی انتخاب دسته (از پایین صفحه)
@@ -301,11 +329,7 @@ fun SmsListScreen(
             depth = displayDepth,
             hiddenRoots = hiddenRoots,
             onPick = { categoryId ->
-                haptics.confirm()
-                val name = categories.firstOrNull { it.id == categoryId }?.name
-                viewModel.setCategory(selected, categoryId) { before ->
-                    offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
-                }
+                pickCategory(selected, categoryId)
                 selectedId = null
             },
             onSelfTransfer = { isTransfer ->
@@ -347,5 +371,73 @@ fun SmsListScreen(
             },
             onDismiss = { addingManual = false },
         )
+    }
+}
+
+/** چند میلی‌ثانیه پیام «رفت تو کافه» می‌ماند */
+private const val TOAST_MILLIS = 4_000L
+
+/** ظاهر دسته‌ی اصلیِ یک تراکنش (برای کاشی رنگی ردیف) */
+@Composable
+private fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
+    val c = sms.categoryId?.let { byId[it] } ?: return null
+    val root = CategoryTree.rootOf(c, byId)
+    return categoryTint(root.colorHex, root.icon)
+}
+
+/** کپسول فیلتر «همه» / «بی‌دسته» (انتخاب‌شده: تیره) */
+@Composable
+private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit, badge: Int = 0) {
+    val t = JibitoTheme.colors
+    val bg by animateColorAsState(if (selected) t.onBg else t.chip, tween(300), label = "pillBg")
+    val fg by animateColorAsState(if (selected) t.onFg else MaterialTheme.colorScheme.onBackground, tween(300), label = "pillFg")
+    Row(
+        Modifier
+            .height(38.dp)
+            .clip(RoundedCornerShape(19.dp))
+            .background(bg)
+            .clickable(onClick = onClick)
+            .semantics { this.selected = selected }
+            .padding(horizontal = if (badge > 0) 14.dp else 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        if (badge > 0) {
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .height(22.dp)
+                    .defaultMinSize(minWidth = 22.dp)
+                    .clip(CircleShape)
+                    .background(t.badge)
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    Jalali.toPersianDigits(if (badge > 99) "99+" else badge.toString()),
+                    color = t.badgeFg,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+/** فیلتر «بی‌دسته» خالی است: جیبی خوشحال */
+@Composable
+private fun AllCategorized() {
+    val t = JibitoTheme.colors
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 30.dp, end = 30.dp, top = 50.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        BobbingMascot(120.dp)
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.uncat_empty_title), fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.uncat_empty_body), fontSize = 14.sp, color = t.muted, textAlign = TextAlign.Center)
     }
 }

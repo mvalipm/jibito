@@ -1,17 +1,19 @@
 package ir.jibito.app.ui.smslist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,113 +21,88 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.domain.BankBalance
-import ir.jibito.app.util.Jalali
+import ir.jibito.app.ui.common.amount
+import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Money
 
 /** مانده‌ای که از این قدیمی‌تر باشد، کم‌رنگ نشان داده می‌شود (ممکن است دیگر درست نباشد) */
 private const val STALE_DAYS = 30
 private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 
+/** رنگ نقطه‌ی هر بانک (نزدیک به رنگ خودش)؛ [روشن, تیره] */
+private val BANK_COLORS: Map<Int, Pair<Long, Long>> = mapOf(
+    11 to (0xFFB91C1C to 0xFFF87171), // ملت
+    15 to (0xFF1D4ED8 to 0xFF60A5FA), // سامان
+    40 to (0xFF0891B2 to 0xFF22D3EE), // بلو
+    1 to (0xFF1E3A8A to 0xFF93C5FD), // ملی
+    12 to (0xFFCA8A04 to 0xFFFACC15), // پاسارگاد
+    7 to (0xFF1E40AF to 0xFF818CF8), // صادرات
+    3 to (0xFF2563EB to 0xFF7DD3FC), // تجارت
+    6 to (0xFF15803D to 0xFF4ADE80), // کشاورزی
+    24 to (0xFFC2410C to 0xFFFDBA74), // سپه
+    14 to (0xFF9F1239 to 0xFFFDA4AF), // پارسیان
+)
+private val FALLBACK = listOf(0xFF6D3FC0 to 0xFFB79CF2, 0xFF4B6478 to 0xFFA9BCCB, 0xFF8B5A2B to 0xFFD9A878, 0xFF5F6A16 to 0xFFC5D16A)
+
+private fun bankColor(id: Int, dark: Boolean): Color {
+    val pair = BANK_COLORS[id] ?: FALLBACK[Math.floorMod(id, FALLBACK.size)]
+    return Color(if (dark) pair.second else pair.first)
+}
+
 /**
- * «چقد دارم؟»: ردیف افقی کارت‌ها — آخرین مانده‌ی هر بانک، از خود پیامک‌ها (بدون هیچ کار کاربر).
- * اگر بیش از یک بانک باشد، اولین کارت جمع مانده‌هاست.
+ * «چقد دارم؟»: ردیف افقی کپسول‌ها — نقطه‌ی رنگی بانک، اسمش و آخرین مانده (از خود پیامک‌ها).
+ * اگر بیش از یک بانک باشد، اولین کپسول جمع مانده‌هاست. مانده‌ی کهنه کم‌رنگ است.
  */
 @Composable
 fun BankBalancesRow(balances: List<BankBalance>) {
-    val colors = MaterialTheme.colorScheme
+    val t = JibitoTheme.colors
     val now = System.currentTimeMillis()
-    Column {
-        Text(
-            stringResource(R.string.balances_title),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = colors.onBackground,
-        )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(end = 4.dp),
-        ) {
-            if (balances.size > 1) {
-                item(key = "total") {
-                    BalanceCard(
-                        title = stringResource(R.string.balances_total),
-                        amountRial = balances.sumOf { it.balanceRial },
-                        subtitle = stringResource(R.string.balances_total_hint, balances.size),
-                        highlighted = true,
-                        stale = false,
-                    )
-                }
-            }
-            items(balances, key = { it.bank.id }) { b ->
-                val ageDays = ((now - b.dateMillis) / DAY_MILLIS).toInt()
-                BalanceCard(
-                    title = b.bank.name,
-                    amountRial = b.balanceRial,
-                    subtitle = when {
-                        ageDays <= 0 -> stringResource(R.string.balances_today)
-                        ageDays == 1 -> stringResource(R.string.balances_yesterday)
-                        ageDays < STALE_DAYS -> Jalali.toPersianDigits(stringResource(R.string.balances_days_ago, ageDays))
-                        else -> Jalali.format(b.dateMillis).substringBefore(" ")
-                    },
-                    highlighted = false,
-                    stale = ageDays >= STALE_DAYS,
-                )
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+    ) {
+        if (balances.size > 1) {
+            item(key = "total") {
+                BalanceChip(stringResource(R.string.balances_total), balances.sumOf { it.balanceRial }, null, stale = false)
             }
         }
-        Spacer(Modifier.height(6.dp))
+        items(balances, key = { it.bank.id }) { b ->
+            val ageDays = ((now - b.dateMillis) / DAY_MILLIS).toInt()
+            BalanceChip(shortBankName(b.bank.name), b.balanceRial, bankColor(b.bank.id, t.dark), stale = ageDays >= STALE_DAYS)
+        }
     }
 }
 
 @Composable
-private fun BalanceCard(title: String, amountRial: Long, subtitle: String, highlighted: Boolean, stale: Boolean) {
-    val colors = MaterialTheme.colorScheme
-    val container = if (highlighted) colors.primary else colors.surface
-    val content = if (highlighted) colors.onPrimary else colors.onSurface
-    val muted = if (highlighted) colors.onPrimary.copy(alpha = 0.8f) else colors.onSurfaceVariant
-    Column(
+private fun BalanceChip(name: String, amountRial: Long, dot: Color?, stale: Boolean) {
+    val t = JibitoTheme.colors
+    val shown = amount(Money.short(amountRial))
+    Row(
         Modifier
-            .widthIn(min = 140.dp, max = 220.dp)
+            .height(44.dp)
             .alpha(if (stale) 0.6f else 1f)
-            .background(container, RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, t.border, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp)
+            .clearAndSetSemantics { contentDescription = "$name $shown" },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = muted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                Money.tomanNumber(amountRial),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-                color = content,
-                maxLines = 1,
-            )
-            Spacer(Modifier.size(4.dp))
-            Text(
-                stringResource(R.string.unit_toman),
-                style = MaterialTheme.typography.labelSmall,
-                color = muted,
-                modifier = Modifier.padding(bottom = 2.dp),
-            )
+        if (dot != null) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(dot))
+            Spacer(Modifier.width(8.dp))
         }
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = muted,
-            maxLines = 1,
-        )
+        Text(name, fontSize = 13.sp, color = t.muted, maxLines = 1)
+        Spacer(Modifier.width(8.dp))
+        Text(shown, fontSize = 14.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
     }
 }

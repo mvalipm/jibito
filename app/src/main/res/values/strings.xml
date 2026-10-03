@@ -21,10 +21,10 @@
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
     <string name="list_title">تراکنش‌ها</string>
     <string name="list_count">%1$d تراکنش از پیامک‌های بانکی پیدا شد</string>
-    <string name="list_loading">دارم همه‌ی پیامک‌ها رو می‌خونم…</string>
+    <string name="list_loading">دارم پیامک‌های بانکت رو می‌خونم…</string>
     <string name="list_syncing">دارم پیامک‌های تازه رو بررسی می‌کنم…</string>
     <string name="bank_unknown">بانک</string>
-    <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
+    <string name="list_empty">هنوز هیچ تراکنشی توی پیامک‌های بانکت پیدا نکردم.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
     <string name="tx_failed_purchase">خرید ناموفق</string>
@@ -34,7 +34,7 @@
     <string name="tx_balance">مانده: %1$s</string>
     <string name="notif_channel_name">تراکنش‌های تازه</string>
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
-    <string name="notif_question">این خرج مال چی بود؟</string>
+    <string name="notif_question">مال چی بود؟ یه لمس کافیه.</string>
     <string name="tx_add_category">انتخاب دسته</string>
     <string name="tx_fee">کارمزد %1$s</string>
     <string name="search_hint">اسم، بانک، دسته یا مبلغ…</string>
@@ -53,7 +53,7 @@
     <string name="search_day_optional">روز (اختیاری، مثلاً ۱۵)</string>
     <string name="search_apply">نمایش</string>
     <string name="balances_title">چقد دارم؟</string>
-    <string name="balances_total">جمع مانده‌ها</string>
+    <string name="balances_total">جمع</string>
     <string name="balances_total_hint">از %1$d بانک</string>
     <string name="balances_today">مانده‌ی امروز</string>
     <string name="balances_yesterday">مانده‌ی دیروز</string>
@@ -126,7 +126,7 @@
     <string name="transfer_deposit_line">↓ واریز به %1$s</string>
     <string name="transfer_yes">بله، انتقال به خودم بود</string>
     <string name="transfer_no">نه</string>
-    <string name="sheet_title">این خرج مال چی بود؟</string>
+    <string name="sheet_title">مال چی بود؟</string>
     <string name="sheet_suggested">پیشنهاد</string>
     <string name="sheet_clear">بدون دسته</string>
     <string name="sheet_show_sms">متن پیامک</string>
@@ -167,7 +167,7 @@
     <string name="glance_net_plus">%1$s اضافه</string>
     <string name="glance_net_minus">%1$s کسری</string>
     <string name="glance_saved">پس‌انداز %1$s</string>
-    <string name="glance_no_spend">این ماه هنوز خرجی نیست.</string>
+    <string name="glance_no_spend">این ماه هنوز خرجی نیومده.</string>
     <string name="glance_of_budget">بودجه %1$s</string>
     <string name="glance_show_all">همه‌ی دسته‌ها و بودجه‌ها ›</string>
     <string name="glance_all_title">همه‌ی دسته‌ها و بودجه‌ها</string>
@@ -184,8 +184,8 @@
     <string name="summary_show_idle">+ %1$d دسته‌ی دیگر (این ماه بدون خرج)</string>
     <string name="summary_hide_idle">− بستن %1$d دسته‌ی بدون خرج</string>
     <string name="summary_tap_for_detail">برای دیدن ریز خرج و تعیین بودجه، روی هر دسته بزن</string>
-    <string name="chart_where_title">خرج‌ها کجا رفته؟</string>
-    <string name="chart_rest">بقیه و بی‌دسته</string>
+    <string name="chart_where_title">کجا رفت؟</string>
+    <string name="chart_rest">بقیه</string>
     <string name="chart_tap_again">برای دیدن ریز خرج این دسته، دوباره بزن</string>
     <string name="detail_set_budget">تعیین بودجه‌ی ماهانه</string>
     <string name="detail_edit_budget">تغییر بودجه</string>
@@ -203,12 +203,12 @@
     <string name="budget_dialog_cancel">انصراف</string>
     <string name="budget_channel_name">هشدار بودجه</string>
     <string name="budget_channel_desc">وقتی خرج یک دسته به ۸۰٪ بودجه برسه یا ازش رد بشه</string>
-    <string name="budget_alert_warning">۸۰٪ بودجه‌ی %1$s مصرف شد</string>
-    <string name="budget_alert_over">بودجه‌ی %1$s تموم شد!</string>
-    <string name="budget_alert_body">%1$s از %2$s خرج شده</string>
-    <string name="budget_alert_overall_warning">۸۰٪ بودجه‌ی کل این ماه مصرف شد</string>
-    <string name="budget_alert_overall_over">بودجه‌ی کل این ماه تموم شد!</string>
-    <string name="overall_set_budget">+ تعیین بودجه‌ی کل ماه</string>
+    <string name="budget_alert_warning">%1$s داره به سقفش می‌رسه</string>
+    <string name="budget_alert_over">%1$s این ماه یه کم شیطونی کرد</string>
+    <string name="budget_alert_body">%1$s از سقف %2$s</string>
+    <string name="budget_alert_overall_warning">یواش‌تر! ۸۰٪ بودجه‌ی این ماه رفت</string>
+    <string name="budget_alert_overall_over">این ماه از بودجه زدی بیرون</string>
+    <string name="overall_set_budget">+ یه سقف برای ماه بذار</string>
     <string name="overall_remaining">%1$s مونده از %2$s</string>
     <string name="overall_over">%1$s بیشتر از بودجه‌ی %2$s</string>
     <string name="overall_daily">تا آخر ماه، روزی %1$s</string>
@@ -217,13 +217,13 @@
     <string name="overall_dialog_sum">جمع بودجه‌ی دسته‌هات: %1$s</string>
     <string name="overall_dialog_use_sum">همین رو بذار</string>
     <string name="sheet_title_income">این پول از کجا اومد؟</string>
-    <string name="notif_question_income">این پول از کجا اومد؟</string>
+    <string name="notif_question_income">از کجا اومد؟ یه لمس کافیه.</string>
     <string name="summary_income_categories">درآمدها</string>
     <string name="tx_auto_category">%1$s · خودکار</string>
-    <string name="notif_auto_text">✓ %1$s (خودکار) — اگه درست نیست، بزن و عوضش کن</string>
+    <string name="notif_auto_text">رفت تو %1$s (خودکار)؛ اگه درست نیست، بزن و عوضش کن</string>
     <string name="notif_auto_channel_name">دسته‌بندی خودکار</string>
     <string name="notif_auto_channel_desc">خبر آرام وقتی جیبیتو خودش دسته‌ی یک تراکنش رو گذاشته</string>
-    <string name="review_title">پیامک‌های نیازمند بررسی</string>
+    <string name="review_title">بررسی</string>
     <string name="review_count">%1$d پیامک</string>
     <string name="review_later">بعداً</string>
     <string name="review_explain">این پیامک شبیه تراکنشه ولی جیبیتو نتونست خودکار بخونه‌ش. تا تأییدش نکنی، توی خرج‌ها و بودجه حساب نمی‌شه.</string>
@@ -232,7 +232,7 @@
     <string name="review_pick_amount">مبلغ کدومه؟ روش بزن</string>
     <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
     <string name="review_confirm">ثبت تراکنش</string>
-    <string name="review_not_transaction">تراکنش نیست</string>
+    <string name="review_not_transaction">ربطی به پول نداره</string>
     <string name="review_ignore_sender">این سرشماره اصلاً بانکی نیست</string>
     <string name="review_ignore_sender_hint">پیامک‌های بعدیِ این سرشماره دیگه به بررسی نمیان.</string>
     <string name="review_ignore_sender_more">%1$d پیامک دیگه‌ی همین سرشماره هم از صف بررسی حذف می‌شه.</string>
@@ -249,8 +249,8 @@
     <string name="review_share">ارسال برای بهبود اپ</string>
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>
-    <string name="review_all_done">همه‌ی پیامک‌ها بررسی شدن!</string>
-    <string name="review_back">برگشت</string>
+    <string name="review_all_done">همه‌چی مرتبه!</string>
+    <string name="review_back">برگرد به خلاصه</string>
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
@@ -298,7 +298,7 @@
 
     <!-- گزارش خطا -->
     <string name="errorlog_title">گزارش خطا</string>
-    <string name="errorlog_empty">خطایی ثبت نشده. 👌</string>
+    <string name="errorlog_empty">خطایی ثبت نشده.</string>
     <string name="errorlog_summary">%1$d خطا ثبت شده؛ آخرینش %2$s.</string>
     <string name="errorlog_send">ارسال گزارش</string>
     <string name="errorlog_clear">پاک کردن</string>
@@ -316,11 +316,11 @@
     <!-- ویجت -->
     <string name="widget_name">خرج امروز</string>
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
-    <string name="widget_today">خرج امروز</string>
+    <string name="widget_today">جیب امروز</string>
     <string name="widget_amount">%1$s تومان</string>
-    <string name="widget_month">این ماه: %1$s</string>
-    <string name="widget_left">مونده از بودجه: %1$s</string>
-    <string name="widget_over">%1$s بیشتر از بودجه</string>
+    <string name="widget_month">این ماه %1$s</string>
+    <string name="widget_left">%1$s مونده از بودجه</string>
+    <string name="widget_over">%1$s از بودجه زدی بیرون</string>
     <string name="widget_locked_label">جیبیتو</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
 
@@ -349,10 +349,10 @@
 
     <!-- فهرست روزبه‌روز و «برگردان» -->
     <string name="day_spend">%1$s تومان خرج</string>
-    <string name="undo">برگردان</string>
-    <string name="undo_categorized">«%1$s» ثبت شد</string>
-    <string name="undo_uncategorized">دسته برداشته شد</string>
-    <string name="undo_deleted">تراکنش حذف شد</string>
+    <string name="undo">برگردون</string>
+    <string name="undo_categorized">رفت تو %1$s</string>
+    <string name="undo_uncategorized">دسته‌ش برداشته شد</string>
+    <string name="undo_deleted">پاک شد</string>
 
     <!-- توضیح آیکون‌ها برای صفحه‌خوان (TalkBack) -->
     <string name="cd_search">جست‌وجو</string>
@@ -375,19 +375,96 @@
     <!-- خلاصه‌ی هفتگی -->
     <string name="digest_channel_name">خلاصه‌ی هفتگی</string>
     <string name="digest_channel_desc">جمعه‌ها عصر: این هفته چقدر خرج شد و بیشترش کجا رفت</string>
-    <string name="digest_title">این هفته %1$s تومان خرج کردی</string>
+    <string name="digest_title">هفته‌ای که گذشت: %1$s</string>
     <string name="digest_more">%1$d٪ بیشتر از هفته‌ی قبل</string>
-    <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل</string>
+    <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل. آفرین!</string>
     <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
-    <string name="digest_top">بیشترین: %1$s</string>
+    <string name="digest_top">بیشترش رفت تو %1$s</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>
     <string name="settings_digest_hint">جمعه‌ها عصر یک نوتیفیکیشن کوتاه</string>
 
     <!-- روند ماه‌ها -->
-    <string name="trend_title">روند خرج %1$d ماه اخیر</string>
+    <string name="trend_title">%1$d ماه اخیر</string>
     <string name="vs_last_month_more">%1$d٪ بیشتر از همین موقعِ ماه قبل</string>
     <string name="vs_last_month_less">%1$d٪ کمتر از همین موقعِ ماه قبل</string>
     <string name="vs_last_month_same">تقریباً همون اندازه‌ی همین موقعِ ماه قبل</string>
 
     <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
+
+    <!-- طرح «جیبی»: روشن/تیره و پنهان کردن مبلغ‌ها -->
+    <string name="dark_mode_system">مثل گوشی</string>
+    <string name="dark_mode_light">روشن</string>
+    <string name="dark_mode_dark">تیره</string>
+    <string name="settings_dark_title">روشن یا تیره</string>
+    <string name="cd_toggle_dark">روشن یا تیره</string>
+    <string name="cd_hide_amounts">پنهان کردن مبلغ‌ها</string>
+    <string name="cd_show_amounts">نشون دادن مبلغ‌ها</string>
+
+    <!-- سرصفحه‌ی خلاصه: حال جیب -->
+    <string name="hero_label_current">خرج این ماه</string>
+    <string name="hero_of_budget">%1$s از بودجه‌ی %2$s</string>
+    <string name="hero_days_left">%1$d روز مونده</string>
+    <string name="hero_last_day">امروز روز آخره</string>
+    <string name="hero_month_done">ماه تموم شد</string>
+    <string name="hero_no_spend">هنوز خرجی نیومده؛ جیبت دست‌نخورده‌ست.</string>
+    <string name="hero_no_budget">هنوز سقفی نذاشتی؛ روی عدد بزن تا یه بودجه بذاریم.</string>
+    <string name="hero_over">این ماه %1$s از بودجه زدی بیرون.</string>
+    <string name="hero_warn">یواش‌تر! %1$d٪ بودجه رفته و هنوز %2$d روز مونده.</string>
+    <string name="hero_warn_last_day">یواش‌تر! %1$d٪ بودجه رفته؛ امروز روز آخره.</string>
+    <string name="hero_warn_pace">یه کم تند می‌ری؛ با همین ریتم آخر ماه %1$s از بودجه می‌زنی بیرون.</string>
+    <string name="hero_calm">اوضاع آرومه؛ با همین ریتم آخر ماه %1$s اضافه میاری.</string>
+    <string name="hero_calm_on_track">اوضاع آرومه؛ درست طبق برنامه پیش می‌ری.</string>
+    <string name="hero_calm_start">ماه تازه شروع شده؛ اوضاع آرومه.</string>
+    <string name="hero_past_calm">ماه رو با %1$s اضافه بستی. آفرین!</string>
+
+    <!-- کارهای لازم -->
+    <string name="todo_title">کارهای لازم</string>
+    <string name="todo_count">%1$d مورد</string>
+    <string name="todo_notif_off">نوتیف خاموشه</string>
+    <string name="todo_uncategorized">خرج بی‌دسته</string>
+    <string name="todo_review">%1$d پیامک مبهم</string>
+    <string name="todo_transfer">انتقال به خودت؟</string>
+    <string name="todo_recurring">%1$s ماهانه؟</string>
+
+    <!-- کجا رفت؟ و روند -->
+    <string name="where_title">کجا رفت؟</string>
+    <string name="where_hint">روی هر تیکه بزن</string>
+    <string name="where_over_budget">%1$d٪ بالای بودجه‌ش</string>
+    <string name="where_left_budget">%1$s مونده از بودجه‌ش</string>
+    <string name="trend_less">%1$d٪ کمتر از %2$s</string>
+    <string name="trend_more">%1$d٪ بیشتر از %2$s</string>
+    <string name="trend_same">تقریباً مثل %1$s</string>
+
+    <!-- تراکنش‌ها -->
+    <string name="filter_all">همه</string>
+    <string name="filter_uncategorized">بی‌دسته</string>
+    <string name="tx_deposit_to">واریز به %1$s</string>
+    <string name="tx_withdrawal_from">برداشت از %1$s</string>
+    <string name="tx_meta_ask">مال چی بود؟</string>
+    <string name="tx_meta_ask_income">از کجا اومد؟</string>
+    <string name="tx_meta_failed">خرید ناموفق · پول برگشت</string>
+    <string name="tx_meta_transfer">جابه‌جایی، خرج نیست</string>
+    <string name="tx_suggest_other">یه چیز دیگه</string>
+    <string name="uncat_empty_title">همه دسته دارن!</string>
+    <string name="uncat_empty_body">جیبی خوشحاله. خرج تازه که بیاد، خبرت می‌کنه.</string>
+
+    <!-- بررسی -->
+    <string name="review_unsure">%1$d پیامک رو مطمئن نیستم</string>
+    <string name="review_help_me">کمکم کن، دفعه‌ی بعد خودم می‌فهمم.</string>
+    <string name="review_yes_spend">آره، خرج بود</string>
+    <string name="review_yes_income">آره، پول اومد</string>
+    <string name="review_all_done_body">صندوق بررسی خالیه. هر وقت پیامک عجیبی بیاد، اینجا نشونت می‌دم.</string>
+
+    <!-- اولین آشنایی -->
+    <string name="reveal_caption_reading">دارم پیامک‌های بانکت رو می‌خونم…</string>
+    <string name="reveal_caption_done">تموم شد! جیبت رو شناختم</string>
+    <string name="reveal_fact_months">از %1$d ماه گذشته</string>
+    <string name="reveal_fact_banks">توی %1$d بانک</string>
+    <string name="reveal_fact_top">بیشترین خرج: %1$s</string>
+    <string name="reveal_replay">دوباره ببین</string>
+
+    <!-- نوتیفیکیشن بعد از انتخاب دسته -->
+    <string name="notif_picked_title">رفت تو %1$s</string>
+    <string name="notif_picked_text">از این به بعد %1$s رو بهتر می‌شناسم.</string>
+    <string name="notif_picked_text_plain">ثبت شد.</string>
 </resources>

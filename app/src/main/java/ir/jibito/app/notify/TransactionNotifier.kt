@@ -69,11 +69,11 @@ class TransactionNotifier(
         }
 
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
-        val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
+        // «−۱۸۵ هزار · کافه لمیز» (یا اسم بانک، اگر طرف حساب معلوم نیست)
+        val amount = (if (isDeposit) "+" else "−") + Money.compact(flow.amount)
         val bankName = BankDirectory.byId(flow.bankId)?.name
-        // مثل فهرست تراکنش‌ها: «برداشت» یا «واریز»، نه «خرید از …»
         val kind = context.getString(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal)
-        val title = listOfNotNull(amount, kind, bankName).joinToString(" · ")
+        val title = listOf(amount, flow.merchant ?: bankName ?: kind).joinToString(" · ")
 
         val openApp = PendingIntent.getActivity(
             context,
@@ -97,7 +97,7 @@ class TransactionNotifier(
         for (category in pickCategories(flow)) {
             builder.addAction(
                 0,
-                listOfNotNull(category.icon, category.name).joinToString(" "),
+                category.name,
                 CategoryActionReceiver.pendingIntent(context, flow.id, category.id),
             )
         }
@@ -114,11 +114,9 @@ class TransactionNotifier(
         }
         ensureAutoChannel()
         val isDeposit = flow.flowType == FlowType.DEPOSIT.code
-        val amount = (if (isDeposit) "+" else "−") + Money.toman(flow.amount)
+        val amount = (if (isDeposit) "+" else "−") + Money.compact(flow.amount)
         val title = listOfNotNull(amount, flow.merchant).joinToString(" · ")
-        val category = flow.categoryId?.let { db.categoryDao().byId(it) }
-            ?.let { listOfNotNull(it.icon, it.name).joinToString(" ") }
-            ?: return false
+        val category = flow.categoryId?.let { db.categoryDao().byId(it) }?.name ?: return false
         val openApp = PendingIntent.getActivity(
             context,
             notificationId(flow.id),
@@ -138,6 +136,42 @@ class TransactionNotifier(
             .build()
         NotificationManagerCompat.from(context).notify(notificationId(flow.id), notification)
         return true
+    }
+
+    /** «برگردون» روی نوتیفیکیشن «رفت تو …»: همان سؤال «مال چی بود؟» دوباره می‌آید */
+    suspend fun askAgain(transactionId: Long) {
+        ensureChannel()
+        val flow = dao.byId(transactionId) ?: return
+        if (flow.categoryId == null) show(flow)
+    }
+
+    /**
+     * بعد از لمس یکی از دکمه‌های دسته: همان نوتیفیکیشن بی‌صدا می‌شود «رفت تو کافه» با دکمه‌ی «برگردون»،
+     * و چند ثانیه بعد خودش بسته می‌شود.
+     */
+    fun showPicked(transactionId: Long, categoryName: String, merchant: String?) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        ensureChannel()
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(context.getString(R.string.notif_picked_title, categoryName))
+            .setContentText(
+                if (merchant != null) context.getString(R.string.notif_picked_text, merchant)
+                else context.getString(R.string.notif_picked_text_plain)
+            )
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setAutoCancel(true)
+            .setTimeoutAfter(PICKED_TIMEOUT_MILLIS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .addAction(0, context.getString(R.string.undo), CategoryActionReceiver.undoIntent(context, transactionId))
+            .build()
+        NotificationManagerCompat.from(context).notify(notificationId(transactionId), notification)
     }
 
     private fun ensureAutoChannel() {
@@ -179,6 +213,8 @@ class TransactionNotifier(
         const val CHANNEL_ID = "transactions"
         const val AUTO_CHANNEL_ID = "auto_categorized"
         private const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
+        /** نوتیفیکیشن «رفت تو …» بعد از این مدت خودش بسته می‌شود */
+        private const val PICKED_TIMEOUT_MILLIS = 6_000L
 
         fun notificationId(transactionId: Long): Int = (transactionId % Int.MAX_VALUE).toInt()
     }

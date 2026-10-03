@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- جیبی خوشحال (برای ویجت) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="39dp"
+    android:viewportWidth="120"
+    android:viewportHeight="130">
+    <path android:fillColor="#17BEBB" android:pathData="M67,22a13,13 0,1 0,26 0a13,13 0,1 0,-26 0z" />
+    <path android:fillColor="#E4572E" android:pathData="M14,34h92v34c0,28 -26,48 -46,58C40,116 14,96 14,68z" />
+    <path android:fillColor="#FF9B7A" android:pathData="M19,34h82a5,5 0,0 1,5 5v6a5,5 0,0 1,-5 5H19a5,5 0,0 1,-5 -5v-6a5,5 0,0 1,5 -5z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M40,82q6,-8 12,0M68,82q6,-8 12,0M46,96q14,14 28,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="6" />
+</vector>

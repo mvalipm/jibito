@@ -1,19 +1,30 @@
 package ir.jibito.app.ui.summary
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,211 +37,217 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
-import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
-import ir.jibito.app.notify.BudgetLevel
+import ir.jibito.app.ui.common.CategoryIconTile
+import ir.jibito.app.ui.common.amount
+import ir.jibito.app.ui.theme.CategoryStyle
+import ir.jibito.app.ui.theme.CategoryTint
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 
-/** حداکثر چند دسته در نمای «یک نگاه» */
-private const val GLANCE_ROWS = 5
+/** حداکثر چند دسته جدا دیده شوند؛ بقیه یک تکه‌ی «بقیه» می‌شوند */
+private const val WHERE_SLICES = 6
+
+/** کلید تکه‌ی «بقیه و بی‌دسته» */
+private const val REST_KEY = -1L
 
 /**
- * «خرج‌ها کجا رفته؟» + بودجه‌ها، در یک کارت:
- * نوار سهم (۵ دسته‌ی بزرگ + بقیه) و زیرش هر دسته در یک خط: رنگ، اسم، مبلغ، درصد بودجه (یا سهم).
- * دسته‌ای که بودجه دارد ولی هنوز خرج ندارد هم می‌آید. «همه‌ی دسته‌ها و بودجه‌ها ›» فهرست کامل را باز می‌کند.
+ * «کجا رفت؟» (طرح «جیبی»): نوار سهم دسته‌ها که روی هر تیکه‌اش می‌شود زد،
+ * زیرش دسته‌ی انتخاب‌شده درشت (آیکون، اسم، یک نکته، درصد و مبلغ) و کپسول‌های همه‌ی دسته‌ها.
+ * لمس دسته‌ی درشت ← ریز خرج و بودجه‌ی همان دسته. «همه‌ی دسته‌ها و بودجه‌ها ›» فهرست کامل را باز می‌کند.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WhereCard(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> Unit) {
+fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> Unit) {
+    val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
-    val dark = isSystemInDarkTheme()
     val total = s.totalSpentRial
-    val spent = s.categories.filter { it.spentRial > 0 }.take(GLANCE_ROWS)
-    val planned = s.categories.filter { it.spentRial == 0L && it.budgetRial != null }
-    val rows = (spent + planned).take(GLANCE_ROWS + 1)
+    val spent = s.categories.filter { it.spentRial > 0 }.sortedByDescending { it.spentRial }.take(WHERE_SLICES)
     val rest = total - spent.sumOf { it.spentRial }
-    var highlighted by rememberSaveable(s.month.key) { mutableStateOf<Long?>(null) }
+    var picked by rememberSaveable(s.month.key) { mutableStateOf<Long?>(null) }
+    val selected = picked?.takeIf { p -> p == REST_KEY && rest > 0 || spent.any { it.categoryId == p } }
+        ?: spent.firstOrNull()?.categoryId
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(colors.surface, RoundedCornerShape(22.dp))
-            .padding(horizontal = 14.dp, vertical = 14.dp)
-    ) {
-        Text(
-            stringResource(R.string.chart_where_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = colors.onSurface,
+    Column(Modifier.padding(top = 22.dp)) {
+        SectionHeader(
+            title = stringResource(R.string.where_title),
+            note = if (total > 0) stringResource(R.string.where_hint) else null,
         )
-        Spacer(Modifier.height(10.dp))
+        Column(Modifier.padding(horizontal = 20.dp)) {
+            if (total <= 0 || spent.isEmpty()) {
+                Text(
+                    stringResource(R.string.glance_no_spend),
+                    modifier = Modifier.padding(top = 12.dp),
+                    fontSize = 14.sp,
+                    color = t.muted,
+                )
+                return@Column
+            }
 
-        if (total > 0) {
-            // نوار سهم‌ها: فاصله‌ی ۲ پیکسلی بین تکه‌ها همان رنگ کارت است
+            // نوار سهم‌ها: تکه‌ی انتخاب‌شده بلندتر و پررنگ
+            val slices = spent.map { Slice(it.categoryId, it.name, it.spentRial, categoryTint(it.colorHex, it.icon), it) } +
+                if (rest > 0) listOf(Slice(REST_KEY, stringResource(R.string.chart_rest), rest, restTint(), null)) else emptyList()
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .semantics { contentDescription = spent.joinToString("، ") { "${it.name} ${share(it.spentRial, total)}" } },
+                    .padding(top = 12.dp)
+                    .height(34.dp),
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                val segments = spent.map { it.categoryId to (it.spentRial to ChartColors.forCategory(it.colorHex, dark)) } +
-                    if (rest > 0) listOf(-1L to (rest to ChartColors.neutral(dark))) else emptyList()
-                segments.forEachIndexed { i, (key, value) ->
-                    if (i > 0) Spacer(Modifier.width(2.dp).fillMaxHeight().background(colors.surface))
-                    val a by animateFloatAsState(if (highlighted == null || highlighted == key) 1f else 0.3f, label = "seg")
+                slices.forEach { slice ->
+                    val on = slice.key == selected
+                    val h by animateDpAsState(if (on) 34.dp else 20.dp, spring(dampingRatio = 0.5f, stiffness = 500f), label = "sliceH")
+                    val a by animateFloatAsState(if (on) 1f else 0.5f, tween(300), label = "sliceA")
+                    val share = share(slice.amount, total)
                     Box(
                         Modifier
-                            .weight(maxOf(value.first.toFloat() / total, 0.02f))
-                            .fillMaxHeight()
+                            .weight(maxOf(slice.amount.toFloat() / total, 0.02f))
+                            .height(h)
                             .alpha(a)
-                            .background(value.second)
-                            .clickable { highlighted = if (highlighted == key) null else key },
+                            .clip(RoundedCornerShape(7.dp))
+                            .background(slice.tint.fg)
+                            .clickable { picked = slice.key }
+                            .semantics {
+                                contentDescription = "${slice.name} $share"
+                                this.selected = on
+                            },
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
-        } else {
-            Text(
-                stringResource(R.string.glance_no_spend),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(4.dp))
-        }
 
-        rows.forEach { c ->
-            GlanceRow(c, total, dark, highlighted == c.categoryId, onClick = { onOpenCategory(c.categoryId) })
-        }
-        if (rest > 0) {
-            GlanceRestRow(rest, total, dark, highlighted == -1L)
-        }
-
-        Text(
-            stringResource(R.string.glance_show_all),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onShowAll)
-                .padding(vertical = 8.dp, horizontal = 4.dp),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = colors.primary,
-        )
-    }
-}
-
-@Composable
-private fun GlanceRow(c: CategorySpend, total: Long, dark: Boolean, highlighted: Boolean, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val base = ChartColors.forCategory(c.colorHex, dark)
-    val budget = c.budgetRial?.takeIf { it > 0 }
-    val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
-    val status = when (level) {
-        100 -> colors.error
-        80 -> JibitoTheme.colors.warning
-        else -> null
-    }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (highlighted) colors.surfaceVariant else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 7.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(base))
-            Spacer(Modifier.size(8.dp))
-            Text(
-                listOfNotNull(c.icon, c.name).joinToString(" "),
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                if (budget != null && c.spentRial == 0L) stringResource(R.string.glance_of_budget, Money.compact(budget))
-                else Money.compact(c.spentRial),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = colors.onSurface,
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                Jalali.toPersianDigits(
-                    if (budget != null) "${(c.spentRial * 100 / budget).coerceAtMost(999)}٪" else share(c.spentRial, total)
-                ),
-                modifier = Modifier.width(40.dp),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = if (status != null) FontWeight.Black else FontWeight.Normal,
-                color = status ?: colors.onSurfaceVariant,
-            )
-        }
-        if (budget != null) {
-            // نوار باریک بودجه زیر همان خط
-            Spacer(Modifier.height(5.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background((status ?: base).copy(alpha = 0.15f))
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth((c.spentRial.toFloat() / budget).coerceIn(0f, 1f))
-                        .fillMaxHeight()
-                        .background(status ?: base)
-                )
+            // دسته‌ی انتخاب‌شده، درشت
+            val current = slices.firstOrNull { it.key == selected } ?: slices.first()
+            AnimatedContent(
+                targetState = current,
+                transitionSpec = {
+                    (fadeIn(tween(250)) + slideInVertically(tween(400)) { it / 4 }) togetherWith fadeOut(tween(120))
+                },
+                contentKey = { it.key },
+                label = "whereDetail",
+            ) { slice ->
+                SelectedRow(slice, total, onClick = { slice.spend?.let { onOpenCategory(it.categoryId) } })
             }
+
+            // کپسول همه‌ی دسته‌ها
+            FlowRow(
+                Modifier.padding(top = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                slices.forEach { slice ->
+                    val on = slice.key == selected
+                    val bg by animateColorAsState(if (on) slice.tint.bg else t.chip, tween(300), label = "chipBg")
+                    Row(
+                        Modifier
+                            .height(34.dp)
+                            .clip(RoundedCornerShape(17.dp))
+                            .background(bg)
+                            .clickable { picked = slice.key }
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(slice.tint.fg))
+                        Spacer(Modifier.width(6.dp))
+                        Text(slice.name, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.onBackground, maxLines = 1)
+                    }
+                }
+            }
+
+            Text(
+                stringResource(R.string.glance_show_all),
+                modifier = Modifier
+                    .padding(top = 10.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onShowAll)
+                    .padding(vertical = 8.dp, horizontal = 2.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.primary,
+            )
         }
     }
 }
 
+private data class Slice(val key: Long, val name: String, val amount: Long, val tint: CategoryTint, val spend: CategorySpend?)
+
 @Composable
-private fun GlanceRestRow(rest: Long, total: Long, dark: Boolean, highlighted: Boolean) {
-    val colors = MaterialTheme.colorScheme
+private fun restTint(): CategoryTint {
+    val dark = JibitoTheme.colors.dark
+    return CategoryStyle.tint(null, null, dark).copy(icon = DesignIcons.Dots)
+}
+
+@Composable
+private fun SelectedRow(slice: Slice, total: Long, onClick: () -> Unit) {
+    val t = JibitoTheme.colors
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (highlighted) colors.surfaceVariant else Color.Transparent)
-            .padding(horizontal = 4.dp, vertical = 7.dp),
+            .padding(top = 16.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(enabled = slice.spend != null, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(ChartColors.neutral(dark)))
-        Spacer(Modifier.size(8.dp))
-        Text(
-            stringResource(R.string.chart_rest),
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-        Text(Money.compact(rest), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.onSurface)
-        Spacer(Modifier.size(8.dp))
-        Text(
-            Jalali.toPersianDigits(share(rest, total)),
-            modifier = Modifier.width(40.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.onSurfaceVariant,
-        )
+        CategoryIconTile(slice.tint, size = 56.dp, radius = 18.dp, iconSize = 28.dp)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                slice.name,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            noteFor(slice.spend)?.let { note ->
+                Text(note, fontSize = 13.sp, color = t.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(
+                Jalali.toPersianDigits(share(slice.amount, total)),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = slice.tint.fg,
+            )
+            Text(amount(Money.compact(slice.amount)), fontSize = 12.sp, color = t.muted)
+        }
+    }
+}
+
+/** یک نکته زیر اسم دسته: وضع بودجه‌اش، یا بزرگ‌ترین زیردسته‌هایش */
+@Composable
+private fun noteFor(c: CategorySpend?): String? {
+    c ?: return null
+    val budget = c.budgetRial?.takeIf { it > 0 }
+    return when {
+        budget != null && c.spentRial > budget ->
+            Jalali.toPersianDigits(stringResource(R.string.where_over_budget, (c.spentRial * 100 / budget - 100).toInt()))
+        budget != null -> stringResource(R.string.where_left_budget, amount(Money.compact(budget - c.spentRial)))
+        else -> c.children.filter { it.name != null && it.spentRial > 0 }
+            .sortedByDescending { it.spentRial }
+            .take(2)
+            .joinToString("، ") { it.name.orEmpty() }
+            .takeIf { it.isNotEmpty() }
     }
 }
 
 private fun share(amount: Long, total: Long): String {
     if (total <= 0) return "۰٪"
     val p = amount * 100.0 / total
-    return if (p > 0 && p < 1) "<۱٪" else "${p.toInt()}٪"
+    return Jalali.toPersianDigits(if (p > 0 && p < 1) "<۱٪" else "${p.toInt()}٪")
 }

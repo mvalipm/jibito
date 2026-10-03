@@ -83,12 +83,20 @@ class SpendWidget : AppWidgetProvider() {
             }
 
             val n = numbers(container.database, System.currentTimeMillis())
+            // «۶۰۵» درشت و «هزار تومان» زیرش
+            val (number, unit) = Money.compactParts(n.todayRial)
             views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_today))
-            views.setTextViewText(R.id.widget_today, context.getString(R.string.widget_amount, Money.compact(n.todayRial)))
-            views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
+            views.setTextViewText(R.id.widget_today, number)
+            views.setTextViewText(
+                R.id.widget_month,
+                if (unit.isEmpty()) context.getString(R.string.unit_toman) else "$unit ${context.getString(R.string.unit_toman)}",
+            )
             val left = n.overallBudgetRial?.let { it - n.monthRial }
             when {
-                left == null -> views.setTextViewText(R.id.widget_left, "")
+                left == null -> {
+                    views.setTextViewText(R.id.widget_left, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
+                    views.setTextColor(R.id.widget_left, ContextCompat.getColor(context, R.color.widget_muted))
+                }
                 left >= 0 -> {
                     views.setTextViewText(R.id.widget_left, context.getString(R.string.widget_left, Money.compact(left)))
                     views.setTextColor(R.id.widget_left, ContextCompat.getColor(context, R.color.widget_accent))

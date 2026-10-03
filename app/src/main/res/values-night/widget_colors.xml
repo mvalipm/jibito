@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- رنگ‌های ویجت صفحه‌ی اصلی (تیره) -->
-    <color name="widget_bg">#231A16</color>
-    <color name="widget_text">#F6EDE8</color>
-    <color name="widget_muted">#BCA79D</color>
-    <color name="widget_accent">#FF8A65</color>
-    <color name="widget_over">#EF9A9A</color>
+    <color name="widget_bg">#1E1B22</color>
+    <color name="widget_text">#F3ECE8</color>
+    <color name="widget_muted">#B3A9A4</color>
+    <color name="widget_accent">#3FD0CC</color>
+    <color name="widget_over">#F47C6B</color>
+    <!-- پس‌زمینه‌ی پنجره‌ی اپ در حالت تیره -->
+    <color name="jibito_background">#141217</color>
 </resources>

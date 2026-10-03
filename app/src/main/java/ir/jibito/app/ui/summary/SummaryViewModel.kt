@@ -45,6 +45,11 @@ class SummaryViewModel(
         if (_month.value != JalaliMonth.current()) _month.value = _month.value.plus(1)
     }
 
+    /** از فهرست ماه‌ها (دکمه‌ی ماه بالای «خلاصه»)؛ ماه‌های آینده خرجی ندارند */
+    fun setMonth(month: JalaliMonth) {
+        if (month.key <= JalaliMonth.current().key) _month.value = month
+    }
+
     fun setBudget(categoryId: Long, monthlyLimitRial: Long?) {
         viewModelScope.launch { repository.setBudget(categoryId, monthlyLimitRial) }
     }
