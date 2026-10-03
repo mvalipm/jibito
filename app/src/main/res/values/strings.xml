@@ -72,7 +72,6 @@
     <string name="search_result_count">%1$d تراکنش</string>
     <string name="search_result_spent">خرج</string>
     <string name="search_result_income">درآمد</string>
-    <string name="cd_clear_filter">حذف این فیلتر</string>
     <string name="transfer_question_short">انتقال به حساب خودت بوده؟</string>
     <string name="transfer_yes_short">آره</string>
     <string name="transfer_progress">۱ از %1$d</string>
