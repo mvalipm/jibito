@@ -45,9 +45,9 @@ import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 
 /**
- * یک «کار لازم» به شکل استوری: حلقه‌ی رنگی دور یک دایره (آیکون یا عدد) و یک برچسب کوتاه زیرش.
+ * یک «کار لازم» در تب «کارها»: حلقه‌ی رنگی دور یک دایره (آیکون یا عدد)، یک عنوان کوتاه و یک جمله توضیح.
  * رنگ حلقه معنی دارد: مرجانی = دسته‌بندی کن، قرمز = بیرون زد، کهربایی = هشدار، فیروزه‌ای = پیشنهاد.
- * @param id برای یادآوری «دیده شد» (حلقه خاکستری می‌شود)
+ * @param id شناسه‌ی کار (ترتیبش در تب با todoPriority)
  */
 data class TodoStory(
     val id: String,
@@ -57,79 +57,10 @@ data class TodoStory(
     val icon: ImageVector?,
     val text: String?,
     val label: String,
-    /** یک جمله‌ی توضیح برای فهرست تب «کارها» (در استوری‌ها دیده نمی‌شود) */
+    /** یک جمله توضیح زیر عنوان */
     val detail: String? = null,
     val onClick: () -> Unit,
 )
-
-/** «کارهای لازم»: ردیف افقی استوری‌ها؛ فقط وقتی چیزی هست */
-@Composable
-fun TodoSection(stories: List<TodoStory>) {
-    if (stories.isEmpty()) return
-    val t = JibitoTheme.colors
-    // شناسه‌های دیده‌شده، با «،» جدا (تا بعد از چرخش صفحه هم بماند)
-    var seenRaw by rememberSaveable { mutableStateOf("") }
-    val seen = seenRaw.split(',').filter { it.isNotEmpty() }.toSet()
-    val unseen = stories.count { it.id !in seen }
-
-    Column(Modifier.padding(top = 14.dp)) {
-        SectionHeader(
-            title = stringResource(R.string.todo_title),
-            note = Jalali.toPersianDigits(stringResource(R.string.todo_count, unseen)),
-        )
-        LazyRow(
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(stories, key = { it.id }) { s ->
-                val isSeen = s.id in seen
-                StoryBubble(s, isSeen) {
-                    if (!isSeen) seenRaw = (seen + s.id).joinToString(",")
-                    s.onClick()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StoryBubble(s: TodoStory, seen: Boolean, onClick: () -> Unit) {
-    val t = JibitoTheme.colors
-    val ring by animateColorAsState(if (seen) t.seenRing else s.ring, tween(400), label = "ring")
-    Column(
-        Modifier
-            .width(76.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            Modifier
-                .size(68.dp)
-                .border(3.dp, ring, CircleShape)
-                .padding(6.dp)
-                .clip(CircleShape)
-                .background(s.bg),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (s.icon != null) {
-                Icon(s.icon, contentDescription = null, tint = s.fg, modifier = Modifier.size(26.dp))
-            } else {
-                Text(s.text.orEmpty(), color = s.fg, fontSize = 22.sp, fontWeight = FontWeight.Black, maxLines = 1)
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            s.label,
-            color = if (seen) t.faint else androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 /** سرتیتر هر بخش «خلاصه»: عنوان درشت و یک یادداشت کوچک در طرف دیگر */
 @Composable

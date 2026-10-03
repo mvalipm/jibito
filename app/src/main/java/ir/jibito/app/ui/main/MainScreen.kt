@@ -116,6 +116,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     fun openSettings() = nav.navigate(ROUTE_SETTINGS) { launchSingleTop = true }
     // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
     var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
+    // کارت بودجه در «کارها» ← جزئیات همان دسته در «خلاصه»
+    var openCategory by rememberSaveable { mutableStateOf<Long?>(null) }
     // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
     var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
@@ -205,17 +207,9 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                     ) {
                         composable(Tab.Summary.route) {
                             SummaryScreen(
-                                pendingReview = pending.size,
-                                onOpenReview = ::openReview,
-                                onOpenUncategorized = {
-                                    onlyUncategorized = true
-                                    go(Tab.Transactions)
-                                },
-                                onOpenTransactions = {
-                                    onlyUncategorized = false
-                                    go(Tab.Transactions)
-                                },
                                 onOpenSettings = ::openSettings,
+                                openCategoryId = openCategory,
+                                onCategoryOpened = { openCategory = null },
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -239,8 +233,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                     go(Tab.Transactions)
                                 },
                                 onOpenSettings = ::openSettings,
-                                // جزئیات دسته در «خلاصه» است
-                                onOpenCategory = { go(Tab.Summary) },
+                                // جزئیات دسته (و تغییر بودجه‌اش) در «خلاصه» است
+                                onOpenCategory = {
+                                    openCategory = it
+                                    go(Tab.Summary)
+                                },
                             )
                         }
                         composable(ROUTE_REVIEW) { ReviewScreen(onClose = { nav.popBackStack() }) }

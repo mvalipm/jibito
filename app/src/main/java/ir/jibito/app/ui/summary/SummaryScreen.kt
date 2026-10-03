@@ -26,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,21 +64,18 @@ import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
  * صفحه‌ی «خلاصه» (طرح «جیبی»):
- * ۱) سرصفحه‌ی رنگی: خرج این ماه، بودجه و حال جیب. ۲) «کارهای لازم» به شکل استوری.
- * ۳) «کجا رفت؟» با نوار سهم دسته‌ها. ۴) روند ۶ ماه اخیر.
+ * ۱) سرصفحه‌ی رنگی: خرج این ماه، بودجه و حال جیب. ۲) «کجا رفت؟» با نوار سهم دسته‌ها. ۳) روند ۶ ماه اخیر.
+ * «کارهای لازم» اینجا نیست (تب خودش را دارد) تا خلاصه خلوت بماند.
  * فهرست کامل دسته‌ها، بودجه‌ها و درآمدها یک لمس دورتر است («همه‌ی دسته‌ها و بودجه‌ها»).
  */
 @Composable
 fun SummaryScreen(
-    /** پیامک‌های منتظر بررسی */
-    pendingReview: Int = 0,
-    onOpenReview: () -> Unit = {},
-    /** رفتن به تراکنش‌ها با فیلتر «فقط بی‌دسته» */
-    onOpenUncategorized: () -> Unit = {},
-    /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
-    onOpenTransactions: () -> Unit = {},
-    /** رفتن به تنظیمات (دکمه‌ی بالای سرصفحه، یا پیشنهاد پرداخت ماهانه) */
+    /** دکمه‌ی تنظیمات بالای سرصفحه */
     onOpenSettings: () -> Unit = {},
+    /** دسته‌ای که باید جزئیاتش باز شود (لمس کارت بودجه در تب «کارها»)؛ ماه جاری نشان داده می‌شود */
+    openCategoryId: Long? = null,
+    /** بعد از باز کردن openCategoryId صدا زده می‌شود تا دوباره باز نشود */
+    onCategoryOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -98,6 +96,13 @@ fun SummaryScreen(
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
+    LaunchedEffect(openCategoryId) {
+        val id = openCategoryId ?: return@LaunchedEffect
+        viewModel.setMonth(JalaliMonth.current())
+        showAll = false
+        detailId = id
+        onCategoryOpened()
+    }
 
     Box(
         Modifier
@@ -110,15 +115,6 @@ fun SummaryScreen(
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
-            val stories = rememberTodoStories(
-                s,
-                pendingReview = pendingReview,
-                onOpenReview = onOpenReview,
-                onOpenUncategorized = onOpenUncategorized,
-                onOpenTransactions = onOpenTransactions,
-                onOpenSettings = onOpenSettings,
-                onOpenCategory = { detailId = it },
-            )
             val heroLine = moodOf(s, System.currentTimeMillis())
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -135,7 +131,6 @@ fun SummaryScreen(
                         onOpenSettings = onOpenSettings,
                     )
                 }
-                if (stories.isNotEmpty()) item(key = "todo") { TodoSection(stories) }
                 item(key = "where") {
                     WhereSection(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
                 }
