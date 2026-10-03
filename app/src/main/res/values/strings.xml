@@ -337,12 +337,12 @@
     <string name="widget_name">خرج امروز</string>
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
     <string name="widget_today">خرج امروز</string>
-    <string name="widget_amount">%1$s تومان</string>
     <string name="widget_month">این ماه: %1$s</string>
     <string name="widget_left">مونده از بودجه: %1$s</string>
     <string name="widget_over">%1$s بیشتر از بودجه</string>
     <string name="widget_locked_label">جیبیتو</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
+    <string name="widget_ring_cd">%1$s بودجه‌ی ماه خرج شده</string>
 
     <!-- پرداخت‌های ماهانه -->
     <string name="recurring_title">پرداخت‌های ماهانه</string>

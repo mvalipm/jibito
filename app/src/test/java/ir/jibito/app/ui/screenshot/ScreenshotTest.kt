@@ -42,6 +42,10 @@ import ir.jibito.app.ui.summary.WhereCard
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.data.repository.CategorySpend
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.FrameLayout
+import ir.jibito.app.widget.SpendWidget
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.RevealStats
@@ -241,6 +245,37 @@ class ScreenshotTest {
         shot("summary", AppThemeStyle.DEFAULT, false, padded = false, fontScale = 2f) {
             GlanceHero(monthSample(300_000_000), onEditBudget = {}, vsLastMonthPercent = -22)
         }
+    }
+
+    /** ویجت صفحه‌ی اصلی: خود RemoteViews (همان که روی گوشی نشان داده می‌شود) در هر حال جیب، روشن و تیره */
+    @Test
+    fun widget() {
+        val cases = listOf(
+            "calm" to SpendWidget.Numbers(6_050_000, 60_000_000, 300_000_000),
+            "warn" to SpendWidget.Numbers(6_050_000, 255_000_000, 300_000_000),
+            "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000),
+            "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null),
+            "locked" to null,
+        )
+        for (dark in listOf(false, true)) {
+            RuntimeEnvironment.setQualifiers(if (dark) "+night" else "+notnight")
+            for ((name, n) in cases) {
+                val context = RuntimeEnvironment.getApplication()
+                val views = SpendWidget.views(context, n, now)
+                captureRoboImage(
+                    "src/test/screenshots/widget_${name}_${if (dark) "dark" else "light"}.png",
+                    roborazziOptions = options,
+                ) {
+                    Box(Modifier.padding(12.dp)) {
+                        AndroidView(
+                            factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
+                            modifier = Modifier.size(width = 280.dp, height = 140.dp),
+                        )
+                    }
+                }
+            }
+        }
+        RuntimeEnvironment.setQualifiers("+notnight")
     }
 
     @Test

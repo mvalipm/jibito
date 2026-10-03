@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- «جیبی» نگران (بودجه رد شده) برای ویجت -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="26dp"
+    android:viewportWidth="120"
+    android:viewportHeight="130">
+    <path android:fillColor="#17BEBB" android:pathData="M67,22a13,13 0,1 0,26 0a13,13 0,1 0,-26 0z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3" android:pathData="M74,22a6,6 0,1 0,12 0a6,6 0,1 0,-12 0z" />
+    <path android:fillColor="#E4572E" android:pathData="M14,34L106,34L106,68C106,96 80,116 60,126C40,116 14,96 14,68Z" />
+    <path android:fillColor="#FF9B7A" android:pathData="M19,34h82a5,5 0,0 1,5 5v6a5,5 0,0 1,-5 5h-82a5,5 0,0 1,-5 -5v-6a5,5 0,0 1,5 -5z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M38,80a8,9 0,1 0,16 0a8,9 0,1 0,-16 0zM66,80a8,9 0,1 0,16 0a8,9 0,1 0,-16 0z" />
+    <path android:fillColor="#1C1B22" android:pathData="M42,83a4,4 0,1 0,8 0a4,4 0,1 0,-8 0zM70,83a4,4 0,1 0,8 0a4,4 0,1 0,-8 0z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M50,104Q60,96 70,104" />
+</vector>
