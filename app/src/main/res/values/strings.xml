@@ -133,8 +133,7 @@
     <string name="sheet_hide_sms">بستن متن پیامک</string>
     <string name="tab_summary">خلاصه</string>
     <string name="tab_transactions">تراکنش‌ها</string>
-    <string name="tab_review">بررسی</string>
-    <string name="tab_settings">تنظیمات</string>
+    <string name="tab_todo">کارها</string>
     <string name="settings_title">تنظیمات</string>
     <string name="settings_theme_title">پوسته</string>
     <string name="theme_default">مرجانی</string>
@@ -250,7 +249,7 @@
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>
     <string name="review_all_done">همه‌چی مرتبه!</string>
-    <string name="review_back">برگرد به خلاصه</string>
+    <string name="review_back">برگرد به کارها</string>
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
@@ -425,6 +424,12 @@
     <string name="todo_review">%1$d پیامک مبهم</string>
     <string name="todo_transfer">انتقال به خودت؟</string>
     <string name="todo_recurring">%1$s ماهانه؟</string>
+    <string name="todo_notif_detail">هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.</string>
+    <string name="todo_uncategorized_detail">دسته بده تا «کجا رفت؟» درست نشونت بده.</string>
+    <string name="todo_budget_detail">%1$s از بودجه‌ی %2$s</string>
+    <string name="todo_transfer_detail">اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.</string>
+    <string name="todo_recurring_detail">اگه ماهانه‌ست، قبل از موعدش یادت میندازم.</string>
+    <string name="todo_all_clear">کاری نمونده. هر وقت چیزی کارت داشت، اینجا نشونت می‌دم.</string>
 
     <!-- کجا رفت؟ و روند -->
     <string name="where_title">کجا رفت؟</string>
@@ -482,7 +487,6 @@
     <string name="settings_roots_count">%1$d از %2$d</string>
 
     <!-- تنظیمات: صفحه‌ی اصلی (گروه‌ها و ردیف‌ها) و زیرصفحه‌ها -->
-    <string name="settings_back">برگشت</string>
     <string name="settings_group_data">داده‌هات</string>
     <string name="settings_group_categories">دسته‌ها و پرداخت‌ها</string>
     <string name="settings_group_alerts">نوتیف و دسترسی‌ها</string>

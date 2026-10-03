@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,9 +64,11 @@ internal enum class SettingsPage { Backup, Export, CategoryDisplay, CustomCatego
  * (مثلاً «آخرین پشتیبان: ۳ روز پیش»، «مرجانی · مثل گوشی»)، تا وضعیت همه‌چیز با یک نگاه معلوم باشد.
  * کلیدهای ساده (قفل اپ، خلاصه‌ی هفتگی) همان‌جا روشن/خاموش می‌شوند و بقیه زیرصفحه‌ی خودشان را باز می‌کنند.
  * دکمه‌ی برگشت گوشی از زیرصفحه به فهرست برمی‌گردد.
+ *
+ * @param onBack تنظیمات از چرخ‌دنده‌ی «خلاصه» باز می‌شود (تب نیست): دکمه‌ی برگشت کنار عنوان
  */
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
     val app = context.applicationContext as JibitoApplication
     val repository = app.container.transactionRepository
@@ -94,7 +99,7 @@ fun SettingsScreen() {
         label = "settingsPage",
     ) { current ->
         if (current == null) {
-            SettingsHub(hubScroll, categories, permissions, onOpen = { page = it })
+            SettingsHub(hubScroll, categories, permissions, onBack, onOpen = { page = it })
         } else {
             SettingsPageScreen(current, categories, permissions, onBack = { page = null })
         }
@@ -123,6 +128,7 @@ private fun SettingsHub(
     scroll: ScrollState,
     categories: List<Category>,
     permissions: SettingsPermissions,
+    onBack: (() -> Unit)?,
     onOpen: (SettingsPage) -> Unit,
 ) {
     val context = LocalContext.current
@@ -135,13 +141,20 @@ private fun SettingsHub(
     }
 
     SettingsColumn(scroll) {
-        Text(
-            stringResource(R.string.settings_title),
-            modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 16.dp),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        Row(Modifier.padding(top = 18.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.cd_back), tint = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+            Text(
+                stringResource(R.string.settings_title),
+                modifier = Modifier.padding(start = 4.dp),
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
         // مشکل‌ها اول: بدون این دسترسی‌ها اپ کار اصلی‌اش را نمی‌کند؛ دکمه همان‌جا درستش می‌کند
         if (!permissions.smsOk || !permissions.notifyOk) {
             PermissionBanner(

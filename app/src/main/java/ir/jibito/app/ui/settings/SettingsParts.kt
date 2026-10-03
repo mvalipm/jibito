@@ -202,7 +202,7 @@ internal fun SettingsPageHeader(title: String, onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
-            Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.settings_back), tint = MaterialTheme.colorScheme.onBackground)
+            Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.cd_back), tint = MaterialTheme.colorScheme.onBackground)
         }
         Spacer(Modifier.size(4.dp))
         Text(

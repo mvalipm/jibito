@@ -196,9 +196,11 @@ private fun SelectedRow(slice: Slice, total: Long, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp)
+            .padding(top = 10.dp)
             .clip(RoundedCornerShape(18.dp))
-            .clickable(enabled = slice.spend != null, onClick = onClick),
+            .clickable(enabled = slice.spend != null, onClick = onClick)
+            // فاصله از لبه‌ی گرد، تا گوشه‌ها درصد و مبلغ را نبرند
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CategoryIconTile(slice.tint, size = 56.dp, radius = 18.dp, iconSize = 28.dp)
@@ -217,7 +219,7 @@ private fun SelectedRow(slice: Slice, total: Long, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.width(8.dp))
-        Column(horizontalAlignment = Alignment.Start) {
+        Column(Modifier.padding(end = 6.dp), horizontalAlignment = Alignment.Start) {
             Text(
                 Jalali.toPersianDigits(share(slice.amount, total)),
                 fontSize = 24.sp,

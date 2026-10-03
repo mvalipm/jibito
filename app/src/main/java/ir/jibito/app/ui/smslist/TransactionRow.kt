@@ -278,7 +278,9 @@ private fun Amount(sign: String, amountRial: Long, color: Color, strike: TextDec
 @Composable
 private fun UncategorizedTile() {
     val t = JibitoTheme.colors
-    val scale = loopingValue(1f, 1.07f, 800, label = "uncatPulse")
+    // تپش رو به داخل (۱ ← ۰٫۹۳): کاشی هیچ‌وقت از جای ۵۲dp خودش بیرون نمی‌زند،
+    // وگرنه ردیفِ گردشده (clip) لبه‌ی نقطه‌چینش را می‌بُرد. بی‌انیمیشن هم اندازه‌ی کامل می‌ماند.
+    val scale = loopingValue(1f, 0.93f, 800, label = "uncatPulse")
     Box(
         Modifier
             .size(52.dp)

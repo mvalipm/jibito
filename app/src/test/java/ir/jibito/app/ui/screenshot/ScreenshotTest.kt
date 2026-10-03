@@ -22,7 +22,6 @@ import ir.jibito.app.ui.smslist.DayHeader
 import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.smslist.groupByDay
 import ir.jibito.app.ui.summary.SummaryHero
-import ir.jibito.app.ui.summary.TodoSection
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.DesignIcons
@@ -70,6 +69,18 @@ import java.util.Calendar
 import java.util.TimeZone
 import org.junit.After
 import org.junit.Before
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import ir.jibito.app.ui.main.FloatingNavBar
+import ir.jibito.app.ui.main.LocalBottomBarSpace
+import ir.jibito.app.ui.main.NavIcons
+import ir.jibito.app.ui.main.NavItem
+import ir.jibito.app.ui.todo.TodoList
 
 /**
  * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره، و با فونت بزرگ.
@@ -142,13 +153,21 @@ class ScreenshotTest {
     @Composable
     private fun stories(): List<TodoStory> {
         val t = JibitoTheme.colors
-        val cafe = categoryTint(CategoryPalette.LIGHT[1], "🍽")
+        val cafe = categoryTint(CategoryPalette.LIGHT[1], "☕")
         return listOf(
-            TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته") {},
-            TodoStory("budget", t.alert, cafe.bg, cafe.fg, cafe.icon, null, "رستوران ۱۱۲٪") {},
-            TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ساختمون ماهانه؟") {},
-            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه") {},
+            TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
+            TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
+            TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
+            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.") {},
+            TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
+            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.") {},
         )
+    }
+
+    /** تب «کارها» بدون نوار پایین (فهرست تنبل است، پس ارتفاع ثابت می‌خواهد) */
+    @Composable
+    private fun Todo() {
+        Box(Modifier.fillMaxWidth().height(860.dp)) { TodoList(stories()) }
     }
 
     private fun cat(id: Long, name: String, icon: String, palette: Int, spentToman: Long, budgetToman: Long? = null, vararg subs: Pair<String, Long>) =
@@ -244,7 +263,7 @@ class ScreenshotTest {
                 group.items.forEach { t -> TxRow(t) }
             }
         }
-        shot("todo", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { TodoSection(stories()) }
+        shot("todo", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { Todo() }
         shot("hero", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { Hero(7_200_000) }
         shot("trend", AppThemeStyle.DEFAULT, dark = false, padded = false, fontScale = 2f) { TrendCard(trendSample) }
     }
@@ -262,7 +281,7 @@ class ScreenshotTest {
 
     @Test
     fun todo() {
-        for ((style, dark) in variants) shot("todo", style, dark, padded = false) { TodoSection(stories()) }
+        for ((style, dark) in variants) shot("todo", style, dark, padded = false) { Todo() }
     }
 
     /** سه حال جیب: آروم، یواش‌تر، بیرون زد */
@@ -375,4 +394,50 @@ class ScreenshotTest {
             SettingsRow(JibitoIcons.Palette, MaterialTheme.colorScheme.primary, "پوسته", "مرجانی · مثل گوشی", onClick = {})
         }
     }
+
+    /** نوار پایینِ سه‌تبی؛ عدد «کارها» همه‌ی کارهای لازم است */
+    @Composable
+    private fun BoxScope.TabBar(selected: Int, haze: HazeState) {
+        FloatingNavBar(
+            items = listOf(
+                NavItem(NavIcons.Summary, "خلاصه"),
+                NavItem(NavIcons.Transactions, "تراکنش‌ها"),
+                NavItem(NavIcons.Todo, "کارها", badge = 6),
+            ),
+            selectedIndex = selected,
+            onSelect = {},
+            hazeState = haze,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    /** صفحه‌ی اول کامل: سرصفحه با دکمه‌ی تنظیمات، کجا رفت و نوار پایین (کارهای لازم فقط در تب خودش) */
+    @Test
+    fun home() {
+        for (dark in listOf(false, true)) shot("home", AppThemeStyle.DEFAULT, dark, padded = false) {
+            val haze = remember { HazeState() }
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                Column(Modifier.hazeSource(haze).verticalScroll(rememberScrollState())) {
+                    Hero(18_400_000)
+                    WhereSection(summary(18_400_000), onOpenCategory = {}, onShowAll = {})
+                }
+                TabBar(selected = 0, haze = haze)
+            }
+        }
+    }
+
+    /** تب «کارها»: پیامک‌های مبهم (بررسی) هم یکی از کارهاست */
+    @Test
+    fun todoTab() {
+        for (dark in listOf(false, true)) shot("todotab", AppThemeStyle.DEFAULT, dark, padded = false) {
+            val haze = remember { HazeState() }
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                CompositionLocalProvider(LocalBottomBarSpace provides 110.dp) {
+                    TodoList(stories(), Modifier.hazeSource(haze))
+                }
+                TabBar(selected = 2, haze = haze)
+            }
+        }
+    }
 }
+

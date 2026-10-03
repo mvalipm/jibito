@@ -26,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,21 +64,18 @@ import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
  * صفحه‌ی «خلاصه» (طرح «جیبی»):
- * ۱) سرصفحه‌ی رنگی: خرج این ماه، بودجه و حال جیب. ۲) «کارهای لازم» به شکل استوری.
- * ۳) «کجا رفت؟» با نوار سهم دسته‌ها. ۴) روند ۶ ماه اخیر.
+ * ۱) سرصفحه‌ی رنگی: خرج این ماه، بودجه و حال جیب. ۲) «کجا رفت؟» با نوار سهم دسته‌ها. ۳) روند ۶ ماه اخیر.
+ * «کارهای لازم» اینجا نیست (تب خودش را دارد) تا خلاصه خلوت بماند.
  * فهرست کامل دسته‌ها، بودجه‌ها و درآمدها یک لمس دورتر است («همه‌ی دسته‌ها و بودجه‌ها»).
  */
 @Composable
 fun SummaryScreen(
-    /** پیامک‌های منتظر بررسی */
-    pendingReview: Int = 0,
-    onOpenReview: () -> Unit = {},
-    /** رفتن به تراکنش‌ها با فیلتر «فقط بی‌دسته» */
-    onOpenUncategorized: () -> Unit = {},
-    /** رفتن به تراکنش‌ها (مثلاً برای پیشنهادهای انتقال به خودم) */
-    onOpenTransactions: () -> Unit = {},
-    /** رفتن به تنظیمات (مثلاً برای پیشنهاد پرداخت ماهانه) */
+    /** دکمه‌ی تنظیمات بالای سرصفحه */
     onOpenSettings: () -> Unit = {},
+    /** دسته‌ای که باید جزئیاتش باز شود (لمس کارت بودجه در تب «کارها»)؛ ماه جاری نشان داده می‌شود */
+    openCategoryId: Long? = null,
+    /** بعد از باز کردن openCategoryId صدا زده می‌شود تا دوباره باز نشود */
+    onCategoryOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -93,29 +91,18 @@ fun SummaryScreen(
     var showIdle by rememberSaveable { mutableStateOf(false) }
     // فهرست کامل دسته‌ها و بودجه‌ها (به‌جای نمای اصلی)
     var showAll by rememberSaveable { mutableStateOf(false) }
-    val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
-    val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
-    val recurringFlow = remember { app.container.recurringSuggestions.observe() }
-    val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
-    // چند خرج این ماه هنوز دسته ندارند (عدد استوری «خرج بی‌دسته»)
-    val uncategorizedFlow = remember {
-        app.container.transactionRepository.observeTransactions().map { list ->
-            val m = JalaliMonth.current()
-            val from = m.startMillis()
-            val to = m.endMillis()
-            list.count {
-                it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                    it.transaction.type == FlowType.WITHDRAWAL && it.dateMillis in from until to
-            }
-        }
-    }
-    val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
-    val notificationPrompt = rememberNotificationPrompt()
     val themeSettings = app.container.themeSettings
     val hidden by themeSettings.hideAmounts.collectAsState()
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
+    LaunchedEffect(openCategoryId) {
+        val id = openCategoryId ?: return@LaunchedEffect
+        viewModel.setMonth(JalaliMonth.current())
+        showAll = false
+        detailId = id
+        onCategoryOpened()
+    }
 
     Box(
         Modifier
@@ -128,47 +115,6 @@ fun SummaryScreen(
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
-            val stories = buildList {
-                if (notificationPrompt.visible) {
-                    add(TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, stringResource(R.string.todo_notif_off), notificationPrompt.fix))
-                }
-                if (uncategorizedCount > 0 && s.month == JalaliMonth.current()) {
-                    add(
-                        TodoStory(
-                            "uncat", t.coral, t.uncatBg, t.uncatFg, null,
-                            Jalali.toPersianDigits(uncategorizedCount.coerceAtMost(99).toString()),
-                            stringResource(R.string.todo_uncategorized), onOpenUncategorized,
-                        )
-                    )
-                }
-                s.categories.forEach { c ->
-                    val budget = c.budgetRial ?: return@forEach
-                    val level = BudgetLevel.of(c.spentRial, budget)
-                    if (level >= 80) {
-                        val tint = categoryTint(c.colorHex, c.icon)
-                        add(
-                            TodoStory(
-                                "budget-${c.categoryId}", if (level >= 100) t.alert else t.amber, tint.bg, tint.fg, tint.icon, tint.glyph,
-                                Jalali.toPersianDigits("${c.name} ${c.spentRial * 100 / budget}٪"),
-                            ) { detailId = c.categoryId }
-                        )
-                    }
-                }
-                if (pendingReview > 0) {
-                    add(
-                        TodoStory(
-                            "review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null,
-                            Jalali.toPersianDigits(stringResource(R.string.todo_review, pendingReview)), onOpenReview,
-                        )
-                    )
-                }
-                if (transferSuggestions.isNotEmpty()) {
-                    add(TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, stringResource(R.string.todo_transfer), onOpenTransactions))
-                }
-                recurringSuggestions.firstOrNull()?.let { r ->
-                    add(TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, stringResource(R.string.todo_recurring, r.title), onOpenSettings))
-                }
-            }
             val heroLine = moodOf(s, System.currentTimeMillis())
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -182,9 +128,9 @@ fun SummaryScreen(
                         dark = t.dark,
                         onToggleDark = { themeSettings.setDarkMode(if (t.dark) DarkMode.LIGHT else DarkMode.DARK) },
                         onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
+                        onOpenSettings = onOpenSettings,
                     )
                 }
-                if (stories.isNotEmpty()) item(key = "todo") { TodoSection(stories) }
                 item(key = "where") {
                     WhereSection(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
                 }
