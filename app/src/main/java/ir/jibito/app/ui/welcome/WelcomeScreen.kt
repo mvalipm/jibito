@@ -226,12 +226,17 @@ private fun DemoRow(picked: Int?) {
                 color = if (category == null) colors.primary else colors.onSurfaceVariant,
             )
         }
-        Text(
-            stringResource(R.string.sample_amount),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Black,
-            color = colors.onBackground,
-        )
+        // علامت و عدد جدا (مثل فهرست تراکنش‌ها) تا راست‌به‌چپ جای «−» را عوض نکند
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("−", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = colors.onBackground)
+            Spacer(Modifier.size(2.dp))
+            Text(
+                stringResource(R.string.sample_amount),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+            )
+        }
     }
 }
 
