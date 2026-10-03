@@ -1,5 +1,6 @@
 package ir.jibito.app.data.linking
 
+import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.ParsedTransaction
@@ -42,5 +43,18 @@ class MofidTransferTest {
     fun `مقصد بی‌اسم گیرنده - شماره‌ی حساب، نه اسم بانک`() {
         val text = SmsTextNormalizer.normalize("انتقال بین بانکی پل\nمقصد:\nIR210*22501 بانک سامان\nمبلغ: 4,000,000 ريال")
         assertEquals("کارت/حساب …2501", MerchantExtractor.find(text))
+    }
+
+    @Test
+    fun `سرشماره‌ی MofidCard شناخته می‌شود و برداشتش با کارمزد درست خوانده می‌شود`() {
+        val bank = BankDirectory.findBySender("MofidCard")!!
+        val sms = "کارگزاری مفید\nبرداشت مبلغ 3,008,000 ریال\nکارمزد بانک به مبلغ 8,000 ریال \nاز حساب حامی\n" +
+            "مانده: 2,248,134 ریال\n1405/06/28\n14:05"
+        val tx = TransactionParser.parse(bank, sms)!!
+        assertEquals(FlowType.WITHDRAWAL, tx.type)
+        assertEquals(3_008_000L, tx.amountRial)
+        assertEquals(2_248_134L, tx.balanceRial)
+        // رمز پل هم از همین سرشماره می‌آید و تراکنش حساب نمی‌شود
+        assertEquals(null, TransactionParser.parse(bank, otpSms))
     }
 }
