@@ -52,6 +52,13 @@
     <string name="balances_wallet_all">موجودی همه‌ی حساب‌ها</string>
     <string name="balances_wallet_one">موجودی حساب</string>
     <string name="balances_mini">موجودی</string>
+    <string name="balances_excluded_hint">بدون %1$s حساب غیرفعال · برای فعال‌کردن، رویش بزن</string>
+    <string name="balances_included">در جمع</string>
+    <string name="balances_excluded">غیرفعال، بیرون از جمع</string>
+    <string name="balances_exclude_action">بیرون گذاشتن از جمع</string>
+    <string name="balances_include_action">برگرداندن به جمع</string>
+    <string name="balances_toggled_off">%1$s از جمع موجودی کنار رفت</string>
+    <string name="balances_toggled_on">%1$s به جمع موجودی برگشت</string>
     <string name="search_chip_date">تاریخ</string>
     <string name="search_chip_amount">مبلغ</string>
     <string name="search_only_spend">فقط خرج</string>

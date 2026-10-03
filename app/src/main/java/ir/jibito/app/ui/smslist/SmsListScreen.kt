@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.domain.BankBalance
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
@@ -116,6 +117,9 @@ fun SmsListScreen(
     val categories by viewModel.categories.collectAsState()
     val transferSuggestions by viewModel.transferSuggestions.collectAsState()
     val bankBalances by viewModel.bankBalances.collectAsState()
+    // حساب‌هایی که کاربر از «موجودی همه‌ی حساب‌ها» کنار گذاشته
+    val walletSettings = app.container.walletSettings
+    val excludedBanks by walletSettings.excludedBanks.collectAsState()
     // تنظیم «نمایش دسته‌ها»: چند لایه، و کدام دسته‌های اصلی پنهان‌اند
     val displayDepth by app.container.categoryDisplay.depth.collectAsState()
     val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
@@ -163,6 +167,21 @@ fun SmsListScreen(
         viewModel.setCategory(sms, categoryId) { before ->
             offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
         }
+    }
+    val toggledOffMessage = stringResource(R.string.balances_toggled_off)
+    val toggledOnMessage = stringResource(R.string.balances_toggled_on)
+    // لمس کپسول حساب: بیرون/درون جمع موجودی، با «برگردون»
+    fun toggleWallet(b: BankBalance) {
+        haptics.tick()
+        val id = b.bank.id
+        val include = id in excludedBanks
+        walletSettings.setIncluded(id, include)
+        val name = shortBankName(b.bank.name)
+        toast = ToastMessage(
+            (if (include) toggledOnMessage else toggledOffMessage).format(name),
+            undoLabel,
+            onAction = { walletSettings.setIncluded(id, !include) },
+        )
     }
     val uncategorizedCount = remember(messages) {
         messages.orEmpty().count(::isUncategorizedSpend)
@@ -245,7 +264,7 @@ fun SmsListScreen(
                     exit = fadeOut() + shrinkHorizontally(),
                 ) {
                     Row {
-                        BalanceMiniPill(bankBalances)
+                        BalanceMiniPill(bankBalances, excludedBanks)
                         Spacer(Modifier.width(8.dp))
                     }
                 }
@@ -273,7 +292,12 @@ fun SmsListScreen(
                         }
                         .graphicsLayer { alpha = if (walletFull[0] > 0) (1f - collapse / walletFull[0]).coerceIn(0f, 1f) else 1f },
                 ) {
-                    WalletCard(bankBalances, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                    WalletCard(
+                        balances = bankBalances,
+                        excluded = excludedBanks,
+                        onToggle = { b -> toggleWallet(b) },
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                    )
                 }
             }
             // «همه | بی‌دسته»: سوییچ دوقسمتی که همیشه بالای فهرست می‌ماند
