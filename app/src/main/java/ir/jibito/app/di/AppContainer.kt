@@ -22,6 +22,7 @@ import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.notify.BudgetAlerter
 import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
+import ir.jibito.app.data.wallet.WalletSettings
 import ir.jibito.app.ui.theme.ThemeSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.notify.WeeklyDigest
@@ -41,6 +42,9 @@ class AppContainer(context: Context) {
 
     /** چند لایه از دسته‌ها و کدام دسته‌های اصلی در برگه‌ی انتخاب دیده شوند */
     val categoryDisplay: CategoryDisplaySettings by lazy { CategoryDisplaySettings(appContext) }
+
+    /** حساب‌هایی که در «موجودی همه‌ی حساب‌ها» جمع نمی‌شوند */
+    val walletSettings: WalletSettings by lazy { WalletSettings(appContext) }
 
     /** بانک‌ها و موسسه‌هایی که کاربر خودش اضافه کرده */
     val customInstitutions: CustomInstitutions by lazy { CustomInstitutions(appContext) }
