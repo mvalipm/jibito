@@ -260,12 +260,17 @@ fun CategoryPickerSheet(
                                 CategoryChip(
                                     label = listOfNotNull(
                                         if (c.id == suggested?.id) "●" else null,
-                                        root.icon,
                                         c.name,
                                     ).joinToString(" "),
                                     selected = c.id == selectedId,
                                     highlighted = c.id == suggested?.id,
                                     onClick = { onPick(c.id) },
+                                    leadingIcon = {
+                                        CategoryIconTile(
+                                            categoryTint(root.colorHex, CategoryTree.iconOf(c, byId)),
+                                            size = 24.dp, radius = 8.dp, iconSize = 15.dp,
+                                        )
+                                    },
                                 )
                             }
                         }

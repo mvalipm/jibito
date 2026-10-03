@@ -262,7 +262,7 @@ class TransactionRepositoryImpl(
         val id = categoryDao.insert(
             CategoryEntity(
                 name = CustomCategories.clean(name),
-                icon = if (parent == null) icon ?: CustomCategories.ICONS.first() else null,
+                icon = if (parent == null) icon ?: CustomCategories.ICONS.first() else icon,
                 colorHex = if (parent == null) CategoryPalette.forCustom(customRoots) else null,
                 flowType = flowType,
                 parentId = parent?.id,

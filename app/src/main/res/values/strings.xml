@@ -97,6 +97,7 @@
     <string name="custom_where">کجا باشه؟</string>
     <string name="custom_as_root">دسته‌ی اصلی جدید</string>
     <string name="custom_icon">آیکون</string>
+    <string name="custom_icon_sub_hint">اگه انتخاب نکنی، آیکون دسته‌ی اصلی‌اش رو می‌گیره</string>
     <string name="custom_save">ساختن و انتخاب</string>
     <string name="custom_error_empty">اسم دسته رو بنویس</string>
     <string name="custom_error_long">حداکثر ۳۰ حرف</string>

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.category.CustomCategories
+import ir.jibito.app.domain.CategoryTree
 import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.theme.JibitoIcons
@@ -51,7 +52,7 @@ internal data class CreateTarget(
 )
 
 /**
- * ساختن دسته‌ی شخصی: اسم، (از جست‌وجو: جایش)، و برای دسته‌ی اصلی یک آیکون.
+ * ساختن دسته‌ی شخصی: اسم، آیکون (زیردسته: اختیاری)، و (از جست‌وجو/تنظیمات) جایش.
  * بعد از ساختن، همان لحظه برای تراکنش انتخاب می‌شود.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -66,7 +67,9 @@ internal fun NewCategoryDialog(
     val colors = MaterialTheme.colorScheme
     var name by remember { mutableStateOf(target.prefill) }
     var parentId by remember { mutableStateOf(target.parentId) }
-    var icon by remember { mutableStateOf(CustomCategories.ICONS.first()) }
+    // زیردسته بی‌انتخاب ← آیکون دسته‌ی اصلی‌اش
+    var picked by remember { mutableStateOf<String?>(null) }
+    val icon = picked ?: if (parentId == null) CustomCategories.ICONS.first() else null
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val errEmpty = stringResource(R.string.custom_error_empty)
@@ -95,6 +98,39 @@ internal fun NewCategoryDialog(
                         supportingText = { error?.let { Text(it) } },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Text(
+                        stringResource(R.string.custom_icon),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                    if (parentId != null) {
+                        Text(
+                            stringResource(R.string.custom_icon_sub_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    val parentRoot = parentId?.let { byId[it] }?.let { CategoryTree.rootOf(it, byId) }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CustomCategories.ICONS.forEach { e ->
+                            val shape = RoundedCornerShape(15.dp)
+                            CategoryIconTile(
+                                tint = categoryTint(parentRoot?.colorHex, e),
+                                size = 44.dp,
+                                radius = 15.dp,
+                                iconSize = 22.dp,
+                                modifier = Modifier
+                                    .border(2.dp, if (e == icon) colors.primary else Color.Transparent, shape)
+                                    .padding(3.dp)
+                                    .clip(shape)
+                                    // زیردسته: لمس دوباره ← برگشت به آیکون دسته‌ی اصلی
+                                    .clickable { picked = if (e == icon && parentId != null) null else e },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
                     if (target.chooseParent && roots.isNotEmpty()) {
                         Text(
                             stringResource(R.string.custom_where),
@@ -119,32 +155,6 @@ internal fun NewCategoryDialog(
                                 )
                             }
                         }
-                        Spacer(Modifier.height(10.dp))
-                    }
-                    if (parentId == null) {
-                        Text(
-                            stringResource(R.string.custom_icon),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onSurface,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            CustomCategories.ICONS.forEach { e ->
-                                val shape = RoundedCornerShape(15.dp)
-                                CategoryIconTile(
-                                    tint = categoryTint(null, e),
-                                    size = 44.dp,
-                                    radius = 15.dp,
-                                    iconSize = 22.dp,
-                                    modifier = Modifier
-                                        .border(2.dp, if (e == icon) colors.primary else Color.Transparent, shape)
-                                        .padding(3.dp)
-                                        .clip(shape)
-                                        .clickable { icon = e },
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -154,7 +164,7 @@ internal fun NewCategoryDialog(
                 enabled = !saving,
                 onClick = {
                     saving = true
-                    onConfirm(name, parentId, if (parentId == null) icon else null) { result ->
+                    onConfirm(name, parentId, icon) { result ->
                         saving = false
                         if (result is CreateCategoryResult.Invalid) {
                             error = when (result.reason) {
