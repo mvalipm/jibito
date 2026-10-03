@@ -269,7 +269,7 @@ class ScreenshotTest {
                     Box(Modifier.padding(12.dp)) {
                         AndroidView(
                             factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
-                            modifier = Modifier.size(width = 280.dp, height = 140.dp),
+                            modifier = Modifier.size(width = 260.dp, height = 115.dp),
                         )
                     }
                 }

@@ -338,7 +338,7 @@
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
     <string name="widget_today">خرج امروز</string>
     <string name="widget_month">این ماه: %1$s</string>
-    <string name="widget_left">مونده از بودجه: %1$s</string>
+    <string name="widget_left">%1$s مونده از بودجه</string>
     <string name="widget_over">%1$s بیشتر از بودجه</string>
     <string name="widget_locked_label">جیبیتو</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>

@@ -112,7 +112,6 @@ class SpendWidget : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_today, "🔒")
                 views.setViewVisibility(R.id.widget_unit, View.GONE)
                 views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_locked_hint))
-                views.setViewVisibility(R.id.widget_left, View.GONE)
                 return views
             }
 
@@ -146,23 +145,21 @@ class SpendWidget : AppWidgetProvider() {
             views.setTextColor(R.id.widget_today, text)
             views.setTextViewText(R.id.widget_unit, unit)
             views.setTextColor(R.id.widget_unit, muted)
-            views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
-            views.setTextColor(R.id.widget_month, muted)
-
+            // یک خط زیر عدد (جای ویجت کوچک است): با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه»
             val budget = n.overallBudgetRial?.takeIf { it > 0 }
             if (budget == null) {
-                views.setViewVisibility(R.id.widget_left, View.GONE)
+                views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
+                views.setTextColor(R.id.widget_month, muted)
                 views.setViewVisibility(R.id.widget_ring_box, View.GONE)
                 return views
             }
             val left = budget - n.monthRial
-            views.setViewVisibility(R.id.widget_left, View.VISIBLE)
             views.setTextViewText(
-                R.id.widget_left,
+                R.id.widget_month,
                 if (left >= 0) context.getString(R.string.widget_left, Money.compact(left))
                 else context.getString(R.string.widget_over, Money.compact(-left)),
             )
-            views.setTextColor(R.id.widget_left, text)
+            views.setTextColor(R.id.widget_month, text)
             val percent = (n.monthRial * 100 / budget).toInt()
             val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
             views.setViewVisibility(R.id.widget_ring_box, View.VISIBLE)
