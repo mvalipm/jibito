@@ -1,6 +1,7 @@
 package ir.jibito.app.notify
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -84,6 +85,16 @@ class TransactionNotifier(
     private fun canPost(): Boolean = Build.VERSION.SDK_INT < 33 ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+    /** نمایش، با بررسی صریح اجازه درست قبل از notify (همان الگویی که Lint می‌شناسد) */
+    private fun post(id: Int, notification: Notification) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        NotificationManagerCompat.from(context).notify(id, notification)
+    }
+
     /** «مال چی بود؟ یه لمس کافیه» با ۳ دکمه‌ی دسته (برگرداندن از «برگردون» هم همین را دوباره نشان می‌دهد) */
     internal suspend fun showQuestion(flow: TransactionFlowEntity): Boolean {
         if (!canPost()) return false
@@ -109,7 +120,7 @@ class TransactionNotifier(
             )
         }
 
-        NotificationManagerCompat.from(context).notify(notificationId(flow.id), builder.build())
+        post(notificationId(flow.id), builder.build())
         return true
     }
 
@@ -135,7 +146,7 @@ class TransactionNotifier(
             .setShowWhen(true)
             .addAction(0, context.getString(R.string.notif_undo), CategoryActionReceiver.undoIntent(context, flow.id))
             .build()
-        NotificationManagerCompat.from(context).notify(notificationId(flow.id), notification)
+        post(notificationId(flow.id), notification)
     }
 
     private suspend fun showAutoConfirm(flow: TransactionFlowEntity): Boolean {
@@ -164,7 +175,7 @@ class TransactionNotifier(
             .setWhen(flow.dateEpoch)
             .setShowWhen(true)
             .build()
-        NotificationManagerCompat.from(context).notify(notificationId(flow.id), notification)
+        post(notificationId(flow.id), notification)
         return true
     }
 
