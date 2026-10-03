@@ -24,6 +24,8 @@ enum class MascotFace {
     CHOMP,
     /** چشم‌های خندان و لبخند */
     HAPPY,
+    /** چشم باز رو به بالا، دهان کوچک: «این چیه؟» (منتظر بررسی، فهرست خالی) */
+    CURIOUS,
 }
 
 /**
@@ -57,6 +59,13 @@ fun PocketMascot(face: MascotFace, size: Dp = 140.dp, modifier: Modifier = Modif
                     drawCircle(Ink, radius = 4f, center = Offset(47f, 76f))
                     drawCircle(Ink, radius = 4f, center = Offset(75f, 76f))
                     drawOval(Ink, topLeft = Offset(53f, 95f), size = Size(14f, 12f))
+                }
+                MascotFace.CURIOUS -> {
+                    drawOval(Color.White, topLeft = Offset(38f, 71f), size = Size(16f, 18f))
+                    drawOval(Color.White, topLeft = Offset(66f, 71f), size = Size(16f, 18f))
+                    drawCircle(Ink, radius = 4f, center = Offset(48f, 75f))
+                    drawCircle(Ink, radius = 4f, center = Offset(76f, 75f))
+                    drawLine(Color.White, Offset(54f, 101f), Offset(66f, 101f), strokeWidth = 4f, cap = StrokeCap.Round)
                 }
                 MascotFace.HAPPY -> {
                     val smile = Path().apply {

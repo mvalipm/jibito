@@ -21,8 +21,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,12 +34,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
-import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.common.MascotEmptyState
+import ir.jibito.app.ui.common.MascotFace
+import ir.jibito.app.ui.common.PocketMascot
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.draw.clip
@@ -48,8 +52,6 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.review.NumberToken
 import ir.jibito.app.data.repository.ReviewItem
 import ir.jibito.app.util.Jalali
-import androidx.compose.material3.Icon
-import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.common.rememberHaptics
 
 /**
@@ -72,6 +74,9 @@ fun ReviewScreen(onClose: () -> Unit) {
     // متن‌ها از LocalResources (با تغییر پیکربندی، مثلاً زبان یا چرخش، به‌روز می‌ماند)
     val resources = LocalResources.current
     val haptics = rememberHaptics()
+    // صندوق در همین بار باز شدن پر بود؟ ← وقتی خالی شد، جشن کوچک (نه وقتی از اول خالی بود)
+    var hadItems by remember { mutableStateOf(false) }
+    LaunchedEffect(pending) { if (!pending.isNullOrEmpty()) hadItems = true }
 
     Column(
         Modifier
@@ -86,6 +91,11 @@ fun ReviewScreen(onClose: () -> Unit) {
                 .padding(start = 20.dp, end = 8.dp, top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // جیبی کنجکاو کنار عنوان، تا وقتی پیامکی منتظر است
+            if (!pending.isNullOrEmpty()) {
+                PocketMascot(MascotFace.CURIOUS, size = 38.dp)
+                Spacer(Modifier.size(10.dp))
+            }
             Column(Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.review_title),
@@ -109,7 +119,7 @@ fun ReviewScreen(onClose: () -> Unit) {
         val list = pending
         when {
             list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            list.isEmpty() -> AllDone(onClose)
+            list.isEmpty() -> AllDone(celebrate = hadItems, onClose = onClose)
             else -> ReviewPager(
                 list = list,
                 onConfirm = { item, type, amount, balance, bankId ->
@@ -222,24 +232,16 @@ private fun ReviewPager(
     }
 }
 
+/** صندوق خالی: جیبی خوشحال؛ اگر کاربر همین حالا خالی‌اش کرد، کاغذرنگی هم */
 @Composable
-private fun AllDone(onClose: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(JibitoIcons.Check, contentDescription = null, tint = JibitoTheme.colors.income, modifier = Modifier.size(56.dp))
-        Spacer(Modifier.height(12.dp))
-        Text(
-            stringResource(R.string.review_all_done),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
+private fun AllDone(celebrate: Boolean, onClose: () -> Unit) {
+    Box(Modifier.fillMaxSize().padding(bottom = LocalBottomBarSpace.current), contentAlignment = Alignment.Center) {
+        MascotEmptyState(
+            face = MascotFace.HAPPY,
+            title = stringResource(R.string.review_all_done_title),
+            body = stringResource(R.string.review_all_done),
+            celebrate = celebrate,
+            action = { Button(onClick = onClose, shape = RoundedCornerShape(50)) { Text(stringResource(R.string.review_back)) } },
         )
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = onClose, shape = RoundedCornerShape(16.dp)) { Text(stringResource(R.string.review_back)) }
     }
 }

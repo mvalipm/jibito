@@ -31,10 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.MascotEmptyState
+import ir.jibito.app.ui.common.MascotFace
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
@@ -211,16 +212,29 @@ fun SmsListScreen(
                     )
                 }
             }
+            // فهرست خالی: جیبی، با جمله‌ی مناسب همان حالت
             list.isEmpty() -> Box(
-                Modifier.fillMaxSize().padding(32.dp),
+                Modifier.fillMaxSize().padding(bottom = bottomSpace),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = stringResource(R.string.list_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
+                when {
+                    search.isActive -> MascotEmptyState(
+                        MascotFace.CURIOUS,
+                        stringResource(R.string.list_search_empty_title),
+                        stringResource(R.string.list_search_empty),
+                        mascotSize = 104.dp,
+                    )
+                    onlyUncategorized && !messages.isNullOrEmpty() -> MascotEmptyState(
+                        MascotFace.HAPPY,
+                        stringResource(R.string.list_all_categorized_title),
+                        stringResource(R.string.list_all_categorized),
+                    )
+                    else -> MascotEmptyState(
+                        MascotFace.CURIOUS,
+                        stringResource(R.string.list_empty_title),
+                        stringResource(R.string.list_empty),
+                    )
+                }
             }
             else -> LazyColumn(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp + LocalBottomBarSpace.current),

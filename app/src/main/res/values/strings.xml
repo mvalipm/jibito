@@ -24,7 +24,12 @@
     <string name="list_loading">دارم همه‌ی پیامک‌ها رو می‌خونم…</string>
     <string name="list_syncing">دارم پیامک‌های تازه رو بررسی می‌کنم…</string>
     <string name="bank_unknown">بانک</string>
-    <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد.</string>
+    <string name="list_empty_title">هنوز تراکنشی نیست</string>
+    <string name="list_empty">هیچ تراکنشی در پیامک‌های بانکی پیدا نشد. پیامک بانک که بیاد، خودم ثبتش می‌کنم.</string>
+    <string name="list_all_categorized_title">همه دسته دارن!</string>
+    <string name="list_all_categorized">خرج تازه که بیاد، خبرت می‌کنم.</string>
+    <string name="list_search_empty_title">چیزی پیدا نشد</string>
+    <string name="list_search_empty">یه کلمه‌ی دیگه یا بازه‌ی دیگه‌ای امتحان کن.</string>
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
     <string name="tx_failed_purchase">خرید ناموفق</string>
@@ -269,7 +274,8 @@
     <string name="review_share">ارسال برای بهبود اپ</string>
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>
-    <string name="review_all_done">همه‌ی پیامک‌ها بررسی شدن!</string>
+    <string name="review_all_done_title">همه‌چی مرتبه!</string>
+    <string name="review_all_done">صندوق بررسی خالیه. هر وقت پیامک عجیبی بیاد، اینجا نشونت می‌دم.</string>
     <string name="review_back">برگشت</string>
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>

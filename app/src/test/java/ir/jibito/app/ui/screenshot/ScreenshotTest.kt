@@ -46,6 +46,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.FrameLayout
 import ir.jibito.app.widget.SpendWidget
+import ir.jibito.app.ui.common.MascotEmptyState
+import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.RevealStats
@@ -276,6 +278,19 @@ class ScreenshotTest {
             }
         }
         RuntimeEnvironment.setQualifiers("+notnight")
+    }
+
+    /** حالت‌های خالی با جیبی (صندوق بررسی خالی، همه دسته دارن، فهرست خالی) */
+    @Test
+    fun emptyStates() {
+        for (dark in listOf(false, true)) {
+            shot("empty", AppThemeStyle.DEFAULT, dark) {
+                MascotEmptyState(MascotFace.HAPPY, "همه‌چی مرتبه!", "صندوق بررسی خالیه. هر وقت پیامک عجیبی بیاد، اینجا نشونت می‌دم.")
+                Box(Modifier.padding(top = 24.dp)) {
+                    MascotEmptyState(MascotFace.CURIOUS, "هنوز تراکنشی نیست", "پیامک بانک که بیاد، خودم ثبتش می‌کنم.", mascotSize = 96.dp)
+                }
+            }
+        }
     }
 
     @Test
