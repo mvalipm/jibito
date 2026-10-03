@@ -3,9 +3,12 @@ package ir.jibito.app.ui.smslist
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -113,21 +117,32 @@ internal fun NewCategoryDialog(
                     }
                     Spacer(Modifier.height(6.dp))
                     val parentRoot = parentId?.let { byId[it] }?.let { CategoryTree.rootOf(it, byId) }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        CustomCategories.ICONS.forEach { e ->
-                            val shape = RoundedCornerShape(15.dp)
-                            CategoryIconTile(
-                                tint = categoryTint(parentRoot?.colorHex, e),
-                                size = 44.dp,
-                                radius = 15.dp,
-                                iconSize = 22.dp,
-                                modifier = Modifier
-                                    .border(2.dp, if (e == icon) colors.primary else Color.Transparent, shape)
-                                    .padding(3.dp)
-                                    .clip(shape)
-                                    // زیردسته: لمس دوباره ← برگشت به آیکون دسته‌ی اصلی
-                                    .clickable { picked = if (e == icon && parentId != null) null else e },
-                            )
+                    // شبکه‌ی هم‌فاصله در کل عرض (نه چسبیده به یک طرف)؛ تعداد ستون از روی عرض
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val cols = (maxWidth / 50.dp).toInt().coerceIn(4, 8)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CustomCategories.ICONS.chunked(cols).forEach { row ->
+                                Row(Modifier.fillMaxWidth()) {
+                                    row.forEach { e ->
+                                        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                                            val shape = RoundedCornerShape(15.dp)
+                                            CategoryIconTile(
+                                                tint = categoryTint(parentRoot?.colorHex, e),
+                                                size = 44.dp,
+                                                radius = 15.dp,
+                                                iconSize = 22.dp,
+                                                modifier = Modifier
+                                                    .border(2.dp, if (e == icon) colors.primary else Color.Transparent, shape)
+                                                    .padding(3.dp)
+                                                    .clip(shape)
+                                                    // زیردسته: لمس دوباره ← برگشت به آیکون دسته‌ی اصلی
+                                                    .clickable { picked = if (e == icon && parentId != null) null else e },
+                                            )
+                                        }
+                                    }
+                                    repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                                }
+                            }
                         }
                     }
                     Spacer(Modifier.height(10.dp))

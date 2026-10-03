@@ -80,6 +80,18 @@ object CategoryStyle {
         "🚬" to (DesignIcons.CIGARETTE to "other"),
         "✂" to (DesignIcons.SCISSORS to "shop"),
         "🕌" to (DesignIcons.MOSQUE to "gold"),
+        "🌐" to (DesignIcons.GLOBE to "food"),
+        "🎮" to (DesignIcons.GAMEPAD to "shop"),
+        "✈" to (DesignIcons.PLANE to "taxi"),
+        "🎵" to (DesignIcons.MUSIC to "food"),
+        "💡" to (DesignIcons.BULB to "gold"),
+        "📷" to (DesignIcons.CAMERA to "home"),
+        "🎓" to (DesignIcons.GRADUATION to "taxi"),
+        "🚌" to (DesignIcons.BUS to "grocery"),
+        "☂" to (DesignIcons.UMBRELLA to "health"),
+        "⚡" to (DesignIcons.BOLT to "gold"),
+        "💧" to (DesignIcons.DROP to "health"),
+        "🔥" to (DesignIcons.FLAME to "cafe"),
     )
 
     private val iconCache = HashMap<String, ImageVector>()
