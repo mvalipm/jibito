@@ -1,13 +1,17 @@
 package ir.jibito.app.data.transfer
 
-import ir.jibito.app.data.linking.PurchaseLinker
-
 /** فقط چیزهایی از یک تراکنش که برای پیدا کردن جفت لازم است. */
 data class TransferCandidate(
     val id: Long,
     val isWithdrawal: Boolean,
     val amountRial: Long,
     val dateMillis: Long,
+    /** بانکِ پیامک؛ برای تشخیص «همان حساب» */
+    val bankId: Int? = null,
+    /** مانده‌ی حساب بعد از تراکنش، اگر پیامک داشت */
+    val balanceRial: Long? = null,
+    /** متن پیامک از پایا/ساتنا/حواله می‌گوید ← انتقال بین‌بانکی که دیر می‌نشیند */
+    val isInterbank: Boolean = false,
 )
 
 /** یک پیشنهاد: «این برداشت و این واریز احتمالاً انتقال بین حساب‌های خودت است». */
@@ -17,16 +21,47 @@ data class TransferPair(val withdrawalId: Long, val depositId: Long)
  * پیدا کردن جفت‌های «برداشت ← واریزِ هم‌مبلغ» که می‌توانند انتقال بین حساب‌های خود کاربر باشند.
  *
  * قانون‌ها:
- * - مبلغ دقیقاً برابر، یا برداشت = واریز + کارمزد انتقال (مثلاً ۱۱ هزار ریال).
- * - واریز بعد از برداشت (یا هم‌زمان)، حداکثر ۲۴ ساعت بعد (پایا و ساتنا هم دیر می‌رسند).
+ * - مبلغ دقیقاً برابر، یا برداشت = واریز + کارمزد که بین ۵۰۰ تا ۵۰٬۰۰۰ تومان است (و کمتر از خود مبلغ).
+ * - واریز بعد از برداشت (یا هم‌زمان): حداکثر ۳۰ دقیقه بعد (کارت‌به‌کارت و انتقال داخلی فوری‌اند)؛
+ *   اگر متن یکی از دو پیامک از پایا/ساتنا/حواله بگوید، حداکثر ۷۲ ساعت (تعطیلات آخر هفته).
+ * - برداشت و واریز روی «همان حساب» جفت نمی‌شوند: هم‌بانک و مانده‌ی قبل از واریز = مانده‌ی بعد از برداشت
+ *   ← پول برگشته، نه انتقال.
  * - هر تراکنش حداکثر در یک جفت.
- * - برداشت‌ها به ترتیب زمان؛ هر برداشت نزدیک‌ترین واریزِ آزاد بعد از خودش را می‌گیرد.
+ * - برداشت‌ها به ترتیب زمان؛ هر برداشت نزدیک‌ترین واریزِ مناسبِ آزاد بعد از خودش را می‌گیرد.
  *
  * فقط پیشنهاد است؛ تا کاربر تأیید نکند چیزی عوض نمی‌شود.
  */
 object TransferMatcher {
 
-    const val WINDOW_MILLIS = 24L * 60 * 60 * 1000
+    const val WINDOW_MILLIS = 30L * 60 * 1000
+    const val INTERBANK_WINDOW_MILLIS = 72L * 60 * 60 * 1000
+
+    /** کارمزد کارت‌به‌کارت/پایا/ساتنا: ۵۰۰ تا ۵۰٬۰۰۰ تومان */
+    const val MIN_FEE_RIAL = 5_000L
+    const val MAX_FEE_RIAL = 500_000L
+
+    private val INTERBANK_KEYWORDS = listOf("پایا", "ساتنا", "حواله")
+
+    /** آیا متن پیامک از انتقال بین‌بانکیِ دیرنشین (پایا/ساتنا/حواله) می‌گوید؟ */
+    fun isInterbankText(body: String): Boolean = INTERBANK_KEYWORDS.any { body.contains(it) }
+
+    /** برداشت = واریز + کارمزدی در بازه‌ی مجاز */
+    fun isTransferFee(grossRial: Long, netRial: Long): Boolean {
+        val fee = grossRial - netRial
+        return netRial > 0 && fee in MIN_FEE_RIAL..MAX_FEE_RIAL && fee < netRial
+    }
+
+    /** واریزِ [d] حداکثر چقدر بعد از برداشتِ [w] می‌تواند بنشیند */
+    fun windowFor(w: TransferCandidate, d: TransferCandidate): Long =
+        if (w.isInterbank || d.isInterbank) INTERBANK_WINDOW_MILLIS else WINDOW_MILLIS
+
+    /** هم‌بانک و مانده‌ها پشت سر هم ← واریز روی همان حسابی نشسته که برداشت از آن بوده */
+    fun isSameAccount(w: TransferCandidate, d: TransferCandidate): Boolean {
+        if (w.bankId == null || w.bankId != d.bankId) return false
+        val wb = w.balanceRial ?: return false
+        val db = d.balanceRial ?: return false
+        return db - d.amountRial == wb
+    }
 
     /** ورودی‌ها باید از قبل فیلتر شده باشند (حذف‌شده، خرید ناموفق، انتقال‌های قبلی و ردشده‌ها کنار رفته‌اند). */
     fun findPairs(items: List<TransferCandidate>): List<TransferPair> {
@@ -40,13 +75,14 @@ object TransferMatcher {
         val pairs = mutableListOf<TransferPair>()
         for (w in withdrawals) {
             fun ok(d: TransferCandidate) =
-                d.id !in used && d.dateMillis >= w.dateMillis && d.dateMillis - w.dateMillis <= WINDOW_MILLIS
+                d.id !in used && d.dateMillis >= w.dateMillis &&
+                    d.dateMillis - w.dateMillis <= windowFor(w, d) && !isSameAccount(w, d)
             // اول مبلغ دقیقاً برابر؛ وگرنه واریزی که به اندازه‌ی کارمزد انتقال کمتر است (برداشت = واریز + کارمزد).
-            // فقط واریزهای همان ۲۴ ساعت بررسی می‌شوند (جستجوی دودویی روی زمان)، نه همه‌ی واریزها.
+            // فقط واریزهای بازه‌ی زمانی بررسی می‌شوند (جستجوی دودویی روی زمان)، نه همه‌ی واریزها.
             val match = depositsByAmount[w.amountRial]?.let { sameAmount ->
                 firstInWindow(sameAmount, datesByAmount.getValue(w.amountRial), w.dateMillis) { ok(it) }
             }
-                ?: firstInWindow(deposits, depositDates, w.dateMillis) { ok(it) && PurchaseLinker.isTransferFee(w.amountRial, it.amountRial) }
+                ?: firstInWindow(deposits, depositDates, w.dateMillis) { ok(it) && isTransferFee(w.amountRial, it.amountRial) }
                 ?: continue
             used += match.id
             pairs += TransferPair(w.id, match.id)
@@ -54,7 +90,7 @@ object TransferMatcher {
         return pairs
     }
 
-    /** اولین واریز (به ترتیب زمان) از [from] تا ۲۴ ساعت بعدش که شرط را دارد */
+    /** اولین واریز (به ترتیب زمان) از [from] تا بلندترین بازه بعدش که شرط را دارد */
     private inline fun firstInWindow(
         deposits: List<TransferCandidate>,
         dates: LongArray,
@@ -62,7 +98,7 @@ object TransferMatcher {
         predicate: (TransferCandidate) -> Boolean,
     ): TransferCandidate? {
         var i = lowerBound(dates, from)
-        while (i < deposits.size && dates[i] - from <= WINDOW_MILLIS) {
+        while (i < deposits.size && dates[i] - from <= INTERBANK_WINDOW_MILLIS) {
             if (predicate(deposits[i])) return deposits[i]
             i++
         }
