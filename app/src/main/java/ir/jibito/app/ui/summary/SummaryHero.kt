@@ -50,8 +50,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
@@ -60,6 +64,7 @@ import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.HIDDEN_AMOUNT
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.theme.Vazirmatn
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
@@ -199,8 +204,11 @@ fun SummaryHero(
                 )
             }
 
-            // «خرج این ماه» و عدد درشت
-            Column(Modifier.padding(top = 10.dp)) {
+            // «خرج این ماه» و عدد درشت، وسط سرصفحه
+            Column(
+                Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 Text(
                     if (isCurrent) stringResource(R.string.hero_label_current) else stringResource(R.string.summary_spent, s.month.title),
                     color = Color.White.copy(alpha = 0.85f),
@@ -328,7 +336,11 @@ private fun HeroButton(icon: ImageVector, label: String, onClick: () -> Unit) {
     ) { Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp)) }
 }
 
-/** عدد درشت خرج ماه؛ با هر بار باز شدن یا عوض شدن، نرم از عدد قبلی به عدد تازه می‌رسد */
+/**
+ * عدد درشت خرج ماه؛ با هر بار باز شدن یا عوض شدن، نرم از عدد قبلی به عدد تازه می‌رسد.
+ * اگر عدد و واحدش در عرض جا نشوند (عدد بلند، صفحه‌ی باریک، فونت بزرگ گوشی)، هر دو با هم کوچک می‌شوند
+ * تا هیچ رقمی از لبه بیرون نزند.
+ */
 @Composable
 private fun BigNumber(spentRial: Long, hidden: Boolean, onClick: () -> Unit) {
     val (_, unit) = Money.compactParts(spentRial)
@@ -343,35 +355,70 @@ private fun BigNumber(spentRial: Long, hidden: Boolean, onClick: () -> Unit) {
         spentRial / 10 >= 1_000L -> Jalali.toPersianDigits((v / 10 / 1_000).toString())
         else -> Jalali.toPersianDigits((v / 10).toString())
     }
+    val shown = if (hidden) HIDDEN_AMOUNT else number
+    val unitText = if (hidden || unit.isEmpty()) stringResource(R.string.unit_toman) else "$unit ${stringResource(R.string.unit_toman)}"
     // فونت خیلی بزرگ گوشی: عدد درشت کمی کوچک‌تر، تا از صفحه بیرون نزند
     val scale = LocalDensity.current.fontScale
-    val size = if (scale > 1.15f) (84f * 1.15f / scale).sp else 84.sp
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClickLabel = stringResource(R.string.overall_dialog_title), onClick = onClick),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        Text(
-            if (hidden) HIDDEN_AMOUNT else number,
-            color = Color.White,
-            fontSize = size,
-            fontWeight = FontWeight.Black,
-            lineHeight = size * 1.12f,
-            letterSpacing = (-1).sp,
-            maxLines = 1,
-            softWrap = false,
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            if (hidden || unit.isEmpty()) stringResource(R.string.unit_toman) else "$unit ${stringResource(R.string.unit_toman)}",
-            color = Color.White.copy(alpha = 0.9f),
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
+    val base = if (scale > 1.15f) 84f * 1.15f / scale else 84f
+    // عرض را با عدد نهایی می‌سنجیم (نه عدد در حال شمارش) تا اندازه وسط انیمیشن نپرد؛
+    // اعشار هم حساب می‌شود چون عدد در حال شمارش (مثلاً «۶۹٫۹» پیش از «۷۰») اعشار دارد
+    val final = when {
+        hidden -> HIDDEN_AMOUNT
+        spentRial / 10 >= 1_000_000L -> Money.compactParts(spentRial).first.substringBefore('٫') + "٫۸"
+        else -> Money.compactParts(spentRial).first
+    }
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val fit = remember(final, unitText, base, maxWidth) {
+            val numberW = measurer.measure(final, bigNumberStyle(base.sp), softWrap = false).size.width
+            val unitW = measurer.measure(unitText, unitStyle(19.sp), softWrap = false).size.width
+            val needed = numberW + unitW + with(density) { 10.dp.toPx() }
+            val room = with(density) { maxWidth.toPx() }
+            if (needed > room) (room / needed).coerceAtLeast(0.4f) else 1f
+        }
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .clickable(onClickLabel = stringResource(R.string.overall_dialog_title), onClick = onClick),
+        ) {
+            Text(
+                shown,
+                style = bigNumberStyle((base * fit).sp),
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.alignByBaseline(),
+            )
+            Spacer(Modifier.width(10.dp * fit))
+            Text(
+                unitText,
+                style = unitStyle((19f * fit).sp),
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.alignByBaseline(),
+            )
+        }
     }
 }
+
+/**
+ * ارقام همیشه چپ‌به‌راست؛ ارتفاع خط آن‌قدر هست که ممیز «٫» (که زیر خط پایین می‌آید) بریده نشود.
+ */
+private fun bigNumberStyle(size: TextUnit) = TextStyle(
+    color = Color.White,
+    fontFamily = Vazirmatn,
+    fontSize = size,
+    fontWeight = FontWeight.Black,
+    lineHeight = size * 1.3f,
+    textDirection = TextDirection.Ltr,
+)
+
+private fun unitStyle(size: TextUnit) = TextStyle(
+    color = Color.White.copy(alpha = 0.9f),
+    fontFamily = Vazirmatn,
+    fontSize = size,
+    fontWeight = FontWeight.Bold,
+)
 
 /** نوار سفید مصرف بودجه با خط «امروز» (کجای ماه هستیم) */
 @Composable
