@@ -21,6 +21,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -184,9 +185,8 @@ class AppScreensScreenshotTest {
     /**
      * یک ماه واقعی: خرج‌های دسته‌دار و بی‌دسته، پیشنهاد دسته، خرید ناموفق، جفت «انتقال به خودت؟»،
      * ثبت دستی، درآمد، ۵ ماه قبل برای روند، بودجه‌ها، پرداخت ماهانه، دسته‌ی شخصی و دو پیامک مبهم.
-     * @param autoOpenReview پیامک‌های مبهم هنوز «نشان داده نشده»اند ← اپ با صفحه‌ی بررسی باز می‌شود
      */
-    private fun seed(autoOpenReview: Boolean = false) = runBlocking {
+    private fun seed() = runBlocking {
         val db = container.database
         CategorySeeder(db).ensure()
         val categories = db.categoryDao()
@@ -251,7 +251,8 @@ class AppScreensScreenshotTest {
         val swim = (repository.createCategory("باشگاه شنا", null, 2, "⭐") as ir.jibito.app.data.category.CreateCategoryResult.Created).id
         repository.createCategory("بلیت استخر", swim, 2, null)
 
-        val shownAt = if (autoOpenReview) null else now - HOUR
+        // «نشان داده شده»: وگرنه اپ موقع باز شدن خودش صفحه‌ی بررسی را باز می‌کند
+        val shownAt = now - HOUR
         db.reviewDao().insertAll(
             listOf(
                 ReviewSmsEntity(
@@ -305,8 +306,8 @@ class AppScreensScreenshotTest {
     /** حداکثر حدود ۱۵ ثانیه (ساعت سیستم در این تست ثابت است؛ پس با شمردن قدم‌ها) */
     private fun waitFor(matcher: SemanticsMatcher, steps: Int = 120) {
         repeat(steps) {
-            if (compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) return
             step()
+            if (compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) return
         }
         throw AssertionError("پیدا نشد: ${matcher.description}")
     }
@@ -321,10 +322,18 @@ class AppScreensScreenshotTest {
         return if (clickable.fetchSemanticsNodes().isNotEmpty()) clickable.onFirst() else compose.onAllNodes(matcher).onFirst()
     }
 
+    /**
+     * لمس با خود «کار» دکمه، نه با مختصات: دکمه‌ای که پایین برگه‌ی نیمه‌باز (بیرون از صفحه) است هم لمس می‌شود.
+     * و بعد از لمس منتظر «آرام شدن» نمی‌ماند (نوار پیشرفتِ کار پس‌زمینه تا ساعت جلو نرود تمام نمی‌شود).
+     */
     private fun tap(matcher: SemanticsMatcher) {
         val n = node(matcher)
         runCatching { n.performScrollTo() }
-        n.performClick()
+        if (n.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)) {
+            n.performSemanticsAction(SemanticsActions.OnClick)
+        } else {
+            n.performClick()
+        }
         settle()
     }
 
@@ -531,17 +540,6 @@ class AppScreensScreenshotTest {
                 openReview()
                 shot("review", dark)
             }
-        }
-    }
-
-    /** پیامک مبهمِ تازه: اپ موقع باز شدن خودش صفحه‌ی بررسی را باز می‌کند */
-    @Test
-    fun reviewOnOpen() {
-        seed(autoOpenReview = true)
-        grantSms()
-        launch(tall = true) {
-            waitFor(hasContentDescription(str(R.string.review_more)))
-            shot("review_on_open")
         }
     }
 

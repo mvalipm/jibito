@@ -86,6 +86,13 @@ android {
         unitTests.all {
             // تست Migration ها ساختار هر نسخه را از همین فایل‌های JSON می‌خواند
             it.systemProperty("room.schemaDir", "$projectDir/schemas")
+            // نام هر تست و نتیجه‌اش در خروجی CI (اگر تستی گیر کند، معلوم است کدام)
+            it.testLogging {
+                events("passed", "failed", "skipped")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            }
+            // تستی که گیر کرده، CI را ساعت‌ها معطل نکند
+            it.timeout.set(java.time.Duration.ofMinutes(30))
         }
     }
 }
