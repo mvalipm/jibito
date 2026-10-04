@@ -10,12 +10,13 @@
     <string name="cat_transport">رفت‌وآمد</string>
     <string name="cat_shopping">خرید</string>
     <string name="start_button">شروع کنیم</string>
-    <string name="perm_title">جیبیتو پیامک‌های بانکت رو می‌خونه</string>
-    <string name="perm_body">برای اینکه خرج‌هات خودکار ثبت بشن، جیبیتو باید بتونه پیامک‌های بانکی رو بخونه.</string>
+    <string name="perm_title">پیامک‌های بانکت رو بخونم؟</string>
+    <string name="perm_body">فقط برای اینکه خرج‌هات خودکار ثبت بشن.</string>
     <string name="perm_promise_offline">همه‌چیز فقط روی گوشی خودت می‌مونه</string>
-    <string name="perm_promise_bank_only">فقط پیامک‌های بانکی بررسی می‌شن</string>
+    <string name="perm_promise_bank_only">فقط پیامک‌های بانکی</string>
+    <string name="perm_promise_bank_only_sub">پیامک‌های شخصیت دیده نمی‌شن</string>
     <string name="perm_promise_no_send">هیچ پیامکی جایی فرستاده نمی‌شه</string>
-    <string name="perm_promise_notify">خرج تازه که بیاد، با یه لمس روی نوتیفیکیشن دسته‌شو می‌گی</string>
+    <string name="perm_manual">فعلاً دستی ثبت می‌کنم</string>
     <string name="perm_allow">اجازه می‌دم</string>
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
@@ -293,8 +294,8 @@
     <string name="review_learn_hint">جیبیتو قالب این پیامک رو یاد می‌گیره؛ پیامک‌های مشابهِ بعدی خودکار ثبت می‌شن.</string>
 
     <!-- قفل اپ -->
-    <string name="lock_title">جیبیتو قفله</string>
-    <string name="lock_body">برای دیدن حساب‌هات، قفل گوشی رو تأیید کن.</string>
+    <string name="lock_title">جیبت بسته‌ست</string>
+    <string name="lock_body">برای باز کردن لمس کن</string>
     <string name="lock_unlock">باز کردن قفل</string>
     <string name="lock_prompt_title">باز کردن جیبیتو</string>
     <string name="lock_prompt_subtitle">با اثر انگشت یا قفل گوشی</string>
@@ -484,6 +485,13 @@
     <string name="trend_less">%1$d٪ کمتر از %2$s</string>
     <string name="trend_more">%1$d٪ بیشتر از %2$s</string>
     <string name="trend_same">تقریباً مثل %1$s</string>
+    <string name="trend_less_sofar">%1$d٪ کمتر از همین موقعِ %2$s</string>
+    <string name="trend_more_sofar">%1$d٪ بیشتر از همین موقعِ %2$s</string>
+    <string name="trend_same_sofar">تقریباً مثل همین موقعِ %1$s</string>
+    <string name="trend_unit_million">میلیون تومان</string>
+    <string name="trend_unit_thousand">هزار تومان</string>
+    <string name="trend_so_far">تا امروز</string>
+    <string name="trend_average">خط‌چین: میانگین %1$s %2$s</string>
 
     <!-- تراکنش‌ها -->
     <string name="filter_all">همه</string>
@@ -515,7 +523,7 @@
     <string name="reveal_unit_banks">بانک</string>
     <string name="reveal_label_banks">حساب شناسایی‌شده</string>
     <string name="reveal_label_top">بیشترین خرج</string>
-    <string name="reveal_replay">دوباره ببین</string>
+    <string name="reveal_label_top_share">%1$d٪ خرج‌ها</string>
 
     <!-- نوتیفیکیشن بعد از انتخاب دسته -->
     <string name="notif_picked_title">رفت تو %1$s</string>

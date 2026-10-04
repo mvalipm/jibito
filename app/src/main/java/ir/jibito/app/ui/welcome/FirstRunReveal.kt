@@ -167,7 +167,13 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                 val cells = buildList {
                     if (stats.months > 0) add(StatCell(Jalali.toPersianDigits(stats.months.toString()), stringResource(R.string.reveal_unit_months), stringResource(R.string.reveal_label_months), DesignIcons.Calendar, TintTeal))
                     if (stats.banks > 0) add(StatCell(Jalali.toPersianDigits(stats.banks.toString()), stringResource(R.string.reveal_unit_banks), stringResource(R.string.reveal_label_banks), DesignIcons.Bank, TintGold))
-                    stats.topCategory?.let { add(StatCell(it, null, stringResource(R.string.reveal_label_top), ShopIcon, TintPeach)) }
+                    stats.topCategory?.let {
+                        // «۲۸٪ خرج‌ها» به‌جای «بیشترین خرج» تا این آمار هم مثل دوتای دیگر عدد داشته باشد
+                        val label = stats.topSharePercent
+                            ?.let { p -> Jalali.toPersianDigits(stringResource(R.string.reveal_label_top_share, p)) }
+                            ?: stringResource(R.string.reveal_label_top)
+                        add(StatCell(it, null, label, ShopIcon, TintPeach))
+                    }
                 }
                 if (cells.isNotEmpty()) PopIn(done, delayMillis = 0) { StatsCard(cells, Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp)) }
                 PopIn(done, delayMillis = 160) { NextHint(Modifier.padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 12.dp)) }
@@ -189,19 +195,8 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                 Spacer(Modifier.width(10.dp))
                 Icon(GoIcon, contentDescription = null, tint = OnCta, modifier = Modifier.size(20.dp))
             }
-            Row(
-                Modifier
-                    .padding(top = 6.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .clip(RoundedCornerShape(22.dp))
-                    .clickable { round++ }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(DesignIcons.Repeat, contentDescription = null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.reveal_replay), color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            }
+            // «دوباره ببین» حذف شد: این لحظه فقط یک دکمه می‌خواهد
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

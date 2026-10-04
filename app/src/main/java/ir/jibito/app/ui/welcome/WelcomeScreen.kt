@@ -51,6 +51,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.common.StepDots
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.border
 import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.ui.common.MascotFace
@@ -60,13 +64,15 @@ import ir.jibito.app.ui.theme.JibitoIcons
 import kotlinx.coroutines.delay
 
 /**
- * خوش‌آمد: جیبی، اسم و جمله‌ی اپ، و یک نمونه‌ی کوچکِ قابل لمس از کار اصلی اپ:
+ * خوش‌آمد (قدم ۱ از ۲): جیبی، اسم و جمله‌ی اپ وسط صفحه، و یک نمونه‌ی کوچکِ قابل لمس از کار اصلی اپ در یک کارت:
  * پیامک بانک می‌آید ← تراکنش «مال چی بود؟» می‌شود ← کاربر یک دسته را می‌زند و ثبت می‌شود.
  * کاربر قبل از هر اجازه‌ای، یک بار خودش انجامش داده است.
+ * دکمه‌ی «شروع کنیم» همیشه پایین صفحه (زیر شست) می‌ماند و فقط وسط صفحه اسکرول می‌شود.
  */
 @Composable
 fun WelcomeScreen(onStart: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val t = JibitoTheme.colors
     val motionOff = rememberMotionOff()
     // ۰: فقط پیامک، ۱: تراکنش هم آمده
     var phase by rememberSaveable { mutableStateOf(if (motionOff) 1 else 0) }
@@ -83,66 +89,91 @@ fun WelcomeScreen(onStart: () -> Unit) {
             .fillMaxSize()
             .background(colors.background)
             .drawBehind {
-                // یک هاله‌ی بزرگ و محو به رنگ اپ، پشت جیبی
-                drawCircle(colors.primary.copy(alpha = 0.10f), radius = size.width * 0.55f, center = Offset(size.width * 0.85f, 0f))
+                // یک هاله‌ی محو به رنگ اپ، پشت جیبی
+                drawCircle(colors.primary.copy(alpha = 0.08f), radius = size.width * 0.6f, center = Offset(size.width / 2f, 0f))
             }
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .safeDrawingPadding(),
     ) {
-        Spacer(Modifier.height(16.dp))
-        PocketMascot(MascotFace.HAPPY, size = 84.dp)
-        Spacer(Modifier.height(18.dp))
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Black,
-            color = colors.onBackground,
-        )
-        Text(
-            text = stringResource(R.string.welcome_tagline),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.primary,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = stringResource(R.string.welcome_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = colors.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(28.dp))
-        SmsBubble()
-        AnimatedVisibility(
-            visible = phase >= 1,
-            enter = fadeIn(tween(400)) + slideInVertically(tween(450)) { -it / 3 },
+        StepDots(current = 1, total = 2, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp))
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column {
-                Icon(
-                    JibitoIcons.ArrowDown,
-                    contentDescription = null,
-                    tint = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 6.dp).padding(start = 18.dp).size(20.dp),
-                )
-                DemoRow(picked)
-                Spacer(Modifier.height(12.dp))
-                DemoChips(picked, onPick = { picked = it })
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    stringResource(if (picked == null) R.string.sample_hint else R.string.sample_done),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (picked == null) FontWeight.Normal else FontWeight.Bold,
-                    color = if (picked == null) colors.onSurfaceVariant else colors.primary,
-                )
+            Spacer(Modifier.height(20.dp))
+            PocketMascot(MascotFace.HAPPY, size = 84.dp)
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(R.string.welcome_tagline),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = colors.primary,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.welcome_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(24.dp))
+            // نمونه‌ی «پیامک ← تراکنش» در یک کارت
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(t.sheet)
+                    .border(1.dp, t.border, RoundedCornerShape(24.dp))
+                    .padding(16.dp),
+            ) {
+                SmsBubble()
+                AnimatedVisibility(
+                    visible = phase >= 1,
+                    enter = fadeIn(tween(400)) + slideInVertically(tween(450)) { -it / 3 },
+                ) {
+                    Column {
+                        Icon(
+                            JibitoIcons.ArrowDown,
+                            contentDescription = null,
+                            tint = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 6.dp).padding(start = 18.dp).size(20.dp),
+                        )
+                        DemoRow(picked)
+                        Spacer(Modifier.height(12.dp))
+                        // اول راهنما، بعد دکمه‌ها
+                        Text(
+                            stringResource(if (picked == null) R.string.sample_hint else R.string.sample_done),
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (picked == null) FontWeight.Normal else FontWeight.Bold,
+                            color = if (picked == null) colors.onSurfaceVariant else colors.primary,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        DemoChips(picked, onPick = { picked = it })
+                    }
+                }
             }
+            Spacer(Modifier.height(16.dp))
         }
 
-        Spacer(Modifier.height(32.dp))
+        // دکمه همیشه پایین صفحه
         Button(
             onClick = onStart,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 20.dp)
                 .heightIn(min = 58.dp),
             shape = RoundedCornerShape(50),
         ) {
@@ -250,7 +281,10 @@ private fun DemoRow(picked: Int?) {
 @Composable
 private fun DemoChips(picked: Int?, onPick: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(start = 62.dp)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         DemoCategories.forEachIndexed { i, (emoji, label) ->
             // مثل دکمه‌های نوتیفیکیشن طرح: زمینه‌ی کم‌رنگ دسته و آیکون خطی؛ انتخاب‌شده پررنگ
             val tint = categoryTint(null, emoji)

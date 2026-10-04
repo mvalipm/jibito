@@ -198,7 +198,13 @@ class ScreenshotTest {
 
     private val trendSample = JalaliMonth(1405, 7).let { end ->
         val values = listOf(38_000_000L, 52_500_000L, 41_200_000L, 66_000_000L, 47_800_000L, 29_300_000L)
-        SpendTrend(values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) }, lastMonthSameTimeRial = null)
+        SpendTrend(
+            values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) },
+            // ماه جاری «تا امروز»: مقایسه با همین موقعِ شهریور، و پیش‌بینی آخر ماه
+            lastMonthSameTimeRial = 33_300_000L * 10,
+            isCurrent = true,
+            projectedRial = 40_000_000L * 10,
+        )
     }
 
     /** ۱٪ تفاوت پیکسل‌ها (لبه‌های نرم فونت) قبول است؛ بیشتر از آن یعنی ظاهر عوض شده */
@@ -315,7 +321,7 @@ class ScreenshotTest {
             shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}) }
         }
         for ((style, dark) in variants) {
-            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت"), onDone = {}) }
+            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}) }
         }
     }
 
