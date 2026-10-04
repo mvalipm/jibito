@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+/** پایه‌ی versionCode خودکار (پایین‌تر نیاید؛ نسخه‌های نصب‌شده تا ۷۵ دستی بودند) */
+val VERSION_CODE_BASE = 100
+
 android {
     namespace = "ir.jibito.app"
     compileSdk = 37
@@ -15,7 +18,11 @@ android {
         applicationId = "ir.jibito.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 75
+        // versionCode دستی نیست: در GitHub Actions شماره‌ی اجرای workflow است (برای همه‌ی شاخه‌ها یک شمارنده
+        // که فقط بالا می‌رود)، پس هر APK تازه، از هر شاخه‌ای، روی نسخه‌ی قبلی نصب می‌شود و دو شاخه هیچ‌وقت
+        // عدد تکراری یا کمتر نمی‌سازند. VERSION_CODE_BASE بالاتر از همه‌ی versionCodeهای دستیِ قبلی (تا ۷۵) است.
+        // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
+        versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
         versionName = "0.50.0"
     }
 
@@ -42,6 +49,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // «۰٫۵۰٫۰-۱۶۵»: شماره‌ی ساخت در تنظیمات دیده می‌شود تا معلوم باشد کدام APK نصب است
+            System.getenv("GITHUB_RUN_NUMBER")?.let { versionNameSuffix = "-$it" }
+        }
         release {
             // R8: کد استفاده‌نشده حذف و اسم‌ها کوتاه می‌شوند ← APK کوچک‌تر و سریع‌تر، و مهندسی معکوس سخت‌تر
             isMinifyEnabled = true
