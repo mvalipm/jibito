@@ -72,8 +72,11 @@ internal sealed interface RowTrailing {
     /** کلید روشن/خاموش؛ لمس کل ردیف هم عوضش می‌کند */
     data class Toggle(val checked: Boolean, val enabled: Boolean = true, val onChange: (Boolean) -> Unit) : RowTrailing
 
-    /** وضعیت دسترسی (روشنه / خاموشه) */
+    /** وضعیت دسترسی: روشن = یک تیک آرام؛ خاموش = همان دکمه‌ی [Action] (روشن کن) */
     data class Status(val ok: Boolean) : RowTrailing
+
+    /** دکمه‌ی کپسولی کوچک که همان کار ردیف را با یک لمس انجام می‌دهد (مثلاً «روشن کن»، «الان بگیر») */
+    data class Action(val label: String, val onClick: () -> Unit) : RowTrailing
 }
 
 /**
@@ -168,30 +171,56 @@ internal fun SettingsRow(
             )
             is RowTrailing.Toggle -> Switch(checked = trailing.checked, onCheckedChange = null, enabled = trailing.enabled)
             is RowTrailing.Status -> StatusChip(trailing.ok)
+            is RowTrailing.Action -> ActionPill(trailing.label, trailing.onClick)
         }
     }
 }
 
-/** کپسول وضعیت با آیکون خطی (تیک یا هشدار) */
+/**
+ * وضعیت: حالت سالم فقط یک تیک کوچک و آرام است (چشم را بی‌دلیل جلب نکند)؛
+ * حالت خراب یک کپسول هشدار (جاهایی که دکمه‌ی «روشن کن» ندارند).
+ */
 @Composable
 internal fun StatusChip(ok: Boolean) {
-    val tint = if (ok) JibitoTheme.colors.income else JibitoTheme.colors.alert
+    val t = JibitoTheme.colors
+    if (ok) {
+        Icon(
+            DesignIcons.Check,
+            contentDescription = stringResource(R.string.settings_perm_ok),
+            tint = t.teal,
+            modifier = Modifier.size(22.dp),
+        )
+        return
+    }
     Row(
         Modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(tint.copy(alpha = 0.12f))
+            .background(t.alert.copy(alpha = 0.12f))
             .padding(start = 8.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(if (ok) DesignIcons.Check else DesignIcons.Warn, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        Icon(DesignIcons.Warn, contentDescription = null, tint = t.alert, modifier = Modifier.size(16.dp))
         Spacer(Modifier.size(4.dp))
-        Text(
-            stringResource(if (ok) R.string.settings_perm_ok else R.string.settings_perm_missing),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = tint,
-        )
+        Text(stringResource(R.string.settings_perm_missing), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = t.alert)
     }
+}
+
+/** دکمه‌ی کپسولی کوچک داخل ردیف */
+@Composable
+private fun ActionPill(label: String, onClick: () -> Unit) {
+    val t = JibitoTheme.colors
+    Text(
+        label,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(t.btnBg)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = t.btnFg,
+        maxLines = 1,
+    )
 }
 
 /**
@@ -309,6 +338,7 @@ internal fun ThemePicker(current: AppThemeStyle, onSelect: (AppThemeStyle) -> Un
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AppThemeStyle.entries.chunked(THEMES_PER_ROW).forEach { row ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (row.size < THEMES_PER_ROW) Spacer(Modifier.weight((THEMES_PER_ROW - row.size) / 2f))
                 row.forEach { style ->
                     val selected = style == current
                     // گزینه‌های انتخاب‌نشده هم قاب کم‌رنگ دارند تا معلوم باشد لمس‌شدنی‌اند
@@ -335,16 +365,31 @@ internal fun ThemePicker(current: AppThemeStyle, onSelect: (AppThemeStyle) -> Un
                         )
                     }
                 }
-                // ردیف آخر ناقص: جای خالی، تا همه‌ی گزینه‌ها هم‌عرض بمانند
-                repeat(THEMES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
+                // ردیف آخر ناقص: جای خالی دو طرف، تا گزینه‌ها هم‌عرض و وسط بمانند (نه یک حفره در گوشه)
+                val missing = THEMES_PER_ROW - row.size
+                if (missing > 0) Spacer(Modifier.weight(missing / 2f))
             }
         }
-        Text(
-            stringResource(current.hint),
-            modifier = Modifier.padding(horizontal = 4.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.onSurfaceVariant,
-        )
+        // اسم و توضیح پوسته‌ی انتخاب‌شده، درست زیر شبکه
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(JibitoTheme.colors.chip)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        ) {
+            Text(
+                stringResource(current.label),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+            )
+            Text(
+                stringResource(current.hint),
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.onSurfaceVariant,
+            )
+        }
     }
 }
 

@@ -131,9 +131,10 @@ private val DarkTokens = JibitoColors(
     tealTintFg = Color(0xFF7FE0DC),
     amberTint = Color(0xFF35260F),
     amberTintFg = Color(0xFFF2B45A),
-    moodCalm = Color(0xFF0B5F5E),
-    moodWarn = Color(0xFF7E4306),
-    moodOver = Color(0xFF8F1F14),
+    // در حالت تیره سرصفحه‌ی «خلاصه» یک درجه تیره‌تر و کم‌اشباع‌تر است تا در شب مثل چراغ ندرخشد
+    moodCalm = Color(0xFF0A4D4C),
+    moodWarn = Color(0xFF65400F),
+    moodOver = Color(0xFF741C14),
 )
 
 val LocalJibitoColors = staticCompositionLocalOf { LightTokens }

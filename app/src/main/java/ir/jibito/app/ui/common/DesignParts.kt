@@ -15,6 +15,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,6 +43,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -49,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import ir.jibito.app.ui.theme.CategoryTint
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.util.Jalali
 
 // ── «جیبی»، شخصیت اپ: یک جیب مرجانی با سکه‌ی فیروزه‌ای ──
 
@@ -70,6 +75,8 @@ enum class MascotFace {
     CHOMP,
     /** کنجکاو («این چیه؟»)، مثل UNSURE */
     CURIOUS,
+    /** چشم‌های بسته و لبخند کوچک: «جیبت بسته‌ست» (صفحه‌ی قفل) */
+    SLEEPY,
 }
 
 /**
@@ -87,6 +94,11 @@ fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = 
             drawRoundRect(MascotFlap, topLeft = Offset(14f, 34f), size = Size(92f, 16f), cornerRadius = CornerRadius(5f, 5f))
             when (face) {
                 MascotFace.HAPPY -> drawPath(smilePath, Color.White, style = Stroke(width = smileStroke, cap = StrokeCap.Round))
+                MascotFace.SLEEPY -> {
+                    drawLine(Color.White, Offset(38f, 80f), Offset(54f, 80f), strokeWidth = 4f, cap = StrokeCap.Round)
+                    drawLine(Color.White, Offset(66f, 80f), Offset(82f, 80f), strokeWidth = 4f, cap = StrokeCap.Round)
+                    drawLine(Color.White, Offset(54f, 100f), Offset(66f, 100f), strokeWidth = 4f, cap = StrokeCap.Round)
+                }
                 MascotFace.UNSURE, MascotFace.CURIOUS, MascotFace.CHOMP -> {
                     drawOval(Color.White, topLeft = Offset(38f, 71f), size = Size(16f, 18f))
                     drawOval(Color.White, topLeft = Offset(66f, 71f), size = Size(16f, 18f))
@@ -208,6 +220,34 @@ fun JibiToast(message: ToastMessage?, onDismiss: () -> Unit, modifier: Modifier 
                     fontWeight = FontWeight.Bold,
                 )
             }
+        }
+    }
+}
+
+// ── نشانگر قدم‌ها ──
+
+/**
+ * «۱ از ۲» در صفحه‌های شروع: قدم فعلی یک کپسول کشیده است و بقیه نقطه.
+ * صفحه‌خوان «قدم ۱ از ۲» می‌خواند.
+ */
+@Composable
+fun StepDots(current: Int, total: Int, modifier: Modifier = Modifier) {
+    val t = JibitoTheme.colors
+    val accent = MaterialTheme.colorScheme.primary
+    val label = Jalali.toPersianDigits("قدم $current از $total")
+    Row(
+        modifier.clearAndSetSemantics { contentDescription = label },
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        for (i in 1..total) {
+            Box(
+                Modifier
+                    .height(6.dp)
+                    .width(if (i == current) 18.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(if (i == current) accent else t.handle)
+            )
         }
     }
 }

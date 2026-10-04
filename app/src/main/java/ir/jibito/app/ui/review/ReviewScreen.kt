@@ -33,6 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.IconButton
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
@@ -95,37 +97,46 @@ fun ReviewScreen(onClose: () -> Unit) {
             .background(colors.background)
             .safeDrawingPadding()
     ) {
-        // سرصفحه
-        Text(
-            stringResource(R.string.review_title),
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Black,
-            color = colors.onBackground,
-        )
+        // سرصفحه: برگشت به «کارها»، و جیبی کوچک با یک جمله کنارش (جا برای خود پیامک بماند)
+        Row(
+            Modifier.padding(start = 8.dp, end = 20.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(JibitoIcons.Back, contentDescription = stringResource(R.string.review_back), tint = colors.onBackground)
+            }
+            Text(
+                stringResource(R.string.review_title),
+                modifier = Modifier.weight(1f),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = colors.onBackground,
+            )
+        }
         pending?.takeIf { it.isNotEmpty() }?.let {
             // جیبی با چشم‌های گرد: «مطمئن نیستم»
-            Column(
+            Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .padding(start = 20.dp, end = 20.dp, top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                BobbingMascot(84.dp, MascotFace.UNSURE)
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    Jalali.toPersianDigits(stringResource(R.string.review_unsure, it.size)),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = colors.onBackground,
-                )
-                Text(
-                    stringResource(R.string.review_help_me) +
-                        if (it.size > 1) "  ·  " + stringResource(R.string.review_swipe_card_hint) else "",
-                    fontSize = 14.sp,
-                    color = JibitoTheme.colors.muted,
-                    textAlign = TextAlign.Center,
-                )
+                Mascot(44.dp, MascotFace.UNSURE)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        Jalali.toPersianDigits(stringResource(R.string.review_unsure, it.size)),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = colors.onBackground,
+                    )
+                    Text(
+                        stringResource(R.string.review_help_me) +
+                            if (it.size > 1) "  ·  " + stringResource(R.string.review_swipe_card_hint) else "",
+                        fontSize = 13.sp,
+                        color = JibitoTheme.colors.muted,
+                    )
+                }
             }
         }
 

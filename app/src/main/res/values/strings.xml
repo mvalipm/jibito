@@ -10,12 +10,13 @@
     <string name="cat_transport">رفت‌وآمد</string>
     <string name="cat_shopping">خرید</string>
     <string name="start_button">شروع کنیم</string>
-    <string name="perm_title">جیبیتو پیامک‌های بانکت رو می‌خونه</string>
-    <string name="perm_body">برای اینکه خرج‌هات خودکار ثبت بشن، جیبیتو باید بتونه پیامک‌های بانکی رو بخونه.</string>
+    <string name="perm_title">پیامک‌های بانکت رو بخونم؟</string>
+    <string name="perm_body">فقط برای اینکه خرج‌هات خودکار ثبت بشن.</string>
     <string name="perm_promise_offline">همه‌چیز فقط روی گوشی خودت می‌مونه</string>
-    <string name="perm_promise_bank_only">فقط پیامک‌های بانکی بررسی می‌شن</string>
+    <string name="perm_promise_bank_only">فقط پیامک‌های بانکی</string>
+    <string name="perm_promise_bank_only_sub">پیامک‌های شخصیت دیده نمی‌شن</string>
     <string name="perm_promise_no_send">هیچ پیامکی جایی فرستاده نمی‌شه</string>
-    <string name="perm_promise_notify">خرج تازه که بیاد، با یه لمس روی نوتیفیکیشن دسته‌شو می‌گی</string>
+    <string name="perm_manual">فعلاً دستی ثبت می‌کنم</string>
     <string name="perm_allow">اجازه می‌دم</string>
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
@@ -262,9 +263,7 @@
     <string name="review_title">بررسی</string>
     <string name="review_count">%1$d پیامک</string>
     <string name="review_later">بعداً</string>
-    <string name="review_explain">این پیامک شبیه تراکنشه ولی جیبیتو نتونست خودکار بخونه‌ش. تا تأییدش نکنی، توی خرج‌ها و بودجه حساب نمی‌شه.</string>
     <string name="review_unknown_sender">فرستنده‌ی ناشناس</string>
-    <string name="review_type">برداشت بوده یا واریز؟</string>
     <string name="review_pick_amount">مبلغ کدومه؟ روش بزن</string>
     <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
     <string name="review_confirm">ثبت تراکنش</string>
@@ -290,17 +289,25 @@
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
+    <string name="review_more">گزینه‌های بیشتر</string>
+    <string name="review_tap_hint">عددها رو توی خود پیامک بزن: یه بار مبلغ، دو بار مانده</string>
+    <string name="review_tap_hint_single">مبلغ رو توی خود پیامک بزن</string>
+    <string name="review_row_amount">مبلغ</string>
+    <string name="review_row_type">نوع</string>
+    <string name="review_row_balance">مانده</string>
+    <string name="review_row_bank">بانک</string>
+    <string name="review_not_chosen">انتخاب نشده</string>
     <string name="review_learn_hint">جیبیتو قالب این پیامک رو یاد می‌گیره؛ پیامک‌های مشابهِ بعدی خودکار ثبت می‌شن.</string>
 
     <!-- قفل اپ -->
-    <string name="lock_title">جیبیتو قفله</string>
-    <string name="lock_body">برای دیدن حساب‌هات، قفل گوشی رو تأیید کن.</string>
+    <string name="lock_title">جیبت بسته‌ست</string>
+    <string name="lock_body">برای باز کردن لمس کن</string>
     <string name="lock_unlock">باز کردن قفل</string>
     <string name="lock_prompt_title">باز کردن جیبیتو</string>
     <string name="lock_prompt_subtitle">با اثر انگشت یا قفل گوشی</string>
     <string name="lock_enable_subtitle">برای روشن کردن قفل اپ، قفل گوشی رو تأیید کن</string>
     <string name="lock_setting_title">قفل اپ</string>
-    <string name="lock_setting_hint">موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.</string>
+    <string name="lock_setting_hint">با اثر انگشت یا قفل گوشی</string>
     <string name="lock_setting_unavailable">اول برای گوشیت قفل صفحه بذار (رمز، الگو یا اثر انگشت).</string>
 
     <!-- پشتیبان‌گیری -->
@@ -352,11 +359,12 @@
     <!-- ویجت -->
     <string name="widget_name">خرج امروز</string>
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
-    <string name="widget_today">جیب امروز</string>
+    <string name="widget_today">امروز</string>
     <string name="widget_amount">%1$s تومان</string>
     <string name="widget_month">این ماه %1$s</string>
-    <string name="widget_left">%1$s مونده از بودجه</string>
-    <string name="widget_over">%1$s از بودجه زدی بیرون</string>
+    <string name="widget_left">%1$s مونده از بودجه‌ی ماه</string>
+    <string name="widget_over">این ماه %1$s از بودجه زدی بیرون</string>
+    <string name="widget_ring_label">ماه</string>
     <string name="widget_locked_label">جیبیتو</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
 
@@ -464,6 +472,11 @@
     <!-- کارهای لازم -->
     <string name="todo_title">کارهای لازم</string>
     <string name="todo_count">%1$d مورد</string>
+    <string name="todo_urgent_count">%1$d کار فوری</string>
+    <string name="todo_section_now">الان</string>
+    <string name="todo_section_suggestions">پیشنهادها</string>
+    <string name="todo_turn_on">روشن کن</string>
+    <string name="todo_transfer_yes">آره، مال خودمه</string>
     <string name="todo_notif_off">نوتیف خاموشه</string>
     <string name="todo_uncategorized">خرج بی‌دسته</string>
     <string name="todo_review">%1$d پیامک مبهم</string>
@@ -484,6 +497,13 @@
     <string name="trend_less">%1$d٪ کمتر از %2$s</string>
     <string name="trend_more">%1$d٪ بیشتر از %2$s</string>
     <string name="trend_same">تقریباً مثل %1$s</string>
+    <string name="trend_less_sofar">%1$d٪ کمتر از همین موقعِ %2$s</string>
+    <string name="trend_more_sofar">%1$d٪ بیشتر از همین موقعِ %2$s</string>
+    <string name="trend_same_sofar">تقریباً مثل همین موقعِ %1$s</string>
+    <string name="trend_unit_million">میلیون تومان</string>
+    <string name="trend_unit_thousand">هزار تومان</string>
+    <string name="trend_so_far">تا امروز</string>
+    <string name="trend_average">خط نازک: میانگین ماه‌های قبل، %1$s %2$s</string>
 
     <!-- تراکنش‌ها -->
     <string name="filter_all">همه</string>
@@ -515,7 +535,7 @@
     <string name="reveal_unit_banks">بانک</string>
     <string name="reveal_label_banks">حساب شناسایی‌شده</string>
     <string name="reveal_label_top">بیشترین خرج</string>
-    <string name="reveal_replay">دوباره ببین</string>
+    <string name="reveal_label_top_share">%1$d٪ خرج‌ها</string>
 
     <!-- نوتیفیکیشن بعد از انتخاب دسته -->
     <string name="notif_picked_title">رفت تو %1$s</string>
@@ -562,9 +582,9 @@
     <string name="settings_recurring_none">اجاره، قسط، شهریه… یادت می‌ندازم</string>
     <string name="settings_recurring_count">%1$d پرداخت</string>
     <string name="settings_recurring_suggest">%1$d پیشنهاد تازه</string>
-    <string name="settings_sms_sub_ok">خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن</string>
+    <string name="settings_sms_sub_ok">خرج‌ها خودکار ثبت می‌شن</string>
     <string name="settings_notify_sub_ok">خرج تازه که بیاد، می‌پرسم مال چی بود</string>
-    <string name="settings_perm_tap_fix">بزن تا روشنش کنیم</string>
+    <string name="settings_backup_now">الان بگیر</string>
     <string name="settings_theme_sub">%1$s · %2$s</string>
     <string name="settings_privacy_title">حریم خصوصی</string>
     <string name="settings_privacy_sub">داده‌هات فقط رو گوشی خودته</string>

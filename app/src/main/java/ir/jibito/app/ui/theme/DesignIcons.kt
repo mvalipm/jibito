@@ -76,6 +76,8 @@ object DesignIcons {
     const val CHECK = "M5 12l5 5 9-10"
     const val CALENDAR = "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"
     const val REPEAT = "M20 11a8 8 0 0 0-14-5L4 8M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2M20 20v-4h-4"
+    const val FINGERPRINT = "M12 11v4a6 6 0 0 1-1 3.5M8 8.5A5 5 0 0 1 17 11v2a10 10 0 0 1-.6 3.5M5 15a12 12 0 0 0 .5-3.5 6.5 6.5 0 0 1 11-4.8M8.5 18.5A9 9 0 0 0 9 15v-4a3 3 0 0 1 6 0"
+    const val SHIELD = "M12 21s7-3.5 7-9V6l-7-3-7 3v6c0 5.5 7 9 7 9zM9 12l2 2 4-4"
     const val MESSAGE = "M4 6h16v11H9l-5 3zM8 10h8M8 13h5"
 
     val Bell by lazy { svg("bell", BELL) }
@@ -96,6 +98,8 @@ object DesignIcons {
     val Transfer by lazy { svg("transfer", TRANSFER) }
     val Failed by lazy { svg("failed", FAILED) }
     val Message by lazy { svg("message", MESSAGE) }
+    val Fingerprint by lazy { svg("fingerprint", FINGERPRINT) }
+    val Shield by lazy { svg("shield", SHIELD) }
     val Grocery by lazy { svg("grocery", GROCERY) }
     val Dots by lazy { svg("dots", DOTS, strokeWidth = 3f) }
 }

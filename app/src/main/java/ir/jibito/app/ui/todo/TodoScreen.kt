@@ -36,6 +36,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
@@ -80,11 +83,16 @@ fun TodoScreen(
     TodoList(stories.sortedBy { todoPriority(it.id) })
 }
 
-/** فهرست کارها (بدون وابستگی به داده، برای اسکرین‌شات هم) */
+/**
+ * فهرست کارها (بدون وابستگی به داده، برای اسکرین‌شات هم) در دو گروه:
+ * «الان» (کارهای فوری که روی تب شمرده می‌شوند) و «پیشنهادها».
+ */
 @Composable
 fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
+    val urgent = items.filter { it.urgent }
+    val suggestions = items.filterNot { it.urgent }
     LazyColumn(
         modifier
             .fillMaxSize()
@@ -94,20 +102,17 @@ fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(key = "head") {
-            Row(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp), verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp)) {
                 Text(
                     stringResource(R.string.todo_title),
-                    modifier = Modifier
-                        .weight(1f)
-                        .semantics { heading() },
+                    modifier = Modifier.semantics { heading() },
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
                 )
-                if (items.isNotEmpty()) {
+                if (urgent.isNotEmpty()) {
                     Text(
-                        Jalali.toPersianDigits(stringResource(R.string.todo_count, items.size)),
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        Jalali.toPersianDigits(stringResource(R.string.todo_urgent_count, urgent.size)),
                         fontSize = 14.sp,
                         color = t.muted,
                     )
@@ -117,17 +122,40 @@ fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier) {
         if (items.isEmpty()) {
             item(key = "empty") { AllClear() }
         }
-        items(items, key = { it.id }) { TodoCard(it) }
+        if (urgent.isNotEmpty()) {
+            item(key = "sec-now") { SectionLabel(stringResource(R.string.todo_section_now), t.uncatFg) }
+            items(urgent, key = { it.id }) { TodoCard(it) }
+        }
+        if (suggestions.isNotEmpty()) {
+            item(key = "sec-sug") { SectionLabel(stringResource(R.string.todo_section_suggestions), t.muted) }
+            items(suggestions, key = { it.id }) { TodoCard(it) }
+        }
     }
 }
 
-/** یک کار: دایره‌ی رنگی (همان استوریِ «خلاصه»)، عنوان و یک جمله توضیح */
+@Composable
+private fun SectionLabel(text: String, color: Color) {
+    Text(
+        text,
+        modifier = Modifier
+            .padding(start = 4.dp, end = 4.dp, top = 8.dp)
+            .semantics { heading() },
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = color,
+    )
+}
+
+/**
+ * یک کار: آیکون در مربع گرد (مثل بقیه‌ی اپ)، عنوان و یک جمله توضیح.
+ * کارهای یک‌لمسی دکمه‌های خودشان را همین‌جا دارند.
+ */
 @Composable
 private fun TodoCard(s: TodoStory) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(22.dp)
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
             .clip(shape)
@@ -135,33 +163,60 @@ private fun TodoCard(s: TodoStory) {
             .border(1.dp, t.border, shape)
             .clickable(onClick = s.onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier
-                .size(54.dp)
-                .border(2.5.dp, s.ring, CircleShape)
-                .padding(5.dp)
-                .clip(CircleShape)
-                .background(s.bg),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (s.icon != null) {
-                Icon(s.icon, contentDescription = null, tint = s.fg, modifier = Modifier.size(22.dp))
-            } else {
-                Text(s.text.orEmpty(), color = s.fg, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(s.bg),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (s.icon != null) {
+                    Icon(s.icon, contentDescription = null, tint = s.fg, modifier = Modifier.size(22.dp))
+                } else {
+                    Text(s.text.orEmpty(), color = s.fg, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(s.label, fontSize = 16.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
+                s.detail?.let {
+                    Spacer(Modifier.height(2.dp))
+                    Text(it, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                }
+            }
+            if (s.actions.isEmpty()) {
+                Spacer(Modifier.width(8.dp))
+                Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = t.faint, modifier = Modifier.size(20.dp))
             }
         }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(s.label, fontSize = 16.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
-            s.detail?.let {
-                Spacer(Modifier.height(2.dp))
-                Text(it, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+        if (s.actions.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                s.actions.forEachIndexed { i, a ->
+                    val primary = i == 0
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .heightIn(min = 40.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (primary) t.btnBg else t.chip)
+                            .clickable(role = Role.Button, onClick = a.onClick)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            a.label,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (primary) t.btnFg else colors.onBackground,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
-        Spacer(Modifier.width(8.dp))
-        Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = t.faint, modifier = Modifier.size(20.dp))
     }
 }
 

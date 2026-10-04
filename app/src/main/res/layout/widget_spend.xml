@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ویجت «جیب امروز» (RemoteViews؛ فقط ویوهای ساده مجازند):
-  راست: جیبی + «خرج امروز»، خرج امروز درشت، و یک خط: با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه». چپ: حلقه‌ی بودجه‌ی ماه با درصد.
+  راست: جیبی + «امروز»، خرج امروز درشت، و یک خط: با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه». چپ: حلقه‌ی بودجه‌ی ماه با درصد.
   رنگ زمینه حال بودجه است (SpendWidget)؛ بدون بودجه، زمینه‌ی کرم و حلقه پنهان.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -108,13 +108,32 @@
             android:progress="0"
             android:progressDrawable="@drawable/widget_ring" />
 
-        <TextView
-            android:id="@+id/widget_percent"
+        <!-- درصد و «ماه»: حلقه مال کل ماه است، نه امروز -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:fontFamily="@font/vazirmatn_black"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp" />
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_percent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/vazirmatn_black"
+                android:includeFontPadding="false"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/widget_ring_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/vazirmatn_regular"
+                android:includeFontPadding="false"
+                android:text="@string/widget_ring_label"
+                android:textColor="#D9FFFFFF"
+                android:textSize="10sp" />
+        </LinearLayout>
     </FrameLayout>
 </LinearLayout>

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import ir.jibito.app.JibitoApplication
@@ -21,6 +22,7 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * همه‌ی «کارهای لازم» در یک جا: هم استوری‌های «خلاصه» و هم فهرست تب «کارها» از همین ساخته می‌شوند.
@@ -46,6 +48,7 @@ fun rememberTodoStories(
     val uncategorizedFlow = remember { uncategorizedThisMonth(app) }
     val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
     val notificationPrompt = rememberNotificationPrompt()
+    val scope = rememberCoroutineScope()
 
     return buildList {
         if (notificationPrompt.visible) {
@@ -54,6 +57,7 @@ fun rememberTodoStories(
                     "notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null,
                     label = stringResource(R.string.todo_notif_off),
                     detail = stringResource(R.string.todo_notif_detail),
+                    actions = listOf(TodoAction(stringResource(R.string.todo_turn_on), notificationPrompt.fix)),
                     onClick = notificationPrompt.fix,
                 )
             )
@@ -100,12 +104,18 @@ fun rememberTodoStories(
                 )
             )
         }
-        if (transferSuggestions.isNotEmpty()) {
+        transferSuggestions.firstOrNull()?.let { suggestion ->
+            val repository = app.container.transactionRepository
             add(
                 TodoStory(
                     "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null,
                     label = stringResource(R.string.todo_transfer),
                     detail = stringResource(R.string.todo_transfer_detail),
+                    // همان‌جا جواب داده می‌شود؛ لمس خود کارت، فهرست تراکنش‌ها را باز می‌کند
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.todo_transfer_yes)) { scope.launch { repository.confirmTransfer(suggestion) } },
+                        TodoAction(stringResource(R.string.transfer_no)) { scope.launch { repository.rejectTransfer(suggestion) } },
+                    ),
                     onClick = onOpenTransactions,
                 )
             )
@@ -116,6 +126,10 @@ fun rememberTodoStories(
                     "rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null,
                     label = stringResource(R.string.todo_recurring, r.title),
                     detail = stringResource(R.string.todo_recurring_detail),
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.recurring_suggest_yes)) { scope.launch { app.container.recurringSuggestions.accept(r) } },
+                        TodoAction(stringResource(R.string.recurring_suggest_no)) { app.container.recurringSuggestions.dismiss(r) },
+                    ),
                     onClick = onOpenSettings,
                 )
             )

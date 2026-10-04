@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +30,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.SpendTrend
@@ -50,7 +56,9 @@ private val MAX_BAR = 104.dp
 /**
  * «۶ ماه اخیر» (طرح «جیبی»): ستون‌های گرد، عدد هر ماه بالایش و اسم ماه زیرش.
  * ماه انتخاب‌شده به رنگ حال جیب ([highlight]) و پررنگ؛ بقیه کم‌رنگ. ستون‌ها موقع آمدن یکی‌یکی قد می‌کشند.
- * کنار عنوان: چند درصد کمتر/بیشتر از ماه قبل (برای ماه جاری: تا همین موقعِ ماه قبل).
+ * همه‌ی ستون‌ها روی یک خط پایه‌اند: جای عدد بالای ستون جدا و ثابت است و قد ستون را کم نمی‌کند.
+ * خط نازک افقی: میانگین ماه‌های تمام‌شده. ماه جاری «تا امروز» است و قاب خط‌چینش پیش‌بینی آخر ماه را نشان می‌دهد.
+ * کنار عنوان: چند درصد کمتر/بیشتر از ماه قبل؛ برای ماه جاری فقط «تا همین موقعِ ماه قبل» (نه ماه کامل).
  */
 @Composable
 fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm) {
@@ -59,16 +67,26 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
     val months = trend.months
     if (months.isEmpty()) return
     val hidden = LocalHideAmounts.current
-    val max = months.maxOf { it.spentRial }.coerceAtLeast(1L)
+    val projected = trend.projectedRial?.takeIf { trend.isCurrent && it > months.last().spentRial }
+    val max = maxOf(months.maxOf { it.spentRial }, projected ?: 0L).coerceAtLeast(1L)
     // یک واحد برای همه‌ی ستون‌ها: میلیون، یا هزار اگر همه کمتر از یک میلیون‌اند
     val unit = if (max / 10 >= 1_000_000L) 1_000_000L else 1_000L
     val largeText = LocalDensity.current.fontScale >= 1.5f
     val toman = stringResource(R.string.unit_toman)
+    val unitName = stringResource(if (unit == 1_000_000L) R.string.trend_unit_million else R.string.trend_unit_thousand)
+    val average = trend.averageRial?.takeIf { months.size > 2 }
+    // جای ثابت عدد بالای ستون (با فونت بزرگ، بیشتر)
+    val valueSpace = if (largeText) 40.dp else 26.dp
+    fun barHeight(rial: Long) = MAX_BAR * (rial.toFloat() / max).coerceIn(0.05f, 1f)
 
-    // مقایسه با ماه قبل
+    // مقایسه با ماه قبل: ماه جاری فقط با «همین موقعِ ماه قبل»؛ ماه تمام‌شده با ماه کامل قبل
     val previous = months.getOrNull(months.lastIndex - 1)
-    val percent: Int? = trend.vsLastMonthPercent ?: previous?.takeIf { it.spentRial > 0 }?.let {
-        ((months.last().spentRial - it.spentRial) * 100.0 / it.spentRial).roundToInt()
+    val percent: Int? = if (trend.isCurrent) {
+        trend.vsLastMonthPercent
+    } else {
+        previous?.takeIf { it.spentRial > 0 }?.let {
+            ((months.last().spentRial - it.spentRial) * 100.0 / it.spentRial).roundToInt()
+        }
     }
 
     Column(Modifier.padding(top = 26.dp)) {
@@ -77,58 +95,128 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
             note = if (percent != null && previous != null) {
                 val name = Jalali.MONTH_NAMES[previous.month.month - 1]
                 when {
-                    abs(percent) < SAME_PERCENT -> stringResource(R.string.trend_same, name)
-                    percent < 0 -> Jalali.toPersianDigits(stringResource(R.string.trend_less, -percent, name))
-                    else -> Jalali.toPersianDigits(stringResource(R.string.trend_more, percent, name))
+                    abs(percent) < SAME_PERCENT -> stringResource(if (trend.isCurrent) R.string.trend_same_sofar else R.string.trend_same, name)
+                    percent < 0 -> Jalali.toPersianDigits(stringResource(if (trend.isCurrent) R.string.trend_less_sofar else R.string.trend_less, -percent, name))
+                    else -> Jalali.toPersianDigits(stringResource(if (trend.isCurrent) R.string.trend_more_sofar else R.string.trend_more, percent, name))
                 }
             } else null,
             noteColor = if (percent != null && percent >= SAME_PERCENT) t.alert else t.teal,
             noteBold = true,
         )
+        if (!hidden) {
+            Text(
+                unitName,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 2.dp),
+                fontSize = 11.sp,
+                color = t.muted,
+            )
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 10.dp)
+        ) {
+            // خط میانگین ماه‌های تمام‌شده (زیر ستون‌ها و عددها کشیده می‌شود)
+            if (average != null && !hidden) {
+                val y = barHeight(average)
+                val lineColor = t.faint
+                Box(
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = y)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        // خط پر و نازک (خط‌چین مال پیش‌بینی ماه جاری است)
+                        .background(lineColor)
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(MAX_BAR + valueSpace)
+                    .drawBehind {
+                        // خط پایه
+                        drawLine(t.border, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
+                    },
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                months.forEachIndexed { i, m ->
+                    val current = i == months.lastIndex
+                    val grow = remember(trend) { Animatable(0f) }
+                    LaunchedEffect(trend) {
+                        grow.animateTo(1f, tween(800, delayMillis = i * 70, easing = CubicBezierEasing(0.34f, 1.4f, 0.64f, 1f)))
+                    }
+                    val h = if (m.spentRial == 0L) 4.dp else barHeight(m.spentRial)
+                    val frame = if (current && projected != null) barHeight(projected) else null
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clearAndSetSemantics {
+                                contentDescription = if (hidden) m.month.title else "${m.month.title}: ${Money.compact(m.spentRial)} $toman"
+                            },
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        // قاب خط‌چین پیش‌بینی آخر ماه (فقط ماه جاری)
+                        if (frame != null) {
+                            val frameColor = highlight
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(frame)
+                                    .drawBehind {
+                                        val stroke = 1.5.dp.toPx()
+                                        drawRoundRect(
+                                            frameColor.copy(alpha = 0.7f),
+                                            topLeft = Offset(stroke / 2, stroke / 2),
+                                            size = Size(size.width - stroke, size.height - stroke),
+                                            cornerRadius = CornerRadius(10.dp.toPx()),
+                                            style = Stroke(stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))),
+                                        )
+                                    }
+                            )
+                        }
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(h)
+                                .graphicsLayer {
+                                    scaleY = grow.value
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                }
+                                .background(
+                                    if (current) highlight else t.trendOff,
+                                    RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
+                                )
+                        )
+                        // عدد ستون: همیشه بالای بلندترِ ستون و قاب، در جای ثابت خودش
+                        Text(
+                            if (hidden) "••" else Money.inUnit(m.spentRial, unit),
+                            modifier = Modifier
+                                .padding(bottom = maxOf(h, frame ?: 0.dp) + 6.dp)
+                                // زمینه‌ی هم‌رنگ صفحه تا خط میانگین از روی عدد رد نشود
+                                .background(colors.background)
+                                .padding(horizontal = 2.dp),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (current) (if (t.dark) colors.onBackground else highlight) else t.faint,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+        // اسم ماه‌ها، جدا از ستون‌ها (تا طول اسم خط پایه را جابه‌جا نکند)
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 14.dp)
-                .height(if (largeText) 196.dp else 172.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Bottom,
         ) {
             months.forEachIndexed { i, m ->
                 val current = i == months.lastIndex
-                val label = "${m.month.title}: ${Money.compact(m.spentRial)} $toman"
-                val grow = remember(trend) { Animatable(0f) }
-                LaunchedEffect(trend) {
-                    grow.animateTo(1f, tween(800, delayMillis = i * 70, easing = CubicBezierEasing(0.34f, 1.4f, 0.64f, 1f)))
-                }
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .clearAndSetSemantics { contentDescription = if (hidden) m.month.title else label },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        if (hidden) "••" else Money.inUnit(m.spentRial, unit),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (current) (if (t.dark) colors.onBackground else highlight) else t.faint,
-                        maxLines = 1,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    val h = if (m.spentRial == 0L) 4.dp else MAX_BAR * (m.spentRial.toFloat() / max).coerceIn(0.05f, 1f)
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(h)
-                            .graphicsLayer {
-                                scaleY = grow.value
-                                transformOrigin = TransformOrigin(0.5f, 1f)
-                            }
-                            .background(
-                                if (current) highlight else t.trendOff,
-                                RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
-                            )
-                    )
-                    Spacer(Modifier.height(8.dp))
+                Column(Modifier.weight(1f).clearAndSetSemantics { }, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         // فونت بزرگ گوشی: شماره‌ی ماه به جای اسم
                         if (largeText) Jalali.toPersianDigits(m.month.month.toString()) else Jalali.MONTH_NAMES[m.month.month - 1],
@@ -139,8 +227,19 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (current && trend.isCurrent) {
+                        Text(stringResource(R.string.trend_so_far), fontSize = 10.sp, color = t.muted, maxLines = 1)
+                    }
                 }
             }
+        }
+        if (average != null && !hidden) {
+            Text(
+                Jalali.toPersianDigits(stringResource(R.string.trend_average, Money.inUnit(average, unit), unitName)),
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                fontSize = 11.sp,
+                color = t.muted,
+            )
         }
     }
 }

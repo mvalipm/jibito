@@ -2,6 +2,8 @@ package ir.jibito.app.data.repository
 
 import ir.jibito.app.util.JalaliMonth
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -35,5 +37,27 @@ class SpendTrendTest {
 
         val tiny = SpendTrend.compute(listOf(shahrivar.startMillis() to 50_000L), mehr, 2, now = mehr.startMillis() + day)
         assertNull(tiny.vsLastMonthPercent)
+    }
+
+    @Test
+    fun `ماه جاری، پیش‌بینی آخر ماه و میانگین ماه‌های تمام‌شده`() {
+        // مهر ۳۰ روز است؛ ۵ میلیون در ۱۰ روز ← ۱۵ میلیون آخر ماه
+        val now = mehr.startMillis() + 10 * day
+        val spends = listOf(
+            shahrivar.startMillis() + 2 * day to 13_000_000L,
+            mehr.startMillis() + 1 * day to 5_000_000L,
+        )
+        val t = SpendTrend.compute(spends, mehr, count = 3, now = now)
+        assertTrue(t.isCurrent)
+        assertEquals(15_000_000L, t.projectedRial)
+        // مرداد خرجی ندارد و مهر هنوز تمام نشده: فقط شهریور
+        assertEquals(13_000_000L, t.averageRial)
+
+        val early = SpendTrend.compute(spends, mehr, count = 3, now = mehr.startMillis() + day)
+        assertNull(early.projectedRial)
+
+        val past = SpendTrend.compute(spends, shahrivar, count = 2, now = now)
+        assertFalse(past.isCurrent)
+        assertNull(past.projectedRial)
     }
 }

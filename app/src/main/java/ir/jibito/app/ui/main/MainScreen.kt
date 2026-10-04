@@ -1,5 +1,9 @@
 package ir.jibito.app.ui.main
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -123,7 +127,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
-    // عدد روی تب «کارها»: همه‌ی کارهای لازم (نه فقط پیامک‌های مبهم)
+    // عدد روی تب «کارها»: فقط کارهای فوری (پیشنهادها شمرده نمی‌شوند تا عدد هیچ‌وقت عادی نشود)
     val todoSummaryVm: SummaryViewModel = viewModel(key = "todo-count", factory = SummaryViewModel.factory(container.budgetRepository))
     val todoSummary by todoSummaryVm.summary.collectAsState()
     val todoCount = rememberTodoStories(
@@ -134,7 +138,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         onOpenTransactions = {},
         onOpenSettings = {},
         onOpenCategory = {},
-    ).size
+    ).count { it.urgent }
 
     LaunchedEffect(openTransactionId) {
         val id = openTransactionId ?: return@LaunchedEffect
@@ -155,14 +159,16 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         val hadData = !firstRun || repository.observeTransactions().first().isNotEmpty()
         var found = 0
         // خطای همگام‌سازی نباید اپ را موقع باز شدن ببندد (وگرنه هر بار باز کردن = بسته شدن)؛ ثبت می‌شود
+        // «فعلاً دستی»: بدون اجازه‌ی پیامک چیزی برای خواندن نیست (و خطای بی‌جا هم ثبت نشود)
+        val canReadSms = ContextCompat.checkSelfPermission(appContext, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
         try {
-            found = repository.syncFromSms()
+            if (canReadSms) found = repository.syncFromSms()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             ErrorLog.record(appContext, "sync on open", e)
         }
-        if (firstRun) {
+        if (firstRun && canReadSms) {
             container.firstRun.markDone()
             if (!hadData && found > 0) {
                 // فهرست مشترک تراکنش‌ها کمی بعد از ذخیره به‌روز می‌شود

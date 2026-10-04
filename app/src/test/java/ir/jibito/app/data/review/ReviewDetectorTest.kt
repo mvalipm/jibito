@@ -92,4 +92,22 @@ class ReviewDetectorTest {
     fun `پوشاندن همه‌ی رقم‌ها برای ارسال`() {
         assertEquals("مبلغ: #,###,### کارت ####", ReviewDetector.mask("مبلغ: 1,250,000 کارت 6037"))
     }
+
+    @Test
+    fun `جای عددها در متن اصلی پیامک، با رقم فارسی`() {
+        val body = "برداشت ۲٬۵۰۰٬۰۰۰ از ۱۲۳۴\nمانده: ۴۱٬۲۳۰٬۰۰۰"
+        val g = ReviewDetector.guess(n(body))
+        val ranges = ReviewDetector.locate(body, g.numbers)!!
+        assertEquals(g.numbers.size, ranges.size)
+        assertEquals("۲٬۵۰۰٬۰۰۰", body.substring(ranges.first().first, ranges.first().last + 1))
+        assertEquals("۴۱٬۲۳۰٬۰۰۰", body.substring(ranges.last().first, ranges.last().last + 1))
+    }
+
+    @Test
+    fun `تکه‌ای از عدد بلندتر حساب نمی‌شود و عدد ناپیدا یعنی null`() {
+        val body = "کد 1250000 مبلغ 250000"
+        val ranges = ReviewDetector.locate(body, listOf(NumberToken(250000, "250000")))!!
+        assertEquals(body.lastIndexOf("250000"), ranges.single().first)
+        assertEquals(null, ReviewDetector.locate("بدون عدد", listOf(NumberToken(5, "500"))))
+    }
 }

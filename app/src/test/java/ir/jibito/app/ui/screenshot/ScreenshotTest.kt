@@ -22,6 +22,11 @@ import ir.jibito.app.ui.smslist.DayHeader
 import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.smslist.groupByDay
 import ir.jibito.app.ui.summary.SummaryHero
+import ir.jibito.app.ui.summary.TodoAction
+import ir.jibito.app.ui.review.ReviewCard
+import ir.jibito.app.data.repository.ReviewItem
+import ir.jibito.app.data.review.ReviewDetector
+import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.DesignIcons
@@ -158,9 +163,9 @@ class ScreenshotTest {
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
-            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.") {},
+            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", actions = listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})) {},
             TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
-            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.") {},
+            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.", actions = listOf(TodoAction("روشن کن") {})) {},
         )
     }
 
@@ -198,7 +203,13 @@ class ScreenshotTest {
 
     private val trendSample = JalaliMonth(1405, 7).let { end ->
         val values = listOf(38_000_000L, 52_500_000L, 41_200_000L, 66_000_000L, 47_800_000L, 29_300_000L)
-        SpendTrend(values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) }, lastMonthSameTimeRial = null)
+        SpendTrend(
+            values.mapIndexed { i, v -> MonthSpend(end.plus(i - 5), v * 10) },
+            // ماه جاری «تا امروز»: مقایسه با همین موقعِ شهریور، و پیش‌بینی آخر ماه
+            lastMonthSameTimeRial = 33_300_000L * 10,
+            isCurrent = true,
+            projectedRial = 40_000_000L * 10,
+        )
     }
 
     /** ۱٪ تفاوت پیکسل‌ها (لبه‌های نرم فونت) قبول است؛ بیشتر از آن یعنی ظاهر عوض شده */
@@ -283,6 +294,27 @@ class ScreenshotTest {
         SummaryHero(summary(spentToman), onPickMonth = {}, onEditBudget = {}, dark = false, onToggleDark = {}, onToggleHidden = {}, nowMillis = now)
     }
 
+    /** کارت بررسی پیامک مبهم: عددهای داخل متن قابل لمس، کارت خلاصه و دکمه‌های پایین */
+    @Test
+    fun review() {
+        val body = "مبلغ ۲٬۵۰۰٬۰۰۰ ریال از حساب ۱۲۳۴ کسر شد.\nموجودی: ۴۱٬۲۳۰٬۰۰۰"
+        val item = ReviewItem(
+            smsId = 1,
+            sender = "+989120000000",
+            body = body,
+            dateMillis = now,
+            bankName = null,
+            guess = ReviewDetector.guess(SmsTextNormalizer.normalize(body)),
+        )
+        for ((style, dark) in listOf(AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true)) {
+            shot("review", style, dark) {
+                Box(Modifier.fillMaxWidth().height(720.dp)) {
+                    ReviewCard(item, sameSenderOthers = 0, onConfirm = { _, _, _, _ -> }, onDismiss = {}, onAddInstitution = { null }, onShare = {})
+                }
+            }
+        }
+    }
+
     @Test
     fun todo() {
         for ((style, dark) in variants) shot("todo", style, dark, padded = false) { Todo() }
@@ -315,7 +347,7 @@ class ScreenshotTest {
             shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}) }
         }
         for ((style, dark) in variants) {
-            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت"), onDone = {}) }
+            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}) }
         }
     }
 
@@ -376,23 +408,23 @@ class ScreenshotTest {
     private fun SettingsHubSample() {
         val tones = JibitoTheme.colors
         SettingsGroup("داده‌هات") {
-            SettingsRow(SettingsIcons.Backup, tones.teal, "پشتیبان‌گیری", "۴۵ روزه پشتیبان نگرفتی؛ وقتشه!", attention = true, onClick = {})
+            SettingsRow(SettingsIcons.Backup, tones.teal, "پشتیبان‌گیری", "۴۵ روزه پشتیبان نگرفتی؛ وقتشه!", attention = true, trailing = RowTrailing.Action("الان بگیر") {}, onClick = {})
             RowDivider()
             SettingsRow(
-                JibitoIcons.Lock, tones.transfer, "قفل اپ", "موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.",
+                JibitoIcons.Lock, tones.transfer, "قفل اپ", "با اثر انگشت یا قفل گوشی",
                 trailing = RowTrailing.Toggle(checked = true, onChange = {}),
             )
         }
         Spacer(Modifier.height(22.dp))
         SettingsGroup("نوتیف و دسترسی‌ها") {
             SettingsRow(
-                JibitoIcons.Message, MaterialTheme.colorScheme.primary, "خوندن پیامک", "خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن",
+                JibitoIcons.Message, MaterialTheme.colorScheme.primary, "خوندن پیامک", "خرج‌ها خودکار ثبت می‌شن",
                 trailing = RowTrailing.Status(true),
             )
             RowDivider()
             SettingsRow(
-                JibitoIcons.Bell, tones.amber, "نوتیف", "بزن تا روشنش کنیم", attention = true,
-                trailing = RowTrailing.Status(false), onClick = {},
+                JibitoIcons.Bell, tones.amber, "نوتیف", "خاموشه", attention = true,
+                trailing = RowTrailing.Action("روشن کن") {}, onClick = {},
             )
             RowDivider()
             SettingsRow(JibitoIcons.Palette, MaterialTheme.colorScheme.primary, "پوسته", "مرجانی · مثل گوشی", onClick = {})
@@ -406,7 +438,7 @@ class ScreenshotTest {
             items = listOf(
                 NavItem(NavIcons.Summary, "خلاصه"),
                 NavItem(NavIcons.Transactions, "تراکنش‌ها"),
-                NavItem(NavIcons.Todo, "کارها", badge = 6),
+                NavItem(NavIcons.Todo, "کارها", badge = 3),
             ),
             selectedIndex = selected,
             onSelect = {},

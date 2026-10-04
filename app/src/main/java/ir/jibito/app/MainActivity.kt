@@ -174,6 +174,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private const val PREFS_ONBOARDING = "onboarding"
+private const val KEY_MANUAL_ONLY = "manual_only"
+
 /** صفحه‌های اپ. (بعداً با Navigation-Compose جایگزین می‌شود.) */
 private enum class Screen { Welcome, Permission, SmsList }
 
@@ -186,25 +189,41 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
     /** خواندن پیامک‌های قبلی + باخبر شدن از پیامک تازه — هر دو لازم‌اند. */
     fun hasSmsPermissions() = granted(Manifest.permission.READ_SMS) && granted(Manifest.permission.RECEIVE_SMS)
 
-    /** همه‌ی اجازه‌هایی که می‌خواهیم؛ نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است. */
-    val wantedPermissions = buildList {
-        add(Manifest.permission.READ_SMS)
-        add(Manifest.permission.RECEIVE_SMS)
-        if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
-    }.toTypedArray()
+    val smsPermissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
 
-    fun hasAllWanted() = wantedPermissions.all { granted(it) }
+    /** نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است؛ بعد از پیامک و جدا از آن پرسیده می‌شود */
+    fun needsNotificationPermission() =
+        Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)
+
+    // «فعلاً دستی ثبت می‌کنم»: کاربر بدون اجازه‌ی پیامک وارد اپ شده؛ دفعه‌های بعد هم مستقیم وارد می‌شود
+    val onboardingPrefs = remember { context.getSharedPreferences(PREFS_ONBOARDING, Context.MODE_PRIVATE) }
+    fun manualOnly() = onboardingPrefs.getBoolean(KEY_MANUAL_ONLY, false)
 
     // اگر قبلاً اجازه‌ها داده شده، مستقیم فهرست تراکنش‌ها (مثلاً وقتی از نوتیفیکیشن باز می‌شود)
-    var screen by rememberSaveable { mutableStateOf(if (hasSmsPermissions()) Screen.SmsList else Screen.Welcome) }
+    var screen by rememberSaveable {
+        mutableStateOf(if (hasSmsPermissions() || manualOnly()) Screen.SmsList else Screen.Welcome)
+    }
     var wasDenied by rememberSaveable { mutableStateOf(false) }
+
+    // جواب پنجره‌ی نوتیفیکیشن هر چه باشد، وارد اپ می‌شویم (اختیاری است)
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        screen = Screen.SmsList
+    }
+
+    fun enterApp() {
+        if (needsNotificationPermission()) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            screen = Screen.SmsList
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        // اگر فقط نوتیفیکیشن رد شد، باز هم ادامه می‌دهیم؛ پیامک‌ها ضروری‌اند
         if (hasSmsPermissions()) {
-            screen = Screen.SmsList
+            onboardingPrefs.edit().putBoolean(KEY_MANUAL_ONLY, false).apply()
+            enterApp()
         } else {
             wasDenied = true
         }
@@ -216,17 +235,21 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
     when (screen) {
         Screen.Welcome -> WelcomeScreen(
             onStart = {
-                screen = if (hasAllWanted()) Screen.SmsList else Screen.Permission
+                screen = if (hasSmsPermissions()) Screen.SmsList else Screen.Permission
             }
         )
         Screen.Permission -> SmsPermissionScreen(
             wasDenied = wasDenied,
             onAllowClick = {
-                if (hasAllWanted()) {
-                    screen = Screen.SmsList
+                if (hasSmsPermissions()) {
+                    enterApp()
                 } else {
-                    permissionLauncher.launch(wantedPermissions)
+                    permissionLauncher.launch(smsPermissions)
                 }
+            },
+            onManualClick = {
+                onboardingPrefs.edit().putBoolean(KEY_MANUAL_ONLY, true).apply()
+                screen = Screen.SmsList
             },
         )
         Screen.SmsList -> MainScreen(openTransactionId = openTransactionId, onOpenHandled = onOpenHandled)
