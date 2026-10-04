@@ -115,6 +115,7 @@
         android:layout_marginBottom="6dp"
         android:indeterminate="false"
         android:max="100"
+        android:mirrorForRtl="true"
         android:progress="0"
         android:progressDrawable="@drawable/widget_bar"
         android:visibility="gone" />
