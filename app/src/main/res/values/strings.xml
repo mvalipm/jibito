@@ -364,9 +364,10 @@
     <string name="widget_month">این ماه %1$s تومان</string>
     <string name="widget_left">%1$s تومان مونده</string>
     <string name="widget_over">%1$s از بودجه زدی بیرون</string>
-    <string name="widget_left_small">%1$s مونده · %2$s</string>
-    <string name="widget_over_small">%1$s رد شدی · %2$s</string>
+    <string name="widget_left_small">%1$s مونده (%2$s)</string>
+    <string name="widget_over_small">%1$s رد شدی (%2$s)</string>
     <string name="widget_zero">هنوز خرجی نکردی</string>
+    <string name="widget_share_full">سهم امروز: %1$s</string>
     <string name="widget_share_left">امروز هنوز %1$s جا داری</string>
     <string name="widget_share_over">%1$s بیشتر از سهم امروز</string>
     <string name="widget_days_left">%1$s روز تا آخر ماه</string>

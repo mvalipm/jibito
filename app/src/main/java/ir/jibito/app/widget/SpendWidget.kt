@@ -230,6 +230,8 @@ class SpendWidget : AppWidgetProvider() {
             val hint = when {
                 share == null -> if (days == 1) context.getString(R.string.widget_last_day)
                 else context.getString(R.string.widget_days_left, Jalali.toPersianDigits(days.toString()))
+                // «هنوز خرجی نکردی» + «هنوز X جا داری» تکراری است
+                n.todayRial <= 0 -> context.getString(R.string.widget_share_full, Money.compact(share))
                 n.todayRial <= share -> context.getString(R.string.widget_share_left, Money.compact(share - n.todayRial))
                 else -> context.getString(R.string.widget_share_over, Money.compact(n.todayRial - share))
             }
