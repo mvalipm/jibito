@@ -280,26 +280,35 @@ class AppScreensScreenshotTest {
     ) {
         RuntimeEnvironment.setQualifiers(if (tall) TALL else PHONE)
         container.themeSettings.setDarkMode(if (dark) DarkMode.DARK else DarkMode.LIGHT)
+        // ساعت Compose را خود تست جلو می‌برد: مکان‌نمای چشمک‌زنِ فیلدهای متن هیچ‌وقت «آرام» نمی‌شود
+        // و با جلو رفتن خودکار، صبر برای آرامش صفحه (در پنجره‌ها و برگه‌ها) تمام نمی‌شد
+        compose.mainClock.autoAdvance = false
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             settle()
             block(scenario)
         }
     }
 
-    /** تا دیتابیس (روی رشته‌های دیگر) جواب بدهد و صفحه آرام شود */
-    private fun settle() {
-        repeat(12) {
-            compose.waitForIdle()
-            shadowOf(android.os.Looper.getMainLooper()).idle()
-            Thread.sleep(40)
-        }
-        compose.waitForIdle()
+    /** یک قدم: ۱۰۰ میلی‌ثانیه‌ی Compose جلو می‌رود و کارهای رشته‌ی اصلی انجام می‌شوند */
+    private fun step() {
+        compose.mainClock.advanceTimeBy(100)
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+        // دیتابیس روی رشته‌های دیگر جواب می‌دهد
+        Thread.sleep(25)
     }
+
+    /** تا دیتابیس جواب بدهد و انیمیشن‌ها (باز شدن برگه و پنجره) تمام شوند */
+    private fun settle() = repeat(20) { step() }
 
     private fun str(@StringRes id: Int, vararg args: Any): String = app.getString(id, *args)
 
-    private fun waitFor(matcher: SemanticsMatcher, timeout: Long = 10_000) {
-        compose.waitUntil(timeout) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+    /** حداکثر حدود ۱۵ ثانیه (ساعت سیستم در این تست ثابت است؛ پس با شمردن قدم‌ها) */
+    private fun waitFor(matcher: SemanticsMatcher, steps: Int = 120) {
+        repeat(steps) {
+            if (compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) return
+            step()
+        }
+        throw AssertionError("پیدا نشد: ${matcher.description}")
     }
 
     private fun clickLabel(label: String) =
@@ -336,6 +345,19 @@ class AppScreensScreenshotTest {
 
     private fun openTab(@StringRes label: Int) = tap(hasText(str(label)) and hasClickAction())
     private fun openSettings() = tapDescription(str(R.string.settings_title))
+
+    private fun openReview() {
+        openTab(R.string.tab_todo)
+        tapText(Jalali.toPersianDigits(str(R.string.todo_review, 2)))
+        waitFor(hasContentDescription(str(R.string.review_more)))
+    }
+
+    /** در فهرست بی‌دسته‌ها اولین ردیف است (در فهرست کامل، در صفحه‌ی گوشی پایین‌تر از لبه می‌افتد) */
+    private fun openUncategorizedPurchase() {
+        openTab(R.string.tab_transactions)
+        tap(hasText(str(R.string.filter_uncategorized)) and hasClickAction())
+        tapText("فروشگاه افق کوروش")
+    }
 
     // ───────────────────────── شروع: خوش‌آمد، اجازه، قفل ─────────────────────────
 
@@ -459,8 +481,7 @@ class AppScreensScreenshotTest {
         seed()
         grantSms()
         launch {
-            openTab(R.string.tab_transactions)
-            tapText("فروشگاه افق کوروش")
+            openUncategorizedPurchase()
             shot("category_picker")
             tapText(R.string.sheet_show_sms)
             shot("category_picker_sms")
@@ -469,8 +490,7 @@ class AppScreensScreenshotTest {
             shot("report_wrong_dialog")
         }
         launch {
-            openTab(R.string.tab_transactions)
-            tapText("فروشگاه افق کوروش")
+            openUncategorizedPurchase()
             tapText(R.string.custom_add_root_short)
             shot("new_category_dialog")
         }
@@ -504,14 +524,24 @@ class AppScreensScreenshotTest {
 
     @Test
     fun review() {
-        seed(autoOpenReview = true)
+        seed()
         grantSms()
         for (dark in listOf(false, true)) {
             launch(dark, tall = true) {
-                // پیامک مبهمِ تازه ← اپ خودش صفحه‌ی بررسی را باز می‌کند
-                waitFor(hasContentDescription(str(R.string.review_more)))
+                openReview()
                 shot("review", dark)
             }
+        }
+    }
+
+    /** پیامک مبهمِ تازه: اپ موقع باز شدن خودش صفحه‌ی بررسی را باز می‌کند */
+    @Test
+    fun reviewOnOpen() {
+        seed(autoOpenReview = true)
+        grantSms()
+        launch(tall = true) {
+            waitFor(hasContentDescription(str(R.string.review_more)))
+            shot("review_on_open")
         }
     }
 
@@ -520,14 +550,12 @@ class AppScreensScreenshotTest {
         seed()
         grantSms()
         launch {
-            openTab(R.string.tab_todo)
-            tapText(Jalali.toPersianDigits(str(R.string.todo_review, 2)))
+            openReview()
             tapDescription(str(R.string.review_more))
             shot("review_menu")
         }
         launch {
-            openTab(R.string.tab_todo)
-            tapText(Jalali.toPersianDigits(str(R.string.todo_review, 2)))
+            openReview()
             tapText(R.string.review_pick_bank)
             shot("review_bank_picker")
         }
@@ -643,7 +671,7 @@ class AppScreensScreenshotTest {
             shot("backup_restore_password_dialog")
             typeInto(0, BACKUP_PASSWORD)
             tapText(R.string.backup_restore_go)
-            waitFor(hasText(str(R.string.backup_restore_ready_title)), timeout = 20_000)
+            waitFor(hasText(str(R.string.backup_restore_ready_title)), steps = 200)
             shot("backup_restore_ready_dialog")
         }
     }
