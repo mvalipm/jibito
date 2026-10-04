@@ -67,6 +67,9 @@ class MainActivity : ComponentActivity() {
     /** تراکنشی که از نوتیفیکیشن خواسته شده و هنوز باز نشده */
     private var openTransactionId by mutableStateOf<Long?>(null)
 
+    /** از ویجت (بدون بودجه) آمده: پنجره‌ی «بودجه‌ی ماه» باز شود */
+    private var openBudget by mutableStateOf(false)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         readOpenRequest(intent)
@@ -75,6 +78,7 @@ class MainActivity : ComponentActivity() {
     private fun readOpenRequest(intent: Intent?) {
         val id = intent?.getLongExtra(EXTRA_TRANSACTION_ID, -1L) ?: -1L
         if (id > 0) openTransactionId = id
+        if (intent?.getBooleanExtra(EXTRA_OPEN_BUDGET, false) == true) openBudget = true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,6 +125,8 @@ class MainActivity : ComponentActivity() {
                             JibitoApp(
                                 openTransactionId = openTransactionId,
                                 onOpenHandled = { openTransactionId = null },
+                                openBudget = openBudget,
+                                onBudgetOpened = { openBudget = false },
                             )
                         }
                         if (locked) {
@@ -165,6 +171,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TRANSACTION_ID = "ir.jibito.app.extra.TRANSACTION_ID"
+        const val EXTRA_OPEN_BUDGET = "ir.jibito.app.extra.OPEN_BUDGET"
 
         /** باز کردن اپ روی یک تراکنش، با برگه‌ی انتخاب دسته (برای لمس نوتیفیکیشن) */
         fun openTransactionIntent(context: Context, transactionId: Long): Intent =
@@ -181,7 +188,7 @@ private const val KEY_MANUAL_ONLY = "manual_only"
 private enum class Screen { Welcome, Permission, SmsList }
 
 @Composable
-private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
+private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit, openBudget: Boolean, onBudgetOpened: () -> Unit) {
     val context = LocalContext.current
     fun granted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -252,6 +259,11 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
                 screen = Screen.SmsList
             },
         )
-        Screen.SmsList -> MainScreen(openTransactionId = openTransactionId, onOpenHandled = onOpenHandled)
+        Screen.SmsList -> MainScreen(
+            openTransactionId = openTransactionId,
+            onOpenHandled = onOpenHandled,
+            openBudget = openBudget,
+            onBudgetOpened = onBudgetOpened,
+        )
     }
 }

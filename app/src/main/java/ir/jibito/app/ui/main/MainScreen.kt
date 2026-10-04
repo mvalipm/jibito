@@ -95,9 +95,16 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
  *
  * @param openTransactionId تراکنشی که باید باز شود (لمس نوتیفیکیشن «این خرج مال چی بود؟»)
  * @param onOpenHandled بعد از رسیدگی به openTransactionId صدا زده می‌شود تا دوباره باز نشود
+ * @param openBudget پنجره‌ی «بودجه‌ی ماه» در «خلاصه» باز شود (لمس ویجتِ بدون بودجه)
+ * @param onBudgetOpened بعد از رسیدگی به openBudget صدا زده می‌شود
  */
 @Composable
-fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) {
+fun MainScreen(
+    openTransactionId: Long? = null,
+    onOpenHandled: () -> Unit = {},
+    openBudget: Boolean = false,
+    onBudgetOpened: () -> Unit = {},
+) {
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
     val nav = rememberNavController()
     val backStackEntry by nav.currentBackStackEntryAsState()
@@ -122,6 +129,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
     // کارت بودجه در «کارها» ← جزئیات همان دسته در «خلاصه»
     var openCategory by rememberSaveable { mutableStateOf<Long?>(null) }
+    // ویجت بدون بودجه لمس شده و پنجره‌ی بودجه‌ی ماه هنوز باز نشده
+    var pendingBudget by rememberSaveable { mutableStateOf(false) }
     // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
     var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
@@ -146,6 +155,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         pendingOpen = id
         go(Tab.Transactions)
         onOpenHandled()
+    }
+
+    LaunchedEffect(openBudget) {
+        if (!openBudget) return@LaunchedEffect
+        pendingBudget = true
+        go(Tab.Summary)
+        onBudgetOpened()
     }
 
     // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند
@@ -216,6 +232,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpenSettings = ::openSettings,
                                 openCategoryId = openCategory,
                                 onCategoryOpened = { openCategory = null },
+                                openOverallBudget = pendingBudget,
+                                onOverallBudgetOpened = { pendingBudget = false },
                             )
                         }
                         composable(Tab.Transactions.route) {

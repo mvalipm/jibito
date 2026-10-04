@@ -66,6 +66,19 @@ object Jalali {
         return toPersianDigits("$weekday $jd ${MONTH_NAMES[jm - 1]}")
     }
 
+    /** فقط روز و ماه: «۱۳ مهر» */
+    fun dayMonth(epochMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = epochMillis }
+        val (_, jm, jd) = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+        return toPersianDigits("$jd ${MONTH_NAMES[jm - 1]}")
+    }
+
+    /** حرف اول روز هفته، برای محور نمودار: «ش»، «ی»، «د»، … (حرف اول همه‌ی روزها با هم فرق دارد) */
+    fun weekdayInitial(epochMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = epochMillis }
+        return WEEKDAY_NAMES[cal.get(Calendar.DAY_OF_WEEK) - 1].take(1)
+    }
+
     /** به ترتیب Calendar.DAY_OF_WEEK (یکشنبه = ۱) */
     private val WEEKDAY_NAMES = listOf("یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه")
 

@@ -32,4 +32,14 @@ class SpendWidgetTest {
         assertNull(SpendWidget.dailyShare(SpendWidget.Numbers(1_000, 5_000, null), at(9)))
         assertNull(SpendWidget.dailyShare(SpendWidget.Numbers(1_000, 400_000_000, 300_000_000), at(9)))
     }
+
+    @Test
+    fun `طرح ویجت از روی اندازه`() {
+        assertEquals(SpendWidget.Size.LARGE, SpendWidget.sizeOf(356f, 290f))
+        assertEquals(SpendWidget.Size.MEDIUM, SpendWidget.sizeOf(356f, 180f))
+        assertEquals(SpendWidget.Size.SQUARE, SpendWidget.sizeOf(170f, 180f))
+        assertEquals(SpendWidget.Size.SQUARE, SpendWidget.sizeOf(200f, 300f))
+        assertEquals(SpendWidget.Size.STRIP, SpendWidget.sizeOf(356f, 80f))
+        assertEquals(SpendWidget.Size.STRIP, SpendWidget.sizeOf(110f, 180f))
+    }
 }

@@ -358,23 +358,35 @@
 
     <!-- ویجت -->
     <string name="widget_name">خرج امروز</string>
-    <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
-    <string name="widget_today">امروز</string>
-    <string name="widget_amount">%1$s تومان</string>
-    <string name="widget_month">این ماه %1$s تومان</string>
-    <string name="widget_left">%1$s تومان مونده</string>
-    <string name="widget_over">%1$s از بودجه زدی بیرون</string>
-    <string name="widget_left_small">%1$s مونده (%2$s)</string>
-    <string name="widget_over_small">%1$s رد شدی (%2$s)</string>
+    <string name="widget_description">امروز چقدر می‌تونی خرج کنی، خرج هفت روز اخیر و بودجه‌ی ماه</string>
+    <string name="widget_can_spend">امروز می‌تونی خرج کنی</string>
+    <string name="widget_can_spend_short">امروز جا داری</string>
+    <string name="widget_past_share">امروز از سهمت رد شدی</string>
+    <string name="widget_past_share_short">امروز رد شدی</string>
+    <string name="widget_month_over">از بودجه‌ی ماه زدی بیرون</string>
+    <string name="widget_month_over_short">بودجه رد شد</string>
+    <string name="widget_spent_today">خرج امروز</string>
+    <string name="widget_share_used">سهم امروز تموم شد</string>
+    <string name="widget_budget_used">بودجه‌ی ماه تموم شد</string>
     <string name="widget_zero">هنوز خرجی نکردی</string>
-    <string name="widget_share_full">سهم امروز: %1$s</string>
-    <string name="widget_share_left">امروز هنوز %1$s جا داری</string>
-    <string name="widget_share_over">%1$s بیشتر از سهم امروز</string>
+    <string name="widget_more">%1$s بیشتر</string>
+    <string name="widget_chip_today">خرج امروز:</string>
+    <string name="widget_chip_month">این ماه:</string>
+    <string name="widget_nothing_yet">هنوز هیچی</string>
+    <string name="widget_week">هفت روز اخیر</string>
+    <string name="widget_week_share">خط‌چین: سهم روزانه</string>
+    <string name="widget_today_short">امروز</string>
+    <string name="widget_left">%1$s مونده</string>
+    <string name="widget_percent">%1$s از بودجه</string>
+    <string name="widget_percent_days">%1$s از بودجه · %2$s روز</string>
+    <string name="widget_month_short">ماه</string>
+    <string name="widget_month">این ماه %1$s</string>
     <string name="widget_days_left">%1$s روز تا آخر ماه</string>
     <string name="widget_last_day">امروز روز آخر ماهه</string>
-    <string name="widget_locked_label">جیبیتو</string>
+    <string name="widget_set_budget">بودجه بذار تا سهم روزانه‌ت رو ببینی</string>
     <string name="widget_locked_title">مبلغ‌ها پنهانه</string>
-    <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
+    <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بزن</string>
+    <string name="widget_chart_cd">خرج هفت روز اخیر</string>
 
     <!-- پرداخت‌های ماهانه -->
     <string name="recurring_title">پرداخت‌های ماهانه</string>

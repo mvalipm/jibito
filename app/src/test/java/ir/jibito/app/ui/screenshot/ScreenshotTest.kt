@@ -353,37 +353,41 @@ class ScreenshotTest {
 
     @Test
     fun widget() {
+        // خرج هفت روز اخیر به ریال (قدیمی به جدید؛ آخری امروز)
+        fun week(vararg tomanMillions: Double) = tomanMillions.map { (it * 10_000_000).toLong() }
         val cases = listOf(
-            "calm" to SpendWidget.Numbers(6_050_000, 60_000_000, 300_000_000),
-            "zero" to SpendWidget.Numbers(0, 112_000_000, 300_000_000),
-            "warn" to SpendWidget.Numbers(6_050_000, 255_000_000, 300_000_000),
-            "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000),
-            "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null),
-            "locked" to null,
+            // هنوز خرجی نکرده، عقب‌تر از برنامه (مثل گوشی کاربر)
+            "calm" to SpendWidget.Numbers(0, 752_000_000, 2_000_000_000, week(5.2, 8.1, 3.4, 9.8, 6.0, 4.4, 0.0)),
+            "warn" to SpendWidget.Numbers(18_000_000, 510_000_000, 600_000_000, week(2.1, 2.7, 1.2, 1.9, 0.9, 1.7, 1.8)),
+            "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000, week(2.1, 3.0, 1.5, 2.4, 1.4, 1.8, 0.6)),
+            "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null, week(1.4, 2.0, 0.7, 2.4, 1.2, 0.9, 0.6)),
         )
-        // اندازه‌ی معمولی (مثل ۳×۲ / ۴×۲) و کوچک (مثل ۳×۱)
-        val sizes = listOf(Triple("", 260, 160), Triple("_small", 200, 96))
         for (dark in listOf(false, true)) {
+            val theme = if (dark) "dark" else "light"
             RuntimeEnvironment.setQualifiers(if (dark) "+night" else "+notnight")
+            val context = RuntimeEnvironment.getApplication()
             for ((name, n) in cases) {
-                for ((suffix, width, height) in sizes) {
-                    val context = RuntimeEnvironment.getApplication()
-                    val views = SpendWidget.views(context, n, now, small = suffix.isNotEmpty())
-                    captureRoboImage(
-                        "src/test/screenshots/widget_${name}${suffix}_${if (dark) "dark" else "light"}.png",
-                        roborazziOptions = options,
-                    ) {
-                        Box(Modifier.padding(12.dp)) {
-                            AndroidView(
-                                factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
-                                modifier = Modifier.size(width = width.dp, height = height.dp),
-                            )
-                        }
+                for (size in SpendWidget.Size.entries) {
+                    widgetShot("widget_${name}_${size.name.lowercase()}_$theme", size) {
+                        SpendWidget.views(context, n, now, size)
                     }
                 }
             }
+            widgetShot("widget_locked_$theme", SpendWidget.Size.LARGE) { SpendWidget.views(context, null, now) }
         }
         RuntimeEnvironment.setQualifiers("+notnight")
+    }
+
+    private fun widgetShot(name: String, size: SpendWidget.Size, build: () -> android.widget.RemoteViews) {
+        val views = build()
+        captureRoboImage("src/test/screenshots/$name.png", roborazziOptions = options) {
+            Box(Modifier.padding(12.dp)) {
+                AndroidView(
+                    factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
+                    modifier = Modifier.size(width = size.defaultWidth.dp, height = size.defaultHeight.dp),
+                )
+            }
+        }
     }
 
     @Test

@@ -76,6 +76,10 @@ fun SummaryScreen(
     openCategoryId: Long? = null,
     /** بعد از باز کردن openCategoryId صدا زده می‌شود تا دوباره باز نشود */
     onCategoryOpened: () -> Unit = {},
+    /** پنجره‌ی «بودجه‌ی ماه» باز شود (لمس ویجتِ بدون بودجه)؛ ماه جاری نشان داده می‌شود */
+    openOverallBudget: Boolean = false,
+    /** بعد از باز کردن پنجره‌ی بودجه صدا زده می‌شود تا دوباره باز نشود */
+    onOverallBudgetOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -102,6 +106,13 @@ fun SummaryScreen(
         showAll = false
         detailId = id
         onCategoryOpened()
+    }
+    LaunchedEffect(openOverallBudget) {
+        if (!openOverallBudget) return@LaunchedEffect
+        viewModel.setMonth(JalaliMonth.current())
+        showAll = false
+        editingOverall = true
+        onOverallBudgetOpened()
     }
 
     Box(
