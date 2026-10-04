@@ -13,6 +13,7 @@ import ir.jibito.app.data.linking.TxRecord
 import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.NonTransactionFilter
 import ir.jibito.app.data.parser.ParsedTransaction
+import ir.jibito.app.data.parser.AccountExtractor
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.parser.TransactionParser
 import ir.jibito.app.data.review.LearnedTemplate
@@ -176,7 +177,12 @@ class SmsReader(private val context: Context) {
                     ?: templates[normalizedSender]?.let { TemplateMatcher.match(SmsTextNormalizer.normalize(body), it) }
                 if (tx != null) {
                     raws[raw.id] = raw
-                    txRecords += TxRecord(raw.id, raw.date, raw.bank.id, tx)
+                    val text = SmsTextNormalizer.normalize(body)
+                    txRecords += TxRecord(
+                        raw.id, raw.date, raw.bank.id, tx,
+                        isCorrection = PurchaseLinker.isCorrectionText(text),
+                        account = AccountExtractor.find(text),
+                    )
                     continue
                 }
                 val otp = TransactionParser.parseOtp(body)

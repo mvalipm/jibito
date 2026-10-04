@@ -17,6 +17,9 @@ import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
+import ir.jibito.app.data.linking.PurchaseLinker
+import ir.jibito.app.data.parser.AccountExtractor
+import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.transfer.TransferCandidate
 import ir.jibito.app.data.transfer.TransferMatcher
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
@@ -83,7 +86,7 @@ interface TransactionRepository {
     /** «برگردان»: تراکنش‌های داخل snapshot را به همان حالت برمی‌گرداند */
     suspend fun restore(snapshot: UndoSnapshot)
 
-    /** جفت‌های «برداشت ← واریزِ هم‌مبلغ تا ۲۴ ساعت» که شاید انتقال بین حساب‌های خود کاربر باشند (تازه‌ترها اول) */
+    /** جفت‌های «برداشت ← واریزِ هم‌مبلغ» (قانون‌ها در TransferMatcher) که شاید انتقال بین حساب‌های خود کاربر باشند (تازه‌ترها اول) */
     fun observeTransferSuggestions(): Flow<List<TransferSuggestion>>
 
     /** «بله، انتقال به خودم بود»: هر دو تراکنش از خرج و درآمد بیرون می‌روند و کارت مقصد یاد گرفته می‌شود. */
@@ -199,11 +202,17 @@ class TransactionRepositoryImpl(
             val byId = rows.associateBy { it.id }
             TransferMatcher.findPairs(
                 rows.map {
+                    val text = SmsTextNormalizer.normalize(it.body)
                     TransferCandidate(
                         id = it.id,
                         isWithdrawal = it.transaction.type == FlowType.WITHDRAWAL,
                         amountRial = it.transaction.amountRial,
                         dateMillis = it.dateMillis,
+                        bankId = it.bank?.id,
+                        balanceRial = it.transaction.balanceRial,
+                        isInterbank = TransferMatcher.isInterbankText(text),
+                        isCorrection = PurchaseLinker.isCorrectionText(text),
+                        account = AccountExtractor.find(text),
                     )
                 }
             ).mapNotNull { p ->
