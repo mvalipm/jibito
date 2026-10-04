@@ -1,3 +1,5 @@
+import java.time.Duration
+
 plugins {
     // از AGP 9، کاتلین داخل خود پلاگین اندروید است (دیگر kotlin-android جدا لازم نیست)
     alias(libs.plugins.android.application)
@@ -92,7 +94,7 @@ android {
                 exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
             }
             // تستی که گیر کرده، CI را ساعت‌ها معطل نکند
-            it.timeout.set(java.time.Duration.ofMinutes(30))
+            it.timeout.set(Duration.ofMinutes(30))
         }
     }
 }
