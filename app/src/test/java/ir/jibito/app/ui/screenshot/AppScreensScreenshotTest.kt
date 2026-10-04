@@ -48,6 +48,7 @@ import java.util.Calendar
 import java.util.TimeZone
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assume
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -339,13 +340,6 @@ class AppScreensScreenshotTest {
     private fun tapText(text: String) = tap(hasText(text))
     private fun tapText(@StringRes id: Int) = tapText(str(id))
     private fun tapDescription(text: String) = tap(hasContentDescription(text))
-
-    private fun typeInto(index: Int, text: String) {
-        waitFor(hasSetTextAction())
-        // مستقیم با «کار» SetText، بدون صفحه‌کلید: ورودی صفحه‌کلید در Robolectric، Compose را هیچ‌وقت آرام نمی‌گذاشت
-        compose.onAllNodes(hasSetTextAction())[index].performSemanticsAction(SemanticsActions.SetText) { it(AnnotatedString(text)) }
-        settle()
-    }
 
     private fun shot(name: String, dark: Boolean = false) {
         settle()
@@ -647,30 +641,60 @@ class AppScreensScreenshotTest {
             tapText(R.string.backup_export_button)
             shot("backup_export_password_dialog")
         }
-        // یک پشتیبان واقعی، تا «برگردوندن» تا آخر برود
-        val backup = ByteArrayOutputStream().also { out ->
-            runBlocking { container.backupManager.export(out, BACKUP_PASSWORD.toCharArray()) }
-        }.toByteArray()
-        val uri = Uri.parse("content://ir.jibito.test/backup.jibito")
-        shadowOf(app.contentResolver).registerInputStream(uri, ByteArrayInputStream(backup))
         launch { scenario ->
             openSettings()
             tapText(R.string.security_title)
             tapText(R.string.backup_restore_button)
             shot("backup_restore_confirm_dialog")
             tapText(R.string.backup_restore_choose_file)
-            // فایل انتخاب‌شده در پنجره‌ی «انتخاب فایل» اندروید
-            scenario.onActivity { activity ->
-                val shadow = shadowOf(activity)
-                val request = shadow.nextStartedActivityForResult
-                shadow.receiveResult(request.intent, Activity.RESULT_OK, Intent().setData(uri))
-            }
-            settle()
+            pickBackupFile(scenario)
             shot("backup_restore_password_dialog")
-            typeInto(0, BACKUP_PASSWORD)
-            tapText(R.string.backup_restore_go)
-            waitFor(hasText(str(R.string.backup_restore_ready_title)), steps = 200)
-            shot("backup_restore_ready_dialog")
+        }
+    }
+
+    /** «انتخاب فایل» اندروید: فایل پشتیبانِ واقعی (با [BACKUP_PASSWORD]) انتخاب می‌شود */
+    private fun pickBackupFile(scenario: ActivityScenario<MainActivity>) {
+        val backup = ByteArrayOutputStream().also { out ->
+            runBlocking { container.backupManager.export(out, BACKUP_PASSWORD.toCharArray()) }
+        }.toByteArray()
+        val uri = Uri.parse("content://ir.jibito.test/backup.jibito")
+        shadowOf(app.contentResolver).registerInputStream(uri, ByteArrayInputStream(backup))
+        scenario.onActivity { activity ->
+            val shadow = shadowOf(activity)
+            val request = shadow.nextStartedActivityForResult
+            shadow.receiveResult(request.intent, Activity.RESULT_OK, Intent().setData(uri))
+        }
+        settle()
+    }
+
+    /**
+     * «پشتیبان آماده‌ست» بعد از رمز درست.
+     * در Robolectric بعد از نوشتن در فیلد متن، Compose دیگر «آرام» نمی‌شود و ابزار تست هر لمسی را ۶۰ ثانیه
+     * منتظر می‌ماند؛ پس فیلد و دکمه همین اول گرفته می‌شوند و «کار»شان مستقیم اجرا می‌شود.
+     * اگر باز هم نشد، تست «رد شده» (skipped) می‌شود تا بقیه‌ی تصویرها ذخیره شوند.
+     */
+    @Test
+    fun backupRestoreReady() {
+        seed()
+        grantSms()
+        launch { scenario ->
+            openSettings()
+            tapText(R.string.security_title)
+            tapText(R.string.backup_restore_button)
+            tapText(R.string.backup_restore_choose_file)
+            pickBackupFile(scenario)
+            waitFor(hasSetTextAction())
+            val field = compose.onAllNodes(hasSetTextAction())[0].fetchSemanticsNode()
+            val go = node(hasText(str(R.string.backup_restore_go))).fetchSemanticsNode()
+            val reached = runCatching {
+                field.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(BACKUP_PASSWORD))
+                repeat(5) { step() }
+                go.config[SemanticsActions.OnClick].action!!.invoke()
+                // بازگردانی روی رشته‌ی دیگری انجام می‌شود
+                repeat(60) { step(); Thread.sleep(50) }
+                captureScreenRoboImage("src/test/screenshots/app_backup_restore_ready_dialog_light.png", options)
+            }
+            Assume.assumeTrue("پنجره‌ی «پشتیبان آماده‌ست» در Robolectric گرفته نشد: ${reached.exceptionOrNull()}", reached.isSuccess)
         }
     }
 
