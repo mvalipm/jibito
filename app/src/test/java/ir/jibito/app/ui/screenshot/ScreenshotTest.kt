@@ -166,7 +166,7 @@ class ScreenshotTest {
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
-            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "۴۷ جابه‌جایی احتمالی بین حساب‌هات", "برداشت و واریزهای هم‌مبلغ. اگه بین کارت‌های خودت بوده، نه خرجه نه درآمد. بر اساس بانک دسته‌شون کردم که یه‌جا جواب بدی.", actions = listOf(TodoAction("مرور همه") {}), chips = listOf("ملی ← ملی · ۳۸", "پاسارگاد ← ملت · ۵", "+۳ الگوی دیگه")) {},
+            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "۴۷ جابه‌جایی احتمالی بین حساب‌هات", "برداشت و واریزهای هم‌مبلغ. اگه بین کارت‌های خودت بوده، نه خرجه نه درآمد. بر اساس بانک دسته‌شون کردم که یه‌جا جواب بدی.", actions = listOf(TodoAction("مرور همه") {}), chips = listOf("ملی ← ملی · ۳۸", "پاسارگاد ← ملت · ۵", "و ۳ الگوی دیگه")) {},
             TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
             TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.", actions = listOf(TodoAction("روشن کن") {})) {},
         )

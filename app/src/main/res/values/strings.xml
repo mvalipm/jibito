@@ -479,7 +479,7 @@
     <string name="todo_recurring_detail">اگه ماهانه‌ست، قبل از موعدش یادت میندازم.</string>
     <string name="todo_transfers">%1$d جابه‌جایی احتمالی بین حساب‌هات</string>
     <string name="todo_transfers_detail">برداشت و واریزهای هم‌مبلغ. اگه بین کارت‌های خودت بوده، نه خرجه نه درآمد. بر اساس بانک دسته‌شون کردم که یه‌جا جواب بدی.</string>
-    <string name="todo_transfers_more">+%1$d الگوی دیگه</string>
+    <string name="todo_transfers_more">و %1$d الگوی دیگه</string>
     <string name="todo_transfers_review">مرور همه</string>
     <string name="todo_all_clear">کاری نمونده. هر وقت چیزی کارت داشت، اینجا نشونت می‌دم.</string>
 
