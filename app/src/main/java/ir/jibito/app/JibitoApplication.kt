@@ -7,8 +7,8 @@ import ir.jibito.app.data.sms.SmsSyncWorker
 import ir.jibito.app.di.AppContainer
 import ir.jibito.app.util.ErrorLog
 
-/** کلاس اصلی اپ؛ فقط یک AppContainer برای کل اپ نگه می‌دارد. */
-class JibitoApplication : Application() {
+/** کلاس اصلی اپ؛ فقط یک AppContainer برای کل اپ نگه می‌دارد. (open: تست اسکرین‌شات قبلش WorkManager آزمایشی را راه می‌اندازد) */
+open class JibitoApplication : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
 
     override fun attachBaseContext(base: Context) {

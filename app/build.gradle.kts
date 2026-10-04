@@ -133,4 +133,6 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
+    // WorkManager آزمایشی برای تست‌هایی که خود اپ (JibitoApplication) را راه می‌اندازند
+    testImplementation(libs.androidx.work.testing)
 }

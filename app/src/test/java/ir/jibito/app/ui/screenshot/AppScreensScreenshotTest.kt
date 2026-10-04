@@ -75,7 +75,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(
     sdk = [34],
     qualifiers = "w400dp-h860dp-xxhdpi",
-    application = JibitoApplication::class,
+    application = ScreenshotApplication::class,
     instrumentedPackages = ["ir.jibito.app"],
 )
 class AppScreensScreenshotTest {
@@ -121,6 +121,8 @@ class AppScreensScreenshotTest {
     fun tearDown() {
         runCatching { container.database.close() }
         app.deleteDatabase(AppDatabase.NAME)
+        // بازگردانیِ آماده در تست پشتیبان، نباید در شروع تست بعدی اعمال شود
+        java.io.File(app.filesDir, "pending_restore").deleteRecursively()
         TimeZone.setDefault(savedZone)
     }
 
