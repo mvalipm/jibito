@@ -58,6 +58,25 @@ class MigrationTest {
     @Test fun migrateFrom9() = migrateFrom(9)
     @Test fun migrateFrom10() = migrateFrom(10)
     @Test fun migrateFrom11() = migrateFrom(11)
+    @Test fun migrateFrom12() = migrateFrom(12)
+
+    @Test
+    fun accountLinksUsableAfter12To13() {
+        createAt(12)
+        openWithRoom().use { db ->
+            kotlinx.coroutines.runBlocking {
+                db.accountDao().upsertAll(
+                    listOf(ir.jibito.app.data.local.entity.AccountLinkEntity(11, "1234", "1234", "حقوق", true, 1))
+                )
+                assertEquals(listOf("حقوق"), db.accountDao().links().map { it.name })
+            }
+            // تراکنش قبلی سالم است و هنوز شماره حساب ندارد (در خواندن کامل بعدی پر می‌شود)
+            db.openHelper.readableDatabase.query("SELECT account FROM transaction_flows WHERE smsId = 77").use {
+                assertTrue(it.moveToFirst())
+                assertTrue(it.isNull(0))
+            }
+        }
+    }
 
     @Test
     fun categorizedAtEmptyForExistingRowsAfter11To12() {

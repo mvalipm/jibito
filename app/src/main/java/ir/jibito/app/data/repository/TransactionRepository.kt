@@ -36,6 +36,8 @@ import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
+import ir.jibito.app.data.wallet.AccountGrouping
+import ir.jibito.app.data.local.entity.toLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -122,7 +124,7 @@ interface TransactionRepository {
     /** پرکاربردترین دسته‌ها برای این نوع (بیشترین استفاده اول) */
     suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long>
 
-    /** «چقد دارم؟»: آخرین مانده‌ی هر بانک، تازه‌ترین اول */
+    /** «چقد دارم؟»: آخرین مانده‌ی هر حساب، تازه‌ترین اول */
     fun observeBankBalances(): Flow<List<BankBalance>>
 }
 
@@ -356,12 +358,15 @@ class TransactionRepositoryImpl(
     override suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long> =
         dao.frequentCategoryIds(flowType, limit)
 
-    override fun observeBankBalances(): Flow<List<BankBalance>> =
-        dao.observeBankBalances().map { rows ->
-            rows.distinctBy { it.bankId }.mapNotNull { row ->
-                BankDirectory.byId(row.bankId)?.let { BankBalance(it, row.remainAfter, row.dateEpoch) }
+    /** مانده‌ی هر حساب (چند حساب در یک بانک جدا، طبق تصمیم‌های کاربر: AccountGrouping) */
+    override fun observeBankBalances(): Flow<List<BankBalance>> {
+        val accountDao = db.accountDao()
+        return combine(accountDao.observeLatestBalances(), accountDao.observeLinks()) { rows, links ->
+            AccountGrouping.balances(rows, links.map { it.toLink() }).mapNotNull { b ->
+                BankDirectory.byId(b.bankId)?.let { BankBalance(it, b.balanceRial, b.dateMillis, b.account, b.name) }
             }
         }.flowOn(Dispatchers.Default)
+    }
 
     override suspend fun deleteCustomCategory(categoryId: Long) {
         db.withTransaction {
@@ -621,6 +626,7 @@ class TransactionRepositoryImpl(
         transferState = transferState,
         transferPairId = transferPairId,
         categorizedAt = categorizedAt,
+        account = account,
     )
 
     private companion object {

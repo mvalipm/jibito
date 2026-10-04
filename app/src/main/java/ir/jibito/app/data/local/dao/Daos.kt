@@ -13,7 +13,9 @@ import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsContentKey
 import ir.jibito.app.data.local.entity.SmsFlowKey
-import ir.jibito.app.data.local.entity.BankBalanceRow
+import ir.jibito.app.data.wallet.AccountBalanceRow
+import ir.jibito.app.data.local.entity.AccountLinkEntity
+import ir.jibito.app.data.wallet.KnownAccountRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.RecurringPaymentEntity
@@ -105,24 +107,6 @@ interface TransactionFlowDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(items: List<TransactionFlowEntity>)
-
-    /**
-     * «چقد دارم؟»: برای هر بانک، مانده‌ی آخرین پیامکی که مانده داشته.
-     * (اگر یک بانک چند حساب داشته باشد، مانده‌ی آخرین پیامکِ هر کدام که تازه‌تر است.)
-     */
-    @Query(
-        """
-        SELECT t.bankId AS bankId, t.remainAfter AS remainAfter, t.dateEpoch AS dateEpoch
-        FROM transaction_flows t
-        WHERE t.isDeleted = 0 AND t.remainAfter IS NOT NULL AND t.bankId IS NOT NULL
-          AND t.dateEpoch = (
-            SELECT MAX(t2.dateEpoch) FROM transaction_flows t2
-            WHERE t2.bankId = t.bankId AND t2.isDeleted = 0 AND t2.remainAfter IS NOT NULL
-          )
-        ORDER BY t.dateEpoch DESC
-        """
-    )
-    fun observeBankBalances(): Flow<List<BankBalanceRow>>
 
     /** یک تراکنش (ثبت دستی)؛ شناسه‌اش را برمی‌گرداند */
     @Insert
@@ -447,4 +431,53 @@ interface RecurringDao {
 
     @Query("UPDATE recurring_payments SET lastRemindedMonthKey = :monthKey WHERE id = :id")
     suspend fun markReminded(id: Long, monthKey: Int)
+}
+
+/** چند حساب در یک بانک: مانده‌ی هر شماره حساب و تصمیم‌های کاربر (AccountGrouping) */
+@Dao
+interface AccountDao {
+
+    /**
+     * «چقد دارم؟»: آخرین مانده‌ی هر (بانک، شماره حساب)؛ پیامک‌های بی‌شماره‌حساب یک گروه جدا (account = null).
+     * (در SQLite ستون‌های کنار MAX() از همان ردیفِ بیشینه می‌آیند.)
+     */
+    @Query(
+        """
+        SELECT bankId, account, remainAfter, MAX(dateEpoch) AS dateEpoch FROM transaction_flows
+        WHERE isDeleted = 0 AND remainAfter IS NOT NULL AND bankId IS NOT NULL
+        GROUP BY bankId, account
+        """
+    )
+    fun observeLatestBalances(): Flow<List<AccountBalanceRow>>
+
+    /** شماره حساب‌هایی که در پیامک‌های هر بانک دیده شده‌اند */
+    @Query(
+        """
+        SELECT bankId, account, MAX(dateEpoch) AS lastSeen FROM transaction_flows
+        WHERE isDeleted = 0 AND bankId IS NOT NULL AND account IS NOT NULL
+        GROUP BY bankId, account
+        """
+    )
+    fun observeKnownAccounts(): Flow<List<KnownAccountRow>>
+
+    @Query(
+        """
+        SELECT bankId, account, MAX(dateEpoch) AS lastSeen FROM transaction_flows
+        WHERE isDeleted = 0 AND bankId IS NOT NULL AND account IS NOT NULL
+        GROUP BY bankId, account
+        """
+    )
+    suspend fun knownAccounts(): List<KnownAccountRow>
+
+    @Query("SELECT * FROM account_links")
+    fun observeLinks(): Flow<List<AccountLinkEntity>>
+
+    @Query("SELECT * FROM account_links")
+    suspend fun links(): List<AccountLinkEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(links: List<AccountLinkEntity>)
+
+    @Query("DELETE FROM account_links WHERE bankId = :bankId AND account = :account")
+    suspend fun delete(bankId: Int, account: String)
 }

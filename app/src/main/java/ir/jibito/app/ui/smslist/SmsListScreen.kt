@@ -119,7 +119,7 @@ fun SmsListScreen(
     val bankBalances by viewModel.bankBalances.collectAsState()
     // حساب‌هایی که کاربر از «موجودی همه‌ی حساب‌ها» کنار گذاشته
     val walletSettings = app.container.walletSettings
-    val excludedBanks by walletSettings.excludedBanks.collectAsState()
+    val excludedAccounts by walletSettings.excluded.collectAsState()
     // تنظیم «نمایش دسته‌ها»: چند لایه، و کدام دسته‌های اصلی پنهان‌اند
     val displayDepth by app.container.categoryDisplay.depth.collectAsState()
     val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
@@ -173,14 +173,13 @@ fun SmsListScreen(
     // لمس کپسول حساب: بیرون/درون جمع موجودی، با «برگردون»
     fun toggleWallet(b: BankBalance) {
         haptics.tick()
-        val id = b.bank.id
-        val include = id in excludedBanks
-        walletSettings.setIncluded(id, include)
-        val name = shortBankName(b.bank.name)
+        val before = excludedAccounts
+        val include = isExcluded(b, before)
+        walletSettings.setIncluded(b, include, bankBalances)
         toast = ToastMessage(
-            (if (include) toggledOnMessage else toggledOffMessage).format(name),
+            (if (include) toggledOnMessage else toggledOffMessage).format(accountLabel(b)),
             undoLabel,
-            onAction = { walletSettings.setIncluded(id, !include) },
+            onAction = { walletSettings.set(before) },
         )
     }
     val uncategorizedCount = remember(messages) {
@@ -264,7 +263,7 @@ fun SmsListScreen(
                     exit = fadeOut() + shrinkHorizontally(),
                 ) {
                     Row {
-                        BalanceMiniPill(bankBalances, excludedBanks)
+                        BalanceMiniPill(bankBalances, excludedAccounts)
                         Spacer(Modifier.width(8.dp))
                     }
                 }
@@ -294,7 +293,7 @@ fun SmsListScreen(
                 ) {
                     WalletCard(
                         balances = bankBalances,
-                        excluded = excludedBanks,
+                        excluded = excludedAccounts,
                         onToggle = { b -> toggleWallet(b) },
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                     )

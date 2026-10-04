@@ -38,6 +38,8 @@ data class TransactionItem(
     val refundDateMillis: Long?,
     /** کارمزد انتقال، اگر از رمز دوم معلوم شده باشد */
     val feeRial: Long? = null,
+    /** شماره حساب/کارتِ خود پیامک (AccountExtractor)، اگر در متن بود */
+    val account: String? = null,
 )
 
 /**
@@ -228,6 +230,7 @@ class SmsReader(private val context: Context) {
                 suggestedCategory = CategorySuggester.suggest(merchant),
                 refundDateMillis = linked.refund?.timeMillis,
                 feeRial = linked.feeRial,
+                account = linked.record.account,
             )
         }
         ScanResult(

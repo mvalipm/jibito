@@ -10,11 +10,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.wallet.AccountGrouping
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.ui.common.HIDDEN_AMOUNT
 import ir.jibito.app.ui.common.LocalHideAmounts
+import ir.jibito.app.ui.common.ToastMessage
+import ir.jibito.app.ui.smslist.shortBankName
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.categoryTint
@@ -27,6 +31,7 @@ import kotlinx.coroutines.launch
 /**
  * همه‌ی «کارهای لازم» در یک جا: هم استوری‌های «خلاصه» و هم فهرست تب «کارها» از همین ساخته می‌شوند.
  * @param s خلاصه‌ی ماه (برای بودجه‌های نزدیک سقف)؛ null یعنی هنوز بارگذاری نشده
+ * @param onToast پیام کوتاه بعد از جواب دادن (با «برگردون»)، مثلاً بعد از سؤال «دو حساب یکی‌اند یا جدا؟»
  */
 @Composable
 fun rememberTodoStories(
@@ -37,6 +42,7 @@ fun rememberTodoStories(
     onOpenTransactions: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
+    onToast: (ToastMessage) -> Unit = {},
 ): List<TodoStory> {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val t = JibitoTheme.colors
@@ -47,6 +53,8 @@ fun rememberTodoStories(
     val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val uncategorizedFlow = remember { uncategorizedThisMonth(app) }
     val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
+    val accountQuestionFlow = remember { app.container.accountRepository.observeQuestion() }
+    val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
     val notificationPrompt = rememberNotificationPrompt()
     val scope = rememberCoroutineScope()
 
@@ -120,6 +128,37 @@ fun rememberTodoStories(
                 )
             )
         }
+        accountQuestion?.let { q ->
+            val accounts = app.container.accountRepository
+            val bankName = BankDirectory.byId(q.bankId)?.name?.let(::shortBankName).orEmpty()
+            val sameText = stringResource(R.string.account_answered_same)
+            val separateText = stringResource(R.string.account_answered_separate)
+            val undoLabel = stringResource(R.string.undo)
+            fun answer(same: Boolean) {
+                scope.launch {
+                    val undo = accounts.answer(q, same)
+                    onToast(ToastMessage(if (same) sameText else separateText, undoLabel, onAction = { scope.launch { accounts.undo(undo) } }))
+                }
+            }
+            add(
+                TodoStory(
+                    "account", t.teal, t.transferBg, t.transferFg, DesignIcons.Bank, null,
+                    label = stringResource(R.string.account_question_label, bankName),
+                    detail = Jalali.toPersianDigits(
+                        stringResource(
+                            R.string.account_question_detail,
+                            AccountGrouping.shortNumber(q.account),
+                            AccountGrouping.shortNumber(q.other),
+                        )
+                    ),
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.account_question_same)) { answer(same = true) },
+                        TodoAction(stringResource(R.string.account_question_separate)) { answer(same = false) },
+                    ),
+                    onClick = onOpenSettings,
+                )
+            )
+        }
         recurringSuggestions.firstOrNull()?.let { r ->
             add(
                 TodoStory(
@@ -143,8 +182,9 @@ fun todoPriority(id: String): Int = when {
     id == "uncat" -> 1
     id.startsWith("budget-") -> 2
     id == "transfer" -> 3
-    id == "rec" -> 4
-    else -> 5
+    id == "account" -> 4
+    id == "rec" -> 5
+    else -> 6
 }
 
 /** چند خرج این ماه هنوز دسته ندارند */

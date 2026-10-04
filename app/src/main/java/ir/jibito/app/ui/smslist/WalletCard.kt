@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.data.wallet.AccountGrouping
+import ir.jibito.app.data.wallet.WalletExclusion
 import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.ui.common.amount
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -71,19 +73,20 @@ private fun bankColor(id: Int, dark: Boolean): Color {
 /**
  * «چقد دارم؟»: کارت «کیف پول» — جمع مانده‌ها درشت، و زیرش کپسول هر بانک (نقطه‌ی رنگی، اسم، آخرین مانده از خود پیامک‌ها).
  * مانده‌ی کهنه کم‌رنگ است. با اسکرول فهرست جمع می‌شود (SmsListScreen) و جمع کل کنار عنوان می‌ماند.
- * لمس هر کپسول، آن حساب را از جمع بیرون می‌گذارد یا دوباره واردش می‌کند ([excluded]: شناسه‌ی بانک‌های بیرون از جمع).
+ * هر حساب کپسول خودش را دارد (چند حساب در یک بانک جدا؛ اسمی که کاربر گذاشته، وگرنه «ملت ۵۶۷۸»).
+ * لمس هر کپسول، آن حساب را از جمع بیرون می‌گذارد یا دوباره واردش می‌کند ([excluded]: کلیدهای WalletExclusion).
  */
 @Composable
 fun WalletCard(
     balances: List<BankBalance>,
-    excluded: Set<Int>,
+    excluded: Set<String>,
     onToggle: (BankBalance) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val t = JibitoTheme.colors
     val now = System.currentTimeMillis()
     val total = includedTotal(balances, excluded)
-    val excludedCount = balances.count { it.bank.id in excluded }
+    val excludedCount = balances.count { isExcluded(it, excluded) }
     val (number, unit) = Money.compactParts(total)
     val fg = t.btnFg
     Column(
@@ -129,15 +132,15 @@ fun WalletCard(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             contentPadding = PaddingValues(horizontal = 14.dp),
         ) {
-            items(balances, key = { it.bank.id }) { b ->
+            items(balances, key = { WalletExclusion.key(it.bank.id, it.account) }) { b ->
                 val ageDays = ((now - b.dateMillis) / DAY_MILLIS).toInt()
                 BankChip(
-                    name = shortBankName(b.bank.name),
+                    name = accountLabel(b),
                     amountRial = b.balanceRial,
                     dot = bankColor(b.bank.id, dark = true),
                     fg = fg,
                     stale = ageDays >= STALE_DAYS,
-                    included = b.bank.id !in excluded,
+                    included = !isExcluded(b, excluded),
                     onClick = { onToggle(b) },
                 )
             }
@@ -183,13 +186,27 @@ private fun BankChip(
     }
 }
 
+/** این حساب از جمع بیرون است؟ */
+internal fun isExcluded(b: BankBalance, excluded: Set<String>): Boolean =
+    WalletExclusion.isExcluded(b.bank.id, b.account, excluded)
+
 /** جمع مانده‌ی حساب‌هایی که کاربر از جمع بیرون نگذاشته */
-internal fun includedTotal(balances: List<BankBalance>, excluded: Set<Int>): Long =
-    balances.filter { it.bank.id !in excluded }.sumOf { it.balanceRial }
+internal fun includedTotal(balances: List<BankBalance>, excluded: Set<String>): Long =
+    balances.filterNot { isExcluded(it, excluded) }.sumOf { it.balanceRial }
+
+/**
+ * اسم کوتاه یک حساب: اسمی که کاربر گذاشته، وگرنه «ملت ۵۶۷۸» (اسم بانک + چهار رقم آخر)،
+ * و برای بانکی که شماره حساب در پیامکش نیست فقط «ملت».
+ */
+internal fun accountLabel(b: BankBalance): String = accountLabel(b.bank.name, b.account, b.name)
+
+internal fun accountLabel(bankName: String, account: String?, name: String?): String =
+    name ?: listOfNotNull(shortBankName(bankName), account?.let { Jalali.toPersianDigits(AccountGrouping.shortNumber(it)) })
+        .joinToString(" ")
 
 /** جمع مانده‌ها، کوچک کنار عنوان وقتی کارت کیف پول با اسکرول جمع شده */
 @Composable
-fun BalanceMiniPill(balances: List<BankBalance>, excluded: Set<Int>) {
+fun BalanceMiniPill(balances: List<BankBalance>, excluded: Set<String>) {
     val t = JibitoTheme.colors
     val shown = amount(Money.short(includedTotal(balances, excluded)))
     Row(
