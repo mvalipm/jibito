@@ -65,6 +65,10 @@ data class ScanResult(
     val scannedFromDate: Long?,
     /** سرشماره‌های ناشناسی که رمز پویا فرستاده‌اند (قبلی‌ها + تازه‌ها) */
     val otpSenders: Set<String>,
+    /** همه‌ی پیامک‌هایی که در این اسکن در صندوق بودند: شناسه ← زمان (برای این‌که پیامکِ پاک‌شده با «دیگر تراکنش نیست» یکی گرفته نشود) */
+    val inboxIds: Map<Long, Long> = emptyMap(),
+    /** «زمان + متن» پیامک‌های سرشماره‌های بانکی در این اسکن (شناسه‌ها در گوشی تازه عوض می‌شوند، متن نه) */
+    val inboxBankContent: Set<Pair<Long, String>> = emptySet(),
 )
 
 class SmsReader(private val context: Context) {
@@ -93,6 +97,8 @@ class SmsReader(private val context: Context) {
         val otpSenders = HashSet(knownOtpSenders)
         var maxId = 0L
         var maxDate = 0L
+        val inboxIds = HashMap<Long, Long>()
+        val inboxBankContent = HashSet<Pair<Long, String>>()
 
         // اسکن افزایشی: پیامک‌های تازه (_id بزرگ‌تر)، به‌علاوه‌ی ۱۰ دقیقه‌ی قبل از آخرین پیامک،
         // تا رمز دوم ↔ برداشت ↔ برگشت پول (که تا ۳ دقیقه فاصله دارند) باز هم به هم وصل شوند.
@@ -127,6 +133,7 @@ class SmsReader(private val context: Context) {
                 if (smsId > maxId) maxId = smsId
                 val smsDate = cursor.getLong(dateCol)
                 if (smsDate > maxDate) maxDate = smsDate
+                inboxIds[smsId] = smsDate
                 val sender = cursor.getString(addrCol) ?: continue
                 val normalizedSender = BankDirectory.normalizeSender(sender)
                 // اول سرشماره‌هایی که خود کاربر به یک بانک/موسسه نسبت داده، بعد بانک‌های رسمی.
@@ -170,6 +177,7 @@ class SmsReader(private val context: Context) {
                 }
                 val type = senderType
                 val body = cursor.getString(bodyCol) ?: continue
+                inboxBankContent += smsDate to body
                 val raw = Raw(smsId, sender, body, smsDate, type.bank)
 
                 // اول پارسرهای اپ؛ اگر نشد، قالب‌هایی که کاربر یاد داده
@@ -229,6 +237,8 @@ class SmsReader(private val context: Context) {
             maxSmsDate = maxDate,
             scannedFromDate = fromDate,
             otpSenders = otpSenders,
+            inboxIds = inboxIds,
+            inboxBankContent = inboxBankContent,
         )
     }
 

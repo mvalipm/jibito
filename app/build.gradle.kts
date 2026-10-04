@@ -23,7 +23,7 @@ android {
         // عدد تکراری یا کمتر نمی‌سازند. VERSION_CODE_BASE بالاتر از همه‌ی versionCodeهای دستیِ قبلی (تا ۷۵) است.
         // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
         versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "0.50.0"
+        versionName = "0.50.1"
     }
 
     // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود

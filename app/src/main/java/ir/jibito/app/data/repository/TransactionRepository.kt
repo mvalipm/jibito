@@ -498,14 +498,21 @@ class TransactionRepositoryImpl(
             }
 
             // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
+            // فقط اگر خود پیامک هنوز در صندوق باشد: پیامکِ پاک‌شده (یا گوشی تازه بدون پیامک‌های قدیمی)
+            // تراکنش و دسته‌اش را پاک نمی‌کند.
             // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
             // در اسکن افزایشی فقط بازه‌ی خوانده‌شده بررسی می‌شود (پیامک‌های قدیمی‌تر اصلاً خوانده نشده‌اند).
             val matchedRows = match.matches.values.toHashSet()
             val from = scan.scannedFromDate
-            val gone = rows
+            val unmatched = rows
                 .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.id !in matchedRows }
                 .filter { from == null || (it.dateEpoch >= from && (it.smsId == null || it.smsId <= scan.maxSmsId)) }
-                .map { it.id }
+            val gone = SmsRowMatcher.reclassified(
+                unmatched = unmatched.map { SmsRowMatcher.Row(it.id, it.smsId, it.dateEpoch) },
+                inboxIds = scan.inboxIds,
+                inboxContent = scan.inboxBankContent,
+                rowContent = { dao.smsContentKeys().associate { it.id to it.smsContent } },
+            )
 
             // اول شناسه‌ی ردیف‌هایی که مال پیامک دیگری است آزاد شود، بعد نوشتن (وگرنه ایندکس یکتای smsId جلویش را می‌گیرد)
             match.detach.chunked(500).forEach { dao.detachSms(it) }
