@@ -81,9 +81,12 @@ class SpendWidget : AppWidgetProvider() {
     companion object {
 
         /** کمترین اندازه (dp) هر طرح؛ کوچک‌تر از مربع و متوسط، نواری */
-        private val MIN_SQUARE = SizeF(130f, 160f)
-        private val MIN_MEDIUM = SizeF(250f, 150f)
-        private val MIN_LARGE = SizeF(250f, 270f)
+        private const val SQUARE_W = 130f
+        private const val SQUARE_H = 160f
+        private const val MEDIUM_W = 250f
+        private const val MEDIUM_H = 150f
+        private const val LARGE_W = 250f
+        private const val LARGE_H = 270f
 
         /** بخش‌های ثابت طرح بزرگ (dp)؛ باقی ارتفاع مال نمودار است */
         private const val LARGE_FIXED_HEIGHT = 232f
@@ -109,9 +112,9 @@ class SpendWidget : AppWidgetProvider() {
         }
 
         internal fun sizeOf(widthDp: Float, heightDp: Float): Size = when {
-            widthDp >= MIN_LARGE.width && heightDp >= MIN_LARGE.height -> Size.LARGE
-            widthDp >= MIN_MEDIUM.width && heightDp >= MIN_MEDIUM.height -> Size.MEDIUM
-            widthDp >= MIN_SQUARE.width && heightDp >= MIN_SQUARE.height -> Size.SQUARE
+            widthDp >= LARGE_W && heightDp >= LARGE_H -> Size.LARGE
+            widthDp >= MEDIUM_W && heightDp >= MEDIUM_H -> Size.MEDIUM
+            widthDp >= SQUARE_W && heightDp >= SQUARE_H -> Size.SQUARE
             else -> Size.STRIP
         }
 
@@ -127,9 +130,9 @@ class SpendWidget : AppWidgetProvider() {
                 return RemoteViews(
                     mapOf(
                         SizeF(0f, 0f) to views(context, n, now, Size.STRIP, width, height),
-                        MIN_SQUARE to views(context, n, now, Size.SQUARE, width, height),
-                        MIN_MEDIUM to views(context, n, now, Size.MEDIUM, width, height),
-                        MIN_LARGE to views(context, n, now, Size.LARGE, width, height),
+                        SizeF(SQUARE_W, SQUARE_H) to views(context, n, now, Size.SQUARE, width, height),
+                        SizeF(MEDIUM_W, MEDIUM_H) to views(context, n, now, Size.MEDIUM, width, height),
+                        SizeF(LARGE_W, LARGE_H) to views(context, n, now, Size.LARGE, width, height),
                     ),
                 )
             }
