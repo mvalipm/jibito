@@ -57,6 +57,7 @@ class MigrationTest {
     @Test fun migrateFrom8() = migrateFrom(8)
     @Test fun migrateFrom9() = migrateFrom(9)
     @Test fun migrateFrom10() = migrateFrom(10)
+    @Test fun migrateFrom11() = migrateFrom(11)
 
     @Test
     fun recurringPaymentsTableUsableAfter10To11() {
@@ -69,6 +70,36 @@ class MigrationTest {
                     )
                 )
                 assertEquals(listOf("اجاره"), db.recurringDao().all().map { it.title })
+            }
+        }
+    }
+
+    @Test
+    fun smsArchiveBackfilledFrom11To12() {
+        createAt(11)
+        val file = context.getDatabasePath(DB_NAME)
+        SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            fun insert(smsId: Long, date: Long, body: String, source: String, deleted: Int) = db.execSQL(
+                "INSERT INTO transaction_flows (smsId, bankId, flowType, amount, remainAfter, dateEpoch, merchant, " +
+                    "suggestedCategory, isFailedPurchase, categoryId, description, smsContent, source, isDeleted, updatedAt) " +
+                    "VALUES ($smsId, 1, 2, 1000, NULL, $date, NULL, NULL, 0, NULL, NULL, '$body', '$source', $deleted, 1)"
+            )
+            // پیامکی که از گوشی پاک شده بود و ردیفش (به‌اشتباه) حذف نرم شده ← کپی می‌شود تا برگردد
+            insert(78, 1_700_000_100_000, "برداشت از گوشی پاک شد", "SMS_AUTO", 1)
+            // همان متنِ یک ردیف زنده با زمان دیگر ← کپی نمی‌شود (وگرنه دو بار حساب می‌شد)
+            insert(79, 1_699_000_000_000, "برداشت ۱۲۵۰۰۰۰", "SMS_AUTO", 1)
+            // ثبت‌شده از صندوق بررسی و ثبت دستی ← کپی نمی‌شوند
+            insert(80, 1_700_000_200_000, "پیامک بررسی", "SMS_MANUAL", 0)
+        }
+        openWithRoom().use { db ->
+            kotlinx.coroutines.runBlocking {
+                val archived = db.smsArchiveDao().all()
+                assertEquals(listOf("برداشت ۱۲۵۰۰۰۰", "برداشت از گوشی پاک شد"), archived.map { it.body })
+                assertEquals(listOf(1_700_000_000_000L, 1_700_000_100_000L), archived.map { it.dateEpoch })
+                assertTrue(archived.all { it.bankId == 1 && it.sender == null })
+                // یکتا بودن (زمان، متن): کپی دوباره اضافه نمی‌شود
+                db.smsArchiveDao().insertAll(listOf(archived.first().copy(id = 0, sender = "Bank Mellat")))
+                assertEquals(2, db.smsArchiveDao().count())
             }
         }
     }

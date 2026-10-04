@@ -58,4 +58,26 @@ object SmsRowMatcher {
 
         return Result(matches, detach)
     }
+
+    /**
+     * ردیف‌هایی که پیامکشان در این اسکن پیدا شد ولی دیگر تراکنش نیست (مثلاً بعداً معلوم شد پولِ برگشتیِ یک خرید
+     * ناموفق بوده، یا پارسر تازه آن را تراکنش نمی‌داند) ← باید حذف نرم شوند.
+     *
+     * ردیفی که پیامکش اصلاً پیدا نشد (نه در صندوق، نه در کپی اپ) این‌جا نمی‌آید: پاک شدن پیامک از گوشی
+     * دلیل پاک شدن تراکنش نیست.
+     *
+     * @param nonTransactions پیامک‌های بانکی دیده‌شده که تراکنش نشدند
+     * @param matchedRows ردیف‌هایی که همین حالا به یک تراکنش وصل شده‌اند (هرگز حذف نمی‌شوند)
+     */
+    suspend fun noLongerTransactions(
+        nonTransactions: List<Scanned>,
+        rows: List<Row>,
+        matchedRows: Set<Long>,
+        contentLookup: (suspend () -> Map<Pair<Long, String>, Long>)?,
+    ): Set<Long> {
+        if (nonTransactions.isEmpty()) return emptySet()
+        val free = rows.filter { it.rowId !in matchedRows }
+        val lookup = contentLookup?.let { load -> suspend { load().filterValues { it !in matchedRows } } }
+        return match(nonTransactions, free, lookup).matches.values.toSet()
+    }
 }

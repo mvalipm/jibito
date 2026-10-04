@@ -1,7 +1,9 @@
 package ir.jibito.app.data.category
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CategoryLearnerTest {
@@ -40,5 +42,37 @@ class CategoryLearnerTest {
     @Test
     fun `انتقال به کارت یک شخص هیچ‌وقت خودکار نمی‌شود`() {
         assertEquals(LearnedDecision(market, auto = false), CategoryLearner.decide(List(10) { market }, "کارت/حساب …1234"))
+    }
+
+    @Test
+    fun `اسم شرکت پرداخت یا درگاه هیچ‌وقت خودکار نمی‌شود`() {
+        for (name in listOf("به پرداخت ملت", "شرکت پرداخت الکترونیک سامان", "شاپرک", "پایانه", "زرین‌پال", "IPG Saman", "خرید اینترنتی")) {
+            assertEquals(name, LearnedDecision(market, auto = false), CategoryLearner.decide(List(10) { market }, name))
+        }
+    }
+
+    @Test
+    fun `اسم فروشگاه واقعی اسم عمومی نیست`() {
+        for (name in listOf("افق کوروش", "اسنپ", "رستوران شاندیز", "دیجی کالا", "کافه لمیز")) {
+            assertFalse(name, CategoryLearner.isGenericMerchant(name))
+        }
+        assertTrue(CategoryLearner.isGenericMerchant("آسان‌پرداخت"))
+        assertTrue(CategoryLearner.isGenericMerchant("ایران کیش"))
+        assertTrue(CategoryLearner.isGenericMerchant("پوز"))
+        assertTrue(CategoryLearner.isGenericMerchant("  "))
+    }
+
+    @Test
+    fun `طرف حسابی که قبلاً دسته‌ی دیگری هم گرفته شاهد بیشتری لازم دارد`() {
+        // تازه‌ترین اول: سه بار سوپرمارکت، ولی قبلش رستوران ← هنوز فقط پیشنهاد
+        assertEquals(LearnedDecision(market, auto = false), CategoryLearner.decide(listOf(market, market, market, restaurant), "فروشگاه زنجیره‌ای"))
+        val five = List(CategoryLearner.AMBIGUOUS_THRESHOLD) { market } + restaurant
+        assertEquals(LearnedDecision(market, auto = true), CategoryLearner.decide(five, "فروشگاه زنجیره‌ای"))
+    }
+
+    @Test
+    fun `انتخاب‌های خیلی قدیمی‌تر از پنجره شمرده نمی‌شوند`() {
+        val choices = List(CategoryLearner.LOOKBACK) { market } + restaurant
+        assertEquals(LearnedDecision(market, auto = true), CategoryLearner.decide(choices, "افق کوروش"))
     }
 }

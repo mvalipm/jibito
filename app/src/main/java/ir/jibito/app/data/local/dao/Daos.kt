@@ -17,6 +17,7 @@ import ir.jibito.app.data.local.entity.BankBalanceRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.RecurringPaymentEntity
+import ir.jibito.app.data.local.entity.SmsArchiveEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.local.entity.TransactionWithCategory
 import kotlinx.coroutines.flow.Flow
@@ -37,12 +38,16 @@ interface TransactionFlowDao {
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
     /** همه‌ی ردیف‌های پیامکی (ثبت دستی نه)؛ smsId ردیفی که شناسه‌اش آزاد شده null است */
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId FROM transaction_flows WHERE source != 'MANUAL'")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, merchant, description FROM transaction_flows WHERE source != 'MANUAL'")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** «زمان + متن» ردیف‌های پیامکی، برای پیدا کردن ردیف قبلی وقتی شناسه‌ی پیامک‌ها عوض شده (گوشی تازه) */
     @Query("SELECT id, dateEpoch, smsContent FROM transaction_flows WHERE source != 'MANUAL' AND smsContent IS NOT NULL")
     suspend fun smsContentKeys(): List<SmsContentKey>
+
+    /** همان، فقط ردیف‌های از این زمان به بعد (اسکن افزایشی) */
+    @Query("SELECT id, dateEpoch, smsContent FROM transaction_flows WHERE source != 'MANUAL' AND smsContent IS NOT NULL AND dateEpoch >= :since")
+    suspend fun smsContentKeysSince(since: Long): List<SmsContentKey>
 
     /** شناسه‌ی پیامک این ردیف‌ها را آزاد می‌کند (چون در این گوشی مال پیامک دیگری است) */
     @Query("UPDATE transaction_flows SET smsId = NULL WHERE id IN (:ids)")
@@ -439,4 +444,22 @@ interface RecurringDao {
 
     @Query("UPDATE recurring_payments SET lastRemindedMonthKey = :monthKey WHERE id = :id")
     suspend fun markReminded(id: Long, monthKey: Int)
+}
+
+/** کپی پیامک‌های بانکی (SmsArchiveEntity) */
+@Dao
+interface SmsArchiveDao {
+
+    /** پیامکی که قبلاً کپی شده (همان زمان و متن) دوباره اضافه نمی‌شود */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(items: List<SmsArchiveEntity>)
+
+    @Query("SELECT * FROM sms_archive ORDER BY dateEpoch")
+    suspend fun all(): List<SmsArchiveEntity>
+
+    @Query("SELECT * FROM sms_archive WHERE dateEpoch >= :since ORDER BY dateEpoch")
+    suspend fun since(since: Long): List<SmsArchiveEntity>
+
+    @Query("SELECT COUNT(*) FROM sms_archive")
+    suspend fun count(): Int
 }

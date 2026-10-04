@@ -98,4 +98,53 @@ class SmsRowMatcherTest {
         assertEquals(mapOf(99L to 7L), r.matches)
         assertTrue(r.detach.isEmpty())
     }
+
+    @Test
+    fun deletedFromPhoneIsNotGone() = runBlocking {
+        // پیامک ردیف ۱ دیگر نه در صندوق است نه در کپی اپ ← هیچ ردیفی حذف نمی‌شود
+        val gone = SmsRowMatcher.noLongerTransactions(
+            nonTransactions = listOf(Scanned(50, 9_000, "رمز پویا 123456")),
+            rows = listOf(Row(1, 10, 1_000)),
+            matchedRows = emptySet(),
+            contentLookup = contentOf(Row(1, 10, 1_000) to "برداشت 1,000"),
+        )
+        assertTrue(gone.isEmpty())
+    }
+
+    @Test
+    fun seenButNoLongerTransactionIsGone() = runBlocking {
+        // پیامک هنوز هست (همان شناسه و زمان) ولی حالا پولِ برگشتی است ← حذف نرم
+        val gone = SmsRowMatcher.noLongerTransactions(
+            nonTransactions = listOf(Scanned(10, 1_000, "واریز 1,000")),
+            rows = listOf(Row(1, 10, 1_000), Row(2, 11, 2_000)),
+            matchedRows = setOf(2L),
+            contentLookup = null,
+        )
+        assertEquals(setOf(1L), gone)
+    }
+
+    @Test
+    fun seenFromArchiveMatchesByContent() = runBlocking {
+        // گوشی تازه: پیامک فقط در کپی اپ است (شناسه‌ی منفی) و دیگر تراکنش نیست ← ردیفش با زمان و متن پیدا می‌شود
+        val row = Row(1, 10, 1_000)
+        val gone = SmsRowMatcher.noLongerTransactions(
+            nonTransactions = listOf(Scanned(-7, 1_000, "A")),
+            rows = listOf(row),
+            matchedRows = emptySet(),
+            contentLookup = contentOf(row to "A"),
+        )
+        assertEquals(setOf(1L), gone)
+    }
+
+    @Test
+    fun rowMatchedToATransactionIsNeverGone() = runBlocking {
+        val row = Row(1, 10, 1_000)
+        val gone = SmsRowMatcher.noLongerTransactions(
+            nonTransactions = listOf(Scanned(-7, 1_000, "A")),
+            rows = listOf(row),
+            matchedRows = setOf(1L),
+            contentLookup = contentOf(row to "A"),
+        )
+        assertTrue(gone.isEmpty())
+    }
 }

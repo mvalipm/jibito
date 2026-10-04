@@ -138,8 +138,38 @@ object Migrations {
         }
     }
 
+    /**
+     * نسخه‌ی ۱۱ ← ۱۲: کپی پیامک‌های بانکی (جدول sms_archive).
+     * متن پیامکِ همه‌ی تراکنش‌های پیامکیِ قبلی همین حالا هم در transaction_flows.smsContent هست؛
+     * همان‌ها یک بار به جدول تازه کپی می‌شوند — حتی ردیف‌هایی که قبلاً به‌خاطر پاک شدن پیامک از گوشی
+     * «حذف نرم» شده بودند، تا در همگام‌سازی بعدی (اگر هنوز تراکنش خوانده شوند) برگردند (با همان دسته).
+     * اسم فرستنده در نسخه‌ی ۱۱ ذخیره نمی‌شد؛ بانک از bankId معلوم است.
+     */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `sms_archive` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sender` TEXT, `bankId` INTEGER, " +
+                    "`body` TEXT NOT NULL, `dateEpoch` INTEGER NOT NULL, `archivedAt` INTEGER NOT NULL)"
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_sms_archive_dateEpoch_body` ON `sms_archive` (`dateEpoch`, `body`)"
+            )
+            db.execSQL(
+                "INSERT OR IGNORE INTO `sms_archive` (`sender`, `bankId`, `body`, `dateEpoch`, `archivedAt`) " +
+                    "SELECT NULL, `bankId`, `smsContent`, `dateEpoch`, `updatedAt` FROM `transaction_flows` " +
+                    "WHERE `source` = 'SMS_AUTO' AND `smsContent` IS NOT NULL AND `bankId` IS NOT NULL " +
+                    // ردیف حذف‌شده‌ای که همان متن را یک ردیف زنده هم دارد (همان پیامک با زمان دیگر) کپی نمی‌شود،
+                    // تا با برگشتنش تراکنش دو بار حساب نشود
+                    "AND NOT (`isDeleted` = 1 AND `smsContent` IN (" +
+                    "SELECT `smsContent` FROM `transaction_flows` WHERE `isDeleted` = 0 AND `smsContent` IS NOT NULL)) " +
+                    "ORDER BY `dateEpoch`"
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
-        MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+        MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
     )
 }

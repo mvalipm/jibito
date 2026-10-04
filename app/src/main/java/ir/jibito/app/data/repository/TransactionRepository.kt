@@ -3,10 +3,12 @@ package ir.jibito.app.data.repository
 import androidx.room.withTransaction
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.category.CategoryLearner
 import ir.jibito.app.data.category.CategoryLearning
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
+import ir.jibito.app.data.sms.ArchivedSms
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.SmsRowMatcher
 import ir.jibito.app.data.sms.SyncState
@@ -16,7 +18,9 @@ import ir.jibito.app.domain.Transaction
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
 import ir.jibito.app.data.local.entity.OwnAccountEntity
+import ir.jibito.app.data.local.entity.SmsArchiveEntity
 import ir.jibito.app.data.local.entity.SmsFlowKey
+import ir.jibito.app.data.category.CategorySuggester
 import ir.jibito.app.data.linking.PurchaseLinker
 import ir.jibito.app.data.parser.AccountExtractor
 import ir.jibito.app.data.parser.SmsTextNormalizer
@@ -397,8 +401,13 @@ class TransactionRepositoryImpl(
             CreateCategoryResult.Created(target.id)
         }
 
-    /** کارت/حساب مقصد ← «مال خودم»؛ برداشت‌های عادیِ دیگر به همین مقصد هم انتقال به خودم می‌شوند */
+    /**
+     * کارت/حساب مقصد ← «مال خودم»؛ برداشت‌های عادیِ دیگر به همین مقصد هم انتقال به خودم می‌شوند.
+     * اسم عمومی (شرکت پرداخت، درگاه، پایانه) یاد گرفته نمی‌شود: پشتش فروشگاه‌های زیادی است و همه‌ی
+     * خریدهایشان یک‌جا از خرج بیرون می‌رفت. فقط همین یک تراکنش انتقال به خودم می‌ماند.
+     */
     private suspend fun learnOwnAccount(merchant: String, now: Long) {
+        if (CategoryLearner.isGenericMerchant(merchant)) return
         dao.insertOwnAccount(OwnAccountEntity(merchant, now))
         dao.markSelfTransferByMerchant(merchant, now)
     }
@@ -435,6 +444,7 @@ class TransactionRepositoryImpl(
         val ownAccounts = dao.ownAccounts().toHashSet()
         val learning = CategoryLearning(db)
         val reviewDao = db.reviewDao()
+        val archiveDao = db.smsArchiveDao()
         val startedAt = System.currentTimeMillis()
         val full = forceFull || syncState.needsFullScan(startedAt)
         val scan = smsReader.scan(
@@ -446,6 +456,10 @@ class TransactionRepositoryImpl(
             templates = reviewDao.templates().groupBy({ it.sender }) {
                 LearnedTemplate(it.skeleton, it.numberCount, it.amountPos, it.balancePos, it.typeMode)
             },
+            archived = { from ->
+                (if (from == null) archiveDao.all() else archiveDao.since(from))
+                    .map { ArchivedSms(it.id, it.sender, it.bankId, it.body, it.dateEpoch) }
+            },
         )
         val items = scan.transactions
         val now = System.currentTimeMillis()
@@ -455,21 +469,38 @@ class TransactionRepositoryImpl(
             val rows = dao.smsKeys()
             val rowsById = rows.associateBy { it.id }
             // کدام ردیف مال کدام پیامک است (با در نظر گرفتن عوض شدن شناسه‌ها در گوشی تازه / بعد از بازگردانی پشتیبان).
-            // جستجو با «زمان + متن» فقط در اسکن کامل؛ اسکن افزایشی فقط شناسه + زمان.
+            // جستجو با «زمان + متن»: در اسکن کامل همه‌ی ردیف‌ها، در اسکن افزایشی فقط ردیف‌های همان بازه.
+            // (اسکن افزایشی هم لازمش دارد: پیامکی که همین چند دقیقه‌ی پیش از گوشی پاک شده، از کپی اپ با شناسه‌ی دیگری می‌آید)
+            var contentKeys: Map<Pair<Long, String>, Long>? = null
+            val contentLookup: suspend () -> Map<Pair<Long, String>, Long> = {
+                contentKeys ?: scan.scannedFromDate.let { from ->
+                    if (from == null) dao.smsContentKeys() else dao.smsContentKeysSince(from)
+                }.associate { (it.dateEpoch to it.smsContent) to it.id }.also { contentKeys = it }
+            }
+            val matcherRows = rows.map { SmsRowMatcher.Row(it.id, it.smsId, it.dateEpoch) }
             val match = SmsRowMatcher.match(
                 scanned = items.map { SmsRowMatcher.Scanned(it.id, it.dateMillis, it.body) },
-                rows = rows.map { SmsRowMatcher.Row(it.id, it.smsId, it.dateEpoch) },
-                contentLookup = if (scan.scannedFromDate == null) {
-                    suspend { dao.smsContentKeys().associate { (it.dateEpoch to it.smsContent) to it.id } }
-                } else {
-                    null
-                },
+                rows = matcherRows,
+                contentLookup = contentLookup,
             )
             val toInsert = mutableListOf<TransactionFlowEntity>()
             val toUpdate = mutableListOf<TransactionFlowEntity>()
 
-            for (item in items) {
-                val old = match.matches[item.id]?.let { rowsById[it] }
+            for (scanned in items) {
+                val old = match.matches[scanned.id]?.let { rowsById[it] }
+                // پیامکی که فقط در کپی اپ مانده: رمز دومش معمولاً هم از گوشی رفته، پس طرف حساب و کارمزدی که
+                // قبلاً از رمز دوم معلوم شده بود حفظ می‌شود (وگرنه یادگیری دسته‌ی همین طرف حساب به هم می‌خورد)
+                val item = if (scanned.fromArchive && old != null) {
+                    val merchant = old.merchant ?: scanned.merchant
+                    scanned.copy(
+                        merchant = merchant,
+                        suggestedCategory = CategorySuggester.suggest(merchant),
+                        feeRial = old.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull()
+                            ?: scanned.feeRial,
+                    )
+                } else {
+                    scanned
+                }
                 if (old != null && (old.categoryId != null || old.transferState == TransactionFlowEntity.TRANSFER_SELF)) {
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
@@ -479,8 +510,10 @@ class TransactionRepositoryImpl(
                     continue
                 }
                 // برداشت به کارت/حسابی که کاربر گفته مال خودش است ← انتقال به خودم (بی‌دسته)
+                // (اسم عمومی، اگر در نسخه‌های قبل یاد گرفته شده بود، نادیده گرفته می‌شود)
                 val toOwnAccount = item.transaction.type == FlowType.WITHDRAWAL &&
                     item.merchant != null && item.merchant in ownAccounts &&
+                    !CategoryLearner.isGenericMerchant(item.merchant) &&
                     (old == null || old.transferState == TransactionFlowEntity.TRANSFER_NONE)
                 if (toOwnAccount) {
                     toInsertOrUpdate(old, item, now, toInsert, toUpdate, null, TransactionFlowEntity.TRANSFER_SELF, null)
@@ -497,15 +530,13 @@ class TransactionRepositoryImpl(
                 )
             }
 
-            // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
+            // پیامکی که قبلاً خودکار تراکنش شده بود و هنوز هست (در صندوق یا کپی اپ) ولی دیگر تراکنش نیست
+            // (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
+            // پیامکی که اصلاً پیدا نشد (کاربر پاکش کرده، گوشی تازه) دلیل حذف نیست: تراکنشش می‌ماند.
             // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
-            // در اسکن افزایشی فقط بازه‌ی خوانده‌شده بررسی می‌شود (پیامک‌های قدیمی‌تر اصلاً خوانده نشده‌اند).
             val matchedRows = match.matches.values.toHashSet()
-            val from = scan.scannedFromDate
-            val gone = rows
-                .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.id !in matchedRows }
-                .filter { from == null || (it.dateEpoch >= from && (it.smsId == null || it.smsId <= scan.maxSmsId)) }
-                .map { it.id }
+            val gone = SmsRowMatcher.noLongerTransactions(scan.nonTransactions, matcherRows, matchedRows, contentLookup)
+                .filter { id -> rowsById[id]?.let { !it.isDeleted && it.source == SOURCE_SMS_AUTO } == true }
 
             // اول شناسه‌ی ردیف‌هایی که مال پیامک دیگری است آزاد شود، بعد نوشتن (وگرنه ایندکس یکتای smsId جلویش را می‌گیرد)
             match.detach.chunked(500).forEach { dao.detachSms(it) }
@@ -513,6 +544,11 @@ class TransactionRepositoryImpl(
             if (toUpdate.isNotEmpty()) dao.updateAll(toUpdate)
             gone.chunked(500).forEach { dao.softDelete(it, now) }
             inserted = toInsert.size
+
+            // کپی پیامک‌های تراکنش در خود اپ (تکراری‌ها نادیده): از این به بعد به صندوق گوشی وابسته نیستند
+            scan.toArchive.chunked(500).forEach { chunk ->
+                archiveDao.insertAll(chunk.map { SmsArchiveEntity(sender = it.sender, bankId = it.bankId, body = it.body, dateEpoch = it.dateMillis, archivedAt = now) })
+            }
 
             // صندوق بررسی: پیامک‌های تازه‌ی خوانده‌نشده اضافه می‌شوند (تکراری‌ها نادیده)،
             // و آن‌هایی که حالا خودکار خوانده شده‌اند، دیگر منتظر نمی‌مانند

@@ -98,6 +98,10 @@ data class SmsFlowKey(
     val dateEpoch: Long,
     val transferState: Int,
     val transferPairId: Long?,
+    /** برای وقتی پیامک فقط در کپی اپ مانده و رمز دومش دیگر نیست: طرف حساب قبلی حفظ می‌شود */
+    val merchant: String?,
+    /** کارمزد (FEE_PREFIX)؛ همان دلیل */
+    val description: String?,
 )
 
 /** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */

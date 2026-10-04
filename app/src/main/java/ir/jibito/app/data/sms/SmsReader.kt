@@ -38,6 +38,8 @@ data class TransactionItem(
     val refundDateMillis: Long?,
     /** کارمزد انتقال، اگر از رمز دوم معلوم شده باشد */
     val feeRial: Long? = null,
+    /** پیامک دیگر در صندوق گوشی نیست و از کپی خود اپ (sms_archive) خوانده شد؛ id منفی است */
+    val fromArchive: Boolean = false,
 )
 
 /**
@@ -55,6 +57,23 @@ data class ReviewCandidate(
     val bankId: Int?,
 )
 
+/** یک پیامک از کپی خود اپ (sms_archive) */
+data class ArchivedSms(
+    val archiveId: Long,
+    val sender: String?,
+    val bankId: Int?,
+    val body: String,
+    val dateMillis: Long,
+)
+
+/** پیامکی که تراکنش خوانده شد و باید در کپی اپ (sms_archive) نگه داشته شود */
+data class ArchiveCandidate(
+    val sender: String,
+    val bankId: Int,
+    val body: String,
+    val dateMillis: Long,
+)
+
 data class ScanResult(
     val transactions: List<TransactionItem>,
     val reviewCandidates: List<ReviewCandidate>,
@@ -65,11 +84,26 @@ data class ScanResult(
     val scannedFromDate: Long?,
     /** سرشماره‌های ناشناسی که رمز پویا فرستاده‌اند (قبلی‌ها + تازه‌ها) */
     val otpSenders: Set<String>,
+    /**
+     * پیامک‌های بانکی که در این اسکن دیده شدند (در صندوق یا کپی اپ) ولی تراکنش نیستند — رمز، تبلیغ،
+     * پولِ برگشتیِ یک خرید ناموفق، یا پیامکی که دیگر خوانده نمی‌شود. فقط ردیف‌های همین پیامک‌ها حذف نرم می‌شوند؛
+     * ردیفی که پیامکش اصلاً پیدا نشد دست نمی‌خورد.
+     */
+    val nonTransactions: List<SmsRowMatcher.Scanned> = emptyList(),
+    /** پیامک‌های صندوق که تراکنش خوانده شدند، برای کپی در sms_archive */
+    val toArchive: List<ArchiveCandidate> = emptyList(),
 )
 
 class SmsReader(private val context: Context) {
 
-    private data class Raw(val id: Long, val sender: String, val body: String, val date: Long, val bank: Bank)
+    private data class Raw(
+        val id: Long,
+        val sender: String,
+        val body: String,
+        val date: Long,
+        val bank: Bank,
+        val fromArchive: Boolean = false,
+    )
 
     /**
      * @param ignoredSenders سرشماره‌هایی (نرمال‌شده) که کاربر گفته «دیگر نشان نده»
@@ -85,6 +119,11 @@ class SmsReader(private val context: Context) {
         /** تاریخ آخرین پیامک پردازش‌شده؛ برای حاشیه‌ی زمانی اسکن افزایشی */
         afterSmsDate: Long = 0L,
         knownOtpSenders: Set<String> = emptySet(),
+        /**
+         * کپی پیامک‌ها در خود اپ؛ با زمان شروع اسکن صدا زده می‌شود (null = اسکن کامل، همه‌ی کپی‌ها).
+         * کپی‌ای که هنوز در صندوق گوشی هست نادیده گرفته می‌شود؛ بقیه مثل پیامک صندوق خوانده می‌شوند.
+         */
+        archived: suspend (fromDate: Long?) -> List<ArchivedSms> = { emptyList() },
     ): ScanResult = withContext(Dispatchers.IO) {
         val reviewSince = System.currentTimeMillis() - REVIEW_WINDOW_MILLIS
         val candidates = mutableListOf<ReviewCandidate>()
@@ -102,6 +141,40 @@ class SmsReader(private val context: Context) {
         val raws = HashMap<Long, Raw>()
         val txRecords = mutableListOf<TxRecord>()
         val otpRecords = mutableListOf<OtpRecord>()
+        // همه‌ی پیامک‌های بانکیِ خوانده‌شده (برای پیدا کردن ردیف‌هایی که دیگر تراکنش نیستند)
+        val seen = mutableListOf<SmsRowMatcher.Scanned>()
+        // متن پیامک‌های بانکیِ صندوق ← زمان‌هایشان (تا کپیِ همان پیامک‌ها دوباره خوانده نشود)
+        val inboxBodies = HashMap<String, MutableList<Long>>()
+
+        /**
+         * یک پیامک بانکی (از صندوق یا کپی اپ): تراکنش، رمز دوم، یا اگر شبیه تراکنش بود ← صندوق بررسی.
+         * اول پارسرهای اپ؛ اگر نشد، قالب‌هایی که کاربر یاد داده.
+         */
+        fun readBankSms(raw: Raw, normalizedSender: String?) {
+            seen += SmsRowMatcher.Scanned(raw.id, raw.date, raw.body)
+            val text = SmsTextNormalizer.normalize(raw.body)
+            val tx = TransactionParser.parse(raw.bank, raw.body)
+                ?: normalizedSender?.let { templates[it] }?.let { TemplateMatcher.match(text, it) }
+            if (tx != null) {
+                raws[raw.id] = raw
+                txRecords += TxRecord(
+                    raw.id, raw.date, raw.bank.id, tx,
+                    isCorrection = PurchaseLinker.isCorrectionText(text),
+                    account = AccountExtractor.find(text),
+                )
+                return
+            }
+            if (raw.fromArchive) return // کپی فقط از پیامک‌هایی است که تراکنش بودند؛ صندوق بررسی مال پیامک‌های صندوق است
+            val otp = TransactionParser.parseOtp(raw.body)
+            if (otp != null) {
+                otpRecords += OtpRecord(raw.id, raw.date, raw.bank.id, otp)
+                return
+            }
+            // فرستنده بانک است ولی متن خوانده نشد: اگر شبیه تراکنش بود ← صندوق بررسی
+            if (raw.date >= reviewSince && ReviewDetector.isCandidate(text, ReviewDetector.BANK_SENDER_BONUS)) {
+                candidates += ReviewCandidate(raw.id, raw.sender, raw.body, raw.date, raw.bank.id)
+            }
+        }
 
         val projection = arrayOf(
             Telephony.Sms._ID,
@@ -168,35 +241,20 @@ class SmsReader(private val context: Context) {
                     }
                     continue
                 }
-                val type = senderType
                 val body = cursor.getString(bodyCol) ?: continue
-                val raw = Raw(smsId, sender, body, smsDate, type.bank)
-
-                // اول پارسرهای اپ؛ اگر نشد، قالب‌هایی که کاربر یاد داده
-                val tx = TransactionParser.parse(raw.bank, body)
-                    ?: templates[normalizedSender]?.let { TemplateMatcher.match(SmsTextNormalizer.normalize(body), it) }
-                if (tx != null) {
-                    raws[raw.id] = raw
-                    val text = SmsTextNormalizer.normalize(body)
-                    txRecords += TxRecord(
-                        raw.id, raw.date, raw.bank.id, tx,
-                        isCorrection = PurchaseLinker.isCorrectionText(text),
-                        account = AccountExtractor.find(text),
-                    )
-                    continue
-                }
-                val otp = TransactionParser.parseOtp(body)
-                if (otp != null) {
-                    otpRecords += OtpRecord(raw.id, raw.date, raw.bank.id, otp)
-                    continue
-                }
-                // فرستنده بانک است ولی متن خوانده نشد: اگر شبیه تراکنش بود ← صندوق بررسی
-                if (raw.date >= reviewSince &&
-                    ReviewDetector.isCandidate(SmsTextNormalizer.normalize(body), ReviewDetector.BANK_SENDER_BONUS)
-                ) {
-                    candidates += ReviewCandidate(raw.id, sender, body, raw.date, raw.bank.id)
-                }
+                inboxBodies.getOrPut(body) { mutableListOf() } += smsDate
+                readBankSms(Raw(smsId, sender, body, smsDate, senderType.bank), normalizedSender)
             }
+        }
+
+        // پیامک‌هایی که از صندوق گوشی رفته‌اند (پاک شده، گوشی تازه، بازگردانی پشتیبان) ← از کپی خود اپ
+        for (a in SmsArchiveMerge.notInInbox(archived(fromDate), inboxBodies)) {
+            val normalizedSender = a.sender?.let(BankDirectory::normalizeSender)
+            val bank = BankDirectory.byId(a.bankId)
+                ?: normalizedSender?.let { adoptedSenders[it] }?.let { BankDirectory.byId(it) }
+                ?: (a.sender?.let(SenderClassifier::classify) as? SenderType.BankSender)?.bank
+                ?: continue
+            readBankSms(Raw(-a.archiveId, a.sender.orEmpty(), a.body, a.dateMillis, bank, fromArchive = true), normalizedSender)
         }
 
         // فرستنده‌ی ناشناس: فقط اگر امتیاز کل به آستانه برسد به صندوق بررسی می‌رود (ثبت خودکار هرگز)
@@ -220,8 +278,10 @@ class SmsReader(private val context: Context) {
                 suggestedCategory = CategorySuggester.suggest(merchant),
                 refundDateMillis = linked.refund?.timeMillis,
                 feeRial = linked.feeRial,
+                fromArchive = raw.fromArchive,
             )
         }
+        val transactionIds = transactions.mapTo(HashSet()) { it.id }
         ScanResult(
             transactions = transactions,
             reviewCandidates = candidates,
@@ -229,6 +289,9 @@ class SmsReader(private val context: Context) {
             maxSmsDate = maxDate,
             scannedFromDate = fromDate,
             otpSenders = otpSenders,
+            nonTransactions = seen.filter { it.smsId !in transactionIds },
+            toArchive = raws.values.filter { !it.fromArchive }
+                .map { ArchiveCandidate(it.sender, it.bank.id, it.body, it.date) },
         )
     }
 

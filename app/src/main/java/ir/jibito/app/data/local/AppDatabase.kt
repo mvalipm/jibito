@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import ir.jibito.app.data.local.dao.CategoryDao
 import ir.jibito.app.data.local.dao.RecurringDao
 import ir.jibito.app.data.local.dao.ReviewDao
+import ir.jibito.app.data.local.dao.SmsArchiveDao
 import ir.jibito.app.data.local.dao.SummaryDao
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
@@ -14,6 +15,7 @@ import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.OwnAccountEntity
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.RecurringPaymentEntity
+import ir.jibito.app.data.local.entity.SmsArchiveEntity
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.dao.TransactionFlowDao
 import ir.jibito.app.data.local.entity.CategoryEntity
@@ -39,6 +41,7 @@ import ir.jibito.app.data.local.migration.Migrations
         OwnAccountEntity::class,
         OverallBudgetEntity::class,
         RecurringPaymentEntity::class,
+        SmsArchiveEntity::class,
     ],
     version = AppDatabase.VERSION,
     exportSchema = true,
@@ -50,10 +53,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun summaryDao(): SummaryDao
     abstract fun reviewDao(): ReviewDao
     abstract fun recurringDao(): RecurringDao
+    abstract fun smsArchiveDao(): SmsArchiveDao
 
     companion object {
         /** نسخه‌ی فعلی ساختار دیتابیس (برای Migration ها، پشتیبان‌گیری و تست‌ها) */
-        const val VERSION = 11
+        const val VERSION = 12
 
         /** اسم فایل دیتابیس روی گوشی */
         const val NAME = "jibito.db"
