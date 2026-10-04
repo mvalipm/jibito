@@ -246,7 +246,7 @@ fun StepDots(current: Int, total: Int, modifier: Modifier = Modifier) {
                     .height(6.dp)
                     .width(if (i == current) 18.dp else 6.dp)
                     .clip(CircleShape)
-                    .background(if (i == current) accent else t.chip)
+                    .background(if (i == current) accent else t.handle)
             )
         }
     }

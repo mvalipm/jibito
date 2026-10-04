@@ -116,6 +116,20 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                 .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, top = 10.dp)
         ) {
+            // خط میانگین ماه‌های تمام‌شده (زیر ستون‌ها و عددها کشیده می‌شود)
+            if (average != null && !hidden) {
+                val y = barHeight(average)
+                val lineColor = t.faint
+                Box(
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(bottom = y)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        // خط پر و نازک (خط‌چین مال پیش‌بینی ماه جاری است)
+                        .background(lineColor)
+                )
+            }
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -179,7 +193,11 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                         // عدد ستون: همیشه بالای بلندترِ ستون و قاب، در جای ثابت خودش
                         Text(
                             if (hidden) "••" else Money.inUnit(m.spentRial, unit),
-                            modifier = Modifier.padding(bottom = maxOf(h, frame ?: 0.dp) + 6.dp),
+                            modifier = Modifier
+                                .padding(bottom = maxOf(h, frame ?: 0.dp) + 6.dp)
+                                // زمینه‌ی هم‌رنگ صفحه تا خط میانگین از روی عدد رد نشود
+                                .background(colors.background)
+                                .padding(horizontal = 2.dp),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (current) (if (t.dark) colors.onBackground else highlight) else t.faint,
@@ -187,20 +205,6 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                         )
                     }
                 }
-            }
-            // خط میانگین ماه‌های تمام‌شده
-            if (average != null && !hidden) {
-                val y = barHeight(average)
-                val lineColor = t.faint
-                Box(
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(bottom = y)
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        // خط پر و نازک (خط‌چین مال پیش‌بینی ماه جاری است)
-                        .background(lineColor)
-                )
             }
         }
         // اسم ماه‌ها، جدا از ستون‌ها (تا طول اسم خط پایه را جابه‌جا نکند)
