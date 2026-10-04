@@ -72,7 +72,12 @@ import org.robolectric.annotation.GraphicsMode
 @OptIn(ExperimentalRoborazziApi::class)
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34], qualifiers = "w400dp-h860dp-xxhdpi", instrumentedPackages = ["ir.jibito.app"])
+@Config(
+    sdk = [34],
+    qualifiers = "w400dp-h860dp-xxhdpi",
+    application = JibitoApplication::class,
+    instrumentedPackages = ["ir.jibito.app"],
+)
 class AppScreensScreenshotTest {
 
     companion object {
