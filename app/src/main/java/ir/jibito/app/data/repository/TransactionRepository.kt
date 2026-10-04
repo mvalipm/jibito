@@ -314,6 +314,8 @@ class TransactionRepositoryImpl(
                 // خود کاربر همین الان ثبتش کرده؛ نوتیفیکیشن «مال چی بود؟» لازم نیست
                 notifiedAt = now,
                 isAutoCategorized = false,
+                // دسته‌ای که موقع ثبت دستی انتخاب شده، انتخاب خود کاربر است (برای یادگیری)
+                categorizedAt = if (categoryId != null) now else null,
             )
         )
         onCategoryChanged()
@@ -337,7 +339,7 @@ class TransactionRepositoryImpl(
             snapshot.rows.forEach {
                 dao.restoreUserState(
                     it.id, it.categoryId, it.isAutoCategorized, it.suggestedCategory,
-                    it.transferState, it.transferPairId, it.isDeleted, now,
+                    it.transferState, it.transferPairId, it.isDeleted, it.categorizedAt, now,
                 )
             }
         }
@@ -474,7 +476,7 @@ class TransactionRepositoryImpl(
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
                         old.id, old.categoryId, old.isAutoCategorized, old.notifiedAt, now,
-                        old.transferState, old.transferPairId,
+                        old.transferState, old.transferPairId, categorizedAt = old.categorizedAt,
                     )
                     continue
                 }
@@ -594,6 +596,8 @@ class TransactionRepositoryImpl(
         transferPairId: Long?,
         /** دسته‌ای که از انتخاب‌های کاربر یاد گرفته شده؛ بر پیشنهادِ کلمه‌ای (CategorySuggester) مقدم است */
         learnedSuggestion: String? = null,
+        /** زمان انتخاب دسته توسط کاربر؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
+        categorizedAt: Long? = null,
     ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
@@ -616,6 +620,7 @@ class TransactionRepositoryImpl(
         isAutoCategorized = isAutoCategorized,
         transferState = transferState,
         transferPairId = transferPairId,
+        categorizedAt = categorizedAt,
     )
 
     private companion object {

@@ -58,4 +58,23 @@ class TemplateMatcherTest {
         assertEquals(FlowType.DEPOSIT, tx!!.type)
         assertEquals(1_000_000L, tx.amountRial)
     }
+
+    private val withdrawal = "بانک ایکس\nبرداشت حساب 1111222233\n350,000 ریال\nمانده 1,200,000\n1405/07/09 12:30"
+    private val deposit = "بانک ایکس\nواریز حساب 1111222233\n500,000 ریال\nمانده 1,700,000\n1405/07/10 09:00"
+
+    @Test
+    fun `قالب برداشت روی پیامک واریز همان بانک اعمال نمی‌شود`() {
+        val t = learnFrom(withdrawal, 350_000, 1_200_000, FlowType.WITHDRAWAL)
+        assertNull(TemplateMatcher.match(n(deposit), listOf(t)))
+    }
+
+    @Test
+    fun `با قالب واریز جدا، هر پیامک نوع درست خودش را می‌گیرد`() {
+        val w = learnFrom(withdrawal, 350_000, 1_200_000, FlowType.WITHDRAWAL)
+        val d = learnFrom(deposit, 500_000, 1_700_000, FlowType.DEPOSIT)
+        val nextDeposit = n("بانک ایکس\nواریز حساب 1111222233\n800,000 ریال\nمانده 2,500,000\n1405/07/11 10:00")
+        val nextWithdrawal = n("بانک ایکس\nبرداشت حساب 1111222233\n90,000 ریال\nمانده 2,410,000\n1405/07/11 11:00")
+        assertEquals(FlowType.DEPOSIT, TemplateMatcher.match(nextDeposit, listOf(w, d))!!.type)
+        assertEquals(FlowType.WITHDRAWAL, TemplateMatcher.match(nextWithdrawal, listOf(w, d))!!.type)
+    }
 }

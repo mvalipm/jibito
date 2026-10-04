@@ -64,12 +64,16 @@ object SmartParser : SmsParser {
             }
         }
 
+        // نه کلمه‌ای نوع را معلوم کرد (امتیاز صفر) نه علامت + / − ← حدس نمی‌زنیم (قبلاً «واریز» فرض می‌شد
+        // و درآمد را بیشتر از واقع نشان می‌داد). پیامک خوانده نمی‌شود و اگر شبیه تراکنش است به صندوق بررسی می‌رود.
+        if (score == 0 && !signed) return null
+
         // ۴. اگر عدد سه‌رقمی پیدا نشد، دنبال «مبلغ: 250000» و «مانده: ...» بگرد
         if (amount == null) amount = findAfterKey(text, amountKeys)
         if (balance == null) balance = findAfterKey(text, balanceKeys)
 
         val finalAmount = amount ?: return null
-        if (finalAmount <= 0 || finalAmount >= MAX_AMOUNT_RIAL) return null
+        if (finalAmount <= 0) return null
         // مانده‌ی برابر با مبلغ معمولاً تکرار اشتباهی همان عدد است — مگر صریحاً بعد از «مانده/موجودی» آمده باشد
         // (مثلاً اولین واریز به حساب بلوبانک: «۱,۰۰۰,۰۰۰ ریال به حساب شما نشست. موجودی: ۱,۰۰۰,۰۰۰ ریال»)
         if (balance == finalAmount && !signed && BalanceFinder.find(text) != finalAmount) balance = null

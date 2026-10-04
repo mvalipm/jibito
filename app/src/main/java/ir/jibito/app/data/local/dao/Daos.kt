@@ -37,7 +37,7 @@ interface TransactionFlowDao {
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
     /** همه‌ی ردیف‌های پیامکی (ثبت دستی نه)؛ smsId ردیفی که شناسه‌اش آزاد شده null است */
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId FROM transaction_flows WHERE source != 'MANUAL'")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, categorizedAt FROM transaction_flows WHERE source != 'MANUAL'")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** «زمان + متن» ردیف‌های پیامکی، برای پیدا کردن ردیف قبلی وقتی شناسه‌ی پیامک‌ها عوض شده (گوشی تازه) */
@@ -55,15 +55,22 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET notifiedAt = :now WHERE id = :id")
     suspend fun markNotified(id: Long, now: Long)
 
-    /** دسته‌ای که خود کاربر انتخاب کرده (دیگر «خودکار» نیست). */
-    @Query("UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 0, updatedAt = :now WHERE id = :id")
+    /** دسته‌ای که خود کاربر انتخاب کرده (دیگر «خودکار» نیست)؛ زمان انتخاب برای یادگیری ثبت می‌شود. */
+    @Query(
+        """
+        UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 0, updatedAt = :now,
+            categorizedAt = CASE WHEN :categoryId IS NULL THEN NULL ELSE :now END
+        WHERE id = :id
+        """
+    )
     suspend fun setCategory(id: Long, categoryId: Long?, now: Long)
 
     @Query("SELECT * FROM transaction_flows WHERE id = :id")
     suspend fun byId(id: Long): TransactionFlowEntity?
 
     /**
-     * یادگیری: دسته‌هایی که «خود کاربر» برای این طرف حساب انتخاب کرده، تازه‌ترین اول.
+     * یادگیری: دسته‌هایی که «خود کاربر» برای این طرف حساب انتخاب کرده، تازه‌ترین انتخاب اول
+     * (به زمان انتخاب؛ انتخاب‌های قبل از نسخه‌ی ۱۲ دیتابیس که زمان ندارند، به تاریخ تراکنش).
      * (دسته‌های خودکار حساب نمی‌شوند، تا یک اشتباه خودش را تکرار نکند.)
      */
     @Query(
@@ -71,7 +78,7 @@ interface TransactionFlowDao {
         SELECT categoryId FROM transaction_flows
         WHERE merchant = :merchant AND flowType = :flowType AND categoryId IS NOT NULL
           AND isAutoCategorized = 0 AND isDeleted = 0 AND transferState != 1
-        ORDER BY dateEpoch DESC LIMIT :limit
+        ORDER BY COALESCE(categorizedAt, dateEpoch) DESC, id DESC LIMIT :limit
         """
     )
     suspend fun userChoices(merchant: String, flowType: Int, limit: Int): List<Long>
@@ -155,7 +162,7 @@ interface TransactionFlowDao {
         """
         UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = :isAuto,
             suggestedCategory = :suggested, transferState = :transferState, transferPairId = :transferPairId,
-            isDeleted = :isDeleted, updatedAt = :now
+            isDeleted = :isDeleted, categorizedAt = :categorizedAt, updatedAt = :now
         WHERE id = :id
         """
     )
@@ -167,6 +174,7 @@ interface TransactionFlowDao {
         transferState: Int,
         transferPairId: Long?,
         isDeleted: Boolean,
+        categorizedAt: Long?,
         now: Long,
     )
 

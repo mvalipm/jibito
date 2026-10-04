@@ -1,6 +1,7 @@
 package ir.jibito.app.data.review
 
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.parser.MAX_AMOUNT_DIGITS
 import ir.jibito.app.data.parser.ParsedTransaction
 
 /**
@@ -28,6 +29,13 @@ object TemplateMatcher {
 
     /** حداقل شباهت کلمه‌های دو پیامک تا «هم‌قالب» حساب شوند */
     private const val MIN_SIMILARITY = 0.7
+
+    /** کلمه‌هایی که نوع تراکنش (واریز یا برداشت) را نشان می‌دهند */
+    private val typeWords = listOf(
+        "واریز", "برداشت", "کسر", "خرید", "پرداخت", "انتقال", "حواله", "سود", "برگشت", "اصلاحیه", "وصول", "شارژ",
+    )
+
+    private fun typeWordsIn(text: String): Set<String> = typeWords.filterTo(HashSet()) { text.contains(it) }
 
     private val numberPattern = Regex("\\d[\\d,،]*\\d|\\d")
     private val wordSplit = Regex("[\\s:،,.\\-_/()+]+")
@@ -69,14 +77,18 @@ object TemplateMatcher {
         if (templates.isEmpty()) return null
         val matches = ReviewDetector.allNumberMatches(text)
         val sk = skeleton(text)
+        val words = typeWordsIn(sk)
         val template = templates
             .filter { it.numberCount == matches.size && it.amountPos < matches.size }
+            // کلمه‌های نوع تراکنش باید یکی باشند: قالبی که از «برداشت» یاد گرفته شده روی «واریز» اعمال نشود
+            // (دو پیامکی که فقط در همین یک کلمه فرق دارند، شباهتشان از آستانه بیشتر است)
+            .filter { typeWordsIn(it.skeleton) == words }
             .maxByOrNull { similarity(sk, it.skeleton) }
             ?.takeIf { similarity(sk, it.skeleton) >= MIN_SIMILARITY }
             ?: return null
 
         fun valueAt(pos: Int): Long? =
-            matches.getOrNull(pos)?.value?.filter { it in '0'..'9' }?.takeIf { it.length in 1..13 }?.toLong()
+            matches.getOrNull(pos)?.value?.filter { it in '0'..'9' }?.takeIf { it.length in 1..MAX_AMOUNT_DIGITS }?.toLong()
 
         val amountRaw = matches[template.amountPos].value
         val amount = valueAt(template.amountPos)?.takeIf { it > 0 } ?: return null
@@ -88,7 +100,6 @@ object TemplateMatcher {
         }
         val factor = if (text.contains("تومان") && !text.contains("ریال")) 10 else 1
         val amountRial = amount * factor
-        if (amountRial >= 10_000_000_000L) return null
         return ParsedTransaction(type, amountRial, balance?.times(factor))
     }
 }

@@ -57,6 +57,18 @@ class MigrationTest {
     @Test fun migrateFrom8() = migrateFrom(8)
     @Test fun migrateFrom9() = migrateFrom(9)
     @Test fun migrateFrom10() = migrateFrom(10)
+    @Test fun migrateFrom11() = migrateFrom(11)
+
+    @Test
+    fun categorizedAtEmptyForExistingRowsAfter11To12() {
+        createAt(11)
+        openWithRoom().use { db ->
+            db.openHelper.readableDatabase.query("SELECT categorizedAt FROM transaction_flows WHERE smsId = 77").use {
+                assertTrue(it.moveToFirst())
+                assertTrue("old choices have no choice time", it.isNull(0))
+            }
+        }
+    }
 
     @Test
     fun recurringPaymentsTableUsableAfter10To11() {
