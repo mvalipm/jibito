@@ -89,7 +89,7 @@ class SpendWidget : AppWidgetProvider() {
         private const val LARGE_H = 270f
 
         /** بخش‌های ثابت طرح بزرگ (dp)؛ باقی ارتفاع مال نمودار است */
-        private const val LARGE_FIXED_HEIGHT = 232f
+        private const val LARGE_FIXED_HEIGHT = 250f
 
         /** همه‌ی ویجت‌های روی صفحه را به‌روز می‌کند؛ اگر ویجتی نیست، کاری نمی‌کند. */
         suspend fun refresh(context: Context) {

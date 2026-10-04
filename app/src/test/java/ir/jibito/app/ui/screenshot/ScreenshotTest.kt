@@ -356,8 +356,8 @@ class ScreenshotTest {
         // خرج هفت روز اخیر به ریال (قدیمی به جدید؛ آخری امروز)
         fun week(vararg tomanMillions: Double) = tomanMillions.map { (it * 10_000_000).toLong() }
         val cases = listOf(
-            // هنوز خرجی نکرده، عقب‌تر از برنامه (مثل گوشی کاربر)
-            "calm" to SpendWidget.Numbers(0, 752_000_000, 2_000_000_000, week(5.2, 8.1, 3.4, 9.8, 6.0, 4.4, 0.0)),
+            // هنوز خرجی نکرده، عقب‌تر از برنامه
+            "calm" to SpendWidget.Numbers(0, 500_000_000, 2_000_000_000, week(5.2, 8.1, 3.4, 9.8, 6.0, 4.4, 0.0)),
             "warn" to SpendWidget.Numbers(18_000_000, 510_000_000, 600_000_000, week(2.1, 2.7, 1.2, 1.9, 0.9, 1.7, 1.8)),
             "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000, week(2.1, 3.0, 1.5, 2.4, 1.4, 1.8, 0.6)),
             "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null, week(1.4, 2.0, 0.7, 2.4, 1.2, 0.9, 0.6)),

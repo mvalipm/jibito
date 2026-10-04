@@ -110,9 +110,11 @@ internal object SpendWidgetArt {
                 val bh = (value / top * plotH).coerceAtLeast(3 * d)
                 val high = allHigh || (share != null && value > share) || (share == null && today)
                 bar.alpha = if (high) ALPHA_HIGH else ALPHA_DAY
-                canvas.drawRoundRect(RectF(left, plotBottom - bh, left + barW, plotBottom), radius, radius, bar)
-                // پایه‌ی ستون صاف باشد (فقط سرش گرد)
-                canvas.drawRect(left, plotBottom - minOf(bh, radius), left + barW, plotBottom, bar)
+                // فقط سر ستون گرد است: گوشه‌های پایین زیر خط پایه بریده می‌شوند (دو شکل نیمه‌شفاف روی هم رنگ را تیره می‌کرد)
+                canvas.save()
+                canvas.clipRect(left, 0f, left + barW, plotBottom)
+                canvas.drawRoundRect(RectF(left, plotBottom - bh, left + barW, plotBottom + radius), radius, radius, bar)
+                canvas.restore()
             }
             text.color = if (today) color else muted
             text.typeface = font(context, if (today) R.font.vazirmatn_black else R.font.vazirmatn_medium)
