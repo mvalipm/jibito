@@ -51,12 +51,19 @@ object Jalali {
         val yesterday = Calendar.getInstance().apply { timeInMillis = today; add(Calendar.DAY_OF_MONTH, -1) }.timeInMillis
         if (day == yesterday) return "دیروز"
         val cal = Calendar.getInstance().apply { timeInMillis = day }
-        val (jy, jm, jd) = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
+        val jy = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH)).first
         val nowCal = Calendar.getInstance().apply { timeInMillis = today }
         val thisYear = fromGregorian(nowCal.get(Calendar.YEAR), nowCal.get(Calendar.MONTH) + 1, nowCal.get(Calendar.DAY_OF_MONTH)).first
+        val year = if (jy != thisYear) toPersianDigits(" $jy") else ""
+        return weekdayDate(day) + year
+    }
+
+    /** روز هفته و تاریخ بدون سال: «پنجشنبه ۹ مهر» */
+    fun weekdayDate(epochMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = epochMillis }
+        val (_, jm, jd) = fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         val weekday = WEEKDAY_NAMES[cal.get(Calendar.DAY_OF_WEEK) - 1]
-        val year = if (jy != thisYear) " $jy" else ""
-        return toPersianDigits("$weekday $jd ${MONTH_NAMES[jm - 1]}$year")
+        return toPersianDigits("$weekday $jd ${MONTH_NAMES[jm - 1]}")
     }
 
     /** به ترتیب Calendar.DAY_OF_WEEK (یکشنبه = ۱) */

@@ -361,11 +361,18 @@
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
     <string name="widget_today">امروز</string>
     <string name="widget_amount">%1$s تومان</string>
-    <string name="widget_month">این ماه %1$s</string>
-    <string name="widget_left">%1$s مونده از بودجه‌ی ماه</string>
-    <string name="widget_over">این ماه %1$s از بودجه زدی بیرون</string>
-    <string name="widget_ring_label">ماه</string>
+    <string name="widget_month">این ماه %1$s تومان</string>
+    <string name="widget_left">%1$s تومان مونده</string>
+    <string name="widget_over">%1$s از بودجه زدی بیرون</string>
+    <string name="widget_left_small">%1$s مونده · %2$s</string>
+    <string name="widget_over_small">%1$s رد شدی · %2$s</string>
+    <string name="widget_zero">هنوز خرجی نکردی</string>
+    <string name="widget_share_left">امروز هنوز %1$s جا داری</string>
+    <string name="widget_share_over">%1$s بیشتر از سهم امروز</string>
+    <string name="widget_days_left">%1$s روز تا آخر ماه</string>
+    <string name="widget_last_day">امروز روز آخر ماهه</string>
     <string name="widget_locked_label">جیبیتو</string>
+    <string name="widget_locked_title">مبلغ‌ها پنهانه</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
 
     <!-- پرداخت‌های ماهانه -->
@@ -552,7 +559,7 @@
     <string name="settings_banner_notify">نوتیف خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود.</string>
     <string name="settings_banner_sms">جیبیتو نمی‌تونه پیامک‌های بانکت رو بخونه؛ خرج‌ها خودکار ثبت نمی‌شن.</string>
     <string name="tx_ask_expense">مال چی بود؟</string>
-    <string name="widget_ring_cd">%1$s بودجه‌ی ماه خرج شده</string>
+    <string name="widget_bar_cd">%1$s بودجه‌ی ماه خرج شده</string>
     <string name="settings_roots_count">%1$d از %2$d</string>
 
     <!-- تنظیمات: صفحه‌ی اصلی (گروه‌ها و ردیف‌ها) و زیرصفحه‌ها -->

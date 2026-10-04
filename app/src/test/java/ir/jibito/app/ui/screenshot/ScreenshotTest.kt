@@ -355,25 +355,30 @@ class ScreenshotTest {
     fun widget() {
         val cases = listOf(
             "calm" to SpendWidget.Numbers(6_050_000, 60_000_000, 300_000_000),
+            "zero" to SpendWidget.Numbers(0, 112_000_000, 300_000_000),
             "warn" to SpendWidget.Numbers(6_050_000, 255_000_000, 300_000_000),
             "over" to SpendWidget.Numbers(6_050_000, 330_000_000, 300_000_000),
             "nobudget" to SpendWidget.Numbers(6_050_000, 184_000_000, null),
             "locked" to null,
         )
+        // اندازه‌ی معمولی (مثل ۳×۲ / ۴×۲) و کوچک (مثل ۳×۱)
+        val sizes = listOf(Triple("", 260, 160), Triple("_small", 200, 96))
         for (dark in listOf(false, true)) {
             RuntimeEnvironment.setQualifiers(if (dark) "+night" else "+notnight")
             for ((name, n) in cases) {
-                val context = RuntimeEnvironment.getApplication()
-                val views = SpendWidget.views(context, n, now)
-                captureRoboImage(
-                    "src/test/screenshots/widget_${name}_${if (dark) "dark" else "light"}.png",
-                    roborazziOptions = options,
-                ) {
-                    Box(Modifier.padding(12.dp)) {
-                        AndroidView(
-                            factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
-                            modifier = Modifier.size(width = 260.dp, height = 115.dp),
-                        )
+                for ((suffix, width, height) in sizes) {
+                    val context = RuntimeEnvironment.getApplication()
+                    val views = SpendWidget.views(context, n, now, small = suffix.isNotEmpty())
+                    captureRoboImage(
+                        "src/test/screenshots/widget_${name}${suffix}_${if (dark) "dark" else "light"}.png",
+                        roborazziOptions = options,
+                    ) {
+                        Box(Modifier.padding(12.dp)) {
+                            AndroidView(
+                                factory = { ctx -> views.apply(ctx, FrameLayout(ctx)) },
+                                modifier = Modifier.size(width = width.dp, height = height.dp),
+                            )
+                        }
                     }
                 }
             }

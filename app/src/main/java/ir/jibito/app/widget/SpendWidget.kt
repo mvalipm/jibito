@@ -7,6 +7,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
@@ -26,7 +30,8 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * ویجت صفحه‌ی اصلی: «امروز چقدر خرج کردم» + خرج این ماه + باقی‌مانده و حلقه‌ی بودجه‌ی کل ماه.
+ * ویجت صفحه‌ی اصلی: «امروز چقدر خرج کردم» + خرج این ماه + باقی‌مانده و نوار بودجه‌ی کل ماه، و «سهم امروز» از بودجه.
+ * دو طرح: معمولی و کوچک (برای ویجت کوتاه یا باریک).
  * رنگ زمینه «حال جیب» است (آرام / نزدیک سقف / رد شده، مثل صفحه‌ی خلاصه) و جیبی کوچک کنار عنوان، رد شدن از بودجه نگران می‌شود.
  * بعد از هر همگام‌سازی و هر تغییر دسته به‌روز می‌شود (و هر ۳۰ دقیقه، توسط خود اندروید).
  * اگر قفل اپ روشن باشد، مبلغ‌ها روی صفحه‌ی اصلی نشان داده نمی‌شوند.
@@ -44,6 +49,11 @@ class SpendWidget : AppWidgetProvider() {
         }
     }
 
+    /** با تغییر اندازه‌ی ویجت، طرح کوچک یا معمولی (برای اندروید قبل از ۱۲؛ بعد از آن خود لانچر عوض می‌کند) */
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        onUpdate(context, manager, intArrayOf(appWidgetId))
+    }
+
     /** اعداد ویجت (به ریال) */
     data class Numbers(val todayRial: Long, val monthRial: Long, val overallBudgetRial: Long?)
 
@@ -57,22 +67,39 @@ class SpendWidget : AppWidgetProvider() {
             render(context, manager, ids)
         }
 
-        private suspend fun render(context: Context, manager: AppWidgetManager, ids: IntArray) {
-            val views = try {
-                build(context)
+        internal suspend fun render(context: Context, manager: AppWidgetManager, ids: IntArray) {
+            try {
+                val container = (context.applicationContext as JibitoApplication).container
+                val locked = container.appLockSettings.enabled.value
+                val now = System.currentTimeMillis()
+                val n = if (locked) null else numbers(container.database, now)
+                for (id in ids) manager.updateAppWidget(id, responsive(context, n, now, manager.getAppWidgetOptions(id)))
             } catch (e: Exception) {
                 ErrorLog.record(context, "widget", e)
-                return
             }
-            for (id in ids) manager.updateAppWidget(id, views)
         }
 
-        private suspend fun build(context: Context): RemoteViews {
-            val container = (context.applicationContext as JibitoApplication).container
-            val locked = container.appLockSettings.enabled.value
-            val now = System.currentTimeMillis()
-            val n = if (locked) null else numbers(container.database, now)
-            return views(context, n, now)
+        /** از این اندازه (dp) به بالا طرح معمولی (با تاریخ، خط راهنما و نوار بودجه)؛ کوچک‌تر، طرح کوچک */
+        private const val REGULAR_MIN_WIDTH = 160f
+        private const val REGULAR_MIN_HEIGHT = 136f
+
+        /**
+         * اندروید ۱۲ به بعد: هر دو طرح را می‌دهد و خود لانچر با هر تغییر اندازه، طرح مناسب را می‌کشد.
+         * قبل از آن: از روی اندازه‌ی فعلی (در حالت عمودی، عرض کمینه و ارتفاع بیشینه است).
+         */
+        private fun responsive(context: Context, n: Numbers?, now: Long, options: Bundle?): RemoteViews {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                return RemoteViews(
+                    mapOf(
+                        SizeF(0f, 0f) to views(context, n, now, small = true),
+                        SizeF(REGULAR_MIN_WIDTH, REGULAR_MIN_HEIGHT) to views(context, n, now, small = false),
+                    ),
+                )
+            }
+            val width = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 0
+            val height = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT) ?: 0
+            val small = (width in 1 until REGULAR_MIN_WIDTH.toInt()) || (height in 1 until REGULAR_MIN_HEIGHT.toInt())
+            return views(context, n, now, small)
         }
 
         /** حال جیب، مثل بالای صفحه‌ی خلاصه */
@@ -93,12 +120,31 @@ class SpendWidget : AppWidgetProvider() {
             }
         }
 
+        /** چند روز از ماه مانده، با امروز (روز آخر = ۱) */
+        internal fun daysLeft(now: Long): Int {
+            val day = 24 * 60 * 60 * 1000L
+            val left = (JalaliMonth.of(now).endMillis() - Jalali.startOfDay(now) + day / 2) / day
+            return left.toInt().coerceAtLeast(1)
+        }
+
+        /**
+         * سهم امروز از بودجه: آنچه تا دیروز از بودجه مانده، تقسیم بر روزهای باقی‌مانده (با امروز).
+         * null یعنی بودجه‌ای نیست یا تا دیروز تمام شده.
+         */
+        internal fun dailyShare(n: Numbers, now: Long): Long? {
+            val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return null
+            val leftBeforeToday = budget - (n.monthRial - n.todayRial)
+            if (leftBeforeToday <= 0) return null
+            return leftBeforeToday / daysLeft(now)
+        }
+
         /**
          * ظاهر ویجت از روی عددها (بدون دیتابیس؛ تست اسکرین‌شات هم همین را می‌کشد).
          * @param n null یعنی قفل اپ روشن است: مبلغ‌ها نشان داده نمی‌شوند
+         * @param small طرح کوچک (widget_spend_small): بدون تاریخ، خط راهنما و نوار
          */
-        internal fun views(context: Context, n: Numbers?, now: Long): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_spend)
+        internal fun views(context: Context, n: Numbers?, now: Long, small: Boolean = false): RemoteViews {
+            val views = RemoteViews(context.packageName, if (small) R.layout.widget_spend_small else R.layout.widget_spend)
             val open = PendingIntent.getActivity(
                 context,
                 0,
@@ -109,9 +155,11 @@ class SpendWidget : AppWidgetProvider() {
 
             if (n == null) {
                 views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_locked_label))
-                views.setTextViewText(R.id.widget_today, "🔒")
+                views.setTextViewText(R.id.widget_today, "🔒 " + context.getString(R.string.widget_locked_title))
+                views.setTextViewTextSize(R.id.widget_today, TypedValue.COMPLEX_UNIT_SP, if (small) 16f else 20f)
                 views.setViewVisibility(R.id.widget_unit, View.GONE)
                 views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_locked_hint))
+                views.setTextColor(R.id.widget_month, ContextCompat.getColor(context, R.color.widget_muted))
                 return views
             }
 
@@ -134,38 +182,73 @@ class SpendWidget : AppWidgetProvider() {
                 if (mood == Mood.OVER) R.drawable.widget_mascot_worried else R.drawable.widget_mascot_happy,
             )
             views.setTextColor(R.id.widget_label, muted)
+            if (!small) {
+                views.setTextViewText(R.id.widget_date, Jalali.weekdayDate(now))
+                views.setTextColor(R.id.widget_date, muted)
+            }
 
-            // «۶۰۵ هزار» ← عدد درشت + «هزار تومان» کوچک کنارش
-            val compact = Money.compact(n.todayRial)
-            val split = compact.lastIndexOf(' ')
-            val number = if (split > 0) compact.substring(0, split) else compact
-            val unit = listOfNotNull(compact.substring(split + 1).takeIf { split > 0 }, context.getString(R.string.unit_toman))
-                .joinToString(" ")
-            views.setTextViewText(R.id.widget_today, number)
+            // خرج امروز: «۶۰۵ هزار» ← عدد درشت + «هزار تومان» کوچک کنارش.
+            // صفر یک جمله است، نه «۰»: صفر فارسی تنها روی ویجت فقط یک نقطه دیده می‌شود.
+            if (n.todayRial <= 0) {
+                views.setTextViewText(R.id.widget_today, context.getString(R.string.widget_zero))
+                views.setTextViewTextSize(R.id.widget_today, TypedValue.COMPLEX_UNIT_SP, if (small) 18f else 22f)
+                views.setViewVisibility(R.id.widget_unit, View.GONE)
+            } else {
+                val (number, unit) = Money.compactParts(n.todayRial)
+                views.setTextViewText(R.id.widget_today, number)
+                views.setTextViewText(
+                    R.id.widget_unit,
+                    listOf(unit, context.getString(R.string.unit_toman)).filter { it.isNotEmpty() }.joinToString(" "),
+                )
+                views.setTextColor(R.id.widget_unit, muted)
+            }
             views.setTextColor(R.id.widget_today, text)
-            views.setTextViewText(R.id.widget_unit, unit)
-            views.setTextColor(R.id.widget_unit, muted)
-            // یک خط زیر عدد (جای ویجت کوچک است): با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه»
+
             val budget = n.overallBudgetRial?.takeIf { it > 0 }
             if (budget == null) {
                 views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
                 views.setTextColor(R.id.widget_month, muted)
-                views.setViewVisibility(R.id.widget_ring_box, View.GONE)
                 return views
             }
+
             val left = budget - n.monthRial
+            val percent = (n.monthRial * 100 / budget).toInt()
+            val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
+            if (small) {
+                views.setTextViewText(
+                    R.id.widget_month,
+                    if (left >= 0) context.getString(R.string.widget_left_small, Money.compact(left), percentText)
+                    else context.getString(R.string.widget_over_small, Money.compact(-left), percentText),
+                )
+                views.setTextColor(R.id.widget_month, text)
+                return views
+            }
+
+            // خط راهنما زیر عدد: امروز نسبت به سهم روزانه کجاست
+            val share = dailyShare(n, now)
+            val days = daysLeft(now)
+            val hint = when {
+                share == null -> if (days == 1) context.getString(R.string.widget_last_day)
+                else context.getString(R.string.widget_days_left, Jalali.toPersianDigits(days.toString()))
+                n.todayRial <= share -> context.getString(R.string.widget_share_left, Money.compact(share - n.todayRial))
+                else -> context.getString(R.string.widget_share_over, Money.compact(n.todayRial - share))
+            }
+            views.setTextViewText(R.id.widget_sub, hint)
+            views.setTextColor(R.id.widget_sub, muted)
+            views.setViewVisibility(R.id.widget_sub, View.VISIBLE)
+
+            views.setViewVisibility(R.id.widget_bar, View.VISIBLE)
+            views.setProgressBar(R.id.widget_bar, 100, percent.coerceIn(0, 100), false)
+            views.setContentDescription(R.id.widget_bar, context.getString(R.string.widget_bar_cd, percentText))
             views.setTextViewText(
                 R.id.widget_month,
                 if (left >= 0) context.getString(R.string.widget_left, Money.compact(left))
                 else context.getString(R.string.widget_over, Money.compact(-left)),
             )
             views.setTextColor(R.id.widget_month, text)
-            val percent = (n.monthRial * 100 / budget).toInt()
-            val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
-            views.setViewVisibility(R.id.widget_ring_box, View.VISIBLE)
-            views.setProgressBar(R.id.widget_ring, 100, percent.coerceIn(0, 100), false)
+            views.setViewVisibility(R.id.widget_percent, View.VISIBLE)
             views.setTextViewText(R.id.widget_percent, percentText)
-            views.setContentDescription(R.id.widget_ring_box, context.getString(R.string.widget_ring_cd, percentText))
+            views.setTextColor(R.id.widget_percent, text)
             return views
         }
 
