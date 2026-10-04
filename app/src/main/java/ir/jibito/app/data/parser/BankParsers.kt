@@ -14,7 +14,7 @@ internal object Kw {
     fun lines(text: String): List<String> = text.split(Regex("\n+")).map { it.trim() }
 
     fun valid(type: FlowType?, amount: Long?, balance: Long?): ParsedTransaction? {
-        if (type == null || amount == null || amount <= 0 || amount >= MAX_AMOUNT_RIAL) return null
+        if (type == null || amount == null || amount <= 0) return null
         return ParsedTransaction(type, amount, balance)
     }
 }

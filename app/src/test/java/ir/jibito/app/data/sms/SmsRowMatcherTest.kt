@@ -98,4 +98,67 @@ class SmsRowMatcherTest {
         assertEquals(mapOf(99L to 7L), r.matches)
         assertTrue(r.detach.isEmpty())
     }
+
+    // ---- reclassified: کدام ردیفِ بی‌تراکنش واقعاً حذف شود ----
+
+    private fun bodies(vararg pairs: Pair<Long, String>): suspend () -> Map<Long, String> = { pairs.toMap() }
+
+    @Test
+    fun deletedSmsKeepsItsTransaction() = runBlocking {
+        // کاربر پیامک را از گوشی پاک کرده: نه شناسه‌اش هست نه متنش
+        val gone = SmsRowMatcher.reclassified(
+            unmatched = listOf(Row(1, 10, 1_000)),
+            inboxIds = mapOf(11L to 2_000L),
+            inboxContent = setOf(2_000L to "other"),
+            rowContent = bodies(1L to "A"),
+        )
+        assertTrue(gone.isEmpty())
+    }
+
+    @Test
+    fun smsStillInInboxButNoLongerATransactionIsRemoved() = runBlocking {
+        // پیامک هنوز هست (همان شناسه و زمان) ولی حالا تراکنش حساب نمی‌شود (مثلاً پولِ برگشتی)
+        val gone = SmsRowMatcher.reclassified(
+            unmatched = listOf(Row(1, 10, 1_000)),
+            inboxIds = mapOf(10L to 1_000L),
+            inboxContent = emptySet(),
+            rowContent = { error("با شناسه معلوم است؛ متن لازم نیست") },
+        )
+        assertEquals(listOf(1L), gone)
+    }
+
+    @Test
+    fun newPhoneWithoutOldSmsKeepsEverything() = runBlocking {
+        // بازگردانی پشتیبان در گوشی تازه: شناسه‌ی ۱۰ مال پیامک دیگری است و پیامک‌های قدیمی نیستند
+        val gone = SmsRowMatcher.reclassified(
+            unmatched = listOf(Row(1, 10, 1_000), Row(2, null, 3_000)),
+            inboxIds = mapOf(10L to 9_000L),
+            inboxContent = setOf(9_000L to "new message"),
+            rowContent = bodies(1L to "A", 2L to "B"),
+        )
+        assertTrue(gone.isEmpty())
+    }
+
+    @Test
+    fun newPhoneSmsPresentWithOtherIdIsRemovedByContent() = runBlocking {
+        // گوشی تازه، پیامک هست (با شناسه‌ی دیگر) ولی دیگر تراکنش نیست
+        val gone = SmsRowMatcher.reclassified(
+            unmatched = listOf(Row(1, 10, 1_000)),
+            inboxIds = mapOf(3L to 1_000L),
+            inboxContent = setOf(1_000L to "A"),
+            rowContent = bodies(1L to "A"),
+        )
+        assertEquals(listOf(1L), gone)
+    }
+
+    @Test
+    fun sameIdDifferentDateIsNotTheSameSms() = runBlocking {
+        val gone = SmsRowMatcher.reclassified(
+            unmatched = listOf(Row(1, 10, 1_000)),
+            inboxIds = mapOf(10L to 5_000L),
+            inboxContent = emptySet(),
+            rowContent = bodies(1L to "A"),
+        )
+        assertTrue(gone.isEmpty())
+    }
 }

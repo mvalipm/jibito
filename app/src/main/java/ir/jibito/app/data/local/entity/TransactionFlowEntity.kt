@@ -64,6 +64,16 @@ data class TransactionFlowEntity(
     @ColumnInfo(defaultValue = "0") val transferState: Int = TRANSFER_NONE,
     /** طرف دیگرِ انتقال (برداشت ↔ واریز)، اگر جفتش پیدا شده باشد */
     @ColumnInfo(defaultValue = "NULL") val transferPairId: Long? = null,
+    /**
+     * زمانی که خود کاربر دسته را انتخاب کرد (از نسخه‌ی ۱۲ دیتابیس). «آخرین انتخاب» در یادگیری دسته
+     * با همین مرتب می‌شود، نه با تاریخ تراکنش. برای انتخاب‌های قبل از نسخه‌ی ۱۲ خالی است.
+     */
+    @ColumnInfo(defaultValue = "NULL") val categorizedAt: Long? = null,
+    /**
+     * شماره حساب/کارتِ خود پیامک (AccountExtractor)، به همان شکلی که در متن آمده (از نسخه‌ی ۱۳ دیتابیس).
+     * برای جدا کردن مانده‌ی چند حساب در یک بانک. پیامکی که شماره حساب ندارد null است.
+     */
+    @ColumnInfo(defaultValue = "NULL") val account: String? = null,
 ) {
     companion object {
         const val TRANSFER_NONE = 0
@@ -79,13 +89,6 @@ data class TransactionWithCategory(
     @ColumnInfo(name = "categoryIcon") val categoryIcon: String?,
 )
 
-/** آخرین «مانده»ی گزارش‌شده در پیامک‌های یک بانک */
-data class BankBalanceRow(
-    val bankId: Int,
-    val remainAfter: Long,
-    val dateEpoch: Long,
-)
-
 /** فقط ستون‌هایی که موقع همگام‌سازی با پیامک‌ها لازم داریم. */
 data class SmsFlowKey(
     val id: Long,
@@ -98,6 +101,7 @@ data class SmsFlowKey(
     val dateEpoch: Long,
     val transferState: Int,
     val transferPairId: Long?,
+    val categorizedAt: Long?,
 )
 
 /** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */

@@ -24,7 +24,7 @@ object OtpParser {
         val amountRaw = amountAfterKey.find(text)?.groupValues?.get(1)?.let(::digitsToLong)
             ?: groupedNumber.find(text)?.groupValues?.get(1)?.let(::digitsToLong)
         val inToman = text.contains("تومان") && !text.contains("ریال")
-        val amount = amountRaw?.takeIf { it in 1 until MAX_AMOUNT_RIAL }?.let { if (inToman) it * 10 else it }
+        val amount = amountRaw?.takeIf { it > 0 }?.let { if (inToman) it * 10 else it }
 
         val merchant = MerchantExtractor.find(text)
 

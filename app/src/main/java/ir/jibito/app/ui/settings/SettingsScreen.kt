@@ -57,7 +57,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** زیرصفحه‌های تنظیمات */
-internal enum class SettingsPage { Backup, Export, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced }
+internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced }
 
 /**
  * تنظیمات: یک فهرست گروه‌بندی‌شده که هر ردیفش «مقدار فعلی» را هم نشان می‌دهد
@@ -191,6 +191,25 @@ private fun SettingsHub(
                     enabled = lock.enabled || lock.available,
                     onChange = lock.set,
                 ),
+            )
+            RowDivider()
+            // چند حساب در یک بانک: اسم، یکی/جدا کردن، آمدن در جمع موجودی
+            val accountGroupsFlow = remember { container.accountRepository.observeGroups() }
+            val accountGroups by accountGroupsFlow.collectAsState(initial = emptyList())
+            val accountQuestionFlow = remember { container.accountRepository.observeQuestion() }
+            val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
+            val (accountCount, bankCount) = accountsSummary(accountGroups)
+            SettingsRow(
+                icon = JibitoIcons.Bank,
+                tint = tones.income,
+                title = stringResource(R.string.settings_accounts_title),
+                value = when {
+                    accountQuestion != null -> stringResource(R.string.settings_accounts_question)
+                    accountCount == 0 -> stringResource(R.string.settings_accounts_none)
+                    else -> Jalali.toPersianDigits(stringResource(R.string.settings_accounts_sub, accountCount, bankCount))
+                },
+                attention = accountQuestion != null,
+                onClick = { onOpen(SettingsPage.Accounts) },
             )
             RowDivider()
             SettingsRow(
@@ -394,6 +413,10 @@ private fun SettingsPageScreen(
         when (page) {
             SettingsPage.Backup -> BackupCard(asPage)
             SettingsPage.Export -> ExportCard(asPage)
+            SettingsPage.Accounts -> {
+                SettingsPageHeader(stringResource(R.string.settings_accounts_title), onBack)
+                AccountsPageContent()
+            }
             SettingsPage.Recurring -> RecurringCard(asPage)
             SettingsPage.Theme -> {
                 SettingsPageHeader(stringResource(R.string.settings_theme_title), onBack)

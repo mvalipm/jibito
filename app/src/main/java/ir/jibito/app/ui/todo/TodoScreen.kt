@@ -25,7 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +47,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.JibiToast
 import ir.jibito.app.ui.common.Mascot
+import ir.jibito.app.ui.common.ToastMessage
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.summary.SummaryViewModel
@@ -53,6 +59,7 @@ import ir.jibito.app.ui.summary.todoPriority
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
+import kotlinx.coroutines.delay
 
 /**
  * تب «کارها»: همه‌ی کارهای لازم زیر هم، مهم‌ترها بالا.
@@ -71,6 +78,14 @@ fun TodoScreen(
     // خلاصه‌ی همین ماه، برای بودجه‌های نزدیک سقف
     val viewModel: SummaryViewModel = viewModel(factory = SummaryViewModel.factory(app.container.budgetRepository))
     val summary by viewModel.summary.collectAsState()
+    // «ثبت شد · برگردون» بعد از جواب دادن به یک کار (مثلاً «دو حساب یکی‌اند یا جدا؟»)
+    var toast by remember { mutableStateOf<ToastMessage?>(null) }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            delay(TOAST_MILLIS)
+            toast = null
+        }
+    }
     val stories = rememberTodoStories(
         summary,
         pendingReview = pendingReview,
@@ -79,9 +94,22 @@ fun TodoScreen(
         onOpenTransactions = onOpenTransactions,
         onOpenSettings = onOpenSettings,
         onOpenCategory = onOpenCategory,
+        onToast = { toast = it },
     )
-    TodoList(stories.sortedBy { todoPriority(it.id) })
+    Box(Modifier.fillMaxSize()) {
+        TodoList(stories.sortedBy { todoPriority(it.id) })
+        JibiToast(
+            message = toast,
+            onDismiss = { toast = null },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+        )
+    }
 }
+
+private const val TOAST_MILLIS = 4_000L
 
 /**
  * فهرست کارها (بدون وابستگی به داده، برای اسکرین‌شات هم) در دو گروه:

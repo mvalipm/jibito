@@ -18,7 +18,10 @@ fun interface SmsParser {
     fun parse(text: String): ParsedTransaction?
 }
 
-/** سقف منطقی مبلغ (مثل اپ قدیمی: کمتر از ۱۰ میلیارد ریال). */
-internal const val MAX_AMOUNT_RIAL = 10_000_000_000L
+/**
+ * سقف مبلغ نداریم (خرید ماشین و ملک هم باید ثبت شود). تنها محدودیت: عدد حداکثر ۱۳ رقم
+ * (حدود ۱۰۰۰ میلیارد تومان)، تا شماره کارت ۱۶ رقمی هیچ‌وقت مبلغ خوانده نشود.
+ */
+internal const val MAX_AMOUNT_DIGITS = 13
 
-internal fun digitsToLong(s: String): Long? = s.filter { it in '0'..'9' }.takeIf { it.isNotEmpty() && it.length <= 13 }?.toLong()
+internal fun digitsToLong(s: String): Long? = s.filter { it in '0'..'9' }.takeIf { it.isNotEmpty() && it.length <= MAX_AMOUNT_DIGITS }?.toLong()

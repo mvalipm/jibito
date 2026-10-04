@@ -52,10 +52,14 @@ data class Category(
     val isCustom: Boolean = false,
 )
 
-/** آخرین مانده‌ی یک بانک (از آخرین پیامکی که مانده داشت) */
+/** آخرین مانده‌ی یک حساب (از آخرین پیامکی که مانده داشت) */
 data class BankBalance(
     val bank: Bank,
     val balanceRial: Long,
     /** زمان همان پیامک؛ مانده‌ی قدیمی ممکن است دیگر درست نباشد */
     val dateMillis: Long,
+    /** شماره حساب (نماینده‌ی گروه)؛ null یعنی پیامک‌های این بانک شماره حساب ندارند و یک مانده برای کل بانک است */
+    val account: String? = null,
+    /** اسمی که کاربر برای این حساب گذاشته */
+    val name: String? = null,
 )

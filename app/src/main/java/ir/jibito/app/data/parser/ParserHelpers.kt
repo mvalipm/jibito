@@ -30,7 +30,7 @@ internal fun num(s: String?): Long? = s?.let(::digitsToLong)
 /** معادل Long.valueOf(...) روی متنی که باید «فقط عدد» باشد (بعد از حذف , + − و فاصله) */
 internal fun strictNum(s: String?): Long? =
     s?.replace(",", "")?.replace("+", "")?.replace("-", "")?.trim()?.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
-        ?.takeIf { it.length <= 13 }?.toLong()
+        ?.takeIf { it.length <= MAX_AMOUNT_DIGITS }?.toLong()
 
 /** خط‌ها مثل split("\n") جاوا (خط‌های خالی هم می‌مانند) */
 internal fun rawLines(text: String): List<String> = text.split("\n")

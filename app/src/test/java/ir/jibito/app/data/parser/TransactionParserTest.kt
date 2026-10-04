@@ -1,9 +1,11 @@
 package ir.jibito.app.data.parser
 
 import ir.jibito.app.data.bank.BankDirectory
+import ir.jibito.app.data.review.ReviewDetector
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -123,5 +125,50 @@ class TransactionParserTest {
         assertEquals(FlowType.DEPOSIT, t.type)
         assertEquals(3_000_000L, t.amountRial)
         assertEquals(5_000_000L, t.balanceRial)
+    }
+
+    // ---------- نوع نامعلوم: حدس «واریز» نه ----------
+
+    @Test
+    fun `بدون کلمه‌ی نوع و بدون علامت خودکار ثبت نمی‌شود و به صندوق بررسی می‌رود`() {
+        val sms = "بانک نمونه\nمبلغ: 1,500,000 ریال\nمانده: 3,000,000 ریال"
+        assertNull(SmartParser.parse(SmsTextNormalizer.normalize(sms)))
+        assertNull(TransactionParser.parse(blu, sms))
+        assertTrue(ReviewDetector.isCandidate(SmsTextNormalizer.normalize(sms), ReviewDetector.BANK_SENDER_BONUS))
+    }
+
+    @Test
+    fun `بدون کلمه‌ی نوع ولی با علامت منفی برداشت است`() {
+        val t = SmartParser.parse("1,500,000-\nمانده: 3,000,000")!!
+        assertEquals(FlowType.WITHDRAWAL, t.type)
+        assertEquals(1_500_000L, t.amountRial)
+    }
+
+    @Test
+    fun `کلمه‌ی واریز هنوز واریز است`() {
+        val t = SmartParser.parse("واریز به حساب شما\nمبلغ: 1,500,000\nمانده: 3,000,000")!!
+        assertEquals(FlowType.DEPOSIT, t.type)
+    }
+
+    // ---------- سقف مبلغ نداریم ----------
+
+    @Test
+    fun `مبلغ بالای یک میلیارد تومان ثبت می‌شود`() {
+        val t = TransactionParser.parse(blu, "برداشت از حساب\nمبلغ: 150,000,000,000 ریال\nمانده: 20,000,000,000 ریال")!!
+        assertEquals(FlowType.WITHDRAWAL, t.type)
+        assertEquals(150_000_000_000L, t.amountRial)
+        assertEquals(20_000_000_000L, t.balanceRial)
+    }
+
+    @Test
+    fun `مبلغ تومانی بزرگ به ریال درست تبدیل می‌شود`() {
+        val t = TransactionParser.parse(blu, "واریز به حساب\nمبلغ: 5,000,000,000 تومان\nموجودی: 6,000,000,000 تومان")!!
+        assertEquals(50_000_000_000L, t.amountRial)
+        assertEquals(60_000_000_000L, t.balanceRial)
+    }
+
+    @Test
+    fun `شماره کارت ۱۶ رقمی هیچ‌وقت مبلغ خوانده نمی‌شود`() {
+        assertNull(digitsToLong("6037991234565678"))
     }
 }

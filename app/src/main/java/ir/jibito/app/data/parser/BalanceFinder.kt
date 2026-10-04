@@ -45,7 +45,6 @@ object BalanceFinder {
             // شماره حساب/کارت (بی‌ویرگول و خیلی بلند) مانده نیست
             digits in 1..12
         } ?: return null
-        val value = chosen.filter { it in '0'..'9' }.toLongOrNull() ?: return null
-        return value.takeIf { it in 0 until MAX_AMOUNT_RIAL * 10 }
+        return digitsToLong(chosen)
     }
 }

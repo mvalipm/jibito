@@ -10,6 +10,7 @@ import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.parser.AccountExtractor
 import ir.jibito.app.data.parser.MerchantExtractor
 import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.data.review.NumberToken
@@ -129,6 +130,7 @@ class ReviewRepositoryImpl(
                         updatedAt = now,
                         notifiedAt = now, // نوتیفیکیشن «مال چی بود؟» لازم نیست؛ کاربر همین الان در اپ است
                         isAutoCategorized = learnedCategory != null,
+                        account = AccountExtractor.find(text),
                     )
                 )
             )

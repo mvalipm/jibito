@@ -9,6 +9,7 @@ import ir.jibito.app.widget.SpendWidget
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.security.AppLockSettings
+import ir.jibito.app.data.repository.AccountRepository
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
 import ir.jibito.app.data.repository.RecurringRepository
@@ -85,6 +86,9 @@ class AppContainer(context: Context) {
             appScope = appScope,
         )
     }
+
+    /** چند حساب در یک بانک: سؤال «جدا یا یکی؟» و صفحه‌ی «حساب‌های من» */
+    val accountRepository: AccountRepository by lazy { AccountRepository(database) }
 
     val reviewRepository: ReviewRepository by lazy {
         ReviewRepositoryImpl(database, onTransactionAdded = { onDataChanged() })

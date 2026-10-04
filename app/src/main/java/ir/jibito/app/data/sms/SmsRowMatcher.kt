@@ -58,4 +58,29 @@ object SmsRowMatcher {
 
         return Result(matches, detach)
     }
+
+    /**
+     * از ردیف‌هایی که در این اسکن به هیچ تراکنشی نرسیدند، کدام‌ها واقعاً باید حذف شوند؟
+     * فقط آن‌هایی که پیامکشان هنوز در صندوق هست (پس حالا تراکنش حساب نمی‌شود، مثلاً پولِ برگشتی بوده).
+     * پیامکی که کاربر پاک کرده یا در گوشی تازه نیست، تراکنشش را پاک نمی‌کند.
+     *
+     * @param inboxIds شناسه ← زمانِ پیامک‌های دیده‌شده؛ شناسه فقط با همان زمان قبول است (مثل [match])
+     * @param inboxContent «زمان + متن» پیامک‌های دیده‌شده (وقتی شناسه‌ها عوض شده‌اند)
+     * @param rowContent شناسه‌ی ردیف ← متن پیامکش؛ فقط وقتی صدا زده می‌شود که شناسه جواب ندهد
+     * @return شناسه‌ی ردیف‌هایی که باید حذف شوند
+     */
+    suspend fun reclassified(
+        unmatched: List<Row>,
+        inboxIds: Map<Long, Long>,
+        inboxContent: Set<Pair<Long, String>>,
+        rowContent: suspend () -> Map<Long, String>,
+    ): List<Long> {
+        var content: Map<Long, String>? = null
+        return unmatched.filter { row ->
+            if (row.smsId != null && inboxIds[row.smsId] == row.dateEpoch) return@filter true
+            val lookup = content ?: rowContent().also { content = it }
+            val body = lookup[row.rowId] ?: return@filter false
+            (row.dateEpoch to body) in inboxContent
+        }.map { it.rowId }
+    }
 }

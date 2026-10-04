@@ -138,8 +138,35 @@ object Migrations {
         }
     }
 
+    /**
+     * نسخه‌ی ۱۱ ← ۱۲: زمان انتخاب دسته توسط کاربر (categorizedAt)، تا یادگیری دسته «آخرین نظر» کاربر را
+     * از روی زمان انتخاب بشناسد نه تاریخ تراکنش. برای ردیف‌های قبلی خالی می‌ماند.
+     */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE transaction_flows ADD COLUMN categorizedAt INTEGER DEFAULT NULL")
+        }
+    }
+
+    /**
+     * نسخه‌ی ۱۲ ← ۱۳: چند حساب در یک بانک.
+     * ستون account (شماره حسابِ خود پیامک؛ برای ردیف‌های قبلی خالی می‌ماند و در خواندن کامل بعدی پر می‌شود)
+     * و جدول account_links (تصمیم‌های کاربر: کدام حساب‌ها یکی‌اند، اسم هر حساب).
+     */
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE transaction_flows ADD COLUMN account TEXT DEFAULT NULL")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `account_links` (" +
+                    "`bankId` INTEGER NOT NULL, `account` TEXT NOT NULL, `groupAccount` TEXT NOT NULL, " +
+                    "`name` TEXT, `decided` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`bankId`, `account`))"
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
-        MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
+        MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
     )
 }

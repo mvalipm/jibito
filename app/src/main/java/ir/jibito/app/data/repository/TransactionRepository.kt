@@ -36,6 +36,8 @@ import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.data.category.CategoryPalette
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.category.SpendRollup
+import ir.jibito.app.data.wallet.AccountGrouping
+import ir.jibito.app.data.local.entity.toLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -122,7 +124,7 @@ interface TransactionRepository {
     /** پرکاربردترین دسته‌ها برای این نوع (بیشترین استفاده اول) */
     suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long>
 
-    /** «چقد دارم؟»: آخرین مانده‌ی هر بانک، تازه‌ترین اول */
+    /** «چقد دارم؟»: آخرین مانده‌ی هر حساب، تازه‌ترین اول */
     fun observeBankBalances(): Flow<List<BankBalance>>
 }
 
@@ -314,6 +316,8 @@ class TransactionRepositoryImpl(
                 // خود کاربر همین الان ثبتش کرده؛ نوتیفیکیشن «مال چی بود؟» لازم نیست
                 notifiedAt = now,
                 isAutoCategorized = false,
+                // دسته‌ای که موقع ثبت دستی انتخاب شده، انتخاب خود کاربر است (برای یادگیری)
+                categorizedAt = if (categoryId != null) now else null,
             )
         )
         onCategoryChanged()
@@ -337,7 +341,7 @@ class TransactionRepositoryImpl(
             snapshot.rows.forEach {
                 dao.restoreUserState(
                     it.id, it.categoryId, it.isAutoCategorized, it.suggestedCategory,
-                    it.transferState, it.transferPairId, it.isDeleted, now,
+                    it.transferState, it.transferPairId, it.isDeleted, it.categorizedAt, now,
                 )
             }
         }
@@ -354,12 +358,15 @@ class TransactionRepositoryImpl(
     override suspend fun frequentCategoryIds(flowType: Int, limit: Int): List<Long> =
         dao.frequentCategoryIds(flowType, limit)
 
-    override fun observeBankBalances(): Flow<List<BankBalance>> =
-        dao.observeBankBalances().map { rows ->
-            rows.distinctBy { it.bankId }.mapNotNull { row ->
-                BankDirectory.byId(row.bankId)?.let { BankBalance(it, row.remainAfter, row.dateEpoch) }
+    /** مانده‌ی هر حساب (چند حساب در یک بانک جدا، طبق تصمیم‌های کاربر: AccountGrouping) */
+    override fun observeBankBalances(): Flow<List<BankBalance>> {
+        val accountDao = db.accountDao()
+        return combine(accountDao.observeLatestBalances(), accountDao.observeLinks()) { rows, links ->
+            AccountGrouping.balances(rows, links.map { it.toLink() }).mapNotNull { b ->
+                BankDirectory.byId(b.bankId)?.let { BankBalance(it, b.balanceRial, b.dateMillis, b.account, b.name) }
             }
         }.flowOn(Dispatchers.Default)
+    }
 
     override suspend fun deleteCustomCategory(categoryId: Long) {
         db.withTransaction {
@@ -474,7 +481,7 @@ class TransactionRepositoryImpl(
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
                         old.id, old.categoryId, old.isAutoCategorized, old.notifiedAt, now,
-                        old.transferState, old.transferPairId,
+                        old.transferState, old.transferPairId, categorizedAt = old.categorizedAt,
                     )
                     continue
                 }
@@ -498,14 +505,21 @@ class TransactionRepositoryImpl(
             }
 
             // پیامکی که قبلاً خودکار تراکنش شده بود ولی دیگر نیست (مثلاً بعداً معلوم شد پولِ برگشتی بوده) ← حذف نرم.
+            // فقط اگر خود پیامک هنوز در صندوق باشد: پیامکِ پاک‌شده (یا گوشی تازه بدون پیامک‌های قدیمی)
+            // تراکنش و دسته‌اش را پاک نمی‌کند.
             // تراکنش‌هایی که کاربر خودش از صندوق بررسی ثبت کرده (SMS_MANUAL) دست نمی‌خورند.
             // در اسکن افزایشی فقط بازه‌ی خوانده‌شده بررسی می‌شود (پیامک‌های قدیمی‌تر اصلاً خوانده نشده‌اند).
             val matchedRows = match.matches.values.toHashSet()
             val from = scan.scannedFromDate
-            val gone = rows
+            val unmatched = rows
                 .filter { !it.isDeleted && it.source == SOURCE_SMS_AUTO && it.id !in matchedRows }
                 .filter { from == null || (it.dateEpoch >= from && (it.smsId == null || it.smsId <= scan.maxSmsId)) }
-                .map { it.id }
+            val gone = SmsRowMatcher.reclassified(
+                unmatched = unmatched.map { SmsRowMatcher.Row(it.id, it.smsId, it.dateEpoch) },
+                inboxIds = scan.inboxIds,
+                inboxContent = scan.inboxBankContent,
+                rowContent = { dao.smsContentKeys().associate { it.id to it.smsContent } },
+            )
 
             // اول شناسه‌ی ردیف‌هایی که مال پیامک دیگری است آزاد شود، بعد نوشتن (وگرنه ایندکس یکتای smsId جلویش را می‌گیرد)
             match.detach.chunked(500).forEach { dao.detachSms(it) }
@@ -587,6 +601,8 @@ class TransactionRepositoryImpl(
         transferPairId: Long?,
         /** دسته‌ای که از انتخاب‌های کاربر یاد گرفته شده؛ بر پیشنهادِ کلمه‌ای (CategorySuggester) مقدم است */
         learnedSuggestion: String? = null,
+        /** زمان انتخاب دسته توسط کاربر؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
+        categorizedAt: Long? = null,
     ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
@@ -609,6 +625,8 @@ class TransactionRepositoryImpl(
         isAutoCategorized = isAutoCategorized,
         transferState = transferState,
         transferPairId = transferPairId,
+        categorizedAt = categorizedAt,
+        account = account,
     )
 
     private companion object {
