@@ -151,5 +151,7 @@ jobs:
             echo "Schema unchanged"
           else
             git commit -m "Update Room schema / lint baseline [skip ci]"
-            git push
+            # اگر در این فاصله کامیت تازه‌ای به main رسیده (مثلاً دو PR پشت سر هم مرج شده)، اول روی آن قرار می‌گیرد
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
