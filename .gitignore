@@ -7,3 +7,6 @@ build/
 /captures
 .externalNativeBuild
 .cxx
+# GitLab CI cache (.gitlab-ci.yml)
+/.gradle-home/
+/.android-sdk/

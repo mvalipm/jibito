@@ -1,0 +1,95 @@
+# ساخت جیبیتو در GitLab CI — همان کارهای .github/workflows/build.yml:
+# تست‌ها + مقایسه‌ی اسکرین‌شات‌ها + APK آزمایشی + Lint + APK انتشار (امضا فقط اگر کلید در متغیرها باشد).
+#
+# فرق‌ها با GitHub Actions:
+# - این‌جا چیزی به‌طور خودکار به ریپو کامیت نمی‌شود (اسکرین‌شات‌های مرجع، schema دیتابیس، lint-baseline).
+#   همه به‌صورت Artifact گذاشته می‌شوند؛ اگر لازم بود، از Artifact بردارید و در گیت‌هاب کامیت کنید.
+# - کلید انتشار از Settings ← CI/CD ← Variables خوانده می‌شود (همان چهار اسم RELEASE.md).
+
+workflow:
+  rules:
+    # Merge Requestها
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # اجرای دستی: Build ← Pipelines ← Run pipeline
+    - if: $CI_PIPELINE_SOURCE == "web"
+    # push به شاخه‌ی اصلی
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+variables:
+  # در اجرای دستی می‌شود true گذاشت تا تصویرهای مرجع اسکرین‌شات از نو ساخته شوند (بعد از تغییر عمدی ظاهر)
+  RECORD_SCREENSHOTS:
+    value: "false"
+    options: ["false", "true"]
+    description: "تصویرهای مرجع اسکرین‌شات از نو ساخته شوند؟"
+  # Gradle و Android SDK داخل پوشه‌ی پروژه، تا بین اجراها cache شوند
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle-home"
+  ANDROID_HOME: "$CI_PROJECT_DIR/.android-sdk"
+  ANDROID_CMDLINE_TOOLS_URL: "https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip"
+  # versionCode در app/build.gradle.kts از GITHUB_RUN_NUMBER ساخته می‌شود. این‌جا شماره‌ی pipeline به‌علاوه‌ی
+  # این عدد جایش می‌نشیند، تا APKهای گیت‌لب همیشه از APKهای گیت‌هاب بزرگ‌تر باشند و رویشان نصب شوند.
+  VERSION_CODE_OFFSET: "1000"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+build:
+  image: eclipse-temurin:17-jdk
+  timeout: 1h
+  cache:
+    key: jibito-gradle-sdk
+    paths:
+      - .gradle-home/caches/
+      - .gradle-home/wrapper/
+      - .android-sdk/
+  before_script:
+    # Android SDK (فقط بار اول؛ بعد از cache می‌آید). AGP بقیه‌ی اجزای لازم (build-tools) را خودش می‌گیرد.
+    - |
+      if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+        mkdir -p "$ANDROID_HOME/cmdline-tools"
+        cd "$ANDROID_HOME/cmdline-tools"
+        curl -fsSL -o tools.zip "$ANDROID_CMDLINE_TOOLS_URL"
+        jar xf tools.zip && rm tools.zip
+        rm -rf latest && mv cmdline-tools latest
+        chmod +x latest/bin/*
+        cd "$CI_PROJECT_DIR"
+      fi
+    - yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+    - $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" "platform-tools" > /dev/null
+    - export GITHUB_RUN_NUMBER=$((CI_PIPELINE_IID + VERSION_CODE_OFFSET))
+    - chmod +x gradlew
+  script:
+    # تست‌ها + اسکرین‌شات‌ها (Roborazzi) + APK آزمایشی.
+    # اسکرین‌شات‌ها با app/src/test/screenshots مقایسه می‌شوند و هر تغییر ظاهری ساخت را می‌شکند.
+    - |
+      if [ "$RECORD_SCREENSHOTS" = "true" ] || [ -z "$(ls -A app/src/test/screenshots 2>/dev/null)" ]; then
+        MODE="-Proborazzi.test.record=true"
+      else
+        MODE="-Proborazzi.test.verify=true"
+      fi
+      ./gradlew testDebugUnitTest assembleDebug $MODE --stacktrace
+    # Android Lint: هر مشکل تازه (که در app/lint-baseline.xml نیست) ساخت را متوقف می‌کند
+    - ./gradlew lintDebug -Dlint.baselines.continue=true --stacktrace
+    # نسخه‌ی انتشار (R8) همیشه ساخته می‌شود؛ امضا فقط اگر کلید در متغیرهای CI/CD باشد
+    - |
+      if [ -n "$JIBITO_KEYSTORE_BASE64" ]; then
+        echo "$JIBITO_KEYSTORE_BASE64" | base64 -d > /tmp/release.jks
+        export JIBITO_KEYSTORE_FILE=/tmp/release.jks
+      fi
+      ./gradlew assembleRelease --stacktrace
+      rm -f /tmp/release.jks
+      # APK امضانشده به‌درد نصب نمی‌خورد؛ فقط وقتی کلید هست نگه داشته می‌شود
+      if [ -z "$JIBITO_KEYSTORE_BASE64" ]; then rm -f app/build/outputs/apk/release/*.apk; fi
+  artifacts:
+    name: "jibito-$CI_PIPELINE_IID"
+    when: always
+    expire_in: 30 days
+    paths:
+      - app/build/outputs/apk/debug/app-debug.apk
+      - app/build/outputs/apk/release/app-release.apk
+      - app/build/outputs/mapping/release/mapping.txt
+      - app/src/test/screenshots/
+      - app/build/outputs/roborazzi/
+      - app/build/reports/lint-results-debug.html
+      - app/lint-baseline.xml
+      - app/schemas/
+    # تست‌های ردشده در صفحه‌ی pipeline و Merge Request نشان داده می‌شوند
+    reports:
+      junit: app/build/test-results/testDebugUnitTest/*.xml
