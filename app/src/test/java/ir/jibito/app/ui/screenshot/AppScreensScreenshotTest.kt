@@ -483,7 +483,8 @@ class AppScreensScreenshotTest {
     fun categoryPicker() {
         seed()
         grantSms()
-        launch {
+        // پنجره‌ی بلند: متن پیامک و دکمه‌ی گزارش پایین برگه‌اند و در قاب گوشی دیده نمی‌شدند
+        launch(tall = true) {
             openUncategorizedPurchase()
             shot("category_picker")
             tapText(R.string.sheet_show_sms)
