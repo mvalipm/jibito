@@ -307,7 +307,7 @@
     <string name="lock_prompt_subtitle">با اثر انگشت یا قفل گوشی</string>
     <string name="lock_enable_subtitle">برای روشن کردن قفل اپ، قفل گوشی رو تأیید کن</string>
     <string name="lock_setting_title">قفل اپ</string>
-    <string name="lock_setting_hint">موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.</string>
+    <string name="lock_setting_hint">با اثر انگشت یا قفل گوشی</string>
     <string name="lock_setting_unavailable">اول برای گوشیت قفل صفحه بذار (رمز، الگو یا اثر انگشت).</string>
 
     <!-- پشتیبان‌گیری -->
@@ -359,11 +359,12 @@
     <!-- ویجت -->
     <string name="widget_name">خرج امروز</string>
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
-    <string name="widget_today">جیب امروز</string>
+    <string name="widget_today">امروز</string>
     <string name="widget_amount">%1$s تومان</string>
     <string name="widget_month">این ماه %1$s</string>
-    <string name="widget_left">%1$s مونده از بودجه</string>
-    <string name="widget_over">%1$s از بودجه زدی بیرون</string>
+    <string name="widget_left">%1$s مونده از بودجه‌ی ماه</string>
+    <string name="widget_over">این ماه %1$s از بودجه زدی بیرون</string>
+    <string name="widget_ring_label">ماه</string>
     <string name="widget_locked_label">جیبیتو</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
 
@@ -502,7 +503,7 @@
     <string name="trend_unit_million">میلیون تومان</string>
     <string name="trend_unit_thousand">هزار تومان</string>
     <string name="trend_so_far">تا امروز</string>
-    <string name="trend_average">خط‌چین: میانگین %1$s %2$s</string>
+    <string name="trend_average">خط نازک: میانگین ماه‌های قبل، %1$s %2$s</string>
 
     <!-- تراکنش‌ها -->
     <string name="filter_all">همه</string>
@@ -581,9 +582,9 @@
     <string name="settings_recurring_none">اجاره، قسط، شهریه… یادت می‌ندازم</string>
     <string name="settings_recurring_count">%1$d پرداخت</string>
     <string name="settings_recurring_suggest">%1$d پیشنهاد تازه</string>
-    <string name="settings_sms_sub_ok">خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن</string>
+    <string name="settings_sms_sub_ok">خرج‌ها خودکار ثبت می‌شن</string>
     <string name="settings_notify_sub_ok">خرج تازه که بیاد، می‌پرسم مال چی بود</string>
-    <string name="settings_perm_tap_fix">بزن تا روشنش کنیم</string>
+    <string name="settings_backup_now">الان بگیر</string>
     <string name="settings_theme_sub">%1$s · %2$s</string>
     <string name="settings_privacy_title">حریم خصوصی</string>
     <string name="settings_privacy_sub">داده‌هات فقط رو گوشی خودته</string>

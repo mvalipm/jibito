@@ -76,9 +76,8 @@ internal fun ThemePageContent() {
     val themeSettings = app.container.themeSettings
     val style by themeSettings.style.collectAsState()
     val darkMode by themeSettings.darkMode.collectAsState()
+    // اول روشن/تیره (بیشتر عوض می‌شود)، بعد رنگ‌ها
     PageCard {
-        ThemePicker(style, onSelect = themeSettings::set)
-        Spacer(Modifier.height(20.dp))
         Text(
             stringResource(R.string.settings_dark_title),
             fontSize = 14.sp,
@@ -91,6 +90,8 @@ internal fun ThemePageContent() {
             selected = darkMode,
             onSelect = themeSettings::setDarkMode,
         )
+        Spacer(Modifier.height(20.dp))
+        ThemePicker(style, onSelect = themeSettings::set)
     }
 }
 

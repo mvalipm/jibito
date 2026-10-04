@@ -408,23 +408,23 @@ class ScreenshotTest {
     private fun SettingsHubSample() {
         val tones = JibitoTheme.colors
         SettingsGroup("داده‌هات") {
-            SettingsRow(SettingsIcons.Backup, tones.teal, "پشتیبان‌گیری", "۴۵ روزه پشتیبان نگرفتی؛ وقتشه!", attention = true, onClick = {})
+            SettingsRow(SettingsIcons.Backup, tones.teal, "پشتیبان‌گیری", "۴۵ روزه پشتیبان نگرفتی؛ وقتشه!", attention = true, trailing = RowTrailing.Action("الان بگیر") {}, onClick = {})
             RowDivider()
             SettingsRow(
-                JibitoIcons.Lock, tones.transfer, "قفل اپ", "موقع باز کردن جیبیتو، اثر انگشت یا قفل گوشی رو می‌خواد.",
+                JibitoIcons.Lock, tones.transfer, "قفل اپ", "با اثر انگشت یا قفل گوشی",
                 trailing = RowTrailing.Toggle(checked = true, onChange = {}),
             )
         }
         Spacer(Modifier.height(22.dp))
         SettingsGroup("نوتیف و دسترسی‌ها") {
             SettingsRow(
-                JibitoIcons.Message, MaterialTheme.colorScheme.primary, "خوندن پیامک", "خرج‌ها خودبه‌خود از پیامک بانک ثبت می‌شن",
+                JibitoIcons.Message, MaterialTheme.colorScheme.primary, "خوندن پیامک", "خرج‌ها خودکار ثبت می‌شن",
                 trailing = RowTrailing.Status(true),
             )
             RowDivider()
             SettingsRow(
-                JibitoIcons.Bell, tones.amber, "نوتیف", "بزن تا روشنش کنیم", attention = true,
-                trailing = RowTrailing.Status(false), onClick = {},
+                JibitoIcons.Bell, tones.amber, "نوتیف", "خاموشه", attention = true,
+                trailing = RowTrailing.Action("روشن کن") {}, onClick = {},
             )
             RowDivider()
             SettingsRow(JibitoIcons.Palette, MaterialTheme.colorScheme.primary, "پوسته", "مرجانی · مثل گوشی", onClick = {})

@@ -57,7 +57,7 @@ private val MAX_BAR = 104.dp
  * «۶ ماه اخیر» (طرح «جیبی»): ستون‌های گرد، عدد هر ماه بالایش و اسم ماه زیرش.
  * ماه انتخاب‌شده به رنگ حال جیب ([highlight]) و پررنگ؛ بقیه کم‌رنگ. ستون‌ها موقع آمدن یکی‌یکی قد می‌کشند.
  * همه‌ی ستون‌ها روی یک خط پایه‌اند: جای عدد بالای ستون جدا و ثابت است و قد ستون را کم نمی‌کند.
- * خط‌چین افقی: میانگین ماه‌های تمام‌شده. ماه جاری «تا امروز» است و قاب خط‌چینش پیش‌بینی آخر ماه را نشان می‌دهد.
+ * خط نازک افقی: میانگین ماه‌های تمام‌شده. ماه جاری «تا امروز» است و قاب خط‌چینش پیش‌بینی آخر ماه را نشان می‌دهد.
  * کنار عنوان: چند درصد کمتر/بیشتر از ماه قبل؛ برای ماه جاری فقط «تا همین موقعِ ماه قبل» (نه ماه کامل).
  */
 @Composable
@@ -197,16 +197,9 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                         .align(Alignment.BottomStart)
                         .padding(bottom = y)
                         .fillMaxWidth()
-                        .height(1.5.dp)
-                        .drawBehind {
-                            drawLine(
-                                lineColor,
-                                Offset(0f, size.height / 2),
-                                Offset(size.width, size.height / 2),
-                                strokeWidth = size.height,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx())),
-                            )
-                        }
+                        .height(1.dp)
+                        // خط پر و نازک (خط‌چین مال پیش‌بینی ماه جاری است)
+                        .background(lineColor)
                 )
             }
         }

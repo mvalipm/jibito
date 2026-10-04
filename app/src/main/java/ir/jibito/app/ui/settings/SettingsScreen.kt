@@ -155,12 +155,12 @@ private fun SettingsHub(
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
-        // مشکل‌ها اول: بدون این دسترسی‌ها اپ کار اصلی‌اش را نمی‌کند؛ دکمه همان‌جا درستش می‌کند
-        if (!permissions.smsOk || !permissions.notifyOk) {
+        // بنر فقط وقتی اپ واقعاً کار اصلی‌اش را نمی‌کند (پیامک خاموش)؛ نوتیف خاموش فقط در ردیف خودش دیده می‌شود
+        if (!permissions.smsOk) {
             PermissionBanner(
-                smsOk = permissions.smsOk,
+                smsOk = false,
                 notifyOk = permissions.notifyOk,
-                onFix = if (!permissions.smsOk) permissions.fixSms else permissions.fixNotify,
+                onFix = permissions.fixSms,
             )
             Spacer(Modifier.height(24.dp))
         }
@@ -169,12 +169,15 @@ private fun SettingsHub(
         val lastExportAt by container.backupManager.lastExportAt.collectAsState()
         val lock = rememberAppLock()
         SettingsGroup(stringResource(R.string.settings_group_data)) {
+            val backupDue = backupOverdue(lastExportAt)
             SettingsRow(
                 icon = SettingsIcons.Backup,
                 tint = tones.teal,
                 title = stringResource(R.string.security_title),
                 value = Jalali.toPersianDigits(backupValue(lastExportAt)),
-                attention = backupOverdue(lastExportAt),
+                attention = backupDue,
+                // وقتش گذشته: دکمه‌ی خود کار، نه فقط هشدار
+                trailing = if (backupDue) RowTrailing.Action(stringResource(R.string.settings_backup_now)) { onOpen(SettingsPage.Backup) } else RowTrailing.Chevron,
                 onClick = { onOpen(SettingsPage.Backup) },
             )
             RowDivider()
@@ -263,9 +266,9 @@ private fun SettingsHub(
                 icon = JibitoIcons.Message,
                 tint = primary,
                 title = stringResource(R.string.settings_perm_sms),
-                value = stringResource(if (permissions.smsOk) R.string.settings_sms_sub_ok else R.string.settings_perm_tap_fix),
+                value = stringResource(if (permissions.smsOk) R.string.settings_sms_sub_ok else R.string.settings_perm_missing),
                 attention = !permissions.smsOk,
-                trailing = RowTrailing.Status(permissions.smsOk),
+                trailing = if (permissions.smsOk) RowTrailing.Status(true) else RowTrailing.Action(stringResource(R.string.todo_turn_on), permissions.fixSms),
                 onClick = if (permissions.smsOk) null else permissions.fixSms,
             )
             RowDivider()
@@ -273,9 +276,9 @@ private fun SettingsHub(
                 icon = JibitoIcons.Bell,
                 tint = tones.amber,
                 title = stringResource(R.string.settings_perm_notify),
-                value = stringResource(if (permissions.notifyOk) R.string.settings_notify_sub_ok else R.string.settings_perm_tap_fix),
+                value = stringResource(if (permissions.notifyOk) R.string.settings_notify_sub_ok else R.string.settings_perm_missing),
                 attention = !permissions.notifyOk,
-                trailing = RowTrailing.Status(permissions.notifyOk),
+                trailing = if (permissions.notifyOk) RowTrailing.Status(true) else RowTrailing.Action(stringResource(R.string.todo_turn_on), permissions.fixNotify),
                 onClick = if (permissions.notifyOk) null else permissions.fixNotify,
             )
             RowDivider()
