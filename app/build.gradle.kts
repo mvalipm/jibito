@@ -94,7 +94,7 @@ android {
                 exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
             }
             // تستی که گیر کرده، CI را ساعت‌ها معطل نکند
-            it.timeout.set(Duration.ofMinutes(30))
+            it.timeout.set(Duration.ofMinutes(20))
         }
     }
 }

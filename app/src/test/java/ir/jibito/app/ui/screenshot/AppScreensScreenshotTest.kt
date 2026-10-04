@@ -11,6 +11,7 @@ import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
@@ -20,9 +21,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziOptions
@@ -328,7 +327,7 @@ class AppScreensScreenshotTest {
      */
     private fun tap(matcher: SemanticsMatcher) {
         val n = node(matcher)
-        runCatching { n.performScrollTo() }
+        // performScrollTo نه: دکمه‌ی پایین برگه‌ی نیمه‌باز هیچ‌وقت «دیده» نمی‌شود و اسکرول بی‌پایان تکرار می‌شد
         if (n.fetchSemanticsNode().config.contains(SemanticsActions.OnClick)) {
             n.performSemanticsAction(SemanticsActions.OnClick)
         } else {
@@ -343,7 +342,8 @@ class AppScreensScreenshotTest {
 
     private fun typeInto(index: Int, text: String) {
         waitFor(hasSetTextAction())
-        compose.onAllNodes(hasSetTextAction())[index].performTextInput(text)
+        // مستقیم با «کار» SetText، بدون صفحه‌کلید: ورودی صفحه‌کلید در Robolectric، Compose را هیچ‌وقت آرام نمی‌گذاشت
+        compose.onAllNodes(hasSetTextAction())[index].performSemanticsAction(SemanticsActions.SetText) { it(AnnotatedString(text)) }
         settle()
     }
 
