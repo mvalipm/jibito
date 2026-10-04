@@ -22,6 +22,11 @@ import ir.jibito.app.ui.smslist.DayHeader
 import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.smslist.groupByDay
 import ir.jibito.app.ui.summary.SummaryHero
+import ir.jibito.app.ui.summary.TodoAction
+import ir.jibito.app.ui.review.ReviewCard
+import ir.jibito.app.data.repository.ReviewItem
+import ir.jibito.app.data.review.ReviewDetector
+import ir.jibito.app.data.parser.SmsTextNormalizer
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.DesignIcons
@@ -158,9 +163,9 @@ class ScreenshotTest {
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
-            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.") {},
+            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", actions = listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})) {},
             TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
-            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.") {},
+            TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.", actions = listOf(TodoAction("روشن کن") {})) {},
         )
     }
 
@@ -289,6 +294,27 @@ class ScreenshotTest {
         SummaryHero(summary(spentToman), onPickMonth = {}, onEditBudget = {}, dark = false, onToggleDark = {}, onToggleHidden = {}, nowMillis = now)
     }
 
+    /** کارت بررسی پیامک مبهم: عددهای داخل متن قابل لمس، کارت خلاصه و دکمه‌های پایین */
+    @Test
+    fun review() {
+        val body = "مبلغ ۲٬۵۰۰٬۰۰۰ ریال از حساب ۱۲۳۴ کسر شد.\nموجودی: ۴۱٬۲۳۰٬۰۰۰"
+        val item = ReviewItem(
+            smsId = 1,
+            sender = "+989120000000",
+            body = body,
+            dateMillis = now,
+            bankName = null,
+            guess = ReviewDetector.guess(SmsTextNormalizer.normalize(body)),
+        )
+        for ((style, dark) in listOf(AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true)) {
+            shot("review", style, dark) {
+                Box(Modifier.fillMaxWidth().height(720.dp)) {
+                    ReviewCard(item, sameSenderOthers = 0, onConfirm = { _, _, _, _ -> }, onDismiss = {}, onAddInstitution = { null }, onShare = {})
+                }
+            }
+        }
+    }
+
     @Test
     fun todo() {
         for ((style, dark) in variants) shot("todo", style, dark, padded = false) { Todo() }
@@ -412,7 +438,7 @@ class ScreenshotTest {
             items = listOf(
                 NavItem(NavIcons.Summary, "خلاصه"),
                 NavItem(NavIcons.Transactions, "تراکنش‌ها"),
-                NavItem(NavIcons.Todo, "کارها", badge = 6),
+                NavItem(NavIcons.Todo, "کارها", badge = 3),
             ),
             selectedIndex = selected,
             onSelect = {},

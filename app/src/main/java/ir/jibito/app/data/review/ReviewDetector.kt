@@ -144,6 +144,44 @@ object ReviewDetector {
         }
     }
 
+    /**
+     * جای هر عدد [numbers] در متن اصلی پیامک (برای لمس خود عدد داخل متن).
+     * متن نمایش داده‌شده ممکن است رقم فارسی یا جداکننده‌ی دیگری داشته باشد؛ مقایسه نویسه‌به‌نویسه
+     * بعد از یکسان کردن رقم‌ها و جداکننده‌هاست، پس جای نویسه‌ها عوض نمی‌شود.
+     * عددها به ترتیب ظاهر شدن پیدا می‌شوند و تکه‌ای از یک عدد بلندتر حساب نمی‌شود.
+     * @return بازه‌ی هر عدد در [body]؛ null اگر حتی یکی پیدا نشد (آن‌وقت صفحه دکمه‌های جدا نشان می‌دهد)
+     */
+    fun locate(body: String, numbers: List<NumberToken>): List<IntRange>? {
+        val text = unifyDigits(body)
+        var from = 0
+        return numbers.map { token ->
+            val raw = unifyDigits(token.raw)
+            var at = text.indexOf(raw, from)
+            while (at >= 0 && !isWholeNumber(text, at, raw.length)) at = text.indexOf(raw, at + 1)
+            if (at < 0) return null
+            from = at + raw.length
+            at until at + raw.length
+        }
+    }
+
+    private fun unifyDigits(s: String): String = buildString(s.length) {
+        for (c in s) {
+            append(
+                when (c) {
+                    in '۰'..'۹' -> '0' + (c - '۰')
+                    in '٠'..'٩' -> '0' + (c - '٠')
+                    '٬', '،' -> ','
+                    else -> c
+                }
+            )
+        }
+    }
+
+    private fun isWholeNumber(text: String, at: Int, length: Int): Boolean {
+        fun partOfNumber(c: Char?) = c != null && (c in '0'..'9' || c == ',')
+        return !partOfNumber(text.getOrNull(at - 1)) && !partOfNumber(text.getOrNull(at + length))
+    }
+
     fun guess(text: String): ReviewGuess {
         val nums = numbers(text)
 

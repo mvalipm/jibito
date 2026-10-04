@@ -263,9 +263,7 @@
     <string name="review_title">بررسی</string>
     <string name="review_count">%1$d پیامک</string>
     <string name="review_later">بعداً</string>
-    <string name="review_explain">این پیامک شبیه تراکنشه ولی جیبیتو نتونست خودکار بخونه‌ش. تا تأییدش نکنی، توی خرج‌ها و بودجه حساب نمی‌شه.</string>
     <string name="review_unknown_sender">فرستنده‌ی ناشناس</string>
-    <string name="review_type">برداشت بوده یا واریز؟</string>
     <string name="review_pick_amount">مبلغ کدومه؟ روش بزن</string>
     <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
     <string name="review_confirm">ثبت تراکنش</string>
@@ -291,6 +289,14 @@
     <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
+    <string name="review_more">گزینه‌های بیشتر</string>
+    <string name="review_tap_hint">عددها رو توی خود پیامک بزن: یه بار مبلغ، دو بار مانده</string>
+    <string name="review_tap_hint_single">مبلغ رو توی خود پیامک بزن</string>
+    <string name="review_row_amount">مبلغ</string>
+    <string name="review_row_type">نوع</string>
+    <string name="review_row_balance">مانده</string>
+    <string name="review_row_bank">بانک</string>
+    <string name="review_not_chosen">انتخاب نشده</string>
     <string name="review_learn_hint">جیبیتو قالب این پیامک رو یاد می‌گیره؛ پیامک‌های مشابهِ بعدی خودکار ثبت می‌شن.</string>
 
     <!-- قفل اپ -->
@@ -465,6 +471,11 @@
     <!-- کارهای لازم -->
     <string name="todo_title">کارهای لازم</string>
     <string name="todo_count">%1$d مورد</string>
+    <string name="todo_urgent_count">%1$d کار فوری</string>
+    <string name="todo_section_now">الان</string>
+    <string name="todo_section_suggestions">پیشنهادها</string>
+    <string name="todo_turn_on">روشن کن</string>
+    <string name="todo_transfer_yes">آره، مال خودمه</string>
     <string name="todo_notif_off">نوتیف خاموشه</string>
     <string name="todo_uncategorized">خرج بی‌دسته</string>
     <string name="todo_review">%1$d پیامک مبهم</string>

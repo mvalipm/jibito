@@ -127,7 +127,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
-    // عدد روی تب «کارها»: همه‌ی کارهای لازم (نه فقط پیامک‌های مبهم)
+    // عدد روی تب «کارها»: فقط کارهای فوری (پیشنهادها شمرده نمی‌شوند تا عدد هیچ‌وقت عادی نشود)
     val todoSummaryVm: SummaryViewModel = viewModel(key = "todo-count", factory = SummaryViewModel.factory(container.budgetRepository))
     val todoSummary by todoSummaryVm.summary.collectAsState()
     val todoCount = rememberTodoStories(
@@ -138,7 +138,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         onOpenTransactions = {},
         onOpenSettings = {},
         onOpenCategory = {},
-    ).size
+    ).count { it.urgent }
 
     LaunchedEffect(openTransactionId) {
         val id = openTransactionId ?: return@LaunchedEffect

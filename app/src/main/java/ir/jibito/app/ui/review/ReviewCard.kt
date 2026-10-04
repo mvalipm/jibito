@@ -1,8 +1,10 @@
 package ir.jibito.app.ui.review
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -11,49 +13,64 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import ir.jibito.app.R
-import ir.jibito.app.ui.theme.JibitoTheme
-import androidx.compose.foundation.layout.size
-import ir.jibito.app.data.bank.BankDirectory
-import ir.jibito.app.data.parser.FlowType
-import ir.jibito.app.data.review.NumberToken
-import ir.jibito.app.data.repository.ReviewItem
-import ir.jibito.app.util.Jalali
-import ir.jibito.app.util.Money
-import androidx.compose.material3.Icon
-import androidx.compose.ui.graphics.vector.ImageVector
-import ir.jibito.app.ui.theme.JibitoIcons
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ir.jibito.app.R
+import ir.jibito.app.data.bank.BankDirectory
+import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.repository.ReviewItem
+import ir.jibito.app.data.review.NumberToken
+import ir.jibito.app.data.review.ReviewDetector
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.util.Jalali
+import ir.jibito.app.util.Money
 
+/**
+ * یک پیامک منتظر بررسی.
+ * عددهای داخل خود پیامک قابل لمس‌اند: لمس اول = مبلغ، لمس دوم = مانده، لمس سوم = هیچ‌کدام
+ * (اگر جای عددها در متن پیدا نشود، همان دکمه‌های جدای عددها نشان داده می‌شوند).
+ * زیرش یک کارت خلاصه (مبلغ، نوع، بانک) تا کاربر قبل از تأیید نتیجه را ببیند،
+ * و دکمه‌ها همیشه پایین کارت‌اند. «ارسال نمونه» و «این سرشماره بانکی نیست» در منوی ⋯ هستند.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ReviewCard(
@@ -66,102 +83,213 @@ internal fun ReviewCard(
     onShare: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val jt = JibitoTheme.colors
     val g = item.guess
     // انتخاب‌ها برای هر پیامک جدا نگه داشته می‌شوند؛ مقدار اول = حدس اپ
     var type by rememberSaveable(item.smsId) { mutableStateOf(g.type) }
     var amountIndex by rememberSaveable(item.smsId) { mutableStateOf(g.amountIndex) }
     var balanceIndex by rememberSaveable(item.smsId) { mutableStateOf(g.balanceIndex) }
-    var ignoreSender by rememberSaveable(item.smsId) { mutableStateOf(false) }
     var bankId by rememberSaveable(item.smsId) { mutableStateOf<Int?>(null) }
     var pickingBank by rememberSaveable(item.smsId) { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
     val needsBank = item.bankName == null
     val factor = if (g.inToman) 10 else 1
+    val ranges = remember(item.smsId) { ReviewDetector.locate(item.body, g.numbers) }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = 14.dp, bottom = 18.dp)
-    ) {
+    /** لمس یک عدد: هیچ‌کدام ← مبلغ ← مانده ← هیچ‌کدام */
+    fun tap(i: Int) {
+        when (i) {
+            amountIndex -> {
+                amountIndex = null
+                balanceIndex = i
+            }
+            balanceIndex -> balanceIndex = null
+            else -> amountIndex = i
+        }
+    }
 
-        // متن پیامک، مثل حباب پیام
-        val jt = JibitoTheme.colors
-        Text(
-            item.body,
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (jt.dark) Modifier.border(1.dp, jt.border, BubbleShape) else Modifier.shadow(1.dp, BubbleShape))
-                .clip(BubbleShape)
-                .background(jt.smsBg)
-                .padding(horizontal = 18.dp, vertical = 16.dp),
-            fontSize = 15.sp,
-            lineHeight = 28.sp,
-            color = colors.onBackground,
-        )
-        Text(
-            listOf(item.bankName ?: item.sender, Jalali.format(item.dateMillis)).joinToString(" · ") +
-                if (item.bankName == null) " · " + stringResource(R.string.review_unknown_sender) else "",
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp),
-            fontSize = 12.sp,
-            color = jt.muted,
-            textAlign = TextAlign.End,
-        )
-
-        // فرستنده‌ی ناشناس: مال کدام بانک/موسسه است؟ (یک بار؛ از این به بعد خودکار شناخته می‌شود)
-        if (needsBank) {
-            SectionTitle(stringResource(R.string.review_which_bank))
-            OutlinedButton(
-                onClick = { pickingBank = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-            ) {
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(top = 10.dp, bottom = 12.dp)
+        ) {
+            // متن پیامک، مثل حباب پیام؛ عددها قابل لمس
+            val amountStyle = SpanStyle(background = jt.btnBg, color = jt.btnFg, fontWeight = FontWeight.Black)
+            val balanceStyle = SpanStyle(background = jt.tealTint, color = jt.tealTintFg, fontWeight = FontWeight.Black)
+            val idleStyle = SpanStyle(background = jt.uncatBg, color = jt.uncatFg, fontWeight = FontWeight.Bold)
+            val text = remember(item.smsId, ranges, amountIndex, balanceIndex, jt) {
+                buildAnnotatedString {
+                    if (ranges == null) {
+                        append(item.body)
+                    } else {
+                        var at = 0
+                        ranges.forEachIndexed { i, r ->
+                            append(item.body.substring(at, r.first))
+                            val style = when (i) {
+                                amountIndex -> amountStyle
+                                balanceIndex -> balanceStyle
+                                else -> idleStyle
+                            }
+                            withLink(LinkAnnotation.Clickable("n$i") { tap(i) }) {
+                                withStyle(style) { append(" " + item.body.substring(r.first, r.last + 1) + " ") }
+                            }
+                            at = r.last + 1
+                        }
+                        append(item.body.substring(at))
+                    }
+                }
+            }
+            Text(
+                text,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (jt.dark) Modifier.border(1.dp, jt.border, BubbleShape) else Modifier.shadow(1.dp, BubbleShape))
+                    .clip(BubbleShape)
+                    .background(jt.smsBg)
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                fontSize = 15.sp,
+                lineHeight = 30.sp,
+                color = colors.onBackground,
+            )
+            Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    BankDirectory.byId(bankId)?.name ?: stringResource(R.string.review_pick_bank),
-                    fontWeight = if (bankId != null) FontWeight.Bold else FontWeight.Normal,
+                    listOf(item.bankName ?: item.sender, Jalali.format(item.dateMillis)).joinToString(" · ") +
+                        if (item.bankName == null) " · " + stringResource(R.string.review_unknown_sender) else "",
+                    modifier = Modifier.weight(1f),
+                    fontSize = 12.sp,
+                    color = jt.muted,
+                )
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(DesignIcons.Dots, contentDescription = stringResource(R.string.review_more), tint = jt.muted)
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.review_share)) },
+                            onClick = {
+                                menuOpen = false
+                                onShare()
+                            },
+                        )
+                        if (item.bankName == null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(stringResource(R.string.review_ignore_sender))
+                                        Text(
+                                            if (sameSenderOthers > 0) {
+                                                Jalali.toPersianDigits(stringResource(R.string.review_ignore_sender_more, sameSenderOthers))
+                                            } else {
+                                                stringResource(R.string.review_ignore_sender_hint)
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = jt.muted,
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    menuOpen = false
+                                    onDismiss(true)
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (ranges == null) {
+                // جای عددها در متن پیدا نشد: دکمه‌های جدا
+                SectionTitle(stringResource(R.string.review_pick_amount))
+                NumberChips(g.numbers.map { it.raw }, selected = amountIndex, disabled = balanceIndex) { i ->
+                    amountIndex = if (amountIndex == i) null else i
+                }
+                if (g.numbers.size > 1) {
+                    SectionTitle(stringResource(R.string.review_pick_balance))
+                    NumberChips(g.numbers.map { it.raw }, selected = balanceIndex, disabled = amountIndex) { i ->
+                        balanceIndex = if (balanceIndex == i) null else i
+                    }
+                }
+            } else {
+                Text(
+                    stringResource(if (g.numbers.size > 1) R.string.review_tap_hint else R.string.review_tap_hint_single),
+                    modifier = Modifier.padding(top = 2.dp),
+                    fontSize = 12.sp,
+                    color = jt.muted,
                 )
             }
-        }
 
-        // نوع
-        SectionTitle(stringResource(R.string.review_type))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TypeChip(stringResource(R.string.tx_withdrawal), JibitoIcons.ArrowUp, type == FlowType.WITHDRAWAL, colors.primary) { type = FlowType.WITHDRAWAL }
-            TypeChip(stringResource(R.string.tx_deposit), JibitoIcons.ArrowDown, type == FlowType.DEPOSIT, JibitoTheme.colors.income) { type = FlowType.DEPOSIT }
-        }
-
-        // مبلغ
-        SectionTitle(stringResource(R.string.review_pick_amount))
-        NumberChips(g.numbers.map { it.raw }, selected = amountIndex, disabled = balanceIndex) { i ->
-            amountIndex = if (amountIndex == i) null else i
-        }
-        amountIndex?.let { i ->
+            // خلاصه‌ی نتیجه
+            Spacer(Modifier.height(14.dp))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(jt.sheet)
+                    .border(1.dp, jt.border, RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                SummaryRow(stringResource(R.string.review_row_amount)) {
+                    val chosen = amountIndex
+                    Text(
+                        if (chosen != null) Money.toman(g.numbers[chosen].value * factor) else stringResource(R.string.review_not_chosen),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        color = when {
+                            chosen == null -> jt.muted
+                            type == FlowType.DEPOSIT -> jt.income
+                            else -> jt.btnBg
+                        },
+                    )
+                }
+                HorizontalDivider(color = jt.border)
+                SummaryRow(stringResource(R.string.review_row_type)) {
+                    TypeSwitch(type) { type = it }
+                }
+                balanceIndex?.let { b ->
+                    HorizontalDivider(color = jt.border)
+                    SummaryRow(stringResource(R.string.review_row_balance)) {
+                        Text(Money.toman(g.numbers[b].value * factor), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = jt.tealTintFg)
+                    }
+                }
+                // فرستنده‌ی ناشناس: مال کدام بانک/موسسه است؟ (یک بار؛ از این به بعد خودکار شناخته می‌شود)
+                if (needsBank) {
+                    HorizontalDivider(color = jt.border)
+                    SummaryRow(stringResource(R.string.review_row_bank)) {
+                        Text(
+                            BankDirectory.byId(bankId)?.name ?: stringResource(R.string.review_pick_bank),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(if (bankId == null) jt.btnBg else jt.chip)
+                                .clickable(role = Role.Button) { pickingBank = true }
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (bankId == null) jt.btnFg else colors.onBackground,
+                        )
+                    }
+                }
+            }
             Text(
-                "= " + Money.toman(g.numbers[i].value * factor),
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (type == FlowType.DEPOSIT) JibitoTheme.colors.income else colors.primary,
+                stringResource(R.string.review_learn_hint),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = jt.muted,
+                textAlign = TextAlign.Center,
             )
         }
 
-        // مانده (اختیاری)
-        if (g.numbers.size > 1) {
-            SectionTitle(stringResource(R.string.review_pick_balance))
-            NumberChips(g.numbers.map { it.raw }, selected = balanceIndex, disabled = amountIndex) { i ->
-                balanceIndex = if (balanceIndex == i) null else i
-            }
-        }
-
-        Spacer(Modifier.height(22.dp))
+        // دکمه‌ها همیشه پایین
         val chosenType = type
         val chosenAmount = amountIndex
         val ready = chosenType != null && chosenAmount != null && (!needsBank || bankId != null)
         BigPill(
             text = stringResource(if (type == FlowType.DEPOSIT) R.string.review_yes_income else R.string.review_yes_spend),
-            container = JibitoTheme.colors.btnBg,
-            content = JibitoTheme.colors.btnFg,
+            container = jt.btnBg,
+            content = jt.btnFg,
             bold = true,
             enabled = ready,
         ) {
@@ -169,74 +297,18 @@ internal fun ReviewCard(
                 onConfirm(chosenType, g.numbers[chosenAmount], balanceIndex?.let { g.numbers[it] }, bankId)
             }
         }
-
         Text(
-            stringResource(R.string.review_learn_hint),
+            stringResource(R.string.review_not_transaction),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.onSurfaceVariant,
+                .heightIn(min = 48.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .clickable(role = Role.Button) { onDismiss(false) }
+                .wrapContentHeight(Alignment.CenterVertically),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = colors.onBackground,
             textAlign = TextAlign.Center,
-        )
-
-        Spacer(Modifier.height(14.dp))
-        // فرستنده‌ی ناشناس: «این سرشماره اصلاً بانکی نیست» ← همه‌ی پیامک‌هایش با یک لمس کنار می‌روند
-        if (item.bankName == null) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(colors.surface, RoundedCornerShape(16.dp))
-                    .clickable { ignoreSender = !ignoreSender }
-                    .padding(end = 12.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(checked = ignoreSender, onCheckedChange = { ignoreSender = it })
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.review_ignore_sender),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onSurface,
-                    )
-                    Text(
-                        if (sameSenderOthers > 0) {
-                            Jalali.toPersianDigits(stringResource(R.string.review_ignore_sender_more, sameSenderOthers))
-                        } else {
-                            stringResource(R.string.review_ignore_sender_hint)
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-        }
-        BigPill(
-            text = stringResource(R.string.review_not_transaction),
-            container = JibitoTheme.colors.chip,
-            content = colors.onBackground,
-            bold = false,
-        ) { onDismiss(ignoreSender) }
-
-        Spacer(Modifier.height(6.dp))
-        TextButton(onClick = onShare, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text(stringResource(R.string.review_share))
-        }
-        Text(
-            stringResource(R.string.review_share_hint),
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            stringResource(R.string.review_explain),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
         )
     }
 
@@ -253,6 +325,55 @@ internal fun ReviewCard(
     }
 }
 
+/** یک ردیف کارت خلاصه: برچسب کم‌رنگ و مقدار */
+@Composable
+private fun SummaryRow(label: String, value: @Composable () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, modifier = Modifier.weight(1f), fontSize = 13.sp, color = JibitoTheme.colors.muted)
+        value()
+    }
+}
+
+/** «برداشت | واریز»: سوییچ دوقسمتی مثل بقیه‌ی اپ */
+@Composable
+private fun TypeSwitch(type: FlowType?, onChange: (FlowType) -> Unit) {
+    val t = JibitoTheme.colors
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(t.chip)
+            .padding(3.dp),
+    ) {
+        listOf(
+            FlowType.WITHDRAWAL to stringResource(R.string.tx_withdrawal),
+            FlowType.DEPOSIT to stringResource(R.string.tx_deposit),
+        ).forEach { (value, label) ->
+            val selected = type == value
+            Text(
+                label,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(if (selected) t.sheet else t.chip)
+                    .clickable(role = Role.Tab) { onChange(value) }
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    !selected -> t.muted
+                    value == FlowType.DEPOSIT -> t.income
+                    else -> MaterialTheme.colorScheme.onBackground
+                },
+            )
+        }
+    }
+}
+
 @Composable
 private fun SectionTitle(text: String) {
     Text(
@@ -261,23 +382,6 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Black,
         color = MaterialTheme.colorScheme.onBackground,
-    )
-}
-
-@Composable
-private fun TypeChip(label: String, icon: ImageVector, selected: Boolean, color: Color, onClick: () -> Unit) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label, fontWeight = FontWeight.Bold) },
-        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        shape = RoundedCornerShape(14.dp),
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = color,
-            selectedLabelColor = Color.White,
-            selectedLeadingIconColor = Color.White,
-            iconColor = color,
-        ),
     )
 }
 
