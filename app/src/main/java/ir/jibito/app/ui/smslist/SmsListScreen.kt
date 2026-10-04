@@ -214,11 +214,10 @@ fun SmsListScreen(
     if (!showWallet) walletFull[0] = 0
     val titleSize by animateFloatAsState(if (collapsed && showWallet) 21f else 30f, tween(220), label = "titleSize")
 
-    // اگر کاربر هنوز دست به فهرست نزده، بالای آن دیده شود (کارت انتقال که دیرتر از دیتابیس می‌رسد، بالای فهرست پنهان نماند)
-    var userScrolled by remember { mutableStateOf(false) }
-    LaunchedEffect(listState.isScrollInProgress) { if (listState.isScrollInProgress) userScrolled = true }
-    val hasSuggestion = transferSuggestions.isNotEmpty() && !showSearch
-    LaunchedEffect(hasSuggestion, visible?.list?.isNotEmpty()) { if (!userScrolled) listState.scrollToItem(0) }
+    // هر تراکنشی که نیمی از یک «انتقال احتمالی» است ← همان پیشنهاد (برای «آره / نه» زیر ردیفش؛ مرور همه‌شان در «کارها»)
+    val transferOf = remember(transferSuggestions) {
+        buildMap { transferSuggestions.forEach { put(it.withdrawal.id, it); put(it.deposit.id, it) } }
+    }
     // فیلتر یا جست‌وجوی تازه: از اول فهرست
     LaunchedEffect(onlyUncategorized, search) { listState.scrollToItem(0) }
 
@@ -342,25 +341,6 @@ fun SmsListScreen(
                 state = listState,
                 contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp + LocalBottomBarSpace.current),
             ) {
-                // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی و فشرده، بالای فهرست
-                transferSuggestions.firstOrNull()?.takeIf { !showSearch }?.let { suggestion ->
-                    item(key = "transfer-suggestion") {
-                        Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
-                            TransferSuggestionCard(
-                                suggestion = suggestion,
-                                total = transferSuggestions.size,
-                                onYes = {
-                                    haptics.confirm()
-                                    viewModel.confirmTransfer(suggestion)
-                                },
-                                onNo = {
-                                    haptics.reject()
-                                    viewModel.rejectTransfer(suggestion)
-                                },
-                            )
-                        }
-                    }
-                }
                 // روزبه‌روز: سرتیتر چسبان «امروز ━━━ ۶۰۵ هزار» و تراکنش‌های آن روز
                 val maxDay = groups.maxOfOrNull { it.spendRial }?.coerceAtLeast(1L) ?: 1L
                 val spendDays = groups.filter { it.spendRial > 0 }
@@ -387,6 +367,18 @@ fun SmsListScreen(
                                 onClick = { selectedId = sms.id },
                                 onAcceptSuggestion = suggestedId?.let { id -> { pickCategory(sms, id) } },
                                 highlight = highlight,
+                                onConfirmTransfer = transferOf[sms.id]?.let { s ->
+                                    {
+                                        haptics.confirm()
+                                        viewModel.confirmTransfer(s)
+                                    }
+                                },
+                                onRejectTransfer = transferOf[sms.id]?.let { s ->
+                                    {
+                                        haptics.reject()
+                                        viewModel.rejectTransfer(s)
+                                    }
+                                },
                             )
                         }
                     }
@@ -437,7 +429,9 @@ fun SmsListScreen(
             },
             onSelfTransfer = { isTransfer ->
                 haptics.confirm()
-                viewModel.setSelfTransfer(selected.id, isTransfer)
+                // اگر نیمی از یک انتقال پیشنهادی است، هر دو طرف با هم علامت می‌خورند
+                val suggestion = transferOf[selected.id]
+                if (isTransfer && suggestion != null) viewModel.confirmTransfer(suggestion) else viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
             },
             onDelete = if (selected.isManual) {

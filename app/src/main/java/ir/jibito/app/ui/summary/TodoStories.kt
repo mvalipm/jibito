@@ -61,10 +61,13 @@ data class TodoStory(
     val detail: String? = null,
     /** دکمه‌های داخل کارت برای کارهای یک‌لمسی (مثلاً «روشن کن»، «آره / نه»)؛ اولی دکمه‌ی اصلی است */
     val actions: List<TodoAction> = emptyList(),
+    /** برچسب‌های کوچک وسط کارت، بالای دکمه‌ها (مثلاً الگوهای «ملی ← ملی · ۳۸») */
+    val chips: List<String> = emptyList(),
     val onClick: () -> Unit,
 ) {
     /**
-     * کار فوری: تا انجام نشود عددهای اپ غلط یا ناقص است (پیامک مبهم، خرج بی‌دسته، بودجه‌ی نزدیک سقف).
+     * کار فوری: تا انجام نشود عددهای اپ غلط یا ناقص است
+     * (پیامک مبهم، خرج بی‌دسته، بودجه‌ی نزدیک سقف، انتقال‌هایی که شاید خرج حساب شده‌اند).
      * فقط این‌ها روی تب «کارها» شمرده می‌شوند؛ بقیه پیشنهادند.
      */
     val urgent: Boolean get() = isUrgentTodo(id)
@@ -73,7 +76,7 @@ data class TodoStory(
 /** یک دکمه‌ی داخل کارت کار */
 data class TodoAction(val label: String, val onClick: () -> Unit)
 
-fun isUrgentTodo(id: String): Boolean = id == "review" || id == "uncat" || id.startsWith("budget-")
+fun isUrgentTodo(id: String): Boolean = id == "review" || id == "uncat" || id.startsWith("budget-") || id == "transfer"
 
 /** سرتیتر هر بخش «خلاصه»: عنوان درشت و یک یادداشت کوچک در طرف دیگر */
 @Composable

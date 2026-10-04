@@ -15,9 +15,11 @@ import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.ui.common.HIDDEN_AMOUNT
 import ir.jibito.app.ui.common.LocalHideAmounts
+import ir.jibito.app.ui.smslist.shortBankName
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.categoryTint
+import ir.jibito.app.ui.transfers.groupTransfers
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
@@ -34,7 +36,7 @@ fun rememberTodoStories(
     pendingReview: Int,
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
-    onOpenTransactions: () -> Unit,
+    onOpenTransfers: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
 ): List<TodoStory> {
@@ -104,19 +106,26 @@ fun rememberTodoStories(
                 )
             )
         }
-        transferSuggestions.firstOrNull()?.let { suggestion ->
-            val repository = app.container.transactionRepository
+        if (transferSuggestions.isNotEmpty()) {
+            // همه‌ی پیشنهادها یک کار است (نه یکی‌یکی)؛ مرورشان در صفحه‌ی خودش، گروه‌شده بر اساس بانک‌ها
+            val groups = remember(transferSuggestions) { groupTransfers(transferSuggestions) }
+            val unknown = stringResource(R.string.bank_unknown)
+            val review = stringResource(R.string.todo_transfers_review)
+            val chips = groups.take(2).map { g ->
+                Jalali.toPersianDigits(
+                    shortBankName(g.from?.name ?: unknown) + " ← " + shortBankName(g.to?.name ?: unknown) + " · " + g.items.size
+                )
+            } + listOfNotNull(
+                (groups.size - 2).takeIf { it > 0 }?.let { Jalali.toPersianDigits(stringResource(R.string.todo_transfers_more, it)) }
+            )
             add(
                 TodoStory(
                     "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null,
-                    label = stringResource(R.string.todo_transfer),
-                    detail = stringResource(R.string.todo_transfer_detail),
-                    // همان‌جا جواب داده می‌شود؛ لمس خود کارت، فهرست تراکنش‌ها را باز می‌کند
-                    actions = listOf(
-                        TodoAction(stringResource(R.string.todo_transfer_yes)) { scope.launch { repository.confirmTransfer(suggestion) } },
-                        TodoAction(stringResource(R.string.transfer_no)) { scope.launch { repository.rejectTransfer(suggestion) } },
-                    ),
-                    onClick = onOpenTransactions,
+                    label = Jalali.toPersianDigits(stringResource(R.string.todo_transfers, transferSuggestions.size)),
+                    detail = stringResource(R.string.todo_transfers_detail),
+                    actions = listOf(TodoAction(review, onOpenTransfers)),
+                    chips = chips,
+                    onClick = onOpenTransfers,
                 )
             )
         }

@@ -95,6 +95,12 @@ interface TransactionRepository {
     /** «نه»: این برداشت دیگر به‌عنوان انتقال پیشنهاد نمی‌شود. */
     suspend fun rejectTransfer(suggestion: TransferSuggestion)
 
+    /** «همه آره» در صفحه‌ی مرور انتقال‌ها: همه با هم، در یک تراکنش دیتابیس */
+    suspend fun confirmTransfers(suggestions: List<TransferSuggestion>)
+
+    /** «هیچ‌کدوم نه» در صفحه‌ی مرور انتقال‌ها */
+    suspend fun rejectTransfers(suggestions: List<TransferSuggestion>)
+
     /** علامت زدن/برداشتن دستیِ «انتقال به خودم» برای یک تراکنش */
     suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean)
 
@@ -222,18 +228,29 @@ class TransactionRepositoryImpl(
             }.sortedByDescending { it.withdrawal.dateMillis }
         }
 
-    override suspend fun confirmTransfer(suggestion: TransferSuggestion) {
+    override suspend fun confirmTransfer(suggestion: TransferSuggestion) = confirmTransfers(listOf(suggestion))
+
+    override suspend fun rejectTransfer(suggestion: TransferSuggestion) = rejectTransfers(listOf(suggestion))
+
+    override suspend fun confirmTransfers(suggestions: List<TransferSuggestion>) {
+        if (suggestions.isEmpty()) return
         val now = System.currentTimeMillis()
         db.withTransaction {
-            dao.setTransfer(suggestion.withdrawal.id, TransactionFlowEntity.TRANSFER_SELF, suggestion.deposit.id, now)
-            dao.setTransfer(suggestion.deposit.id, TransactionFlowEntity.TRANSFER_SELF, suggestion.withdrawal.id, now)
-            suggestion.withdrawal.merchant?.let { learnOwnAccount(it, now) }
+            suggestions.forEach { s ->
+                dao.setTransfer(s.withdrawal.id, TransactionFlowEntity.TRANSFER_SELF, s.deposit.id, now)
+                dao.setTransfer(s.deposit.id, TransactionFlowEntity.TRANSFER_SELF, s.withdrawal.id, now)
+            }
+            suggestions.mapNotNull { it.withdrawal.merchant }.distinct().forEach { learnOwnAccount(it, now) }
         }
         onCategoryChanged()
     }
 
-    override suspend fun rejectTransfer(suggestion: TransferSuggestion) {
-        dao.setTransfer(suggestion.withdrawal.id, TransactionFlowEntity.TRANSFER_REJECTED, null, System.currentTimeMillis())
+    override suspend fun rejectTransfers(suggestions: List<TransferSuggestion>) {
+        if (suggestions.isEmpty()) return
+        val now = System.currentTimeMillis()
+        db.withTransaction {
+            suggestions.forEach { dao.setTransfer(it.withdrawal.id, TransactionFlowEntity.TRANSFER_REJECTED, null, now) }
+        }
     }
 
     override suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {

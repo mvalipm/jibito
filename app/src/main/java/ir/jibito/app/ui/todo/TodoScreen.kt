@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,7 +65,7 @@ fun TodoScreen(
     pendingReview: Int,
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
-    onOpenTransactions: () -> Unit,
+    onOpenTransfers: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
 ) {
@@ -76,7 +78,7 @@ fun TodoScreen(
         pendingReview = pendingReview,
         onOpenReview = onOpenReview,
         onOpenUncategorized = onOpenUncategorized,
-        onOpenTransactions = onOpenTransactions,
+        onOpenTransfers = onOpenTransfers,
         onOpenSettings = onOpenSettings,
         onOpenCategory = onOpenCategory,
     )
@@ -150,6 +152,7 @@ private fun SectionLabel(text: String, color: Color) {
  * یک کار: آیکون در مربع گرد (مثل بقیه‌ی اپ)، عنوان و یک جمله توضیح.
  * کارهای یک‌لمسی دکمه‌های خودشان را همین‌جا دارند.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TodoCard(s: TodoStory) {
     val t = JibitoTheme.colors
@@ -189,6 +192,28 @@ private fun TodoCard(s: TodoStory) {
             if (s.actions.isEmpty()) {
                 Spacer(Modifier.width(8.dp))
                 Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = t.faint, modifier = Modifier.size(20.dp))
+            }
+        }
+        if (s.chips.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                s.chips.forEach { chip ->
+                    Text(
+                        chip,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(s.bg)
+                            .padding(horizontal = 9.dp, vertical = 3.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = s.fg,
+                        maxLines = 1,
+                    )
+                }
             }
         }
         if (s.actions.isNotEmpty()) {

@@ -86,6 +86,9 @@ import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.main.NavIcons
 import ir.jibito.app.ui.main.NavItem
 import ir.jibito.app.ui.todo.TodoList
+import ir.jibito.app.ui.transfers.TransferReviewContent
+import ir.jibito.app.ui.transfers.groupTransfers
+import ir.jibito.app.domain.TransferSuggestion
 
 /**
  * اسکرین‌شات بخش‌های اصلی ظاهر اپ، در هر سه پوسته و حالت روشن/تیره، و با فونت بزرگ.
@@ -163,7 +166,7 @@ class ScreenshotTest {
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
-            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", actions = listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})) {},
+            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "۴۷ جابه‌جایی احتمالی بین حساب‌هات", "برداشت و واریزهای هم‌مبلغ. اگه بین کارت‌های خودت بوده، نه خرجه نه درآمد. بر اساس بانک دسته‌شون کردم که یه‌جا جواب بدی.", actions = listOf(TodoAction("مرور همه") {}), chips = listOf("ملی ← ملی · ۳۸", "پاسارگاد ← ملت · ۵", "+۳ الگوی دیگه")) {},
             TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
             TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.", actions = listOf(TodoAction("روشن کن") {})) {},
         )
@@ -311,6 +314,42 @@ class ScreenshotTest {
                 Box(Modifier.fillMaxWidth().height(720.dp)) {
                     ReviewCard(item, sameSenderOthers = 0, onConfirm = { _, _, _, _ -> }, onDismiss = {}, onAddInstitution = { null }, onShare = {})
                 }
+            }
+        }
+    }
+
+    /** جفت «برداشت ← واریز» برای صفحه‌ی مرور انتقال‌ها */
+    private fun pair(id: Long, hoursAgo: Long, amountRial: Long, from: Int, to: Int) = TransferSuggestion(
+        tx(id, hoursAgo, amountRial, bankId = from),
+        tx(id + 1000, hoursAgo, amountRial, type = FlowType.DEPOSIT, bankId = to),
+    )
+
+    /** مرور انتقال‌های احتمالی: الگوها بر اساس بانک، اولی باز */
+    @Test
+    fun transferReview() {
+        val groups = groupTransfers(
+            listOf(
+                pair(1, 1, 1_000_000, 11, 11), pair(2, 30, 25_000_000, 11, 11), pair(3, 80, 3_000_000, 11, 11),
+                pair(4, 5, 15_000_000, 15, 11), pair(5, 50, 8_000_000, 15, 11),
+                pair(6, 100, 30_000_000, 11, 15),
+            )
+        )
+        for ((style, dark) in listOf(AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true)) {
+            shot("transfers", style, dark, padded = false) {
+                Box(Modifier.fillMaxWidth().height(860.dp)) {
+                    TransferReviewContent(groups, expandedKey = groups.first().key, onToggle = {}, onBack = {}, onYesAll = {}, onYes = {}, onNo = {})
+                }
+            }
+        }
+    }
+
+    /** ردیفی که نیمی از یک انتقال احتمالی است: «انتقال به حساب خودته؟ آره / نه» */
+    @Test
+    fun transferRow() {
+        val w = tx(1, 0, 1_000_000, bankId = 11)
+        for ((style, dark) in listOf(AppThemeStyle.DEFAULT to false, AppThemeStyle.DEFAULT to true)) {
+            shot("transfer_row", style, dark) {
+                TransactionRow(w, null, onClick = {}, onConfirmTransfer = {}, onRejectTransfer = {})
             }
         }
     }

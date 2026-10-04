@@ -80,11 +80,7 @@
     <string name="search_result_count">%1$d تراکنش</string>
     <string name="search_result_spent">خرج</string>
     <string name="search_result_income">درآمد</string>
-    <string name="transfer_question_short">انتقال به حساب خودت بوده؟</string>
     <string name="transfer_yes_short">آره</string>
-    <string name="transfer_progress">۱ از %1$d</string>
-    <string name="transfer_details">جزئیات</string>
-    <string name="transfer_less">بستن</string>
     <string name="balances_title">چقد دارم؟</string>
     <string name="balances_total_hint">از %1$d بانک</string>
     <string name="balances_today">مانده‌ی امروز</string>
@@ -152,9 +148,6 @@
     <string name="tx_self_transfer_chip">خرج حساب نمی‌شه</string>
     <string name="sheet_self_transfer">⇄ انتقال بین حساب‌های خودم</string>
     <string name="sheet_self_transfer_hint">نه خرج حساب می‌شه نه درآمد. کارت مقصد هم یادم می‌مونه و انتقال‌های بعدی به همون کارت خودکار علامت می‌خورن.</string>
-    <string name="transfer_explain">این برداشت و واریز هم‌مبلغ‌اند. اگه پول رو از یه حسابت به حساب دیگه‌ت فرستادی، نه خرجه نه درآمد.</string>
-    <string name="transfer_withdrawal_line">↑ برداشت از %1$s</string>
-    <string name="transfer_deposit_line">↓ واریز به %1$s</string>
     <string name="transfer_no">نه</string>
     <string name="sheet_title">مال چی بود؟</string>
     <string name="sheet_suggested">پیشنهاد</string>
@@ -476,17 +469,18 @@
     <string name="todo_section_now">الان</string>
     <string name="todo_section_suggestions">پیشنهادها</string>
     <string name="todo_turn_on">روشن کن</string>
-    <string name="todo_transfer_yes">آره، مال خودمه</string>
     <string name="todo_notif_off">نوتیف خاموشه</string>
     <string name="todo_uncategorized">خرج بی‌دسته</string>
     <string name="todo_review">%1$d پیامک مبهم</string>
-    <string name="todo_transfer">انتقال به خودت؟</string>
     <string name="todo_recurring">%1$s ماهانه؟</string>
     <string name="todo_notif_detail">هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.</string>
     <string name="todo_uncategorized_detail">دسته بده تا «کجا رفت؟» درست نشونت بده.</string>
     <string name="todo_budget_detail">%1$s از بودجه‌ی %2$s</string>
-    <string name="todo_transfer_detail">اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.</string>
     <string name="todo_recurring_detail">اگه ماهانه‌ست، قبل از موعدش یادت میندازم.</string>
+    <string name="todo_transfers">%1$d جابه‌جایی احتمالی بین حساب‌هات</string>
+    <string name="todo_transfers_detail">برداشت و واریزهای هم‌مبلغ. اگه بین کارت‌های خودت بوده، نه خرجه نه درآمد. بر اساس بانک دسته‌شون کردم که یه‌جا جواب بدی.</string>
+    <string name="todo_transfers_more">+%1$d الگوی دیگه</string>
+    <string name="todo_transfers_review">مرور همه</string>
     <string name="todo_all_clear">کاری نمونده. هر وقت چیزی کارت داشت، اینجا نشونت می‌دم.</string>
 
     <!-- کجا رفت؟ و روند -->
@@ -603,4 +597,19 @@
     <string name="settings_advanced_sub">دوباره خوندن پیامک‌ها، گزارش خطا</string>
     <string name="settings_advanced_errors">%1$d تا خطا ثبت شده</string>
     <string name="settings_rescan_needs_sms">برای این کار اول باید «خوندن پیامک» روشن باشه.</string>
+
+    <!-- مرور انتقال‌های احتمالی -->
+    <string name="transfers_title">انتقال‌های احتمالی</string>
+    <string name="transfers_subtitle">%1$d مورد · %2$d الگو</string>
+    <string name="transfers_explain">برداشت و واریزهای هم‌مبلغی که چند دقیقه پشت هم اومدن. اونایی که بین حساب‌های خودته رو تأیید کن تا خرج یا درآمد حساب نشن. کارت مقصد هم یادم می‌مونه.</string>
+    <string name="transfers_yes_all">همه‌ی %1$d تا مال خودمه</string>
+    <string name="transfers_group_meta">%1$d مورد · جمعاً %2$s</string>
+    <string name="transfers_group_yes">همه آره</string>
+    <string name="transfers_group_no">هیچ‌کدوم نه</string>
+    <string name="transfers_show_items">دیدن تک‌تک‌شون</string>
+    <string name="transfers_hide_items">بستن</string>
+    <string name="transfers_item_when">برداشت %1$s · واریز %2$s</string>
+    <string name="transfers_done_title">همه مرور شد!</string>
+    <string name="transfers_done_body">هر وقت انتقال تازه‌ای پیدا کنم که مطمئن نباشم، توی «کارها» نشونت می‌دم.</string>
+    <string name="tx_transfer_question">انتقال به حساب خودته؟ آره</string>
 </resources>

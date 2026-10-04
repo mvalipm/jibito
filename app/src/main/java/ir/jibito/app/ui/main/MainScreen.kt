@@ -62,6 +62,7 @@ import ir.jibito.app.ui.summary.SummaryViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.todo.TodoScreen
+import ir.jibito.app.ui.transfers.TransferReviewScreen
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -76,6 +77,8 @@ private enum class Tab(val route: String, val label: Int) {
 
 /** صفحه‌هایی که تب نیستند: «بررسی» از داخل «کارها» و «تنظیمات» از چرخ‌دنده‌ی «خلاصه» باز می‌شوند */
 private const val ROUTE_REVIEW = "review"
+/** «انتقال‌های احتمالی» (از داخل «کارها») */
+private const val ROUTE_TRANSFERS = "transfers"
 private const val ROUTE_SETTINGS = "settings"
 
 /**
@@ -103,7 +106,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val backStackEntry by nav.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route
     // «بررسی» زیرمجموعه‌ی «کارها»ست؛ در «تنظیمات» نوار پایین پنهان است
-    val tab = if (route == ROUTE_REVIEW) Tab.Todo else Tab.entries.firstOrNull { it.route == route } ?: Tab.Summary
+    val tab = if (route == ROUTE_REVIEW || route == ROUTE_TRANSFERS) Tab.Todo else Tab.entries.firstOrNull { it.route == route } ?: Tab.Summary
     val showBar = route != ROUTE_SETTINGS
     fun go(target: Tab) {
         nav.navigate(target.route) {
@@ -116,6 +119,10 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     fun openReview() {
         go(Tab.Todo)
         nav.navigate(ROUTE_REVIEW) { launchSingleTop = true }
+    }
+    fun openTransfers() {
+        go(Tab.Todo)
+        nav.navigate(ROUTE_TRANSFERS) { launchSingleTop = true }
     }
     fun openSettings() = nav.navigate(ROUTE_SETTINGS) { launchSingleTop = true }
     // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
@@ -135,7 +142,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         pendingReview = pending.size,
         onOpenReview = {},
         onOpenUncategorized = {},
-        onOpenTransactions = {},
+        onOpenTransfers = {},
         onOpenSettings = {},
         onOpenCategory = {},
     ).count { it.urgent }
@@ -234,10 +241,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                     onlyUncategorized = true
                                     go(Tab.Transactions)
                                 },
-                                onOpenTransactions = {
-                                    onlyUncategorized = false
-                                    go(Tab.Transactions)
-                                },
+                                onOpenTransfers = ::openTransfers,
                                 onOpenSettings = ::openSettings,
                                 // جزئیات دسته (و تغییر بودجه‌اش) در «خلاصه» است
                                 onOpenCategory = {
@@ -247,6 +251,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                             )
                         }
                         composable(ROUTE_REVIEW) { ReviewScreen(onClose = { nav.popBackStack() }) }
+                        composable(ROUTE_TRANSFERS) { TransferReviewScreen(onClose = { nav.popBackStack() }) }
                         composable(ROUTE_SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
                     }
                 }

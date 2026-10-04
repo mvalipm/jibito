@@ -128,6 +128,8 @@ internal fun suggestQuestion(name: String): String {
  * اگر اپ دسته‌ای حدس زده، دو دکمه زیرش می‌آید: «سوپرمارکته؟ آره» و «یه چیز دیگه».
  * @param tint ظاهر دسته‌ی اصلی تراکنش (اگر دسته دارد)
  * @param onAcceptSuggestion پذیرفتن دسته‌ی پیشنهادی با یک لمس؛ null یعنی پیشنهادی نیست
+ * @param onConfirmTransfer این تراکنش نیمی از یک «انتقال احتمالی به حساب خودم» است: «انتقال به حساب خودته؟ آره» / «نه»
+ *   (به‌جای پیشنهاد دسته). null یعنی پیشنهاد انتقالی نیست.
  */
 @Composable
 internal fun TransactionRow(
@@ -137,6 +139,8 @@ internal fun TransactionRow(
     onAcceptSuggestion: (() -> Unit)? = null,
     /** متن جست‌وجو: هر جای عنوان و توضیح که پیدا شد، پررنگ می‌شود */
     highlight: String? = null,
+    onConfirmTransfer: (() -> Unit)? = null,
+    onRejectTransfer: (() -> Unit)? = null,
 ) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
@@ -223,7 +227,38 @@ internal fun TransactionRow(
                 Amount(sign, tx.amountRial, amountColor, strike)
             }
         }
-        if (uncategorized && onAcceptSuggestion != null && sms.suggestedCategory != null) {
+        val transferAsk = onConfirmTransfer != null && onRejectTransfer != null && !failed && !selfTransfer
+        if (transferAsk) {
+            Row(Modifier.padding(start = 66.dp, bottom = 10.dp)) {
+                Row(
+                    Modifier
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(t.transferBg)
+                        .clickable(onClick = onConfirmTransfer!!)
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(DesignIcons.Transfer, contentDescription = null, tint = t.transferFg, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.tx_transfer_question), color = t.transferFg, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.transfer_no),
+                    modifier = Modifier
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(t.chip)
+                        .clickable(onClick = onRejectTransfer!!)
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colors.onBackground,
+                    maxLines = 1,
+                )
+            }
+        } else if (uncategorized && onAcceptSuggestion != null && sms.suggestedCategory != null) {
             Row(Modifier.padding(start = 66.dp, bottom = 10.dp)) {
                 Row(
                     Modifier
