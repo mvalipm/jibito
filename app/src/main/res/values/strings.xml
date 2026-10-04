@@ -378,7 +378,7 @@
     <string name="widget_today_short">امروز</string>
     <string name="widget_left">%1$s مونده</string>
     <string name="widget_percent">%1$s از بودجه</string>
-    <string name="widget_percent_days">%1$s از بودجه، %2$s روز مونده</string>
+    <string name="widget_percent_days">%1$s از بودجه، %2$s روز دیگه</string>
     <string name="widget_month_short">ماه</string>
     <string name="widget_month">این ماه %1$s</string>
     <string name="widget_days_left">%1$s روز تا آخر ماه</string>
