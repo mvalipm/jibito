@@ -18,6 +18,7 @@ class CategorySeeder(private val db: AppDatabase) {
         val categoryDao = db.categoryDao()
         // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
         if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
+            addNewDefaults()
             mergeDuplicates()
             syncColors()
             return
@@ -57,6 +58,62 @@ class CategorySeeder(private val db: AppDatabase) {
             migrateOldExpenseCategories(existing, idByCode)
         }
         syncColors()
+    }
+
+    /**
+     * کاربرهایی که درخت را قبلاً ساخته‌اند: دسته‌های پیش‌فرضِ تازه (مثل «اینترنت») اضافه می‌شوند،
+     * و دسته‌هایی که جایشان عوض شده (Taxonomy.MOVED) تراکنش و پیشنهادشان را به جای جدید می‌دهند.
+     * دسته‌ی اصلیِ تازه کنار دسته‌ی اصلیِ قبلی‌اش در ترتیب می‌نشیند.
+     * اگر کاربر قبلاً دسته‌ی شخصی هم‌اسمی ساخته باشد، mergeDuplicates یکی‌شان می‌کند.
+     */
+    private suspend fun addNewDefaults() {
+        val categoryDao = db.categoryDao()
+        val flowDao = db.transactionFlowDao()
+        val existing = categoryDao.all()
+        val codes = existing.mapNotNull { it.code }.toSet()
+        val missing = Taxonomy.flatten(Taxonomy.expense).any { it.code !in codes }
+        val moved = Taxonomy.MOVED.keys.filter { code -> existing.any { it.code == code && !it.isArchived } }
+        if (!missing && moved.isEmpty()) return
+
+        db.withTransaction {
+            val byCode = existing.filter { it.code != null }.associateBy { it.code!! }
+
+            suspend fun insertMissing(defs: List<CategoryDef>, parentId: Long?, sortOrder: Int, counts: Boolean) {
+                for (def in defs) {
+                    val c = counts && def.countsAsSpend
+                    val id = byCode[def.code]?.id ?: categoryDao.insert(
+                        CategoryEntity(
+                            name = def.name,
+                            icon = def.icon,
+                            colorHex = def.color,
+                            flowType = 2,
+                            parentId = parentId,
+                            sortOrder = sortOrder,
+                            countsAsSpend = c,
+                            code = def.code,
+                        )
+                    )
+                    insertMissing(def.children, id, sortOrder, c)
+                }
+            }
+
+            var prevOrder = 0
+            for (root in Taxonomy.expense) {
+                val have = byCode[root.code]
+                if (have != null) prevOrder = have.sortOrder
+                insertMissing(listOf(root), null, prevOrder, true)
+            }
+
+            val now = categoryDao.all().filter { it.code != null }.associateBy { it.code!! }
+            for (oldCode in moved) {
+                val old = now.getValue(oldCode)
+                val new = now[Taxonomy.MOVED.getValue(oldCode)] ?: continue
+                flowDao.moveCategory(old.id, new.id)
+                flowDao.renameSuggestion(old.name, new.name)
+                categoryDao.reparent(old.id, new.id)
+                categoryDao.archive(old.id)
+            }
+        }
     }
 
     /**

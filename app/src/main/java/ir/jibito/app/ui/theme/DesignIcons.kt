@@ -61,6 +61,18 @@ object DesignIcons {
     const val CIGARETTE = "M3 14h18v3H3zM16 14v3M18 11c0-2-2-2-2-4M21 11c0-2-2-2-2-4"
     const val SCISSORS = "M4 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M8.6 8.4L20 18M8.6 15.6L20 6"
     const val MOSQUE = "M5 20v-7a7 5 0 0 1 14 0v7M12 4v4M3 20h18M10 20v-3a2 2 0 0 1 4 0v3"
+    const val GLOBE = "M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0M4 12h16M12 4c2.3 2.2 3.5 5 3.5 8s-1.2 5.8-3.5 8c-2.3-2.2-3.5-5-3.5-8s1.2-5.8 3.5-8z"
+    const val GAMEPAD = "M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L14.5 14h-5l-1.1 1.8A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4zM7 10.5v3M5.5 12h3M15.5 11h.01M17.5 13h.01"
+    const val PLANE = "M3 13l7-2V6a2 2 0 0 1 4 0v5l7 2v2l-7-1v4l2 1.5V21l-4-1-4 1v-1.5l2-1.5v-4l-7 1z"
+    const val MUSIC = "M9 18V5l11-2v13M3 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0M14 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0"
+    const val BULB = "M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"
+    const val CAMERA = "M4 8h3.5L9 5.5h6L16.5 8H20v11H4zM9 13a3 3 0 1 0 6 0a3 3 0 1 0-6 0"
+    const val GRADUATION = "M2 9l10-5 10 5-10 5zM6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M22 9v5"
+    const val BUS = "M5 4h14v13H5zM5 11h14M7 17v2.5M17 17v2.5M8 14h.01M16 14h.01"
+    const val UMBRELLA = "M3 12a9 9 0 0 1 18 0zM12 12v6a2 2 0 0 1-4 0"
+    const val BOLT = "M13 3L5 14h6l-1 7 8-11h-6z"
+    const val DROP = "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"
+    const val FLAME = "M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 2 1.3 3 2.5 3-1-3 0-6 0-8z"
 
     // ── حال جیب و چیزهای دیگر ──
     const val BELL = "M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"

@@ -16,7 +16,7 @@ data class CategoryDef(
 
 /**
  * ساختار دسته‌بندی خرج‌ها (سند «معماری دسته‌بندی هزینه‌ها — MVP»، با اصلاحات تأییدشده):
- * - ۱۳ دسته‌ی اصلی (بودجه فقط روی این‌ها) + «پس‌انداز و قرض» که خرج حساب نمی‌شود.
+ * - ۱۴ دسته‌ی اصلی (بودجه فقط روی این‌ها) + «پس‌انداز و قرض» که خرج حساب نمی‌شود.
  * - لایه‌ی ۲ برای همه؛ لایه‌ی ۳ فقط جایی که از روی فروشنده قابل تشخیص و ارزشمند است.
  * - «سایر» نداریم؛ تراکنش می‌تواند بی‌دسته بماند (و بعداً: + دسته‌ی شخصی).
  */
@@ -136,7 +136,6 @@ object Taxonomy {
                     c("finance.bills.water", "آب"),
                     c("finance.bills.gas", "گاز"),
                     c("finance.bills.phone", "تلفن ثابت"),
-                    c("finance.bills.internet", "اینترنت"),
                     c("finance.bills.mobile", "شارژ موبایل"),
                 ),
                 c("finance.loan", "وام و اقساط"),
@@ -150,6 +149,14 @@ object Taxonomy {
                 c("finance.tax", "مالیات و عوارض"),
                 c("finance.fines", "جریمه"),
                 c("finance.gifts", "هدیه و کمک مالی"),
+            ),
+        ),
+        CategoryDef(
+            "internet", "اینترنت", "🌐", "#EB6834",
+            listOf(
+                c("internet.home", "اینترنت خانگی"),
+                c("internet.mobile", "بسته اینترنت موبایل"),
+                c("internet.vpn", "فیلترشکن"),
             ),
         ),
         CategoryDef(
@@ -229,6 +236,14 @@ object Taxonomy {
         "سایر" to null,
     )
     const val OLD_KEEP_AS_CUSTOM = "خرید"
+
+    /**
+     * دسته‌هایی که در نسخه‌های قبلیِ همین ساختار بودند و حالا جای دیگری دارند (کد قدیمی ← کد جدید).
+     * برای کاربرهایی که درخت را قبلاً ساخته‌اند: تراکنش‌ها منتقل و دسته‌ی قدیمی بایگانی می‌شود.
+     */
+    val MOVED: Map<String, String> = mapOf(
+        "finance.bills.internet" to "internet.home",
+    )
 
     /** همه‌ی دسته‌ها (هر سه لایه)، به ترتیب درخت */
     fun flatten(defs: List<CategoryDef>): List<CategoryDef> =
