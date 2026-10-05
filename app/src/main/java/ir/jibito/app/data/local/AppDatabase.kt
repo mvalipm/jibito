@@ -70,12 +70,12 @@ abstract class AppDatabase : RoomDatabase() {
         /** دسته‌های واریز (درآمد). در Migration_3_4 هم همین‌ها برای کاربرهای قبلی اضافه می‌شوند. */
         val INCOME_CATEGORIES = listOf(
             CategoryEntity(name = "حقوق", icon = "💼", colorHex = "#1E9E6A", flowType = 1),
-            CategoryEntity(name = "حاصل فروش محصول", icon = "🏷", colorHex = "#2E86AB", flowType = 1),
+            CategoryEntity(name = "فروش", icon = "🏷", colorHex = "#2E86AB", flowType = 1),
             CategoryEntity(name = "قرض گرفتم", icon = "🤝", colorHex = "#8D6A9F", flowType = 1),
-            CategoryEntity(name = "طلبم رو گرفتم", icon = "↩", colorHex = "#17BEBB", flowType = 1),
+            CategoryEntity(name = "طلبم رسید", icon = "↩", colorHex = "#17BEBB", flowType = 1),
             CategoryEntity(name = "سود بانکی", icon = "🏦", colorHex = "#F2A541", flowType = 1),
             CategoryEntity(name = "هدیه", icon = "🎁", colorHex = "#C73E8B", flowType = 1),
-            CategoryEntity(name = "سایر درآمد", icon = "•", colorHex = "#8C8C8C", flowType = 1),
+            CategoryEntity(name = "سایر", icon = "•", colorHex = "#8C8C8C", flowType = 1),
         )
     }
 }

@@ -19,6 +19,7 @@ class CategorySeeder(private val db: AppDatabase) {
         // قبلاً انجام شده؟ (رنگ‌ها هر بار هماهنگ می‌شوند؛ ارزان است)
         if (categoryDao.byCode(Taxonomy.expense.first().code) != null) {
             addNewDefaults()
+            renameIncome()
             mergeDuplicates()
             syncColors()
             return
@@ -57,6 +58,7 @@ class CategorySeeder(private val db: AppDatabase) {
 
             migrateOldExpenseCategories(existing, idByCode)
         }
+        renameIncome()
         syncColors()
     }
 
@@ -112,6 +114,27 @@ class CategorySeeder(private val db: AppDatabase) {
                 flowDao.renameSuggestion(old.name, new.name)
                 categoryDao.reparent(old.id, new.id)
                 categoryDao.archive(old.id)
+            }
+        }
+    }
+
+    /**
+     * اسم‌های بلند قبلیِ دسته‌های درآمد پیش‌فرض ← اسم کوتاه (Taxonomy.RENAMED_INCOME).
+     * فقط دسته‌های پیش‌فرض (نه شخصی)؛ پیشنهادهای ذخیره‌شده هم همراهشان عوض می‌شوند.
+     * اگر کاربر قبلاً دسته‌ی شخصی هم‌اسمی ساخته باشد، mergeDuplicates یکی‌شان می‌کند.
+     */
+    private suspend fun renameIncome() {
+        val categoryDao = db.categoryDao()
+        val flowDao = db.transactionFlowDao()
+        val old = categoryDao.all().filter {
+            it.flowType == 1 && !it.isCustom && !it.isArchived && it.name in Taxonomy.RENAMED_INCOME
+        }
+        if (old.isEmpty()) return
+        db.withTransaction {
+            for (cat in old) {
+                val newName = Taxonomy.RENAMED_INCOME.getValue(cat.name)
+                categoryDao.rename(cat.id, newName)
+                flowDao.renameSuggestion(cat.name, newName)
             }
         }
     }
