@@ -5,6 +5,16 @@ import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendCurve
 import ir.jibito.app.ui.reports.ReportRange
 import ir.jibito.app.ui.reports.ReportsContent
+import ir.jibito.app.ui.reports.BalanceCard
+import ir.jibito.app.ui.account.AccountContent
+import ir.jibito.app.ui.account.AccountDetail
+import ir.jibito.app.ui.account.AccountRange
+import ir.jibito.app.ui.account.AccountTransactions
+import ir.jibito.app.data.wallet.AccountRef
+import ir.jibito.app.data.wallet.BalanceHistory
+import ir.jibito.app.data.wallet.BalancePointRow
+import ir.jibito.app.data.wallet.DayGrid
+import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.LocalLoopingMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -510,9 +520,84 @@ class ScreenshotTest {
                         months = null,
                         onRange = {},
                         modifier = Modifier.hazeSource(haze),
+                        balances = BalanceHistory.overview(balancePoints(), emptyList(), emptySet(), DayGrid.of(mehr.startMillis(), now)),
                     )
                 }
                 TabBar(selected = 2, haze = haze)
+            }
+        }
+    }
+
+    /**
+     * پیامک‌های مانده‌دار ۱۲۰ روز اخیر سه حساب: ملت (حقوق هر ۳۰ روز، اجاره، خرج روزانه)،
+     * سامان (انتقال ماهانه و خرج کوچک) و بلو (پس‌انداز؛ ۳۵ روز است پیامکی نیامده).
+     */
+    private fun balancePoints(): List<BalancePointRow> {
+        val day = 24 * hour
+        val start = now - 120 * day
+        var id = 1L
+        var mellat = 214_000_000L
+        var saman = 31_000_000L
+        var blu = 120_000_000L
+        val out = mutableListOf<BalancePointRow>()
+        fun add(d: Int, bank: Int, account: String?, remain: Long, deposit: Long = 0) {
+            out += BalancePointRow(id++, bank, account, remain, start + d * day + 10 * hour, if (deposit > 0) 1 else 2, if (deposit > 0) deposit else 1_000_000)
+        }
+        for (d in 0 until 120) {
+            when (d % 30) {
+                8 -> { mellat += 480_000_000; add(d, 11, "5678", mellat, deposit = 480_000_000) }
+                10 -> { mellat -= 170_000_000; add(d, 11, "5678", mellat) }
+                20 -> { mellat -= 50_000_000; add(d, 11, "5678", mellat); saman += 50_000_000; add(d, 15, "1120", saman, deposit = 50_000_000) }
+            }
+            if (d % 4 != 0) { mellat -= ((d * 37) % 11 + 2) * 1_000_000L; add(d, 11, "5678", mellat) }
+            if (d % 3 == 1) { saman -= ((d * 13) % 7 + 1) * 1_000_000L; add(d, 15, "1120", saman) }
+            if (d % 30 == 9 && d < 85) { blu += 60_000_000; add(d, 40, null, blu, deposit = 60_000_000) }
+        }
+        return out
+    }
+
+    /** کارت «موجودی حساب‌ها» در تب گزارش‌ها: ۳۰ روز اخیر، و حالت «مبلغ‌ها پنهان» */
+    @Test
+    fun balanceCard() {
+        val overview = BalanceHistory.overview(balancePoints(), emptyList(), emptySet(), DayGrid.lastDays(30, now))
+        for (dark in listOf(false, true)) shot("balance", AppThemeStyle.DEFAULT, dark, padded = false) {
+            BalanceCard(overview, onOpen = {}, nowMillis = now)
+        }
+        shot("balance_hidden", AppThemeStyle.DEFAULT, dark = false, padded = false) {
+            CompositionLocalProvider(LocalHideAmounts provides true) {
+                BalanceCard(overview, onOpen = {}, nowMillis = now)
+            }
+        }
+    }
+
+    /** صفحه‌ی جزئیات حساب ملت: ۳ ماه، کف/سقف/تغییر، جمله‌ی جیبی و تراکنش‌ها */
+    @Test
+    fun accountDetail() {
+        val points = balancePoints()
+        val grid = DayGrid.lastDays(AccountRange.QUARTER.days, now)
+        val ref = AccountRef(11, "5678")
+        val overview = BalanceHistory.overview(points, emptyList(), emptySet(), grid)
+        val account = overview.accounts.first { it.ref == ref }
+        val detail = AccountDetail(
+            series = account.series,
+            account = account,
+            accounts = emptyList(),
+            rhythm = BalanceHistory.depositRhythm(BalanceHistory.byAccount(points, emptyList()).getValue(ref), grid, now),
+        )
+        val transactions = AccountTransactions(sample.filter { it.bank?.id == 11 }, emptyList())
+        for (dark in listOf(false, true)) shot("account", AppThemeStyle.DEFAULT, dark, padded = false) {
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                AccountContent(
+                    ref = ref,
+                    range = AccountRange.QUARTER,
+                    onRange = {},
+                    detail = detail,
+                    transactions = transactions,
+                    onBack = {},
+                    onOpenTransaction = {},
+                    onOpenAccount = {},
+                    now = now,
+                )
             }
         }
     }

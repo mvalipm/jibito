@@ -55,6 +55,9 @@ import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.reports.ReportsScreen
+import ir.jibito.app.ui.account.AccountScreen
+import ir.jibito.app.data.wallet.AccountRef
+import android.net.Uri
 import ir.jibito.app.ui.review.ReviewScreen
 import ir.jibito.app.ui.settings.SettingsScreen
 import ir.jibito.app.ui.smslist.SmsListScreen
@@ -79,6 +82,9 @@ private enum class Tab(val route: String, val label: Int) {
 /** صفحه‌هایی که تب نیستند: «بررسی» از داخل «کارها» و «تنظیمات» از چرخ‌دنده‌ی «خلاصه» باز می‌شوند */
 private const val ROUTE_REVIEW = "review"
 private const val ROUTE_SETTINGS = "settings"
+/** جزئیات یک حساب از کارت «موجودی حساب‌ها» در «گزارش‌ها»؛ {key} = AccountRef.key یا ACCOUNT_ALL */
+private const val ROUTE_ACCOUNT = "account/{key}"
+private const val ACCOUNT_ALL = "all"
 
 /**
  * فضای خالی‌ای که صفحه‌ها باید پایین فهرستشان بگذارند تا آخرین مورد زیر نوار شناور گم نشود
@@ -104,9 +110,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val nav = rememberNavController()
     val backStackEntry by nav.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route
-    // «بررسی» زیرمجموعه‌ی «کارها»ست؛ در «تنظیمات» نوار پایین پنهان است
-    val tab = if (route == ROUTE_REVIEW) Tab.Todo else Tab.entries.firstOrNull { it.route == route } ?: Tab.Summary
-    val showBar = route != ROUTE_SETTINGS
+    // «بررسی» زیرمجموعه‌ی «کارها»ست و جزئیات حساب زیرمجموعه‌ی «گزارش‌ها»؛ در «تنظیمات» و جزئیات حساب نوار پایین پنهان است
+    val tab = when (route) {
+        ROUTE_REVIEW -> Tab.Todo
+        ROUTE_ACCOUNT -> Tab.Reports
+        else -> Tab.entries.firstOrNull { it.route == route } ?: Tab.Summary
+    }
+    val showBar = route != ROUTE_SETTINGS && route != ROUTE_ACCOUNT
     fun go(target: Tab) {
         nav.navigate(target.route) {
             // الگوی استاندارد نوار پایین: پشته همیشه «خلاصه ← تب فعلی» است و حالت هر تب ذخیره و برگردانده می‌شود
@@ -120,6 +130,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         nav.navigate(ROUTE_REVIEW) { launchSingleTop = true }
     }
     fun openSettings() = nav.navigate(ROUTE_SETTINGS) { launchSingleTop = true }
+    fun openAccount(ref: AccountRef?) = nav.navigate("account/" + Uri.encode(ref?.key ?: ACCOUNT_ALL))
     // «خرج‌های بی‌دسته» از کارهای لازم ← تراکنش‌ها با فیلتر
     var onlyUncategorized by rememberSaveable { mutableStateOf(false) }
     // کارت بودجه در «کارها» ← جزئیات همان دسته در «خلاصه»
@@ -228,7 +239,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpened = { pendingOpen = null },
                             )
                         }
-                        composable(Tab.Reports.route) { ReportsScreen() }
+                        composable(Tab.Reports.route) { ReportsScreen(onOpenAccount = ::openAccount) }
                         composable(Tab.Todo.route) {
                             TodoScreen(
                                 pendingReview = pending.size,
@@ -251,6 +262,19 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                         }
                         composable(ROUTE_REVIEW) { ReviewScreen(onClose = { nav.popBackStack() }) }
                         composable(ROUTE_SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
+                        composable(ROUTE_ACCOUNT) { entry ->
+                            AccountScreen(
+                                key = entry.arguments?.getString("key") ?: ACCOUNT_ALL,
+                                onBack = { nav.popBackStack() },
+                                // همان برگه‌ی تراکنش در «تراکنش‌ها» (مثل لمس نوتیفیکیشن)
+                                onOpenTransaction = { id ->
+                                    onlyUncategorized = false
+                                    pendingOpen = id
+                                    go(Tab.Transactions)
+                                },
+                                onOpenAccount = { openAccount(it) },
+                            )
+                        }
                     }
                 }
             }

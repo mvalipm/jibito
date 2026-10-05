@@ -54,6 +54,8 @@ import ir.jibito.app.data.repository.Insight
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendCurve
 import ir.jibito.app.data.repository.SpendTrend
+import ir.jibito.app.data.wallet.AccountRef
+import ir.jibito.app.data.wallet.BalanceOverview
 import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.amount
@@ -77,24 +79,28 @@ private const val MIN_COMPARABLE_RIAL = 1_000_000L
 /**
  * تب «گزارش‌ها»: «در طول زمان چه الگویی دارم؟»
  * ۱) نمودار خرج: این ماه (تجمعی، در برابر ماه قبل، با بودجه و پیش‌بینی آخر ماه) یا ۶/۱۲ ماه اخیر.
- * ۲) «جیبی چی فهمید؟»: نکته‌های کوتاه از الگوی خرج (دسته‌های بیشتر/کمتر، پرخرج‌ترین روز، الگوی هفته).
+ * ۲) «موجودی حساب‌ها»: روند موجودی از روی مانده‌ی پیامک‌ها، در همان بازه (BalanceCard).
+ * ۳) «جیبی چی فهمید؟»: نکته‌های کوتاه از الگوی خرج (دسته‌های بیشتر/کمتر، پرخرج‌ترین روز، الگوی هفته).
  * «خلاصه» به «الان وضعم چطوره؟» جواب می‌دهد؛ این تب به روند و مقایسه.
  */
 @Composable
-fun ReportsScreen() {
+fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: ReportsViewModel = viewModel(
-        factory = ReportsViewModel.factory(app.container.reportRepository, app.container.budgetRepository)
+        factory = ReportsViewModel.factory(app.container.reportRepository, app.container.budgetRepository, app.container.balanceRepository)
     )
     val range by viewModel.range.collectAsState()
     val report by viewModel.report.collectAsState()
     val months by viewModel.months.collectAsState()
+    val balances by viewModel.balances.collectAsState()
     ReportsContent(
         month = viewModel.month,
         range = range,
         report = report,
         months = months,
         onRange = viewModel::setRange,
+        balances = balances,
+        onOpenAccount = onOpenAccount,
     )
 }
 
@@ -107,6 +113,10 @@ fun ReportsContent(
     months: SpendTrend?,
     onRange: (ReportRange) -> Unit,
     modifier: Modifier = Modifier,
+    /** «روند موجودی» در همین بازه؛ null یعنی «هنوز در حال بارگذاری» */
+    balances: BalanceOverview? = null,
+    /** جزئیات یک حساب (null = همه‌ی حساب‌ها) */
+    onOpenAccount: (AccountRef?) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     LazyColumn(
@@ -126,6 +136,7 @@ fun ReportsContent(
                 }
             }
         }
+        item(key = "balance") { BalanceCard(balances, onOpenAccount) }
         val insights = report?.insights.orEmpty()
         if (insights.isNotEmpty()) {
             item(key = "insights") { InsightsSection(insights, month) }
@@ -167,6 +178,24 @@ private fun Header(month: JalaliMonth) {
 
 @Composable
 private fun RangeSelector(range: ReportRange, onRange: (ReportRange) -> Unit) {
+    SegmentedTabs(
+        labels = ReportRange.entries.map {
+            stringResource(
+                when (it) {
+                    ReportRange.MONTH -> R.string.reports_range_month
+                    ReportRange.HALF_YEAR -> R.string.reports_range_half
+                    ReportRange.YEAR -> R.string.reports_range_year
+                }
+            )
+        },
+        selected = range.ordinal,
+        onSelect = { onRange(ReportRange.entries[it]) },
+    )
+}
+
+/** انتخاب بازه: ریل خاکستری با گزینه‌ی انتخاب‌شده‌ی روشن (تب «گزارش‌ها» و صفحه‌ی جزئیات حساب) */
+@Composable
+internal fun SegmentedTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     Row(
@@ -178,25 +207,19 @@ private fun RangeSelector(range: ReportRange, onRange: (ReportRange) -> Unit) {
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        ReportRange.entries.forEach { r ->
-            val on = r == range
+        labels.forEachIndexed { i, label ->
+            val on = i == selected
             Box(
                 Modifier
                     .weight(1f)
                     .height(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (on) colors.surface else Color.Transparent)
-                    .selectable(selected = on, role = Role.Tab, onClick = { onRange(r) }),
+                    .selectable(selected = on, role = Role.Tab, onClick = { onSelect(i) }),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    stringResource(
-                        when (r) {
-                            ReportRange.MONTH -> R.string.reports_range_month
-                            ReportRange.HALF_YEAR -> R.string.reports_range_half
-                            ReportRange.YEAR -> R.string.reports_range_year
-                        }
-                    ),
+                    label,
                     fontSize = 14.sp,
                     fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
                     color = if (on) colors.onSurface else t.muted,
@@ -207,7 +230,7 @@ private fun RangeSelector(range: ReportRange, onRange: (ReportRange) -> Unit) {
 }
 
 @Composable
-private fun ChartCard(content: @Composable () -> Unit) {
+internal fun ChartCard(content: @Composable () -> Unit) {
     val t = JibitoTheme.colors
     val shape = RoundedCornerShape(24.dp)
     Column(
@@ -223,7 +246,7 @@ private fun ChartCard(content: @Composable () -> Unit) {
 
 /** عنوان کوچک، عدد درشت و کپسول مقایسه بالای نمودار */
 @Composable
-private fun Headline(label: String, rial: Long, chip: String?, good: Boolean) {
+internal fun Headline(label: String, rial: Long, chip: String?, good: Boolean) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     val (number, unit) = Money.compactParts(rial)
@@ -262,7 +285,7 @@ private fun Headline(label: String, rial: Long, chip: String?, good: Boolean) {
 
 /** حباب بالای نقطه‌ی انتخاب‌شده */
 @Composable
-private fun Tooltip(title: String, subtitle: String?) {
+internal fun Tooltip(title: String, subtitle: String?) {
     val t = JibitoTheme.colors
     val shape = RoundedCornerShape(14.dp)
     Column(
@@ -295,7 +318,7 @@ private fun ReferenceLabel(text: String) {
 
 /** برچسب‌های زیر محور افقی (همیشه از چپ به راست، مثل خود نمودار) */
 @Composable
-private fun AxisLabels(vararg labels: String) {
+internal fun AxisLabels(vararg labels: String) {
     val t = JibitoTheme.colors
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -490,7 +513,7 @@ private fun averageChip(percent: Int): String = when {
 }
 
 @Composable
-private fun Note(text: String, bg: Color, fg: Color) {
+internal fun Note(text: String, bg: Color, fg: Color) {
     Text(
         text,
         modifier = Modifier
@@ -506,7 +529,7 @@ private fun Note(text: String, bg: Color, fg: Color) {
 }
 
 @Composable
-private fun EmptyNote(text: String) {
+internal fun EmptyNote(text: String) {
     Box(Modifier.fillMaxWidth().heightIn(min = 160.dp), contentAlignment = Alignment.Center) {
         Text(text, fontSize = 14.sp, lineHeight = 24.sp, color = JibitoTheme.colors.muted)
     }

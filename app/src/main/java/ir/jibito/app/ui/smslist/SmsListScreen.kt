@@ -490,7 +490,7 @@ private const val TOAST_MILLIS = 4_000L
 
 /** ظاهر دسته‌ی اصلیِ یک تراکنش (برای کاشی رنگی ردیف) */
 @Composable
-private fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
+internal fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
     val c = sms.categoryId?.let { byId[it] } ?: return null
     val root = CategoryTree.rootOf(c, byId)
     return categoryTint(root.colorHex, CategoryTree.iconOf(c, byId))

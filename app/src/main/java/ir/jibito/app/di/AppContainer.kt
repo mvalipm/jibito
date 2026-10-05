@@ -12,6 +12,7 @@ import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.data.repository.AccountRepository
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
+import ir.jibito.app.data.repository.BalanceRepository
 import ir.jibito.app.data.repository.ReportRepository
 import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.data.repository.ReviewRepository
@@ -105,6 +106,9 @@ class AppContainer(context: Context) {
 
     /** تب «گزارش‌ها»: منحنی خرج ماه و نکته‌ها */
     val reportRepository: ReportRepository by lazy { ReportRepository(database) }
+
+    /** «روند موجودی» از روی مانده‌ی پیامک‌ها (تب «گزارش‌ها» و صفحه‌ی جزئیات حساب) */
+    val balanceRepository: BalanceRepository by lazy { BalanceRepository(database, walletSettings) }
 
     /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت */
     suspend fun onDataChanged() {
