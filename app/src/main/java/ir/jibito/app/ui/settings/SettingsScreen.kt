@@ -1,6 +1,5 @@
 package ir.jibito.app.ui.settings
 
-import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -48,6 +47,7 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.common.PocketMascot
+import ir.jibito.app.ui.common.openSupportChat
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -343,11 +343,14 @@ private fun SettingsHub(
                 title = stringResource(R.string.settings_feedback_title),
                 value = stringResource(R.string.settings_feedback_sub),
                 onClick = {
-                    val send = Intent(Intent.ACTION_SEND)
-                        .setType("text/plain")
-                        .putExtra(Intent.EXTRA_SUBJECT, resources.getString(R.string.settings_feedback_subject))
-                        .putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.settings_feedback_body, version, Build.VERSION.RELEASE))
-                    context.startActivity(Intent.createChooser(send, resources.getString(R.string.settings_feedback_title)))
+                    // چت پشتیبانی در بله؛ متن آماده (با نسخه‌ی اپ و اندروید) کپی می‌شود تا کاربر بچسباند و نظرش را بنویسد
+                    openSupportChat(
+                        context,
+                        text = resources.getString(R.string.settings_feedback_body, version, Build.VERSION.RELEASE),
+                        copiedHint = resources.getString(R.string.settings_feedback_copied),
+                        chooserTitle = resources.getString(R.string.settings_feedback_title),
+                        subject = resources.getString(R.string.settings_feedback_subject),
+                    )
                 },
             )
             RowDivider()

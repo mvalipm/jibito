@@ -54,6 +54,8 @@ import ir.jibito.app.R
 import java.util.Locale
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.common.BankLogos
+import ir.jibito.app.ui.common.openSupportChat
+import ir.jibito.app.ui.common.shareText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.SwitchDefaults
@@ -80,12 +82,7 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
-import android.content.Intent
-import android.widget.Toast
-import android.net.Uri
 import android.content.Context
-import android.content.ClipboardManager
-import android.content.ClipData
 import androidx.compose.ui.platform.LocalContext
 import ir.jibito.app.data.review.WrongReadingReport
 
@@ -825,35 +822,14 @@ private fun WrongReadingDialog(transaction: Transaction, onDismiss: () -> Unit) 
                 TextButton(
                     enabled = reason != null,
                     onClick = {
-                        val text = reportText(context, transaction, reason)
-                        val shared = Intent.createChooser(
-                            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
-                            chooserTitle,
-                        )
-                        context.startActivity(shared)
+                        shareText(context, reportText(context, transaction, reason), chooserTitle)
                         onDismiss()
                     },
                 ) { Text(stringResource(R.string.report_send_other)) }
                 TextButton(
                     enabled = reason != null,
                     onClick = {
-                        val text = reportText(context, transaction, reason)
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("jibito report", text))
-                        val opened = runCatching {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SUPPORT_BALE_URL)))
-                        }.isSuccess
-                        if (opened) {
-                            Toast.makeText(context, copiedHint, Toast.LENGTH_LONG).show()
-                        } else {
-                            // بله (و مرورگر) نیست: همان صفحه‌ی اشتراک‌گذاری، تا گزارش از دست نرود
-                            context.startActivity(
-                                Intent.createChooser(
-                                    Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
-                                    chooserTitle,
-                                )
-                            )
-                        }
+                        openSupportChat(context, reportText(context, transaction, reason), copiedHint, chooserTitle)
                         onDismiss()
                     },
                 ) { Text(stringResource(R.string.report_send_bale), fontWeight = FontWeight.Bold) }
@@ -862,9 +838,6 @@ private fun WrongReadingDialog(transaction: Transaction, onDismiss: () -> Unit) 
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.budget_dialog_cancel)) } },
     )
 }
-
-/** چت پشتیبانی جیبیتو در پیام‌رسان بله */
-private const val SUPPORT_BALE_URL = "https://ble.ir/jibito_support"
 
 private fun reportText(context: Context, transaction: Transaction, reason: WrongReadingReport.Reason?): String {
     val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()

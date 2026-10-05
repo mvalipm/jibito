@@ -631,6 +631,7 @@
     <string name="settings_feedback_sub">چی خوبه، چی اذیتت می‌کنه؟</string>
     <string name="settings_feedback_subject">نظر درباره‌ی جیبیتو</string>
     <string name="settings_feedback_body">سلام!\n\n\n—\nنسخه‌ی جیبیتو: %1$s · اندروید %2$s</string>
+    <string name="settings_feedback_copied">نسخه‌ی اپ کپی شد؛ در چت پشتیبانی بچسبون، نظرت رو بنویس و بفرست.</string>
     <string name="settings_advanced_title">پیشرفته</string>
     <string name="settings_advanced_sub">دوباره خوندن پیامک‌ها، گزارش خطا</string>
     <string name="settings_advanced_errors">%1$d تا خطا ثبت شده</string>
