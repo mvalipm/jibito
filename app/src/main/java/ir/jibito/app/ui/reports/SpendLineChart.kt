@@ -56,6 +56,8 @@ data class LineChartData(
     val reference: Long? = null,
     /** محور عمودی از صفر (خرج تجمعی) یا از نزدیکِ کمترین مقدار (خرج ماه‌ها) */
     val fromZero: Boolean = true,
+    /** پله‌ای: مقدار تا نقطه‌ی بعد ثابت می‌ماند و یک‌باره عوض می‌شود (موجودی بین دو پیامک) */
+    val step: Boolean = false,
 ) {
     /** آخرین نقطه‌ای که می‌شود رویش انگشت گذاشت (با پیش‌بینی) */
     val lastIndex: Int get() = values.lastIndex + (projection.size - 1).coerceAtLeast(0)
@@ -68,9 +70,11 @@ data class LineChartData(
     init {
         val all = values + ghost.take(slots) + projection + listOfNotNull(reference)
         val hi = (all.maxOrNull() ?: 0L).toDouble()
-        val lo = if (fromZero) 0.0 else (all.minOrNull() ?: 0L) * 0.8
+        val least = (all.minOrNull() ?: 0L).toDouble()
+        // مانده‌ی منفی (اضافه‌برداشت): پایین‌تر از کمترین، نه بالاتر
+        val lo = if (fromZero) 0.0 else if (least >= 0) least * 0.8 else least * 1.2
         min = lo
-        max = maxOf(hi * 1.08, lo + 1.0)
+        max = maxOf(if (hi >= 0) hi * 1.08 else hi * 0.92, lo + 1.0)
     }
 }
 
@@ -166,7 +170,14 @@ fun SpendLineChart(
                     points.forEachIndexed { j, v ->
                         val x = xOf(from + j)
                         val y = yOf(v)
-                        if (j == 0) moveTo(x, y) else lineTo(x, y)
+                        when {
+                            j == 0 -> moveTo(x, y)
+                            data.step -> {
+                                lineTo(x, yOf(points[j - 1]))
+                                lineTo(x, y)
+                            }
+                            else -> lineTo(x, y)
+                        }
                     }
                 }
                 val dash = 5.dp.toPx()

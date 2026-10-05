@@ -65,7 +65,7 @@ private val BANK_COLORS: Map<Int, Pair<Long, Long>> = mapOf(
 )
 private val FALLBACK = listOf(0xFF6D3FC0 to 0xFFB79CF2, 0xFF4B6478 to 0xFFA9BCCB, 0xFF8B5A2B to 0xFFD9A878, 0xFF5F6A16 to 0xFFC5D16A)
 
-private fun bankColor(id: Int, dark: Boolean): Color {
+internal fun bankColor(id: Int, dark: Boolean): Color {
     val pair = BANK_COLORS[id] ?: FALLBACK[Math.floorMod(id, FALLBACK.size)]
     return Color(if (dark) pair.second else pair.first)
 }

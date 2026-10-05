@@ -704,4 +704,38 @@
     <string name="reports_empty">هنوز خرجی برای این ماه ثبت نشده. با اولین خرید، منحنی خرجت اینجا کشیده می‌شه.</string>
     <string name="reports_months_empty">هنوز ماه کاملی با خرج ثبت نشده.</string>
     <string name="cd_reports_chart">نمودار خرج. انگشت را روی نمودار بکشید تا مبلغ هر نقطه را ببینید.</string>
+
+    <!-- «روند موجودی» (تب گزارش‌ها و صفحه‌ی جزئیات حساب) -->
+    <string name="balance_title">موجودی حساب‌ها</string>
+    <string name="balance_title_all">همه‌ی حساب‌ها</string>
+    <string name="balance_today">امروز</string>
+    <string name="balance_up">%1$s بیشتر از %2$s</string>
+    <string name="balance_down">%1$s کمتر از %2$s</string>
+    <string name="balance_same">بدون تغییر از %1$s</string>
+    <string name="balance_since">از %1$s؛ قبل‌ترش پیامکی با مانده نیست.</string>
+    <string name="balance_hidden">روند موجودی پنهانه، چون مبلغ‌ها پنهان‌اند و از شکل نمودار می‌شه مبلغ‌ها رو حدس زد. برای دیدنش، چشمک بالای صفحه‌ی «خلاصه» رو بزن.</string>
+    <string name="balance_empty">هنوز پیامک بانکی با مانده نیومده. وقتی بیاد، روند موجودی حساب‌هات اینجا کشیده می‌شه.</string>
+    <string name="balance_need_days">برای دیدن روند، پیامک‌های مانده‌دار دست‌کم دو روز لازمه.</string>
+    <string name="balance_excluded">در جمع نیست</string>
+    <string name="balance_stale">ممکنه به‌روز نباشه</string>
+    <string name="balance_open_all">جزئیات همه‌ی حساب‌ها</string>
+    <string name="balance_total_note">جمع حساب‌هایی که در کیف پول حساب می‌شن؛ پول نقد جزوش نیست.</string>
+    <string name="cd_balance_chart">نمودار موجودی. انگشت را روی نمودار بکشید تا مانده‌ی هر روز را ببینید.</string>
+    <string name="cd_balance_open">جزئیات %1$s</string>
+    <string name="account_range_month">۳۰ روز</string>
+    <string name="account_range_quarter">۳ ماه</string>
+    <string name="account_range_year">۱ سال</string>
+    <string name="account_min">کف</string>
+    <string name="account_max">سقف</string>
+    <string name="account_change">تغییر</string>
+    <string name="account_last_sms">آخرین پیامک: %1$s</string>
+    <string name="account_stale_note">%1$d روزه از این حساب پیامکی نیومده؛ مانده‌اش ممکنه به‌روز نباشه.</string>
+    <string name="account_rhythm_half">جیبی: بعد از واریز %1$s تومانی %2$s، %3$d روزه نصفش خرج شد.</string>
+    <string name="account_rhythm_same_day">جیبی: بعد از واریز %1$s تومانی %2$s، همون روز نصفش خرج شد.</string>
+    <string name="account_rhythm_kept">جیبی: از واریز %1$s تومانی %2$s، %3$d روز گذشته و هنوز بیشتر از نصفش مونده. آفرین!</string>
+    <string name="account_transactions">تراکنش‌های این حساب</string>
+    <string name="account_no_transactions">در این بازه تراکنشی نیست.</string>
+    <string name="account_more_transactions">%1$d تراکنش دیگه در این بازه؛ همه‌شون در تب «تراکنش‌ها» هستن.</string>
+    <string name="account_accounts">حساب‌ها</string>
+    <string name="account_gone">این حساب دیگه پیامکی با مانده نداره.</string>
 </resources>

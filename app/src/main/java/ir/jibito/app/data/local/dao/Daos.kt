@@ -14,6 +14,8 @@ import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.local.entity.SmsContentKey
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.wallet.AccountBalanceRow
+import ir.jibito.app.data.wallet.BalancePointRow
+import ir.jibito.app.data.wallet.FlowAccountRow
 import ir.jibito.app.data.local.entity.AccountLinkEntity
 import ir.jibito.app.data.wallet.KnownAccountRow
 import ir.jibito.app.data.local.entity.OwnAccountEntity
@@ -453,6 +455,20 @@ interface AccountDao {
         """
     )
     fun observeLatestBalances(): Flow<List<AccountBalanceRow>>
+
+    /** «روند موجودی»: همه‌ی پیامک‌های مانده‌دار، به ترتیب زمان (BalanceHistory) */
+    @Query(
+        """
+        SELECT id, bankId, account, remainAfter, dateEpoch, flowType, amount FROM transaction_flows
+        WHERE isDeleted = 0 AND remainAfter IS NOT NULL AND bankId IS NOT NULL
+        ORDER BY dateEpoch, id
+        """
+    )
+    fun observeBalancePoints(): Flow<List<BalancePointRow>>
+
+    /** شماره حسابِ هر تراکنشِ یک بانک (صفحه‌ی جزئیات حساب: کدام تراکنش‌ها مال این حساب‌اند) */
+    @Query("SELECT id, account FROM transaction_flows WHERE isDeleted = 0 AND bankId = :bankId")
+    fun observeBankFlowAccounts(bankId: Int): Flow<List<FlowAccountRow>>
 
     /** شماره حساب‌هایی که در پیامک‌های هر بانک دیده شده‌اند */
     @Query(
