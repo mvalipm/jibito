@@ -133,8 +133,7 @@
     <string name="manual_delete">حذف این تراکنش</string>
     <string name="custom_add">+ دسته‌ی شخصی</string>
     <string name="custom_add_root_short">دسته‌ی جدید</string>
-    <string name="custom_add_income_short">درآمد جدید</string>
-    <string name="sheet_quick_title">پیشنهاد و پرکاربردها</string>
+    <string name="sheet_quick_title">پرکاربردها</string>
     <string name="sheet_all_title">همه‌ی دسته‌ها</string>
     <string name="settings_display_title">نمایش دسته‌ها</string>
     <string name="settings_display_hint">موقع انتخاب دسته برای یه تراکنش، چیا دیده بشن. به تراکنش‌ها و جمع‌های قبلی دست نمی‌خوره.</string>
@@ -172,10 +171,18 @@
     <string name="sheet_pick_root">انتخاب کل دسته</string>
     <string name="sheet_not_spend_hint">این‌ها خرج حساب نمی‌شن و از بودجه کم نمی‌کنن.</string>
     <string name="summary_excluded">پس‌انداز و قرض</string>
-    <string name="sheet_learning_hint">هر دسته‌ای انتخاب کنی یاد می‌گیرم. اگه برای همین فروشگاه ۳ بار پشت سر هم یه دسته رو انتخاب کنی، از اون به بعد خودم می‌ذارمش.</string>
+    <string name="sheet_learning_hint">از انتخاب‌هات یاد می‌گیرم و دفعه‌ی بعد خودم دسته رو می‌ذارم.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
     <string name="tx_self_transfer_chip">خرج حساب نمی‌شه</string>
-    <string name="sheet_self_transfer">⇄ انتقال بین حساب‌های خودم</string>
+    <string name="sheet_self_transfer">انتقال بین حساب‌های خودم</string>
+    <string name="sheet_self_transfer_short">نه درآمد حساب می‌شه، نه خرج</string>
+    <string name="sheet_close">بستن</string>
+    <string name="sheet_report_privacy">عددها پوشیده ارسال می‌شن</string>
+    <string name="sheet_receipt_amount">مبلغ</string>
+    <string name="sheet_receipt_time">زمان</string>
+    <string name="sheet_receipt_balance">مانده</string>
+    <string name="sheet_receipt_fee">کارمزد</string>
+    <string name="sheet_receipt_rial">%1$s ریال</string>
     <string name="sheet_self_transfer_hint">نه خرج حساب می‌شه نه درآمد. کارت مقصد هم یادم می‌مونه و انتقال‌های بعدی به همون کارت خودکار علامت می‌خورن.</string>
     <string name="transfer_explain">این برداشت و واریز هم‌مبلغ‌اند. اگه پول رو از یه حسابت به حساب دیگه‌ت فرستادی، نه خرجه نه درآمد.</string>
     <string name="transfer_withdrawal_line">↑ برداشت از %1$s</string>
@@ -184,8 +191,8 @@
     <string name="sheet_title">مال چی بود؟</string>
     <string name="sheet_suggested">پیشنهاد</string>
     <string name="sheet_clear">بدون دسته</string>
-    <string name="sheet_show_sms">متن پیامک</string>
-    <string name="sheet_hide_sms">بستن متن پیامک</string>
+    <string name="sheet_show_sms">پیامک</string>
+    <string name="sheet_hide_sms">بستن</string>
     <string name="tab_summary">خلاصه</string>
     <string name="tab_transactions">تراکنش‌ها</string>
     <string name="tab_todo">کارها</string>
@@ -466,7 +473,7 @@
     <string name="report_send_bale">ارسال در بله</string>
     <string name="report_send_other">راه دیگه…</string>
     <string name="report_copied_paste">متن گزارش کپی شد؛ در چت پشتیبانی بچسبون و بفرست.</string>
-    <string name="sheet_report_wrong">اشتباه خونده شده؟ ارسال برای بهبود اپ</string>
+    <string name="sheet_report_wrong">اشتباه خونده شده؟ گزارش بده</string>
 
     <!-- طرح «جیبی»: روشن/تیره و پنهان کردن مبلغ‌ها -->
     <string name="dark_mode_system">مثل گوشی</string>
