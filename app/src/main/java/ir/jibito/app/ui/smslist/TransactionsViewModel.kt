@@ -127,6 +127,10 @@ class TransactionsViewModel(
         viewModelScope.launch { onResult(repository.frequentCategoryIds(flowType, 6)) }
     }
 
+    fun setNote(transactionId: Long, note: String) {
+        viewModelScope.launch { repository.setNote(transactionId, note) }
+    }
+
     fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {
         viewModelScope.launch { repository.setSelfTransfer(transactionId, isSelfTransfer) }
     }

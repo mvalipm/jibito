@@ -567,6 +567,35 @@
     <string name="notif_picked_title">رفت تو %1$s</string>
     <string name="notif_picked_text">از این به بعد %1$s رو بهتر می‌شناسم.</string>
     <string name="notif_picked_text_plain">ثبت شد.</string>
+    <string name="notif_picked_text_note">یادداشت شد: «%1$s»</string>
+
+    <!-- جعبه‌ی «بنویس» در نوتیفیکیشن «مال چی بود؟» -->
+    <string name="notif_question_reply">مال چی بود؟ «بنویس» رو بزن و یه کلمه بنویس.</string>
+    <string name="notif_question_reply_income">از کجا اومد؟ «بنویس» رو بزن و یه کلمه بنویس.</string>
+    <string name="notif_reply">✏️ بنویس</string>
+    <string name="notif_reply_hint">مثلاً: اسنپ تا فرودگاه</string>
+    <string name="notif_reply_hint_income">مثلاً: حقوق مهر</string>
+    <string name="notif_noted_title">📝 یادداشت شد</string>
+    <string name="notif_noted_text">«%1$s» — دسته‌اش رو بعداً تو اپ انتخاب کن</string>
+
+    <!-- تنظیمات: شکل نوتیفیکیشن «مال چی بود؟» -->
+    <string name="settings_notif_style_title">نوتیف «مال چی بود؟»</string>
+    <string name="settings_notif_style_hint">هر چی تو جعبه‌ی «بنویس» بنویسی، کنار تراکنش یادداشت می‌شه. اگه با یه دسته جور شد (مثلاً «اسنپ» ← تاکسی اینترنتی)، دسته‌اش هم خودکار گذاشته می‌شه.</string>
+    <string name="settings_notif_style_later">فقط روی نوتیف‌های بعدی اثر داره.</string>
+    <string name="notif_style_buttons">دکمه‌ها</string>
+    <string name="notif_style_buttons_hint">۳ دسته‌ی پیشنهادی؛ یه لمس و تمام</string>
+    <string name="notif_style_mixed">دکمه + بنویس</string>
+    <string name="notif_style_mixed_hint">۲ دسته‌ی پیشنهادی، و اگه هیچ‌کدوم نبود خودت بنویس</string>
+    <string name="notif_style_reply">فقط بنویس</string>
+    <string name="notif_style_reply_hint">خودت می‌نویسی مال چی بود؛ اگه با یه دسته جور شد، همون رو می‌ذارم</string>
+    <string name="notif_style_sample_1">کافه</string>
+    <string name="notif_style_sample_2">رستوران</string>
+    <string name="notif_style_sample_3">سوپرمارکت</string>
+
+    <!-- یادداشت تراکنش (در برگه‌ی انتخاب دسته) -->
+    <string name="tx_note_label">یادداشت</string>
+    <string name="tx_note_placeholder">یه یادداشت کوتاه (اختیاری)</string>
+    <string name="tx_note_save">ذخیره</string>
 
     <!-- از بازطراحی PR #6: خوش‌آمد، تنظیمات، ویجت -->
     <string name="sample_done">✓ ثبت شد! بقیه‌ش با جیبیتو</string>

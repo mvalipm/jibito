@@ -27,6 +27,7 @@ import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.wallet.WalletSettings
 import ir.jibito.app.ui.theme.ThemeSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
+import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.WeeklyDigest
 import ir.jibito.app.ui.welcome.FirstRunFlag
 
@@ -50,6 +51,9 @@ class AppContainer(context: Context) {
 
     /** بانک‌ها و موسسه‌هایی که کاربر خودش اضافه کرده */
     val customInstitutions: CustomInstitutions by lazy { CustomInstitutions(appContext) }
+
+    /** شکل نوتیفیکیشن «مال چی بود؟»: دکمه‌ها، دکمه + بنویس، یا فقط بنویس */
+    val notificationStyle: NotificationStyleSettings by lazy { NotificationStyleSettings(appContext) }
 
     /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
     val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }

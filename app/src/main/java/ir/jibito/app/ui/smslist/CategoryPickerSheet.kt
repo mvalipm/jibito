@@ -25,6 +25,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -63,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.repository.TransactionNotes
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.util.Jalali
@@ -98,6 +102,8 @@ fun CategoryPickerSheet(
     onDismiss: () -> Unit,
     /** فقط برای تراکنش دستی: حذف آن */
     onDelete: (() -> Unit)? = null,
+    /** ذخیره‌ی یادداشت خود کاربر (برگه بسته نمی‌شود)؛ null یعنی جعبه‌ی یادداشت نشان داده نشود */
+    onNote: ((String) -> Unit)? = null,
     /** پرکاربردترین دسته‌های کاربر برای این نوع (بیشترین اول) */
     frequentIds: List<Long> = emptyList(),
     /** چند لایه دیده شود (۱ تا ۳) */
@@ -110,6 +116,11 @@ fun CategoryPickerSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
     var query by rememberSaveable(transaction.id) { mutableStateOf("") }
+    // یادداشت در حال نوشتن؛ با انتخاب دسته یا بستن برگه هم ذخیره می‌شود تا نوشته گم نشود
+    var noteText by rememberSaveable(transaction.id) { mutableStateOf(transaction.note.orEmpty()) }
+    val noteChanged = TransactionNotes.clean(noteText) != transaction.note
+    val saveNote: () -> Unit = { if (onNote != null && noteChanged) onNote(noteText) }
+    val pickAndSave: (Long?) -> Unit = { saveNote(); onPick(it) }
 
     // برداشت ← دسته‌های خرج؛ واریز ← دسته‌های درآمد
     val isDeposit = transaction.transaction.type == FlowType.DEPOSIT
@@ -140,7 +151,7 @@ fun CategoryPickerSheet(
         .take(6)
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { saveNote(); onDismiss() },
         sheetState = sheetState,
         containerColor = JibitoTheme.colors.sheet,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
@@ -204,7 +215,7 @@ fun CategoryPickerSheet(
                 if (!transaction.isManual) {
                     FilterChip(
                         selected = transaction.isSelfTransfer,
-                        onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
+                        onClick = { saveNote(); onSelfTransfer(!transaction.isSelfTransfer) },
                         label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
                         shape = RoundedCornerShape(14.dp),
                         colors = FilterChipDefaults.filterChipColors(
@@ -250,7 +261,7 @@ fun CategoryPickerSheet(
                                 CategoryChip(
                                     label = listOfNotNull(c.name, parent).joinToString(" · "),
                                     selected = c.id == selectedId,
-                                    onClick = { onPick(c.id) },
+                                    onClick = { pickAndSave(c.id) },
                                 )
                             }
                         }
@@ -275,7 +286,7 @@ fun CategoryPickerSheet(
                                     ).joinToString(" "),
                                     selected = c.id == selectedId,
                                     highlighted = c.id == suggested?.id,
-                                    onClick = { onPick(c.id) },
+                                    onClick = { pickAndSave(c.id) },
                                     leadingIcon = {
                                         CategoryIconTile(
                                             categoryTint(root.colorHex, CategoryTree.iconOf(c, byId)),
@@ -319,7 +330,7 @@ fun CategoryPickerSheet(
                                             onClick = {
                                                 // فقط دسته‌ی اصلی (یا بی‌زیردسته) ← همین لمس = ثبت
                                                 if (depth == 1 || (!hasSubs && isDeposit)) {
-                                                    onPick(root.id)
+                                                    pickAndSave(root.id)
                                                 } else {
                                                     openRootId = if (openRootId == root.id) null else root.id
                                                     openSubId = null
@@ -341,12 +352,33 @@ fun CategoryPickerSheet(
                                 selectedId = selectedId,
                                 openSubId = openSubId,
                                 onOpenSub = { openSubId = if (openSubId == it) null else it },
-                                onPick = onPick,
+                                onPick = pickAndSave,
                                 onAdd = { parentId -> creating = CreateTarget(parentId = parentId) },
                             )
                         }
                         Spacer(Modifier.height(4.dp))
                     }
+                }
+
+                // یادداشت (مثلاً همان که در جعبه‌ی «بنویس» نوتیفیکیشن نوشته شده)؛ با «ذخیره» یا دکمه‌ی تمام کیبورد
+                if (onNote != null) {
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { if (it.length <= TransactionNotes.MAX_LENGTH) noteText = it },
+                        label = { Text(stringResource(R.string.tx_note_label)) },
+                        placeholder = { Text(stringResource(R.string.tx_note_placeholder)) },
+                        maxLines = 3,
+                        shape = RoundedCornerShape(16.dp),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { saveNote() }),
+                        trailingIcon = if (noteChanged) {
+                            { TextButton(onClick = saveNote) { Text(stringResource(R.string.tx_note_save)) } }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
                 if (transaction.merchant != null) {
@@ -361,7 +393,7 @@ fun CategoryPickerSheet(
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (transaction.categoryId != null) {
-                        TextButton(onClick = { onPick(null) }) {
+                        TextButton(onClick = { pickAndSave(null) }) {
                             Text(stringResource(R.string.sheet_clear))
                         }
                     }
@@ -412,7 +444,7 @@ fun CategoryPickerSheet(
             target = target,
             roots = if (isDeposit) emptyList() else roots,
             byId = byId,
-            onConfirm = { name, parentId, icon, onResult -> onCreate(name, parentId, icon, onResult) },
+            onConfirm = { name, parentId, icon, onResult -> saveNote(); onCreate(name, parentId, icon, onResult) },
             onDismiss = { creating = null },
         )
     }
