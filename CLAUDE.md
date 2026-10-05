@@ -1,0 +1,11 @@
+# راهنمای Claude برای جیبیتو
+
+## PR و merge
+- بعد از هر تغییر، PR باز کن (بدون اینکه دوباره بپرسی).
+- وقتی CI روی آخرین commit همان PR سبز شد (ساخت، تست‌ها، اسکرین‌شات‌ها و Lint)، خودت PR را merge کن و فقط نتیجه را خبر بده.
+- commitهای خودکار «Update screenshot references [skip ci]» CI را اجرا نمی‌کنند؛ اگر آخرین commit همین است، قبل از merge یک بار workflow «Build APK» را دستی (بدون record_screenshots) روی همان شاخه اجرا کن و منتظر سبز شدنش بمان.
+- اگر CI قرمز شد، merge نکن: اول درستش کن.
+
+## ساخت و تست
+- محیط ابری Android SDK ندارد؛ ساخت و تست‌های اندرویدی فقط در CI (GitHub Actions، `.github/workflows/build.yml`) اجرا می‌شوند.
+- بعد از تغییر عمدی ظاهر، workflow را با `record_screenshots` اجرا کن و تصویرهای تازه‌ی `app/src/test/screenshots/` را نگاه کن.
