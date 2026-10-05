@@ -12,6 +12,7 @@ object NavIcons {
 
     val Summary by lazy { pair("nav_summary", DesignIcons.NAV_SUMMARY) }
     val Transactions by lazy { pair("nav_transactions", DesignIcons.NAV_TRANSACTIONS) }
+    val Reports by lazy { pair("nav_reports", DesignIcons.NAV_REPORTS) }
     val Todo by lazy { pair("nav_todo", DesignIcons.NAV_TODO) }
     val Settings by lazy { pair("nav_settings", DesignIcons.NAV_SETTINGS) }
 }

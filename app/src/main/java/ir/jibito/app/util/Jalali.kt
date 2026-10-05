@@ -60,7 +60,8 @@ object Jalali {
     }
 
     /** به ترتیب Calendar.DAY_OF_WEEK (یکشنبه = ۱) */
-    private val WEEKDAY_NAMES = listOf("یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه")
+    /** اسم روزهای هفته به ترتیب Calendar.DAY_OF_WEEK (اولی یکشنبه) */
+    val WEEKDAY_NAMES = listOf("یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه")
 
     fun fromGregorian(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
         val gDaysBeforeMonth = intArrayOf(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)

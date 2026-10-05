@@ -54,6 +54,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.reports.ReportsScreen
 import ir.jibito.app.ui.review.ReviewScreen
 import ir.jibito.app.ui.settings.SettingsScreen
 import ir.jibito.app.ui.smslist.SmsListScreen
@@ -71,6 +72,7 @@ import ir.jibito.app.ui.welcome.RevealStats
 private enum class Tab(val route: String, val label: Int) {
     Summary("summary", R.string.tab_summary),
     Transactions("transactions", R.string.tab_transactions),
+    Reports("reports", R.string.tab_reports),
     Todo("todo", R.string.tab_todo),
 }
 
@@ -85,7 +87,7 @@ private const val ROUTE_SETTINGS = "settings"
 val LocalBottomBarSpace = compositionLocalOf { 0.dp }
 
 /**
- * صفحه‌ی اصلی اپ با نوار پایینِ شناور: خلاصه، تراکنش‌ها، کارها.
+ * صفحه‌ی اصلی اپ با نوار پایینِ شناور: خلاصه، تراکنش‌ها، گزارش‌ها، کارها.
  * «بررسی» یکی از کارهای تب «کارها» است و «تنظیمات» با دکمه‌ی بالای «خلاصه» باز می‌شود.
  * تب‌ها با Navigation-Compose عوض می‌شوند: هر تب حالت خودش (جای اسکرول، جست‌وجو، برگه‌ی باز) را نگه می‌دارد
  * و دکمه‌ی برگشت از هر تب به «خلاصه» و از خلاصه به بیرون می‌رود.
@@ -226,6 +228,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpened = { pendingOpen = null },
                             )
                         }
+                        composable(Tab.Reports.route) { ReportsScreen() }
                         composable(Tab.Todo.route) {
                             TodoScreen(
                                 pendingReview = pending.size,
@@ -268,6 +271,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 items = listOf(
                     NavItem(NavIcons.Summary, stringResource(Tab.Summary.label)),
                     NavItem(NavIcons.Transactions, stringResource(Tab.Transactions.label)),
+                    NavItem(NavIcons.Reports, stringResource(Tab.Reports.label)),
                     NavItem(NavIcons.Todo, stringResource(Tab.Todo.label), badge = todoCount),
                 ),
                 selectedIndex = tab.ordinal,
