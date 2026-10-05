@@ -16,7 +16,7 @@ object CsvExport {
 
     private const val BOM = "\uFEFF"
 
-    val HEADER = listOf("تاریخ", "ساعت", "نوع", "مبلغ (تومان)", "دسته", "زیردسته", "طرف حساب / توضیح", "بانک", "کارمزد (تومان)", "منبع")
+    val HEADER = listOf("تاریخ", "ساعت", "نوع", "مبلغ (تومان)", "دسته", "زیردسته", "طرف حساب / توضیح", "بانک", "کارمزد (تومان)", "منبع", "یادداشت")
 
     fun build(transactions: List<Transaction>, categories: List<Category>): String {
         val byId = categories.associateBy { it.id }
@@ -51,6 +51,7 @@ object CsvExport {
             t.bank?.name.orEmpty(),
             t.feeRial?.let { (it / 10).toString() }.orEmpty(),
             if (t.isManual) "دستی" else "پیامک",
+            t.note.orEmpty(),
         )
     }
 

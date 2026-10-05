@@ -439,6 +439,15 @@ fun SmsListScreen(
                 viewModel.setSelfTransfer(selected.id, isTransfer)
                 selectedId = null
             },
+            // تراکنش دستی «برای چی بود؟» خودش را دارد (همان طرف حساب)
+            onNote = if (selected.isManual) {
+                null
+            } else {
+                { note ->
+                    haptics.confirm()
+                    viewModel.setNote(selected.id, note)
+                }
+            },
             onDelete = if (selected.isManual) {
                 {
                     haptics.reject()

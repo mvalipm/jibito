@@ -59,6 +59,18 @@ class MigrationTest {
     @Test fun migrateFrom10() = migrateFrom(10)
     @Test fun migrateFrom11() = migrateFrom(11)
     @Test fun migrateFrom12() = migrateFrom(12)
+    @Test fun migrateFrom13() = migrateFrom(13)
+
+    @Test
+    fun noteEmptyForExistingRowsAfter13To14() {
+        createAt(13)
+        openWithRoom().use { db ->
+            db.openHelper.readableDatabase.query("SELECT note FROM transaction_flows WHERE smsId = 77").use {
+                assertTrue(it.moveToFirst())
+                assertTrue("old rows have no note", it.isNull(0))
+            }
+        }
+    }
 
     @Test
     fun accountLinksUsableAfter12To13() {

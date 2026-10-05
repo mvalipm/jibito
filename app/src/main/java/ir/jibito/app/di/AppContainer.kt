@@ -12,6 +12,7 @@ import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.data.repository.AccountRepository
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
+import ir.jibito.app.data.repository.ReportRepository
 import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.data.repository.ReviewRepository
 import ir.jibito.app.notify.RecurringReminder
@@ -26,6 +27,7 @@ import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.wallet.WalletSettings
 import ir.jibito.app.ui.theme.ThemeSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
+import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.WeeklyDigest
 import ir.jibito.app.ui.welcome.FirstRunFlag
 
@@ -49,6 +51,9 @@ class AppContainer(context: Context) {
 
     /** بانک‌ها و موسسه‌هایی که کاربر خودش اضافه کرده */
     val customInstitutions: CustomInstitutions by lazy { CustomInstitutions(appContext) }
+
+    /** شکل نوتیفیکیشن «مال چی بود؟»: دکمه‌ها، دکمه + بنویس، یا فقط بنویس */
+    val notificationStyle: NotificationStyleSettings by lazy { NotificationStyleSettings(appContext) }
 
     /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
     val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }
@@ -97,6 +102,9 @@ class AppContainer(context: Context) {
     val budgetRepository: BudgetRepository by lazy {
         BudgetRepositoryImpl(database, onBudgetsChanged = { onDataChanged() })
     }
+
+    /** تب «گزارش‌ها»: منحنی خرج ماه و نکته‌ها */
+    val reportRepository: ReportRepository by lazy { ReportRepository(database) }
 
     /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت */
     suspend fun onDataChanged() {

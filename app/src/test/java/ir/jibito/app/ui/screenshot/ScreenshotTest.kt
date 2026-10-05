@@ -1,5 +1,10 @@
 package ir.jibito.app.ui.screenshot
 
+import ir.jibito.app.data.repository.Insight
+import ir.jibito.app.data.repository.MonthReport
+import ir.jibito.app.data.repository.SpendCurve
+import ir.jibito.app.ui.reports.ReportRange
+import ir.jibito.app.ui.reports.ReportsContent
 import ir.jibito.app.ui.common.LocalLoopingMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -431,13 +436,14 @@ class ScreenshotTest {
         }
     }
 
-    /** نوار پایینِ سه‌تبی؛ عدد «کارها» همه‌ی کارهای لازم است */
+    /** نوار پایینِ چهارتبی؛ عدد «کارها» همه‌ی کارهای لازم است */
     @Composable
     private fun BoxScope.TabBar(selected: Int, haze: HazeState) {
         FloatingNavBar(
             items = listOf(
                 NavItem(NavIcons.Summary, "خلاصه"),
                 NavItem(NavIcons.Transactions, "تراکنش‌ها"),
+                NavItem(NavIcons.Reports, "گزارش‌ها"),
                 NavItem(NavIcons.Todo, "کارها", badge = 3),
             ),
             selectedIndex = selected,
@@ -471,9 +477,43 @@ class ScreenshotTest {
                 CompositionLocalProvider(LocalBottomBarSpace provides 110.dp) {
                     TodoList(stories(), Modifier.hazeSource(haze))
                 }
+                TabBar(selected = 3, haze = haze)
+            }
+        }
+    }
+
+    /** تب «گزارش‌ها»: خرج تجمعی مهر در برابر شهریور، بودجه، پیش‌بینی و نکته‌های «جیبی چی فهمید؟» */
+    @Test
+    fun reportsTab() {
+        val mehr = JalaliMonth(1405, 7)
+        val day = 24 * hour
+        val shahrivarDaily = listOf(12, 6, 18, 9, 4, 25, 11, 8, 13, 20, 16, 12, 7, 5, 9, 14, 6, 3, 10, 8, 4, 6, 11, 5, 7, 3, 9, 4, 6, 5, 8)
+        val mehrDaily = listOf(8, 4, 19, 3, 6, 22, 5, 10, 7)
+        // ده‌دهم میلیون تومان ← ریال، ظهر هر روز
+        val spends = shahrivarDaily.mapIndexed { i, v -> mehr.plus(-1).startMillis() + i * day + 12 * hour to v * 1_000_000L } +
+            mehrDaily.mapIndexed { i, v -> mehr.startMillis() + i * day + 12 * hour to v * 1_000_000L }
+        val curve = SpendCurve.compute(spends, mehr, now, budgetRial = 300_000_000L)
+        val insights = listOf(
+            Insight.CategoryChange(1, "رستوران و کافه", "🍽", null, 6_200_000L, 40),
+            Insight.CategoryChange(2, "حمل‌ونقل", "🚕", null, -4_400_000L, -22),
+            Insight.BusiestDay(mehr, 6, 22_000_000L, 3),
+            Insight.WeekdayPeak(java.util.Calendar.FRIDAY, 2.03),
+        )
+        for (dark in listOf(false, true)) shot("reports", AppThemeStyle.DEFAULT, dark, padded = false) {
+            val haze = remember { HazeState() }
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                CompositionLocalProvider(LocalBottomBarSpace provides 110.dp) {
+                    ReportsContent(
+                        month = mehr,
+                        range = ReportRange.MONTH,
+                        report = MonthReport(curve, insights),
+                        months = null,
+                        onRange = {},
+                        modifier = Modifier.hazeSource(haze),
+                    )
+                }
                 TabBar(selected = 2, haze = haze)
             }
         }
     }
 }
-
