@@ -279,7 +279,8 @@ private fun StatsRow(stats: BalanceStats) {
         val change = stats.changeRial
         StatTile(
             stringResource(R.string.account_change),
-            amount((if (change > 0) "▲ " else if (change < 0) "▼ " else "") + Money.compact(kotlin.math.abs(change))),
+            // با فلش جا نمی‌شود: «۳۱٫۳ م»
+            amount((if (change > 0) "▲ " else if (change < 0) "▼ " else "") + Money.short(kotlin.math.abs(change))),
             dateLabel(stats.startDay),
             if (change >= 0) t.income else t.amber,
             Modifier.weight(1f),
