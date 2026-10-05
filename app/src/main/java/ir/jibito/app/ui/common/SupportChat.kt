@@ -7,8 +7,11 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 
-/** چت پشتیبانی جیبیتو در پیام‌رسان بله (با شناسه، تا شماره‌ی تلفن پشتیبانی هیچ‌جا دیده نشود) */
-const val SUPPORT_BALE_URL = "https://ble.ir/jibito_support"
+/**
+ * چت پشتیبانی جیبیتو در پیام‌رسان بله (با شناسه، تا شماره‌ی تلفن پشتیبانی هیچ‌جا دیده نشود).
+ * لینک ble.ir برای حساب شخصی فقط صفحه‌ی اصلی بله را باز می‌کند؛ این شکل گفتگو را مستقیم باز می‌کند.
+ */
+const val SUPPORT_BALE_URL = "https://web.bale.ai/@jibito_support"
 
 /**
  * متن را کپی می‌کند و چت پشتیبانی را در بله باز می‌کند تا کاربر فقط بچسباند و بفرستد.
