@@ -51,6 +51,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import java.util.Locale
+import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.common.BankLogos
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Image
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.CategoryTint
 import ir.jibito.app.ui.theme.categoryTint
@@ -79,10 +90,12 @@ import androidx.compose.ui.platform.LocalContext
 import ir.jibito.app.data.review.WrongReadingReport
 
 /**
- * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» — خلوت و سریع:
- * ۱) پیشنهاد اپ + پرکاربردهای کاربر (یک لمس).
- * ۲) شبکه‌ی آیکونِ دسته‌های اصلی (۴ ستون). لمس یک دسته، زیردسته‌هایش را همان زیر باز می‌کند (دو لمس).
- * ۳) جست‌وجو برای کسی که اسم را بلد است.
+ * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» / «این پول از کجا اومد؟» — خلوت و سریع:
+ * سربرگ با لوگوی بانک، مبلغ، نوع و مانده؛ دکمه‌ی «پیامک» کارت پیامک را زیر سربرگ باز می‌کند.
+ * ۱) خرج‌ها: جست‌وجو برای کسی که اسم را بلد است، و پرکاربردهای کاربر (یک لمس).
+ * ۲) شبکه‌ی آیکونِ دسته‌های اصلی (۴ ستون)؛ پیشنهاد اپ روی خود کاشی. لمس یک دسته، زیردسته‌هایش را همان زیر باز می‌کند (دو لمس).
+ *    درآمد چند دسته بیشتر ندارد: فقط همین شبکه.
+ * ۳) «انتقال بین حساب‌های خودم» (کلید)، و نوار پایین: بدون دسته / حذف / بستن.
  * تنظیم «نمایش دسته‌ها» (تنظیمات): depth = ۱ یعنی لمس دسته‌ی اصلی = ثبت؛ دسته‌های پنهان دیده نمی‌شوند.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -165,58 +178,26 @@ fun CategoryPickerSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp)
             ) {
-                // خلاصه‌ی تراکنش: طرف حساب · ساعت · بانک، مبلغ درشت، و سؤال
-                val t = transaction.transaction
                 val jt = JibitoTheme.colors
-                Text(
-                    text = listOfNotNull(
-                        transaction.merchant,
-                        Jalali.time(transaction.dateMillis),
-                        transaction.bank?.name?.let(::shortBankName),
-                    ).joinToString(" · "),
-                    fontSize = 13.sp,
-                    color = jt.muted,
-                )
-                Row(verticalAlignment = Alignment.Bottom) {
-                    val amountColor = if (isDeposit) jt.income else colors.onSurface
-                    Text(if (isDeposit) "+" else "−", fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-                    Spacer(Modifier.width(6.dp))
-                    Text(amount(Money.tomanNumber(t.amountRial)), fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        stringResource(R.string.unit_toman),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = jt.muted,
-                        modifier = Modifier.padding(bottom = 7.dp),
-                    )
+                // سربرگ: بانک (لوگو) · طرف حساب · روز و ساعت، دکمه‌ی پیامک، مبلغ درشت، نوع و مانده
+                SheetHeader(transaction, isDeposit, showSms = showSms, onToggleSms = { showSms = !showSms })
+
+                // پیامک: اول چیزهایی که از آن خواندیم، بعد متن خامش، بعد «اشتباه خونده شده؟»
+                if (showSms) {
+                    Spacer(Modifier.height(12.dp))
+                    SmsReceipt(transaction)
                 }
+
                 Text(
                     text = stringResource(if (isDeposit) R.string.sheet_title_income else R.string.sheet_title),
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 16.dp, bottom = 10.dp),
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Black,
                     color = colors.onSurface,
                 )
-                Spacer(Modifier.height(10.dp))
 
-                // انتقال بین حساب‌های خودم (نه خرج است نه درآمد)
-                if (!transaction.isManual) {
-                    FilterChip(
-                        selected = transaction.isSelfTransfer,
-                        onClick = { onSelfTransfer(!transaction.isSelfTransfer) },
-                        label = { Text(stringResource(R.string.sheet_self_transfer), fontWeight = FontWeight.Bold) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = JibitoTheme.colors.transfer,
-                            selectedLabelColor = Color.White,
-                        ),
-                    )
-                }
-
-                // جست‌وجو (خرج‌ها)
+                // جست‌وجو (خرج‌ها؛ درآمد چند دسته بیشتر ندارد)
                 if (!isDeposit) {
-                    Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -226,8 +207,8 @@ fun CategoryPickerSheet(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Spacer(Modifier.height(12.dp))
                 }
-                Spacer(Modifier.height(12.dp))
 
                 val q = query.normalizedForSearch()
                 if (q.isNotEmpty()) {
@@ -256,8 +237,8 @@ fun CategoryPickerSheet(
                         }
                     }
                 } else {
-                    // ۱) پیشنهاد و پرکاربردها
-                    if (quick.isNotEmpty()) {
+                    // ۱) پرکاربردها (فقط خرج‌ها؛ دسته‌های درآمد همه در شبکه پیدا هستند)
+                    if (!isDeposit && quick.isNotEmpty()) {
                         Text(
                             stringResource(R.string.sheet_quick_title),
                             style = MaterialTheme.typography.labelLarge,
@@ -289,13 +270,17 @@ fun CategoryPickerSheet(
                     }
 
                     // ۲) شبکه‌ی دسته‌های اصلی؛ زیردسته‌ها زیر همان ردیفی که لمس شده باز می‌شوند
-                    Text(
-                        stringResource(R.string.sheet_all_title),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Black,
-                        color = colors.onSurface,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    if (!isDeposit) {
+                        Text(
+                            stringResource(R.string.sheet_all_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = colors.onSurface,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    // پیشنهاد اپ روی خود کاشی (حلقه + برچسب)، تا وقتی دسته‌ای انتخاب نشده
+                    val suggestedRootId = suggested?.takeIf { selectedId == null }?.let { CategoryTree.rootOf(it, byId).id }
                     val tiles: List<Category?> = roots + listOf(null) // null = «＋ دسته‌ی جدید»
                     tiles.chunked(GRID_COLUMNS).forEach { row ->
                         Row(Modifier.fillMaxWidth()) {
@@ -304,7 +289,7 @@ fun CategoryPickerSheet(
                                     if (root == null) {
                                         CategoryTile(
                                             tint = CategoryTint(JibitoTheme.colors.chip, colors.primary, JibitoIcons.Plus, null),
-                                            name = stringResource(if (isDeposit) R.string.custom_add_income_short else R.string.custom_add_root_short),
+                                            name = stringResource(R.string.custom_add_root_short),
                                             selected = false,
                                             open = false,
                                             onClick = { creating = CreateTarget(parentId = null) },
@@ -316,6 +301,7 @@ fun CategoryPickerSheet(
                                             name = root.name,
                                             selected = root.id == selectedRootId,
                                             open = root.id == openRootId,
+                                            suggested = root.id == suggestedRootId,
                                             onClick = {
                                                 // فقط دسته‌ی اصلی (یا بی‌زیردسته) ← همین لمس = ثبت
                                                 if (depth == 1 || (!hasSubs && isDeposit)) {
@@ -349,20 +335,28 @@ fun CategoryPickerSheet(
                     }
                 }
 
+                // انتقال بین حساب‌های خودم (نه خرج است نه درآمد)
+                if (!transaction.isManual) {
+                    Spacer(Modifier.height(10.dp))
+                    SelfTransferRow(checked = transaction.isSelfTransfer, onChange = onSelfTransfer)
+                }
+
                 if (transaction.merchant != null) {
-                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.sheet_learning_hint),
+                        modifier = Modifier.padding(top = 12.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
                 }
 
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // نوار پایین: «بدون دسته» · «حذف» (فقط دستی) · «بستن»
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(JibitoTheme.colors.border))
+                Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (transaction.categoryId != null) {
                         TextButton(onClick = { onPick(null) }) {
-                            Text(stringResource(R.string.sheet_clear))
+                            Text(stringResource(R.string.sheet_clear), color = jt.muted)
                         }
                     }
                     Spacer(Modifier.weight(1f))
@@ -371,36 +365,8 @@ fun CategoryPickerSheet(
                             Text(stringResource(R.string.manual_delete), color = colors.error)
                         }
                     }
-                    if (transaction.body.isNotBlank()) TextButton(onClick = { showSms = !showSms }) {
-                        Text(stringResource(if (showSms) R.string.sheet_hide_sms else R.string.sheet_show_sms))
-                    }
-                }
-
-                if (showSms) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .background(colors.surfaceVariant, RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = transaction.body,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                    // مبلغ یا نوع اشتباه خوانده شده؟ اول «چه چیزی غلطه؟»، بعد گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر
-                    if (!transaction.isManual) {
-                        var reporting by rememberSaveable { mutableStateOf(false) }
-                        TextButton(onClick = { reporting = true }) { Text(stringResource(R.string.sheet_report_wrong)) }
-                        if (reporting) {
-                            WrongReadingDialog(transaction, onDismiss = { reporting = false })
-                        }
-                        Text(
-                            stringResource(R.string.review_share_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onSurfaceVariant,
-                        )
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.sheet_close), color = jt.muted)
                     }
                 }
             }
@@ -420,36 +386,282 @@ fun CategoryPickerSheet(
 
 private const val GRID_COLUMNS = 4
 
-/** کاشیِ یک دسته‌ی اصلی در شبکه (طرح «جیبی»): مربع گرد‌گوشه‌ی رنگی با آیکون خطی + اسم */
+/**
+ * کاشیِ یک دسته‌ی اصلی در شبکه (طرح «جیبی»): مربع گرد‌گوشه‌ی رنگی با آیکون خطی + اسم یک‌خطی.
+ * [suggested]: پیشنهاد اپ ← حلقه‌ی رنگی دور کاشی و برچسب «پیشنهاد» بالایش.
+ */
 @Composable
-private fun CategoryTile(tint: CategoryTint, name: String, selected: Boolean, open: Boolean, onClick: () -> Unit) {
+private fun CategoryTile(
+    tint: CategoryTint,
+    name: String,
+    selected: Boolean,
+    open: Boolean,
+    onClick: () -> Unit,
+    suggested: Boolean = false,
+) {
     val colors = MaterialTheme.colorScheme
+    val jt = JibitoTheme.colors
+    val shape = RoundedCornerShape(18.dp)
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(if (open) JibitoTheme.colors.chip else Color.Transparent)
+            .background(if (open) jt.chip else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 7.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CategoryIconTile(
-            tint,
-            size = 60.dp,
-            radius = 20.dp,
-            iconSize = 28.dp,
-            modifier = if (selected) Modifier.border(2.5.dp, tint.fg, RoundedCornerShape(20.dp)) else Modifier,
-        )
+        Box(contentAlignment = Alignment.TopCenter) {
+            val ring = when {
+                selected -> Modifier.border(2.5.dp, tint.fg, shape)
+                suggested -> Modifier.border(2.dp, jt.coral, shape)
+                else -> Modifier
+            }
+            CategoryIconTile(tint, size = 54.dp, radius = 18.dp, iconSize = 26.dp, modifier = ring)
+            if (suggested && !selected) {
+                Text(
+                    stringResource(R.string.sheet_suggested),
+                    modifier = Modifier
+                        .offset(y = (-7).dp)
+                        .background(jt.coral, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 6.dp),
+                    color = Color.White,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 14.sp,
+                )
+            }
+        }
         Spacer(Modifier.height(6.dp))
         Text(
             name,
-            fontSize = 13.sp,
-            fontWeight = if (selected || open) FontWeight.Bold else FontWeight.Medium,
+            fontSize = 12.5.sp,
+            fontWeight = if (selected || open || suggested) FontWeight.Bold else FontWeight.Medium,
             color = colors.onSurface,
-            maxLines = 2,
+            maxLines = 1,
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
-            lineHeight = 18.sp,
+        )
+    }
+}
+
+/**
+ * سربرگ برگه: کاشی بانک (لوگوی رنگی، یا آیکون خطی اگر لوگو نداریم) کنار طرف حساب/بانک و روز و ساعت،
+ * دکمه‌ی کوچک «پیامک»، مبلغ درشت، و زیرش نوع تراکنش و مانده‌ی حساب (اگر پیامک داشت).
+ */
+@Composable
+private fun SheetHeader(transaction: Transaction, isDeposit: Boolean, showSms: Boolean, onToggleSms: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val jt = JibitoTheme.colors
+    val t = transaction.transaction
+    val bankName = transaction.bank?.name?.let(::shortBankName)
+    val manualSource = stringResource(R.string.tx_manual_source)
+    val title = transaction.merchant ?: transaction.bank?.name ?: manualSource.takeIf { transaction.isManual }.orEmpty()
+    val subtitle = listOfNotNull(
+        bankName?.takeIf { transaction.merchant != null },
+        "${Jalali.dayTitle(transaction.dateMillis)} · ${Jalali.time(transaction.dateMillis)}",
+    ).joinToString(" · ")
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (transaction.bank != null) {
+            BankBadge(transaction.bank.id)
+            Spacer(Modifier.width(12.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, fontSize = 12.sp, color = jt.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (transaction.body.isNotBlank()) {
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (showSms) jt.chip else Color.Transparent)
+                    .border(1.dp, jt.border, RoundedCornerShape(12.dp))
+                    .clickable(onClick = onToggleSms)
+                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(DesignIcons.Message, contentDescription = null, tint = colors.primary, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    stringResource(if (showSms) R.string.sheet_hide_sms else R.string.sheet_show_sms),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.primary,
+                )
+            }
+        }
+    }
+
+    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom) {
+        val amountColor = if (isDeposit) jt.income else colors.onSurface
+        Text(if (isDeposit) "+" else "−", fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
+        Spacer(Modifier.width(6.dp))
+        Text(amount(Money.tomanNumber(t.amountRial)), fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
+        Spacer(Modifier.width(6.dp))
+        Text(
+            stringResource(R.string.unit_toman),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = jt.muted,
+            modifier = Modifier.padding(bottom = 7.dp),
+        )
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            (if (isDeposit) "↓ " else "↑ ") + stringResource(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal),
+            modifier = Modifier
+                .background(if (isDeposit) jt.tealTint else jt.chip, RoundedCornerShape(10.dp))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            color = if (isDeposit) jt.income else colors.onSurface,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        t.balanceRial?.let { balance ->
+            Spacer(Modifier.width(8.dp))
+            Text(
+                stringResource(R.string.tx_balance, amount(Money.toman(balance))),
+                fontSize = 12.sp,
+                color = jt.muted,
+            )
+        }
+    }
+}
+
+/** کاشی ۴۴ تایی بانک: لوگوی رنگی روی زمینه‌ی ساده؛ بانکی که لوگو ندارد ← آیکون خطی بانک */
+@Composable
+private fun BankBadge(bankId: Int) {
+    val jt = JibitoTheme.colors
+    val logo = BankLogos.of(bankId)
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(shape)
+            .background(if (logo != null && !jt.dark) Color.White else jt.chip)
+            .then(if (logo != null) Modifier.border(1.dp, jt.border, shape) else Modifier)
+            .padding(if (logo != null) 6.dp else 0.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (logo != null) {
+            Image(painterResource(logo), contentDescription = null, modifier = Modifier.fillMaxSize())
+        } else {
+            Icon(DesignIcons.Bank, contentDescription = null, tint = jt.muted, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+/**
+ * کارت پیامک: اول چیزهایی که اپ از پیامک فهمید (مبلغ، زمان، کارمزد، مانده)، بعد متن خام پیامک
+ * (چپ‌چین و با فونت ثابت تا عددها به‌هم نریزند)، و آخر «اشتباه خونده شده؟» با یادداشت حریم خصوصی.
+ */
+@Composable
+private fun SmsReceipt(transaction: Transaction) {
+    val colors = MaterialTheme.colorScheme
+    val jt = JibitoTheme.colors
+    val t = transaction.transaction
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(jt.chip)
+            .border(1.dp, jt.border, shape)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        val rows = listOfNotNull(
+            stringResource(R.string.sheet_receipt_amount) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(t.amountRial))),
+            stringResource(R.string.sheet_receipt_time) to Jalali.format(transaction.dateMillis),
+            transaction.feeRial?.let { stringResource(R.string.sheet_receipt_fee) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(it))) },
+            t.balanceRial?.let { stringResource(R.string.sheet_receipt_balance) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(it))) },
+        )
+        rows.forEach { (label, value) ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, fontSize = 13.sp, color = jt.muted)
+                Spacer(Modifier.weight(1f))
+                Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                Spacer(Modifier.width(6.dp))
+                Icon(DesignIcons.Check, contentDescription = null, tint = jt.income, modifier = Modifier.size(14.dp))
+            }
+        }
+
+        // متن خام پیامک: چپ‌به‌راست، چون بیشترش عدد است
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Text(
+                text = transaction.body,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .background(jt.sheet, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                lineHeight = 20.sp,
+                color = colors.onSurfaceVariant,
+            )
+        }
+
+        // مبلغ یا نوع اشتباه خوانده شده؟ اول «چه چیزی غلطه؟»، بعد گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر
+        if (!transaction.isManual) {
+            var reporting by rememberSaveable { mutableStateOf(false) }
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.sheet_report_wrong),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { reporting = true }
+                        .padding(vertical = 6.dp),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.primary,
+                )
+                Spacer(Modifier.weight(1f))
+                Icon(JibitoIcons.Lock, contentDescription = null, tint = jt.muted, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.sheet_report_privacy), fontSize = 11.sp, color = jt.muted)
+            }
+            if (reporting) {
+                WrongReadingDialog(transaction, onDismiss = { reporting = false })
+            }
+        }
+    }
+}
+
+/** مبلغ ریالی با جداکننده‌ی هزارگان، همان واحدی که پیامک گفته (مثلاً ۳۰٬۰۰۰٬۰۰۰) */
+private fun rialNumber(rial: Long): String =
+    Jalali.toPersianDigits(String.format(Locale.US, "%,d", rial).replace(',', '٬'))
+
+/** «انتقال بین حساب‌های خودم»: یک ردیف با کلید روشن/خاموش (نه خرج حساب می‌شود نه درآمد) */
+@Composable
+private fun SelfTransferRow(checked: Boolean, onChange: (Boolean) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val jt = JibitoTheme.colors
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .border(1.dp, if (checked) jt.transferFg else jt.border, shape)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(30.dp).background(jt.transferBg, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(DesignIcons.Transfer, contentDescription = null, tint = jt.transferFg, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.sheet_self_transfer), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            Text(stringResource(R.string.sheet_self_transfer_short), fontSize = 11.sp, color = jt.muted)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(checkedTrackColor = jt.transferFg),
         )
     }
 }

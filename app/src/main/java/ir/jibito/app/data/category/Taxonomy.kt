@@ -211,12 +211,12 @@ object Taxonomy {
     /** دسته‌های درآمد (یک لایه) */
     val income: List<CategoryDef> = listOf(
         CategoryDef("income.salary", "حقوق", "💼", "#1E9E6A"),
-        CategoryDef("income.sales", "حاصل فروش محصول", "🏷", "#2E86AB"),
+        CategoryDef("income.sales", "فروش", "🏷", "#2E86AB"),
         CategoryDef("income.borrowed", "قرض گرفتم", "🤝", "#8D6A9F"),
-        CategoryDef("income.repaid", "طلبم رو گرفتم", "↩", "#17BEBB"),
+        CategoryDef("income.repaid", "طلبم رسید", "↩", "#17BEBB"),
         CategoryDef("income.interest", "سود بانکی", "🏦", "#F2A541"),
         CategoryDef("income.gift", "هدیه", "🎁", "#C73E8B"),
-        CategoryDef("income.other", "سایر درآمد", "•", "#8C8C8C"),
+        CategoryDef("income.other", "سایر", "•", "#8C8C8C"),
     )
 
     /**
@@ -243,6 +243,16 @@ object Taxonomy {
      */
     val MOVED: Map<String, String> = mapOf(
         "finance.bills.internet" to "internet.home",
+    )
+
+    /**
+     * اسم‌های قبلیِ دسته‌های درآمد ← اسم کوتاه فعلی (تا در دکمه‌ی نوتیفیکیشن و زیر آیکون کامل دیده شوند).
+     * کاربرهای قبلی: CategorySeeder اسم دسته و پیشنهادهای ذخیره‌شده را عوض می‌کند؛ تراکنش‌ها دست نمی‌خورند.
+     */
+    val RENAMED_INCOME: Map<String, String> = mapOf(
+        "حاصل فروش محصول" to "فروش",
+        "طلبم رو گرفتم" to "طلبم رسید",
+        "سایر درآمد" to "سایر",
     )
 
     /** همه‌ی دسته‌ها (هر سه لایه)، به ترتیب درخت */
