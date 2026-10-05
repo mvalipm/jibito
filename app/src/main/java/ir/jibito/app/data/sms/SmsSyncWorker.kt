@@ -20,6 +20,7 @@ import ir.jibito.app.data.bank.SenderType
 import ir.jibito.app.notify.TransactionNotifier
 import ir.jibito.app.util.ErrorLog
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * پیامک که می‌رسد، اندروید این را صدا می‌زند — حتی وقتی اپ بسته است. (سند معماری بخش ۹.۱)
@@ -63,6 +64,10 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             container.recurringReminder.check()
             container.weeklyDigest.check()
             Result.success()
+        } catch (e: CancellationException) {
+            // لغو شدن خطا نیست (مثلاً پیامک تازه کار قبلی را جایگزین کرده یا اندروید کار را متوقف کرده)؛
+            // ثبت نمی‌شود و باید دوباره پرتاب شود تا WorkManager خودش تصمیم بگیرد
+            throw e
         } catch (e: Exception) {
             // قبلاً خطا بی‌صدا تکرار می‌شد و هیچ ردی نمی‌ماند؛ حالا ثبت می‌شود (تنظیمات ← گزارش خطا)
             ErrorLog.record(applicationContext, "sync (attempt ${runAttemptCount + 1})", e)

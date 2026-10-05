@@ -147,7 +147,9 @@ internal fun TransactionRow(
     val uncategorized = sms.categoryId == null && !failed && !selfTransfer
     val bank = if (sms.isManual) stringResource(R.string.tx_manual_source) else sms.bank?.name?.let(::shortBankName) ?: stringResource(R.string.bank_unknown)
 
+    // یادداشت خود کاربر (مثلاً از «بنویس» نوتیفیکیشن) گویاتر از اسم طرف حساب است؛ طرف حساب می‌رود در خط دوم
     val title = when {
+        sms.note != null -> sms.note
         sms.merchant != null -> sms.merchant
         failed -> stringResource(R.string.tx_failed_purchase)
         selfTransfer -> stringResource(R.string.tx_self_transfer)
@@ -164,6 +166,7 @@ internal fun TransactionRow(
     }
     val meta = listOfNotNull(
         kind,
+        sms.merchant?.takeIf { sms.note != null },
         Jalali.time(sms.dateMillis),
         bank,
         sms.feeRial?.let { stringResource(R.string.tx_fee, amount(Money.compact(it))) },

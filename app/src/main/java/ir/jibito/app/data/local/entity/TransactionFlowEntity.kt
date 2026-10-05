@@ -74,6 +74,11 @@ data class TransactionFlowEntity(
      * برای جدا کردن مانده‌ی چند حساب در یک بانک. پیامکی که شماره حساب ندارد null است.
      */
     @ColumnInfo(defaultValue = "NULL") val account: String? = null,
+    /**
+     * یادداشت خود کاربر (از نسخه‌ی ۱۴ دیتابیس)؛ مثلاً متنی که در جعبه‌ی «بنویس» نوتیفیکیشن نوشته.
+     * با خواندن دوباره‌ی پیامک‌ها پاک نمی‌شود.
+     */
+    @ColumnInfo(defaultValue = "NULL") val note: String? = null,
 ) {
     companion object {
         const val TRANSFER_NONE = 0
@@ -102,6 +107,7 @@ data class SmsFlowKey(
     val transferState: Int,
     val transferPairId: Long?,
     val categorizedAt: Long?,
+    val note: String?,
 )
 
 /** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */

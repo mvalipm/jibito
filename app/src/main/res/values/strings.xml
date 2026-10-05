@@ -196,6 +196,7 @@
     <string name="tab_summary">خلاصه</string>
     <string name="tab_transactions">تراکنش‌ها</string>
     <string name="tab_todo">کارها</string>
+    <string name="tab_reports">گزارش‌ها</string>
     <string name="settings_title">تنظیمات</string>
     <string name="settings_theme_title">پوسته</string>
     <string name="theme_default">مرجانی</string>
@@ -573,6 +574,35 @@
     <string name="notif_picked_title">رفت تو %1$s</string>
     <string name="notif_picked_text">از این به بعد %1$s رو بهتر می‌شناسم.</string>
     <string name="notif_picked_text_plain">ثبت شد.</string>
+    <string name="notif_picked_text_note">یادداشت شد: «%1$s»</string>
+
+    <!-- جعبه‌ی «بنویس» در نوتیفیکیشن «مال چی بود؟» -->
+    <string name="notif_question_reply">مال چی بود؟ «بنویس» رو بزن و یه کلمه بنویس.</string>
+    <string name="notif_question_reply_income">از کجا اومد؟ «بنویس» رو بزن و یه کلمه بنویس.</string>
+    <string name="notif_reply">✏️ بنویس</string>
+    <string name="notif_reply_hint">مثلاً: اسنپ تا فرودگاه</string>
+    <string name="notif_reply_hint_income">مثلاً: حقوق مهر</string>
+    <string name="notif_noted_title">📝 یادداشت شد</string>
+    <string name="notif_noted_text">«%1$s» — دسته‌اش رو بعداً تو اپ انتخاب کن</string>
+
+    <!-- تنظیمات: شکل نوتیفیکیشن «مال چی بود؟» -->
+    <string name="settings_notif_style_title">نوتیف «مال چی بود؟»</string>
+    <string name="settings_notif_style_hint">هر چی تو جعبه‌ی «بنویس» بنویسی، کنار تراکنش یادداشت می‌شه. اگه با یه دسته جور شد (مثلاً «اسنپ» ← تاکسی اینترنتی)، دسته‌اش هم خودکار گذاشته می‌شه.</string>
+    <string name="settings_notif_style_later">فقط روی نوتیف‌های بعدی اثر داره.</string>
+    <string name="notif_style_buttons">دکمه‌ها</string>
+    <string name="notif_style_buttons_hint">۳ دسته‌ی پیشنهادی؛ یه لمس و تمام</string>
+    <string name="notif_style_mixed">دکمه + بنویس</string>
+    <string name="notif_style_mixed_hint">۲ دسته‌ی پیشنهادی، و اگه هیچ‌کدوم نبود خودت بنویس</string>
+    <string name="notif_style_reply">فقط بنویس</string>
+    <string name="notif_style_reply_hint">خودت می‌نویسی مال چی بود؛ اگه با یه دسته جور شد، همون رو می‌ذارم</string>
+    <string name="notif_style_sample_1">کافه</string>
+    <string name="notif_style_sample_2">رستوران</string>
+    <string name="notif_style_sample_3">سوپرمارکت</string>
+
+    <!-- یادداشت تراکنش (در برگه‌ی انتخاب دسته) -->
+    <string name="tx_note_label">یادداشت</string>
+    <string name="tx_note_placeholder">یه یادداشت کوتاه (اختیاری)</string>
+    <string name="tx_note_save">ذخیره</string>
 
     <!-- از بازطراحی PR #6: خوش‌آمد، تنظیمات، ویجت -->
     <string name="sample_done">✓ ثبت شد! بقیه‌ش با جیبیتو</string>
@@ -636,4 +666,42 @@
     <string name="settings_advanced_sub">دوباره خوندن پیامک‌ها، گزارش خطا</string>
     <string name="settings_advanced_errors">%1$d تا خطا ثبت شده</string>
     <string name="settings_rescan_needs_sms">برای این کار اول باید «خوندن پیامک» روشن باشه.</string>
+
+    <!-- تب «گزارش‌ها» -->
+    <string name="reports_title">گزارش‌ها</string>
+    <string name="reports_range_month">این ماه</string>
+    <string name="reports_range_half">۶ ماه</string>
+    <string name="reports_range_year">یک سال</string>
+    <string name="reports_spent_so_far">خرج %1$s تا امروز</string>
+    <string name="reports_spent_month">خرج %1$s</string>
+    <string name="reports_monthly_average">میانگین خرج ماهانه</string>
+    <string name="reports_day">%1$d %2$s</string>
+    <string name="reports_forecast_label">%1$s · پیش‌بینی</string>
+    <string name="reports_above_average">%1$d٪ بالای میانگین</string>
+    <string name="reports_below_average">%1$d٪ زیر میانگین</string>
+    <string name="reports_near_average">نزدیک میانگین</string>
+    <string name="reports_legend_month">%1$s (تجمعی)</string>
+    <string name="reports_legend_forecast">پیش‌بینی</string>
+    <string name="reports_legend_monthly">خرج هر ماه</string>
+    <string name="reports_budget_line">بودجه %1$s</string>
+    <string name="reports_average_line">میانگین %1$s</string>
+    <string name="reports_tip_previous">%1$s در همین روز: %2$s</string>
+    <string name="reports_tip_forecast">پیش‌بینی</string>
+    <string name="reports_forecast_pattern">با الگوی خرج ماه قبل، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
+    <string name="reports_forecast_rhythm">با همین ریتم، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
+    <string name="reports_forecast_under">%1$s تومان زیر بودجه.</string>
+    <string name="reports_forecast_over">%1$s تومان بیشتر از بودجه.</string>
+    <string name="reports_insights_title">جیبی چی فهمید؟</string>
+    <string name="reports_insight_more">%1$d٪ بیشتر</string>
+    <string name="reports_insight_less">%1$d٪ کمتر</string>
+    <string name="reports_insight_more_note">%1$s تومان بیشتر از همین موقعِ %2$s.</string>
+    <string name="reports_insight_less_note">%1$s تومان کمتر از همین موقعِ %2$s. آفرین!</string>
+    <string name="reports_busiest_title">پرخرج‌ترین روز</string>
+    <string name="reports_busiest_note">%1$s تومان در %2$d خرید.</string>
+    <string name="reports_weekday_title">%1$s‌ها</string>
+    <string name="reports_weekday_value">%1$s برابر</string>
+    <string name="reports_weekday_note">%1$s‌ها %2$s برابر میانگین بقیه‌ی روزهای هفته خرج می‌کنی.</string>
+    <string name="reports_empty">هنوز خرجی برای این ماه ثبت نشده. با اولین خرید، منحنی خرجت اینجا کشیده می‌شه.</string>
+    <string name="reports_months_empty">هنوز ماه کاملی با خرج ثبت نشده.</string>
+    <string name="cd_reports_chart">نمودار خرج. انگشت را روی نمودار بکشید تا مبلغ هر نقطه را ببینید.</string>
 </resources>

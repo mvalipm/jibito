@@ -27,6 +27,7 @@ object DesignIcons {
     // ── نوار پایین ──
     const val NAV_SUMMARY = "M4 20V11M10 20V5M16 20v-6M3 20h18"
     const val NAV_TRANSACTIONS = "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"
+    const val NAV_REPORTS = "M3 17l5-5 4 3 8-8M14 7h6v6"
     const val NAV_TODO = "M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM8.5 12l2.5 2.5 4.5-5"
     const val NAV_SETTINGS = "M4 7h9M17 7h3M4 17h3M11 17h9M13 7a2 2 0 1 0 4 0a2 2 0 1 0-4 0M7 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0"
 

@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.category.CategoryLearning
+import ir.jibito.app.data.category.ReplyCategoryMatcher
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
@@ -77,6 +78,15 @@ interface TransactionRepository {
 
     /** دسته‌ی یک تراکنش را تعیین می‌کند (null = بدون دسته). */
     suspend fun setCategory(transactionId: Long, categoryId: Long?)
+
+    /** یادداشت خود کاربر برای این تراکنش؛ متن خالی یعنی پاک شود */
+    suspend fun setNote(transactionId: Long, note: String?)
+
+    /**
+     * نوشته‌ی جعبه‌ی «بنویس» نوتیفیکیشن: همیشه یادداشت می‌شود، و اگر با اطمینان به یک دسته رسید
+     * (ReplyCategoryMatcher) دسته هم می‌گیرد (مثل انتخاب خود کاربر، با یادگیری). متن خالی ← null و هیچ تغییری.
+     */
+    suspend fun applyNoteReply(transactionId: Long, text: String): NoteReply?
 
     /**
      * حالت فعلی این تراکنش و هر تراکنشی که تغییر دسته یا حذفش ممکن است رویش اثر بگذارد
@@ -194,6 +204,7 @@ class TransactionRepositoryImpl(
                     isManual = f.source == SOURCE_MANUAL,
                     feeRial = f.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull(),
                     smsId = f.smsId,
+                    note = f.note,
                 )
             }
         }
@@ -481,7 +492,7 @@ class TransactionRepositoryImpl(
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
                         old.id, old.categoryId, old.isAutoCategorized, old.notifiedAt, now,
-                        old.transferState, old.transferPairId, categorizedAt = old.categorizedAt,
+                        old.transferState, old.transferPairId, categorizedAt = old.categorizedAt, note = old.note,
                     )
                     continue
                 }
@@ -572,6 +583,23 @@ class TransactionRepositoryImpl(
         onCategoryChanged()
     }
 
+    override suspend fun setNote(transactionId: Long, note: String?) {
+        dao.setNote(transactionId, TransactionNotes.clean(note), System.currentTimeMillis())
+    }
+
+    override suspend fun applyNoteReply(transactionId: Long, text: String): NoteReply? {
+        val note = TransactionNotes.clean(text) ?: return null
+        val row = dao.byId(transactionId) ?: return null
+        dao.setNote(transactionId, note, System.currentTimeMillis())
+        val candidates = db.categoryDao().all()
+            .filter { !it.isArchived && it.flowType == row.flowType }
+            .map { ReplyCategoryMatcher.Candidate(it.id, it.name, it.parentId) }
+        val match = ReplyCategoryMatcher.match(note, candidates)?.let { id -> candidates.first { it.id == id } }
+            ?: return NoteReply(note, null, null)
+        setCategory(transactionId, match.id)
+        return NoteReply(note, match.id, match.name)
+    }
+
     private fun toInsertOrUpdate(
         old: SmsFlowKey?,
         item: TransactionItem,
@@ -587,6 +615,7 @@ class TransactionRepositoryImpl(
         } else {
             toUpdate += item.toEntity(
                 old.id, categoryId, categoryId != null, old.notifiedAt, now, transferState, old.transferPairId, learnedSuggestion,
+                note = old.note,
             )
         }
     }
@@ -603,6 +632,8 @@ class TransactionRepositoryImpl(
         learnedSuggestion: String? = null,
         /** زمان انتخاب دسته توسط کاربر؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
         categorizedAt: Long? = null,
+        /** یادداشت خود کاربر؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
+        note: String? = null,
     ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
@@ -627,6 +658,7 @@ class TransactionRepositoryImpl(
         transferPairId = transferPairId,
         categorizedAt = categorizedAt,
         account = account,
+        note = note,
     )
 
     private companion object {

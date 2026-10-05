@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.RemoteInput
 import androidx.core.content.ContextCompat
 import ir.jibito.app.MainActivity
 import ir.jibito.app.R
@@ -21,7 +22,8 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.Money
 
 /**
- * نوتیفیکیشن «این خرج مال چی بود؟» (یا برای واریز: «این پول از کجا اومد؟») با ۳ دکمه‌ی دسته.
+ * نوتیفیکیشن «این خرج مال چی بود؟» (یا برای واریز: «این پول از کجا اومد؟»).
+ * شکلش با تنظیم کاربر است (NotificationStyle): ۳ دکمه‌ی دسته، ۲ دکمه + «بنویس»، یا فقط «بنویس».
  *
  * قانون‌ها:
  * - فقط برای تراکنش‌های تازه (حداکثر ۳۰ دقیقه‌ی اخیر) که هنوز دسته ندارند و قبلاً نوتیفیکیشن نگرفته‌اند.
@@ -61,7 +63,7 @@ class TransactionNotifier(
         }
     }
 
-    private suspend fun show(flow: TransactionFlowEntity): Boolean {
+    private suspend fun show(flow: TransactionFlowEntity, silent: Boolean = false): Boolean {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -82,25 +84,34 @@ class TransactionNotifier(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val style = NotificationStyleSettings(context).style.value
+        val question = when {
+            style.categoryButtons > 0 -> if (isDeposit) R.string.notif_question_income else R.string.notif_question
+            else -> if (isDeposit) R.string.notif_question_reply_income else R.string.notif_question_reply
+        }
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
             .setContentTitle(title)
-            .setContentText(context.getString(if (isDeposit) R.string.notif_question_income else R.string.notif_question))
+            .setContentText(context.getString(question))
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+            .setSilent(silent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
             .setWhen(flow.dateEpoch)
             .setShowWhen(true)
 
-        for (category in pickCategories(flow)) {
-            builder.addAction(
-                0,
-                category.name,
-                CategoryActionReceiver.pendingIntent(context, flow.id, category.id),
-            )
+        if (style.categoryButtons > 0) {
+            for (category in pickCategories(flow, style.categoryButtons)) {
+                builder.addAction(
+                    0,
+                    category.name,
+                    CategoryActionReceiver.pendingIntent(context, flow.id, category.id),
+                )
+            }
         }
+        if (style.hasReply) builder.addAction(replyAction(flow.id, isDeposit))
 
         NotificationManagerCompat.from(context).notify(notificationId(flow.id), builder.build())
         return true
@@ -138,6 +149,23 @@ class TransactionNotifier(
         return true
     }
 
+    /** دکمه‌ی «بنویس»: جعبه‌ی نوشتن همان‌جا در نوتیفیکیشن باز می‌شود (بدون باز شدن اپ) */
+    private fun replyAction(transactionId: Long, isDeposit: Boolean): NotificationCompat.Action {
+        val input = RemoteInput.Builder(CategoryActionReceiver.KEY_REPLY)
+            .setLabel(context.getString(if (isDeposit) R.string.notif_reply_hint_income else R.string.notif_reply_hint))
+            .build()
+        return NotificationCompat.Action.Builder(
+            0,
+            context.getString(R.string.notif_reply),
+            CategoryActionReceiver.replyIntent(context, transactionId),
+        )
+            .addRemoteInput(input)
+            .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+            .setShowsUserInterface(false)
+            .setAllowGeneratedReplies(false)
+            .build()
+    }
+
     /** «برگردون» روی نوتیفیکیشن «رفت تو …»: همان سؤال «مال چی بود؟» دوباره می‌آید */
     suspend fun askAgain(transactionId: Long) {
         ensureChannel()
@@ -145,11 +173,53 @@ class TransactionNotifier(
         if (flow.categoryId == null) show(flow)
     }
 
+    /** بعد از نوشتن در جعبه‌ی «بنویس»، اگر متن خالی بود: همان سؤال دوباره (وگرنه نوتیفیکیشن در حالت «در حال ارسال» می‌ماند) */
+    suspend fun askAgainAnyway(transactionId: Long) {
+        ensureChannel()
+        val flow = dao.byId(transactionId)
+        if (flow == null || !show(flow, silent = true)) {
+            NotificationManagerCompat.from(context).cancel(notificationId(transactionId))
+        }
+    }
+
     /**
-     * بعد از لمس یکی از دکمه‌های دسته: همان نوتیفیکیشن بی‌صدا می‌شود «رفت تو کافه» با دکمه‌ی «برگردون»،
-     * و چند ثانیه بعد خودش بسته می‌شود.
+     * نوشته‌ی «بنویس» با هیچ دسته‌ای جور نشد: «📝 یادداشت شد» (بی‌صدا، چند ثانیه بعد خودش بسته می‌شود).
+     * لمسش صفحه‌ی همین تراکنش را باز می‌کند تا دسته‌اش انتخاب شود.
      */
-    fun showPicked(transactionId: Long, categoryName: String, merchant: String?) {
+    fun showNoted(transactionId: Long, note: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        ensureChannel()
+        val openApp = PendingIntent.getActivity(
+            context,
+            notificationId(transactionId),
+            MainActivity.openTransactionIntent(context, transactionId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(context.getString(R.string.notif_noted_title))
+            .setContentText(context.getString(R.string.notif_noted_text, note))
+            .setContentIntent(openApp)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setAutoCancel(true)
+            .setTimeoutAfter(PICKED_TIMEOUT_MILLIS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .build()
+        NotificationManagerCompat.from(context).notify(notificationId(transactionId), notification)
+    }
+
+    /**
+     * بعد از لمس یکی از دکمه‌های دسته (یا نوشته‌ای که با دسته‌ای جور شد): همان نوتیفیکیشن بی‌صدا می‌شود
+     * «رفت تو کافه» با دکمه‌ی «برگردون»، و چند ثانیه بعد خودش بسته می‌شود.
+     * @param note اگر از جعبه‌ی «بنویس» آمده، همان نوشته (که یادداشت هم شده)
+     */
+    fun showPicked(transactionId: Long, categoryName: String, merchant: String?, note: String? = null) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -160,8 +230,11 @@ class TransactionNotifier(
             .setSmallIcon(R.drawable.ic_stat_jibito)
             .setContentTitle(context.getString(R.string.notif_picked_title, categoryName))
             .setContentText(
-                if (merchant != null) context.getString(R.string.notif_picked_text, merchant)
-                else context.getString(R.string.notif_picked_text_plain)
+                when {
+                    note != null -> context.getString(R.string.notif_picked_text_note, note)
+                    merchant != null -> context.getString(R.string.notif_picked_text, merchant)
+                    else -> context.getString(R.string.notif_picked_text_plain)
+                }
             )
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -187,14 +260,14 @@ class TransactionNotifier(
         )
     }
 
-    /** ۳ دکمه: اول دسته‌ی پیشنهادی (از مقصد خرید)، بعد پرکاربردترین دسته‌های خود کاربر. */
-    private suspend fun pickCategories(flow: TransactionFlowEntity): List<CategoryEntity> {
+    /** دکمه‌های دسته: اول دسته‌ی پیشنهادی (از مقصد خرید)، بعد پرکاربردترین دسته‌های خود کاربر. */
+    private suspend fun pickCategories(flow: TransactionFlowEntity, count: Int): List<CategoryEntity> {
         // برداشت ← دسته‌های خرج، واریز ← دسته‌های درآمد
         val byUsage = db.categoryDao().byUsage(flow.flowType)
         val suggested = flow.suggestedCategory?.let { name -> byUsage.firstOrNull { it.name == name } }
         return (listOfNotNull(suggested) + byUsage.filter { !it.name.startsWith("سایر") })
             .distinctBy { it.id }
-            .take(3)
+            .take(count)
     }
 
     private fun ensureChannel() {

@@ -57,7 +57,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** زیرصفحه‌های تنظیمات */
-internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced }
+internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced, NotificationStyle }
 
 /**
  * تنظیمات: یک فهرست گروه‌بندی‌شده که هر ردیفش «مقدار فعلی» را هم نشان می‌دهد
@@ -280,6 +280,7 @@ private fun SettingsHub(
         // ── نوتیف و دسترسی‌ها ──
         val digest = container.weeklyDigest
         val digestOn by digest.enabled.collectAsState()
+        val notifStyle by container.notificationStyle.style.collectAsState()
         SettingsGroup(stringResource(R.string.settings_group_alerts)) {
             SettingsRow(
                 icon = JibitoIcons.Message,
@@ -299,6 +300,14 @@ private fun SettingsHub(
                 attention = !permissions.notifyOk,
                 trailing = if (permissions.notifyOk) RowTrailing.Status(true) else RowTrailing.Action(stringResource(R.string.todo_turn_on), permissions.fixNotify),
                 onClick = if (permissions.notifyOk) null else permissions.fixNotify,
+            )
+            RowDivider()
+            SettingsRow(
+                icon = SettingsIcons.Pen,
+                tint = tones.teal,
+                title = stringResource(R.string.settings_notif_style_title),
+                value = stringResource(notifStyle.label),
+                onClick = { onOpen(SettingsPage.NotificationStyle) },
             )
             RowDivider()
             SettingsRow(
@@ -440,6 +449,10 @@ private fun SettingsPageScreen(
             SettingsPage.Advanced -> {
                 SettingsPageHeader(stringResource(R.string.settings_advanced_title), onBack)
                 AdvancedPageContent(permissions.smsOk)
+            }
+            SettingsPage.NotificationStyle -> {
+                SettingsPageHeader(stringResource(R.string.settings_notif_style_title), onBack)
+                NotificationStylePageContent()
             }
         }
     }

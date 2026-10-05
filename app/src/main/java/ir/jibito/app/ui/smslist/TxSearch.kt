@@ -70,7 +70,7 @@ data class TxSearch(
         val isNumber = digits.isNotEmpty() && toLatinDigits(q).all { it.isDigit() || it == ',' || it == '٬' || it == ' ' }
         if (isNumber) return toman.toString().contains(digits)
         val key = q.normalizedKey()
-        return listOfNotNull(t.merchant, t.bank?.name, t.categoryName, t.body)
+        return listOfNotNull(t.merchant, t.note, t.bank?.name, t.categoryName, t.body)
             .any { it.normalizedKey().contains(key) }
     }
 

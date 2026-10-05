@@ -4,18 +4,26 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.RemoteInput
 import ir.jibito.app.JibitoApplication
+import ir.jibito.app.util.ErrorLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-/** وقتی کاربر روی یکی از دکمه‌های دسته در نوتیفیکیشن می‌زند. */
+/** وقتی کاربر روی یکی از دکمه‌های دسته در نوتیفیکیشن می‌زند، یا در جعبه‌ی «بنویس» چیزی می‌نویسد. */
 class CategoryActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val transactionId = intent.getLongExtra(EXTRA_TRANSACTION_ID, -1)
+        if (intent.action == ACTION_REPLY) {
+            if (transactionId >= 0) onReply(context, transactionId, intent)
+            return
+        }
         val categoryId = intent.getLongExtra(EXTRA_CATEGORY_ID, -1)
         val undo = intent.action == ACTION_UNDO
         if (transactionId < 0 || (!undo && categoryId < 0)) return
@@ -43,9 +51,44 @@ class CategoryActionReceiver : BroadcastReceiver() {
         }
     }
 
+    /**
+     * نوشته‌ی «بنویس»: همیشه یادداشت می‌شود؛ اگر با دسته‌ای جور شد «رفت تو …» (با «برگردون»)، وگرنه «📝 یادداشت شد».
+     * نوتیفیکیشن حتماً باید عوض شود، وگرنه اندروید آن را در حالت «در حال ارسال» نگه می‌دارد.
+     */
+    private fun onReply(context: Context, transactionId: Long, intent: Intent) {
+        val text = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(KEY_REPLY)?.toString().orEmpty()
+        val pending = goAsync()
+        val container = (context.applicationContext as JibitoApplication).container
+        val notifier = TransactionNotifier(context, container.database)
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                val reply = container.transactionRepository.applyNoteReply(transactionId, text)
+                when {
+                    // متن خالی ← همان سؤال دوباره (بی‌صدا)
+                    reply == null -> notifier.askAgainAnyway(transactionId)
+                    reply.categoryName != null -> {
+                        val merchant = container.database.transactionFlowDao().byId(transactionId)?.merchant
+                        notifier.showPicked(transactionId, reply.categoryName, merchant, note = reply.note)
+                    }
+                    else -> notifier.showNoted(transactionId, reply.note)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ErrorLog.record(context, "notification reply", e)
+                NotificationManagerCompat.from(context).cancel(TransactionNotifier.notificationId(transactionId))
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
     companion object {
+        /** کلید متن جعبه‌ی «بنویس» در RemoteInput */
+        const val KEY_REPLY = "reply_text"
         private const val ACTION = "ir.jibito.app.SET_CATEGORY"
         private const val ACTION_UNDO = "ir.jibito.app.UNDO_CATEGORY"
+        private const val ACTION_REPLY = "ir.jibito.app.REPLY_NOTE"
         private const val EXTRA_TRANSACTION_ID = "transactionId"
         private const val EXTRA_CATEGORY_ID = "categoryId"
 
@@ -64,6 +107,23 @@ class CategoryActionReceiver : BroadcastReceiver() {
             )
         }
     
+        /**
+         * دکمه‌ی «بنویس». باید MUTABLE باشد تا اندروید متن نوشته‌شده را داخل Intent بگذارد
+         * (Intent صریح است، پس فقط همین Receiver آن را می‌گیرد).
+         */
+        fun replyIntent(context: Context, transactionId: Long): PendingIntent {
+            val intent = Intent(context, CategoryActionReceiver::class.java)
+                .setAction(ACTION_REPLY)
+                .putExtra(EXTRA_TRANSACTION_ID, transactionId)
+            val mutable = if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+            return PendingIntent.getBroadcast(
+                context,
+                (transactionId * 31 - 13).hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or mutable,
+            )
+        }
+
         /** «برگردون» روی نوتیفیکیشن «رفت تو …» */
         fun undoIntent(context: Context, transactionId: Long): PendingIntent {
             val intent = Intent(context, CategoryActionReceiver::class.java)
