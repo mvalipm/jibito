@@ -6,9 +6,9 @@ import android.content.Intent
 import android.provider.Telephony
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker
-import androidx.work.TestListenableWorkerBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.testing.TestListenableWorkerBuilder
 import ir.jibito.app.TestSupport.app
 import ir.jibito.app.data.sms.SmsReceivedReceiver
 import ir.jibito.app.data.sms.SmsSyncWorker
@@ -59,7 +59,7 @@ class SmsReceiveTest {
 
     @Test
     fun syncReadsInboxSavesTransactionAndNotifies() = runBlocking {
-        val worker = TestListenableWorkerBuilder<SmsSyncWorker>(app).build()
+        val worker = TestListenableWorkerBuilder.from(app, SmsSyncWorker::class.java).build()
         assertEquals(ListenableWorker.Result.success(), worker.doWork())
 
         val db = app.container.database
