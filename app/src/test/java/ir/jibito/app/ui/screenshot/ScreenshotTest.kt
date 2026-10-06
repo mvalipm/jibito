@@ -42,6 +42,7 @@ import ir.jibito.app.ui.review.ReviewCard
 import ir.jibito.app.data.repository.ReviewItem
 import ir.jibito.app.data.review.ReviewDetector
 import ir.jibito.app.data.parser.SmsTextNormalizer
+import ir.jibito.app.ui.summary.TodoPage
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.DesignIcons
@@ -152,11 +153,12 @@ class ScreenshotTest {
         failed: Boolean = false,
         selfTransfer: Boolean = false,
         balanceRial: Long? = null,
+        oneOff: Boolean = false,
     ) = Transaction(
         id = id, bank = BankDirectory.byId(bankId), body = "", dateMillis = now - hoursAgo * hour,
         transaction = ParsedTransaction(type, amountRial, balanceRial), merchant = merchant, suggestedCategory = suggested,
         isFailedPurchase = failed, categoryId = if (categoryName != null) id else null, categoryName = categoryName,
-        categoryIcon = categoryIcon, isAutoCategorized = auto, isSelfTransfer = selfTransfer,
+        categoryIcon = categoryIcon, isAutoCategorized = auto, isSelfTransfer = selfTransfer, isOneOff = oneOff,
     )
 
     private val sample = listOf(
@@ -167,6 +169,7 @@ class ScreenshotTest {
         tx(5, 27, 3_000_000, merchant = "دیجی‌کالا", failed = true),
         tx(6, 28, 50_000_000, merchant = "کارت ۶۰۳۷", selfTransfer = true),
         tx(7, 29, 900_000),
+        tx(8, 30, 1_200_000_000, merchant = "لوازم خانگی سامان", categoryName = "لوازم خانه", categoryIcon = "🏠", oneOff = true),
     ).sortedByDescending { it.dateMillis }
 
     /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */
@@ -179,6 +182,15 @@ class ScreenshotTest {
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
             TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", actions = listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})) {},
+            // کارت چندتایی: صفحه‌ی اول از سه صفحه
+            TodoStory(
+                "oneoff", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null, "خرج یک‌باره بود؟",
+                pages = listOf(
+                    TodoPage("1", "۱۲۰ میلیون تومان برای «لوازم خانگی سامان» · دیروز. خیلی بیشتر از معمول؛ اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.", listOf(TodoAction("آره، یک‌باره بود") {}, TodoAction("نه") {})),
+                    TodoPage("2", "۸۰ میلیون تومان · ۷ تیر", listOf(TodoAction("آره، یک‌باره بود") {}, TodoAction("نه") {})),
+                    TodoPage("3", "۶۰ میلیون تومان · ۲ اردیبهشت", listOf(TodoAction("آره، یک‌باره بود") {}, TodoAction("نه") {})),
+                ),
+            ) {},
             TodoStory("rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null, "شارژ ماهانه؟", "اگه ماهانه‌ست، قبل از موعدش یادت میندازم.") {},
             TodoStory("notif", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Bell, null, "نوتیف خاموشه", "هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.", actions = listOf(TodoAction("روشن کن") {})) {},
         )

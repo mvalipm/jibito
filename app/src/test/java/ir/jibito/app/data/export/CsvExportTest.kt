@@ -33,12 +33,13 @@ class CsvExportTest {
         manual: Boolean = false,
         feeRial: Long? = null,
         note: String? = null,
+        oneOff: Boolean = false,
     ) = Transaction(
         id = id, bank = if (manual) null else bank, body = "", dateMillis = at(hour, 5),
         transaction = ParsedTransaction(type = type, amountRial = amountRial, balanceRial = null),
         merchant = merchant, suggestedCategory = null, isFailedPurchase = false,
         categoryId = categoryId, categoryName = null, categoryIcon = null, isAutoCategorized = false,
-        isSelfTransfer = selfTransfer, isManual = manual, feeRial = feeRial, note = note,
+        isSelfTransfer = selfTransfer, isManual = manual, feeRial = feeRial, note = note, isOneOff = oneOff,
     )
 
     private fun lines(csv: String) = csv.removePrefix("\uFEFF").trimEnd().split("\r\n")
@@ -64,6 +65,12 @@ class CsvExportTest {
         val l = lines(CsvExport.build(listOf(tx(1, 10, selfTransfer = true), tx(2, 10, manual = true, merchant = "نان")), emptyList()))
         assertTrue(l[1].contains("انتقال به حساب خودم"))
         assertTrue(l[2].endsWith(",نان,,,دستی,"))
+    }
+
+    @Test
+    fun oneOffSpendIsLabelled() {
+        val l = lines(CsvExport.build(listOf(tx(1, 10_000_000, oneOff = true)), emptyList()))
+        assertEquals("1404/01/01,10:05,خرج یک‌باره,1000000,,,,ملت,,پیامک,", l[1])
     }
 
     @Test
