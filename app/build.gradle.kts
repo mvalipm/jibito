@@ -70,9 +70,14 @@ android {
     buildFeatures {
         compose = true
     }
-    // Android Lint در هر ساخت CI. مشکلات قدیمی در lint-baseline.xml ثبت شده‌اند؛ فقط مشکل «تازه» ساخت را می‌شکند.
+    // زبان اپ داخل خود اپ روی فارسی ثابت می‌شود؛ پس در App Bundle همه‌ی زبان‌ها باید در خود بسته بمانند
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+    // Android Lint در هر ساخت CI؛ هر خطای لینت ساخت را می‌شکند (فهرست baseline دیگر نداریم).
     lint {
-        baseline = file("lint-baseline.xml")
         abortOnError = true
         checkDependencies = false
         htmlReport = true

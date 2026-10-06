@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -515,7 +516,7 @@ private fun Pill(label: String, selected: Boolean, onClick: () -> Unit) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MonthDayDialog(initialKey: Int, initialDay: Int?, onPick: (Int, Int?) -> Unit, onDismiss: () -> Unit) {
-    var key by rememberSaveable { mutableStateOf(initialKey) }
+    var key by rememberSaveable { mutableIntStateOf(initialKey) }
     var dayText by rememberSaveable { mutableStateOf(initialDay?.toString().orEmpty()) }
     val months = (0 until 18).map { JalaliMonth.current().plus(-it) }
     val day = TxSearch.toLatinDigits(dayText).filter { it.isDigit() }.toIntOrNull()?.takeIf { it in 1..31 }

@@ -1,5 +1,6 @@
 package ir.jibito.app.data.backup
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.database.sqlite.SQLiteDatabase
@@ -175,7 +176,9 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         /**
          * اگر بازگردانی آماده‌ای منتظر است، دیتابیس و تنظیمات را جایگزین می‌کند.
          * باید در شروع اپ و قبل از هر استفاده از دیتابیس صدا زده شود. true یعنی جایگزین شد.
+         * commit (نه apply) عمدی است: تنظیمات باید قبل از پاک شدن پوشه‌ی بازگردانی روی دیسک نوشته شده باشند.
          */
+        @SuppressLint("ApplySharedPref")
         fun applyPendingRestore(context: Context): Boolean {
             val pending = File(context.filesDir, PENDING_DIR)
             val staged = File(pending, AppDatabase.NAME)
@@ -269,6 +272,8 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             return root
         }
 
+        // commit عمدی: applyPendingRestore بلافاصله بعدش پوشه‌ی بازگردانی را پاک می‌کند
+        @SuppressLint("ApplySharedPref")
         internal fun jsonToPrefs(context: Context, root: JSONObject) {
             for (name in BACKED_UP_PREFS) {
                 val values = root.optJSONObject(name) ?: continue

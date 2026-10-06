@@ -74,12 +74,11 @@ jobs:
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
-      # Android Lint: هر مشکل تازه (که در app/lint-baseline.xml نیست) ساخت را متوقف می‌کند.
-      # اگر baseline هنوز نیست، ساخته می‌شود و ساخت ادامه پیدا می‌کند (lint.baselines.continue).
+      # Android Lint: هر خطای لینت ساخت را متوقف می‌کند (baseline نداریم؛ مشکل‌ها همان‌جا درست می‌شوند).
       - name: Lint
         run: |
           set -o pipefail
-          ./gradlew lintDebug -Dlint.baselines.continue=true --stacktrace 2>&1 | tee -a build.log
+          ./gradlew lintDebug --stacktrace 2>&1 | tee -a build.log
 
       - name: Upload lint report
         if: always()
@@ -88,7 +87,6 @@ jobs:
           name: lint-report
           path: |
             app/build/reports/lint-results-debug.html
-            app/lint-baseline.xml
           if-no-files-found: ignore
 
       # نسخه‌ی انتشار (R8) همیشه ساخته می‌شود تا خرابی‌اش همان موقع معلوم شود؛ امضا فقط اگر کلید در Secrets باشد
@@ -145,12 +143,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/schemas
-          # فهرست مشکلات قدیمی Lint، اگر تازه ساخته شده
-          if [ -f app/lint-baseline.xml ]; then git add app/lint-baseline.xml; fi
           if git diff --cached --quiet; then
             echo "Schema unchanged"
           else
-            git commit -m "Update Room schema / lint baseline [skip ci]"
+            git commit -m "Update Room schema [skip ci]"
             # اگر در این فاصله کامیت تازه‌ای به main رسیده (مثلاً دو PR پشت سر هم مرج شده)، اول روی آن قرار می‌گیرد
             git pull --rebase origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"

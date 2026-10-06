@@ -14,11 +14,13 @@
     <!--
       allowBackup=false: پشتیبان ابری گوگل خاموش (اندروید ۱۱ و قبل‌تر هیچ پشتیبان خودکاری ندارند).
       از اندروید ۱۲، انتقال گوشی به گوشی با data_extraction_rules تنظیم می‌شود. پشتیبان اصلی: فایل رمزدار از تنظیمات اپ.
+      fullBackupContent=false همان رفتار allowBackup=false را برای اندروید ۱۱ و قبل‌تر صریح می‌کند.
     -->
     <application
         android:name=".JibitoApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"

@@ -131,7 +131,6 @@
     <string name="manual_other_category">دسته‌ی دیگر…</string>
     <string name="manual_save_without_category">ثبت بدون دسته</string>
     <string name="manual_delete">حذف این تراکنش</string>
-    <string name="custom_add">+ دسته‌ی شخصی</string>
     <string name="custom_add_root_short">دسته‌ی جدید</string>
     <string name="sheet_quick_title">پرکاربردها</string>
     <string name="sheet_all_title">همه‌ی دسته‌ها</string>
@@ -144,8 +143,6 @@
     <string name="settings_depth_3">همه‌ی جزئیات</string>
     <string name="settings_depth_3_hint">مثلاً «حمل‌ونقل ← خودرو شخصی ← سوخت»</string>
     <string name="settings_roots_title">کدوم دسته‌ها دیده بشن؟</string>
-    <string name="custom_add_root">+ دسته‌ی اصلی جدید</string>
-    <string name="custom_add_income">+ دسته‌ی درآمد جدید</string>
     <string name="custom_create_named">+ بساز «%1$s»</string>
     <string name="custom_title_root">دسته‌ی جدید</string>
     <string name="custom_title_sub">زیردسته‌ی جدید در «%1$s»</string>
@@ -166,11 +163,8 @@
     <string name="settings_custom_delete_to_none">تراکنش‌هاش بی‌دسته می‌شن.</string>
     <string name="sheet_search_hint">جست‌وجوی دسته… مثلاً سوخت</string>
     <string name="sheet_search_empty">دسته‌ای با این اسم پیدا نشد.</string>
-    <string name="sheet_suggested_title">پیشنهاد جیبیتو</string>
     <string name="sheet_all_of">همه‌ی %1$s</string>
-    <string name="sheet_pick_root">انتخاب کل دسته</string>
     <string name="sheet_not_spend_hint">این‌ها خرج حساب نمی‌شن و از بودجه کم نمی‌کنن.</string>
-    <string name="summary_excluded">پس‌انداز و قرض</string>
     <string name="sheet_learning_hint">از انتخاب‌هات یاد می‌گیرم و دفعه‌ی بعد خودم دسته رو می‌ذارم.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
     <string name="tx_self_transfer_chip">خرج حساب نمی‌شه</string>
@@ -186,7 +180,6 @@
     <string name="sheet_receipt_balance">مانده</string>
     <string name="sheet_receipt_fee">کارمزد</string>
     <string name="sheet_receipt_rial">%1$s ریال</string>
-    <string name="sheet_self_transfer_hint">نه خرج حساب می‌شه نه درآمد. کارت مقصد هم یادم می‌مونه و انتقال‌های بعدی به همون کارت خودکار علامت می‌خورن.</string>
     <string name="transfer_explain">این برداشت و واریز هم‌مبلغ‌اند. اگه پول رو از یه حسابت به حساب دیگه‌ت فرستادی، نه خرجه نه درآمد.</string>
     <string name="transfer_withdrawal_line">↑ برداشت از %1$s</string>
     <string name="transfer_deposit_line">↓ واریز به %1$s</string>
@@ -229,10 +222,8 @@
     <string name="summary_prev_month">ماه قبل</string>
     <string name="summary_next_month">ماه بعد</string>
     <string name="summary_spent">خرج %1$s</string>
-    <string name="summary_income">درآمد</string>
     <string name="summary_uncategorized">بی‌دسته</string>
     <string name="summary_categories">خرج دسته‌ها</string>
-    <string name="summary_tap_to_budget">برای تعیین بودجه‌ی ماهانه، روی هر دسته بزن</string>
     <string name="glance_remaining">%1$s مونده از %2$s</string>
     <string name="glance_over">%1$s بیشتر از بودجه‌ی %2$s</string>
     <string name="glance_daily">روزی %1$s</string>
@@ -259,7 +250,6 @@
     <string name="summary_tap_for_detail">برای دیدن ریز خرج و تعیین بودجه، روی هر دسته بزن</string>
     <string name="chart_where_title">کجا رفت؟</string>
     <string name="chart_rest">بقیه</string>
-    <string name="chart_tap_again">برای دیدن ریز خرج این دسته، دوباره بزن</string>
     <string name="detail_set_budget">تعیین بودجه‌ی ماهانه</string>
     <string name="detail_edit_budget">تغییر بودجه</string>
     <string name="detail_inside_title">ریز خرج</string>
@@ -283,8 +273,6 @@
     <string name="budget_alert_overall_over">این ماه از بودجه زدی بیرون</string>
     <string name="overall_set_budget">+ یه سقف برای ماه بذار</string>
     <string name="overall_remaining">%1$s مونده از %2$s</string>
-    <string name="overall_over">%1$s بیشتر از بودجه‌ی %2$s</string>
-    <string name="overall_daily">تا آخر ماه، روزی %1$s</string>
     <string name="overall_dialog_title">بودجه‌ی کل ماه</string>
     <string name="overall_dialog_hint">ماهی چقدر می‌خوای در کل خرج کنی؟ بالای صفحه می‌بینی چقدر مونده و روزی چقدر می‌تونی خرج کنی. به ۸۰٪ که برسی و وقتی تموم بشه، خبرت می‌کنیم.</string>
     <string name="overall_dialog_sum">جمع بودجه‌ی دسته‌هات: %1$s</string>
@@ -307,22 +295,17 @@
     <string name="review_ignore_sender">این سرشماره اصلاً بانکی نیست</string>
     <string name="review_ignore_sender_hint">پیامک‌های بعدیِ این سرشماره دیگه به بررسی نمیان.</string>
     <string name="review_ignore_sender_more">%1$d پیامک دیگه‌ی همین سرشماره هم از صف بررسی حذف می‌شه.</string>
-    <string name="review_position">%1$d از %2$d</string>
-    <string name="review_prev">قبلی</string>
-    <string name="review_next">بعدی</string>
     <string name="review_swipe_card_hint">کارت رو بکش</string>
     <string name="institution_add">+ افزودن موسسه‌ی جدید</string>
     <string name="institution_search_hint">جست‌وجوی بانک یا موسسه…</string>
     <string name="institution_name">اسم بانک یا موسسه</string>
     <string name="institution_name_hint">مثلاً کارگزاری مفید (فرستنده: %1$s)</string>
     <string name="institution_save">افزودن و انتخاب</string>
-    <string name="review_swipe_hint">برای دیدن بقیه‌ی پیامک‌ها، به چپ و راست بکشید.</string>
     <string name="review_share">ارسال برای بهبود اپ</string>
     <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>
     <string name="review_all_done">همه‌چی مرتبه!</string>
     <string name="review_back">برگرد به کارها</string>
-    <string name="review_banner">%1$d پیامک بانکی نیاز به بررسی داره</string>
     <string name="review_which_bank">این پیامک از کدوم بانک یا موسسه‌ست؟</string>
     <string name="review_pick_bank">انتخاب بانک یا موسسه…</string>
     <string name="review_more">گزینه‌های بیشتر</string>
