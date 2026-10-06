@@ -8,8 +8,6 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableFloatStateOf
@@ -25,7 +23,6 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,25 +31,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
@@ -64,37 +56,24 @@ import androidx.compose.material3.FloatingActionButton
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.data.category.CreateCategoryResult
-import ir.jibito.app.util.Jalali
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import ir.jibito.app.data.repository.UndoSnapshot
 import ir.jibito.app.ui.common.rememberHaptics
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.DesignIcons
-import ir.jibito.app.ui.theme.CategoryTint
-import ir.jibito.app.ui.theme.categoryTint
-import ir.jibito.app.ui.common.BobbingMascot
 import ir.jibito.app.ui.common.JibiToast
 import ir.jibito.app.ui.common.ToastMessage
-import ir.jibito.app.domain.Category
-import ir.jibito.app.domain.CategoryTree
 import ir.jibito.app.domain.Transaction
-import ir.jibito.app.data.parser.FlowType
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -314,86 +293,30 @@ fun SmsListScreen(
                 Text(text = stringResource(R.string.list_syncing), fontSize = 12.sp, color = t.muted)
             }
         }
-        // فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel و بیرون از رشته‌ی اصلی انجام می‌شود
-        val list = visible?.list
-        val groups = visible?.groups.orEmpty()
-        when {
-            list == null || (list.isEmpty() && isSyncing) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(16.dp))
-                    Text(text = stringResource(R.string.list_loading), fontSize = 14.sp, color = t.muted)
-                }
-            }
-            list.isEmpty() && onlyUncategorized && !search.isActive -> AllCategorized()
-            list.isEmpty() -> Box(
-                Modifier.fillMaxSize().padding(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.list_empty),
-                    fontSize = 15.sp,
-                    color = t.muted,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            else -> LazyColumn(
-                state = listState,
-                contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp + LocalBottomBarSpace.current),
-            ) {
-                // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی و فشرده، بالای فهرست
-                transferSuggestions.firstOrNull()?.takeIf { !showSearch }?.let { suggestion ->
-                    item(key = "transfer-suggestion") {
-                        Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
-                            TransferSuggestionCard(
-                                suggestion = suggestion,
-                                total = transferSuggestions.size,
-                                onYes = {
-                                    haptics.confirm()
-                                    viewModel.confirmTransfer(suggestion)
-                                },
-                                onNo = {
-                                    haptics.reject()
-                                    viewModel.rejectTransfer(suggestion)
-                                },
-                            )
-                        }
-                    }
-                }
-                // روزبه‌روز: سرتیتر چسبان «امروز ━━━ ۶۰۵ هزار» و تراکنش‌های آن روز
-                val maxDay = groups.maxOfOrNull { it.spendRial }?.coerceAtLeast(1L) ?: 1L
-                val spendDays = groups.filter { it.spendRial > 0 }
-                val avgDay = if (spendDays.isEmpty()) 0L else spendDays.sumOf { it.spendRial } / spendDays.size
-                val highlight = search.text.takeIf { showSearch }
-                groups.forEach { group ->
-                    stickyHeader(key = "day-${group.dayStartMillis}") {
-                        Box(Modifier.padding(horizontal = 20.dp)) {
-                            DayHeader(
-                                group,
-                                fraction = group.spendRial.toFloat() / maxDay,
-                                heavy = spendDays.size > 1 && group.spendRial > avgDay * 5 / 4,
-                            )
-                        }
-                    }
-                    items(group.items, key = { it.id }) { sms ->
-                        // پیشنهاد اپ در عمق و با دسته‌های اصلی‌ای که کاربر در تنظیمات گذاشته («سوخت» ← «حمل‌ونقل»)
-                        val suggestion = CategoryTree.suggestionAt(
-                            sms.suggestedCategory, sms.transaction.type.code, categories, byId, displayDepth, hiddenRoots,
-                        )
-                        Box(Modifier.padding(horizontal = 20.dp)) {
-                            TransactionRow(
-                                sms = sms,
-                                tint = tintOf(sms, byId),
-                                onClick = { selectedId = sms.id },
-                                onAcceptSuggestion = suggestion?.let { c -> { pickCategory(sms, c.id) } },
-                                suggestionName = suggestion?.name,
-                                highlight = highlight,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        TransactionListBody(
+            visible = visible,
+            isSyncing = isSyncing,
+            onlyUncategorized = onlyUncategorized,
+            searchActive = search.isActive,
+            highlight = search.text.takeIf { showSearch },
+            listState = listState,
+            transferSuggestion = transferSuggestions.firstOrNull()?.takeIf { !showSearch },
+            transferCount = transferSuggestions.size,
+            onConfirmTransfer = { suggestion ->
+                haptics.confirm()
+                viewModel.confirmTransfer(suggestion)
+            },
+            onRejectTransfer = { suggestion ->
+                haptics.reject()
+                viewModel.rejectTransfer(suggestion)
+            },
+            categories = categories,
+            byId = byId,
+            displayDepth = displayDepth,
+            hiddenRoots = hiddenRoots,
+            onOpen = { sms -> selectedId = sms.id },
+            onPick = { sms, categoryId -> pickCategory(sms, categoryId) },
+        )
     }
 
     // «+» ثبت دستی: پایین صفحه، بالای نوار شناور (روی چیزی نمی‌افتد؛ فهرست جای خالی دارد)
@@ -494,95 +417,3 @@ fun SmsListScreen(
 
 /** چند میلی‌ثانیه پیام «رفت تو کافه» می‌ماند */
 private const val TOAST_MILLIS = 4_000L
-
-/** ظاهر دسته‌ی اصلیِ یک تراکنش (برای کاشی رنگی ردیف) */
-@Composable
-internal fun tintOf(sms: Transaction, byId: Map<Long, Category>): CategoryTint? {
-    val c = sms.categoryId?.let { byId[it] } ?: return null
-    val root = CategoryTree.rootOf(c, byId)
-    return categoryTint(root.colorHex, CategoryTree.iconOf(c, byId))
-}
-
-/** سوییچ دوقسمتی «همه | بی‌دسته ۹۹+» (قسمت انتخاب‌شده: کارت روشن روی ریل) */
-@Composable
-private fun SegmentedFilter(
-    onlyUncategorized: Boolean,
-    uncategorizedCount: Int,
-    onChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val t = JibitoTheme.colors
-    Row(
-        modifier
-            .fillMaxWidth()
-            .height(46.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(t.chip)
-            .padding(4.dp),
-    ) {
-        Segment(stringResource(R.string.filter_all), selected = !onlyUncategorized, onClick = { onChange(false) }, modifier = Modifier.weight(1f))
-        Segment(
-            stringResource(R.string.filter_uncategorized),
-            selected = onlyUncategorized,
-            badge = uncategorizedCount,
-            onClick = { onChange(true) },
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier, badge: Int = 0) {
-    val t = JibitoTheme.colors
-    val bg by animateColorAsState(if (selected) t.sheet else t.chip, tween(250), label = "segBg")
-    val fg by animateColorAsState(if (selected) MaterialTheme.colorScheme.onBackground else t.muted, tween(250), label = "segFg")
-    Row(
-        modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(12.dp))
-            .background(bg)
-            .clickable(onClick = onClick)
-            .semantics { this.selected = selected },
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        if (badge > 0) {
-            Spacer(Modifier.width(8.dp))
-            Box(
-                Modifier
-                    .height(20.dp)
-                    .defaultMinSize(minWidth = 20.dp)
-                    .clip(CircleShape)
-                    .background(t.badge)
-                    .padding(horizontal = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    Jalali.toPersianDigits(if (badge > 99) "99+" else badge.toString()),
-                    color = t.badgeFg,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
-    }
-}
-
-/** فیلتر «بی‌دسته» خالی است: جیبی خوشحال */
-@Composable
-private fun AllCategorized() {
-    val t = JibitoTheme.colors
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(start = 30.dp, end = 30.dp, top = 50.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BobbingMascot(120.dp)
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.uncat_empty_title), fontSize = 20.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.uncat_empty_body), fontSize = 14.sp, color = t.muted, textAlign = TextAlign.Center)
-    }
-}
