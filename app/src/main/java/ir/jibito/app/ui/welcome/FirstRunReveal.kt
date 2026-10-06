@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -152,7 +153,7 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Caption(done, Modifier.padding(top = 20.dp))
+                Caption(done, Modifier.padding(top = 20.dp, start = 20.dp, end = 20.dp))
 
                 // حباب‌های پیامک + هاله + جیبی
                 Box(Modifier.fillMaxWidth().height(HERO_HEIGHT.dp), contentAlignment = Alignment.TopCenter) {
@@ -172,7 +173,7 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                         append(' ')
                         append(stringResource(R.string.reveal_found_sub))
                     },
-                    modifier = Modifier.padding(top = 4.dp, start = 24.dp, end = 24.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                     color = Color.White.copy(alpha = 0.78f),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -220,7 +221,8 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
 /** بالای صفحه: موقع خواندن یک جمله‌ی کم‌رنگ؛ آخرش کپسول فیروزه‌ای با تیک */
 @Composable
 private fun Caption(done: Boolean, modifier: Modifier) {
-    Box(modifier.height(36.dp), contentAlignment = Alignment.Center) {
+    // کمینه، نه ارتفاع ثابت: با فونت درشت گوشی کپسول بلندتر می‌شود و متن بریده نمی‌شود
+    Box(modifier.heightIn(min = 36.dp), contentAlignment = Alignment.Center) {
         if (done) {
             Row(
                 Modifier
