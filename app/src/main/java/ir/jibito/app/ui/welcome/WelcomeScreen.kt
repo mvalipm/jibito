@@ -1,17 +1,15 @@
 package ir.jibito.app.ui.welcome
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +79,7 @@ import kotlinx.coroutines.delay
  * پیامک بانک می‌آید ← تراکنش «مال چی بود؟» می‌شود ← کاربر یک دسته را می‌زند و ثبت می‌شود.
  * کاربر قبل از هر اجازه‌ای، یک بار خودش انجامش داده است.
  * پشت جیبی یک هاله‌ی نرم آرام نفس می‌کشد و با ثبت دسته یک بار پف می‌کند.
- * دکمه‌ی «شروع کنیم» و نقطه‌های قدم همیشه پایین صفحه (زیر شست) می‌مانند و فقط وسط صفحه اسکرول می‌شود.
+ * همه‌چیز در یک صفحه جا می‌شود؛ دکمه‌ی «شروع کنیم» و نقطه‌های قدم همیشه پایین صفحه (زیر شست) می‌مانند.
  */
 @Composable
 fun WelcomeScreen(onStart: () -> Unit) {
@@ -123,66 +121,75 @@ fun WelcomeScreen(onStart: () -> Unit) {
                 .fillMaxSize()
                 .safeDrawingPadding(),
         ) {
-            Column(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Spacer(Modifier.height(36.dp))
-                PocketMascot(
-                    MascotFace.HAPPY,
-                    size = 96.dp,
-                    modifier = Modifier.onGloballyPositioned { mascotCenter = it.boundsInRoot().center - screenOrigin },
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Black,
-                    color = colors.onBackground,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = stringResource(R.string.welcome_tagline),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.primary,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.welcome_body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(Modifier.height(24.dp))
-                // نمونه‌ی «پیامک ← تراکنش» در یک کارت
+            // همه‌چیز باید در یک صفحه جا شود: فاصله‌ها جمع‌وجورند و جای اضافه (گوشی بلندتر) بالا و پایین پخش می‌شود.
+            // اسکرول فقط پشتیبانِ گوشی خیلی کوتاه یا فونت خیلی بزرگ است.
+            BoxWithConstraints(Modifier.weight(1f)) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(t.sheet)
-                        .border(1.dp, t.border, RoundedCornerShape(24.dp))
-                        .padding(16.dp),
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(min = maxHeight)
+                        .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    SmsBubble()
-                    AnimatedVisibility(
-                        visible = phase >= 1,
-                        enter = fadeIn(tween(400)) + slideInVertically(tween(450)) { -it / 3 },
+                    Spacer(Modifier.height(12.dp))
+                    PocketMascot(
+                        MascotFace.HAPPY,
+                        size = 80.dp,
+                        modifier = Modifier.onGloballyPositioned { mascotCenter = it.boundsInRoot().center - screenOrigin },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = colors.onBackground,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.welcome_tagline),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.welcome_body),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+                    // نمونه‌ی «پیامک ← تراکنش» در یک کارت
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(t.sheet)
+                            .border(1.dp, t.border, RoundedCornerShape(24.dp))
+                            .padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        SmsBubble()
+                        // تراکنش از اول جایش را دارد و فقط پیدا می‌شود، تا محتوای وسط‌چین موقع آمدنش جابه‌جا نشود
+                        val shown by animateFloatAsState(if (phase >= 1) 1f else 0f, tween(450), label = "tx")
+                        Column(
+                            Modifier.graphicsLayer {
+                                alpha = shown
+                                translationY = (1f - shown) * -24.dp.toPx()
+                            },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
                             FlowArrow(moving = !motionOff)
                             DemoRow(picked)
-                            Spacer(Modifier.height(14.dp))
+                            Spacer(Modifier.height(12.dp))
                             // دکمه‌ها درست زیر ردیف، و راهنما / «ثبت شد!» زیر دکمه‌ها، همان‌جا که انگشت است
                             DemoChips(picked, onPick = { picked = it })
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(8.dp))
                             Text(
                                 stringResource(if (picked == null) R.string.sample_hint else R.string.sample_done),
                                 modifier = Modifier.fillMaxWidth(),
@@ -193,8 +200,8 @@ fun WelcomeScreen(onStart: () -> Unit) {
                             )
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
                 }
-                Spacer(Modifier.height(16.dp))
             }
 
             // نقطه‌های قدم و دکمه همیشه پایین صفحه
@@ -203,13 +210,13 @@ fun WelcomeScreen(onStart: () -> Unit) {
                 total = 2,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(top = 8.dp, bottom = 6.dp),
+                    .padding(top = 4.dp, bottom = 4.dp),
             )
             Button(
                 onClick = onStart,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 20.dp)
+                    .padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 16.dp)
                     .heightIn(min = 58.dp),
                 shape = RoundedCornerShape(50),
             ) {
@@ -256,7 +263,7 @@ private fun SmsBubble() {
             .fillMaxWidth(0.86f)
             .clip(RoundedCornerShape(22.dp))
             .background(colors.surfaceVariant)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -283,10 +290,10 @@ private fun FlowArrow(moving: Boolean) {
     val flow = if (moving) loopingValue(0f, 1f, 600, label = "flow", reverse = false, easing = LinearEasing) else 0f
     val bob = if (moving) loopingValue(0f, 2f, 700, label = "arrowBob") else 0f
     Column(
-        Modifier.padding(top = 6.dp, bottom = 8.dp),
+        Modifier.padding(top = 4.dp, bottom = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Canvas(Modifier.size(width = 2.dp, height = 16.dp)) {
+        Canvas(Modifier.size(width = 2.dp, height = 10.dp)) {
             val dash = 4.dp.toPx()
             drawLine(
                 color = accent.copy(alpha = 0.7f),
@@ -300,12 +307,12 @@ private fun FlowArrow(moving: Boolean) {
         Box(
             Modifier
                 .graphicsLayer { translationY = bob * density }
-                .size(26.dp)
+                .size(22.dp)
                 .clip(CircleShape)
                 .background(accent.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(JibitoIcons.ChevronDown, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+            Icon(JibitoIcons.ChevronDown, contentDescription = null, tint = accent, modifier = Modifier.size(14.dp))
         }
     }
 }
