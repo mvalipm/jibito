@@ -17,6 +17,12 @@ object NonTransactionFilter {
 
     private val adWords = listOf("جشنواره", "قرعه", "جایزه", "تخفیف", "خوش آمدید", "خوش‌آمدید", "ثبت نام", "ثبت‌نام", "نصب", "دانلود", "پیشنهاد", "فرصت", "تسهیلات")
 
+    /**
+     * برچسب صریح تبلیغ: اپراتورها و فرستنده‌های انبوه پیامک تبلیغاتی را «#تبلیغات» یا «تبلیغ» برچسب می‌زنند
+     * و راه لغو («لغو11») می‌گذارند. این‌ها حتی با «مانده/موجودی» در متن هم تراکنش نیستند.
+     */
+    private val explicitAdPattern = Regex("تبلیغ|لغو\\s*11\\b")
+
     private val urlPattern = Regex("(https?://|www\\.|\\.ir\\b|\\.com\\b)", RegexOption.IGNORE_CASE)
 
     private val balanceWords = listOf("مانده", "موجودی")
@@ -26,6 +32,7 @@ object NonTransactionFilter {
 
     fun isNotTransaction(text: String): Boolean {
         if (looksLikeOtp(text)) return true
+        if (explicitAdPattern.containsMatchIn(text)) return true
         val hasBalance = balanceWords.any { text.contains(it) }
         // تبلیغ و اطلاع‌رسانی معمولاً لینک یا این کلمه‌ها را دارند، ولی «مانده» ندارند
         if (!hasBalance && urlPattern.containsMatchIn(text)) return true
