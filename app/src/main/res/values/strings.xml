@@ -458,6 +458,7 @@
     <string name="digest_less">%1$d٪ کمتر از هفته‌ی قبل. آفرین!</string>
     <string name="digest_same">تقریباً مثل هفته‌ی قبل</string>
     <string name="digest_top">بیشترش رفت تو %1$s</string>
+    <string name="digest_one_off">%1$s هم خرج یک‌باره بود که در مقایسه حساب نشده</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>
     <string name="settings_digest_hint">جمعه‌ها عصر یه نوتیف کوتاه از خرج‌های هفته</string>
 

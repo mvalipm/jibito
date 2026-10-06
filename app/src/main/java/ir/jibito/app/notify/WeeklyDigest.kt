@@ -46,10 +46,11 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
         val categories = db.categoryDao().all()
         val byId = categories.associateBy { it.id }
         val rows = db.summaryDao().amounts(FlowType.WITHDRAWAL.code, now - 14 * WeeklyDigestRule.DAY_MS, now)
-        val spends = SpendRollup.spendsOnly(rows, categories).map { row ->
+        val (oneOffs, routine) = SpendRollup.spendsOnly(rows, categories).partition { it.isOneOff }
+        val spends = routine.map { row ->
             Triple(row.dateEpoch, row.amount, row.categoryId?.let { byId[it] }?.let { SpendRollup.rootOf(it, byId).id })
         }
-        val digest = WeeklyDigestRule.summarize(spends, now)
+        val digest = WeeklyDigestRule.summarize(spends, now, oneOffs.map { it.dateEpoch to it.amount })
         // هفته‌ی بی‌خرج: چیزی برای گفتن نیست (و نوتیفیکیشن بی‌فایده نمی‌فرستیم)
         if (digest.thisWeekRial == 0L || show(digest, digest.topRootId?.let { byId[it]?.name })) {
             prefs.edit().putLong(KEY_LAST_SLOT, WeeklyDigestRule.lastSlot(now)).apply()
@@ -72,7 +73,11 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
             }
         }
         val body = Jalali.toPersianDigits(
-            listOfNotNull(change, topName?.let { context.getString(R.string.digest_top, it) }).joinToString(" · ")
+            listOfNotNull(
+                change,
+                topName?.let { context.getString(R.string.digest_top, it) },
+                d.thisWeekOneOffRial.takeIf { it > 0 }?.let { context.getString(R.string.digest_one_off, Money.compact(it)) },
+            ).joinToString(" · ")
         )
         val openApp = PendingIntent.getActivity(
             context,
