@@ -529,7 +529,7 @@
     <string name="todo_notif_detail">هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.</string>
     <string name="todo_uncategorized_detail">دسته بده تا «کجا رفت؟» درست نشونت بده.</string>
     <string name="todo_budget_detail">%1$s از بودجه‌ی %2$s</string>
-    <string name="todo_transfer_detail">اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.</string>
+    <string name="todo_transfer_page">%1$s تومان از %2$s به %3$s · %4$s. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.</string>
     <string name="todo_recurring_detail">اگه ماهانه‌ست، قبل از موعدش یادت میندازم.</string>
     <string name="todo_all_clear">کاری نمونده. هر وقت چیزی کارت داشت، اینجا نشونت می‌دم.</string>
 

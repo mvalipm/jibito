@@ -114,18 +114,38 @@ fun rememberTodoStories(
                 )
             )
         }
-        transferSuggestions.firstOrNull()?.let { suggestion ->
+        if (transferSuggestions.isNotEmpty()) {
             val repository = app.container.transactionRepository
+            val yes = stringResource(R.string.todo_transfer_yes)
+            val no = stringResource(R.string.transfer_no)
+            val unknown = stringResource(R.string.bank_unknown)
+            // همه‌ی پیشنهادها در یک کارت ورق‌خور (تازه‌ترها اول)؛ هر کدام همان‌جا جواب داده می‌شود
+            val pages = transferSuggestions.map { suggestion ->
+                val w = suggestion.withdrawal
+                val d = suggestion.deposit
+                TodoPage(
+                    key = "${w.id}-${d.id}",
+                    detail = Jalali.toPersianDigits(
+                        stringResource(
+                            R.string.todo_transfer_page,
+                            if (hidden) HIDDEN_AMOUNT else Money.compact(w.transaction.amountRial),
+                            shortBankName(w.bank?.name ?: unknown),
+                            shortBankName(d.bank?.name ?: unknown),
+                            Jalali.dayTitle(w.dateMillis),
+                        )
+                    ),
+                    actions = listOf(
+                        TodoAction(yes) { scope.launch { repository.confirmTransfer(suggestion) } },
+                        TodoAction(no) { scope.launch { repository.rejectTransfer(suggestion) } },
+                    ),
+                )
+            }
             add(
                 TodoStory(
                     "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null,
                     label = stringResource(R.string.todo_transfer),
-                    detail = stringResource(R.string.todo_transfer_detail),
-                    // همان‌جا جواب داده می‌شود؛ لمس خود کارت، فهرست تراکنش‌ها را باز می‌کند
-                    actions = listOf(
-                        TodoAction(stringResource(R.string.todo_transfer_yes)) { scope.launch { repository.confirmTransfer(suggestion) } },
-                        TodoAction(stringResource(R.string.transfer_no)) { scope.launch { repository.rejectTransfer(suggestion) } },
-                    ),
+                    pages = pages,
+                    // لمس خود کارت، فهرست تراکنش‌ها را باز می‌کند
                     onClick = onOpenTransactions,
                 )
             )
