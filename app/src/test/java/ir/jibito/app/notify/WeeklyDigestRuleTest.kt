@@ -59,4 +59,24 @@ class WeeklyDigestRuleTest {
         assertEquals(40, d.changePercent)
         assertNull(WeeklyDigestRule.Digest(5, 0, null).changePercent)
     }
+
+    @Test
+    fun `خرج یک‌باره در جمع هفته هست ولی در مقایسه و پرخرج‌ترین دسته نه`() {
+        val now = at(3, 19)
+        val day = WeeklyDigestRule.DAY_MS
+        val d = WeeklyDigestRule.summarize(
+            listOf(
+                Triple(now - 1 * day, 3_000_000L, 1L),
+                Triple(now - 2 * day, 4_000_000L, 2L),
+                Triple(now - 9 * day, 5_000_000L, 1L),
+            ),
+            now,
+            oneOffs = listOf(now - 1 * day to 100_000_000_000L, now - 10 * day to 50_000_000_000L),
+        )
+        assertEquals(100_007_000_000L, d.thisWeekRial)
+        assertEquals(100_000_000_000L, d.thisWeekOneOffRial)
+        assertEquals(2L, d.topRootId)
+        // ۷ میلیون در برابر ۵ میلیون (هر دو بدون خرج یک‌باره)
+        assertEquals(40, d.changePercent)
+    }
 }

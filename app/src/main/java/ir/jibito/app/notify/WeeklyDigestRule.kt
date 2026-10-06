@@ -33,22 +33,43 @@ object WeeklyDigestRule {
         return slot != lastSentSlot && now - slot < DAY_MS
     }
 
-    /** (زمان، مبلغ، دسته‌ی اصلی) ← خرج ۷ روز اخیر، ۷ روز قبلش و پرخرج‌ترین دسته‌ی این هفته */
-    fun summarize(spends: List<Triple<Long, Long, Long?>>, now: Long): Digest {
+    /**
+     * (زمان، مبلغ، دسته‌ی اصلی) ← خرج ۷ روز اخیر، ۷ روز قبلش و پرخرج‌ترین دسته‌ی این هفته.
+     * @param oneOffs (زمان، مبلغ) خرج‌های یک‌باره (خرید خانه…): در جمع هفته هستند، ولی در مقایسه و «بیشترش کجا رفت» نه
+     */
+    fun summarize(spends: List<Triple<Long, Long, Long?>>, now: Long, oneOffs: List<Pair<Long, Long>> = emptyList()): Digest {
         val weekStart = now - 7 * DAY_MS
         val prevStart = now - 14 * DAY_MS
         val thisWeek = spends.filter { it.first in weekStart until now }
         val byRoot = thisWeek.filter { it.third != null }.groupBy { it.third!! }.mapValues { (_, v) -> v.sumOf { it.second } }
+        val thisWeekOneOff = oneOffs.filter { it.first in weekStart until now }.sumOf { it.second }
+        val lastWeekOneOff = oneOffs.filter { it.first in prevStart until weekStart }.sumOf { it.second }
         return Digest(
-            thisWeekRial = thisWeek.sumOf { it.second },
-            lastWeekRial = spends.filter { it.first in prevStart until weekStart }.sumOf { it.second },
+            thisWeekRial = thisWeek.sumOf { it.second } + thisWeekOneOff,
+            lastWeekRial = spends.filter { it.first in prevStart until weekStart }.sumOf { it.second } + lastWeekOneOff,
             topRootId = byRoot.maxByOrNull { it.value }?.key,
+            thisWeekOneOffRial = thisWeekOneOff,
+            lastWeekOneOffRial = lastWeekOneOff,
         )
     }
 
-    data class Digest(val thisWeekRial: Long, val lastWeekRial: Long, val topRootId: Long?) {
-        /** درصد تغییر نسبت به هفته‌ی قبل؛ null اگر هفته‌ی قبل تقریباً خرجی نبود */
+    /**
+     * @param thisWeekRial کل خرج این هفته (با خرج یک‌باره)
+     * @param thisWeekOneOffRial چه مقدارش یک‌باره بود
+     */
+    data class Digest(
+        val thisWeekRial: Long,
+        val lastWeekRial: Long,
+        val topRootId: Long?,
+        val thisWeekOneOffRial: Long = 0,
+        val lastWeekOneOffRial: Long = 0,
+    ) {
+        /** درصد تغییر نسبت به هفته‌ی قبل، هر دو بدون خرج یک‌باره؛ null اگر هفته‌ی قبل تقریباً خرجی نبود */
         val changePercent: Int?
-            get() = if (lastWeekRial < 1_000_000L) null else Math.round((thisWeekRial - lastWeekRial) * 100.0 / lastWeekRial).toInt()
+            get() {
+                val now = thisWeekRial - thisWeekOneOffRial
+                val before = lastWeekRial - lastWeekOneOffRial
+                return if (before < 1_000_000L) null else Math.round((now - before) * 100.0 / before).toInt()
+            }
     }
 }
