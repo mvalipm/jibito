@@ -209,6 +209,26 @@ jobs:
             sleep 5
             ./gradlew connectedDebugAndroidTest --stacktrace
 
+      # شمار تست‌ها در لاگ و خلاصه‌ی اجرا؛ اگر هیچ تستی اجرا نشده باشد، شکست (سبزِ بی‌تست قبول نیست)
+      - name: Instrumented test summary
+        run: |
+          python3 - <<'PY'
+          import glob, os, xml.etree.ElementTree as ET
+          rows, total, bad = [], 0, 0
+          for f in glob.glob('app/build/outputs/androidTest-results/**/*.xml', recursive=True):
+              for tc in ET.parse(f).getroot().iter('testcase'):
+                  total += 1
+                  status = 'FAILED' if tc.find('failure') is not None or tc.find('error') is not None else ('SKIPPED' if tc.find('skipped') is not None else 'passed')
+                  bad += status != 'passed'
+                  rows.append(f"| {tc.get('classname', '').split('.')[-1]} | {tc.get('name')} | {status} |")
+          out = ['### Instrumented tests', f'{total} tests, {bad} not passed', '', '| class | test | result |', '|---|---|---|'] + sorted(rows)
+          print('\n'.join(out))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as s:
+              s.write('\n'.join(out) + '\n')
+          if total == 0:
+              raise SystemExit('::error::No instrumented test results found')
+          PY
+
       - name: Show failed instrumented tests
         if: failure()
         run: |
