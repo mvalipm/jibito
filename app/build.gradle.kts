@@ -80,10 +80,6 @@ android {
     lint {
         abortOnError = true
         checkDependencies = false
-        htmlReport = true
-        // همه‌ی مشکل‌ها در خروجی CI هم نوشته شوند (نه فقط اولی)
-        textReport = true
-        textOutput = file("stdout")
     }
     testOptions {
         // منابع اپ (رشته‌ها، فونت وزیرمتن) در تست‌های Robolectric هم در دسترس باشند (لازم برای تست اسکرین‌شات)
