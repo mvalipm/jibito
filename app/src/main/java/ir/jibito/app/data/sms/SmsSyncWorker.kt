@@ -77,7 +77,7 @@ class SmsSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     }
 
     companion object {
-        private const val UNIQUE_NAME = "sms-sync"
+        internal const val UNIQUE_NAME = "sms-sync"
         private const val PERIODIC_NAME = "sms-sync-periodic"
         private const val MAX_ATTEMPTS = 3
 
