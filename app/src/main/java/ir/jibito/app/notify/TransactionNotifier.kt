@@ -249,7 +249,6 @@ class TransactionNotifier(
     }
 
     private fun ensureAutoChannel() {
-        if (Build.VERSION.SDK_INT < 26) return
         val manager = context.getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(AUTO_CHANNEL_ID) != null) return
         manager.createNotificationChannel(
@@ -270,7 +269,6 @@ class TransactionNotifier(
     }
 
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < 26) return
         val manager = context.getSystemService(NotificationManager::class.java)
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
