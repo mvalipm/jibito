@@ -79,11 +79,20 @@ data class TransactionFlowEntity(
      * با خواندن دوباره‌ی پیامک‌ها پاک نمی‌شود.
      */
     @ColumnInfo(defaultValue = "NULL") val note: String? = null,
+    /**
+     * خرج یک‌باره (از نسخه‌ی ۱۵ دیتابیس)، مثل خرید خانه یا ماشین: در جمع ماه هست، ولی میانگین و پیش‌بینی را خراب نمی‌کند.
+     * ۰ = عادی، ۱ = یک‌باره، ۲ = کاربر گفته «یک‌باره نیست» (دیگر پیشنهاد نشود). با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود.
+     */
+    @ColumnInfo(defaultValue = "0") val oneOffState: Int = ONE_OFF_NONE,
 ) {
     companion object {
         const val TRANSFER_NONE = 0
         const val TRANSFER_SELF = 1
         const val TRANSFER_REJECTED = 2
+
+        const val ONE_OFF_NONE = 0
+        const val ONE_OFF_YES = 1
+        const val ONE_OFF_REJECTED = 2
     }
 }
 
@@ -108,6 +117,7 @@ data class SmsFlowKey(
     val transferPairId: Long?,
     val categorizedAt: Long?,
     val note: String?,
+    val oneOffState: Int,
 )
 
 /** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */

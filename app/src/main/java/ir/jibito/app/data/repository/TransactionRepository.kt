@@ -110,6 +110,9 @@ interface TransactionRepository {
     /** علامت زدن/برداشتن دستیِ «انتقال به خودم» برای یک تراکنش */
     suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean)
 
+    /** علامت زدن/برداشتن «خرج یک‌باره»؛ برداشتنِ علامت یعنی «یک‌باره نیست» (دیگر پیشنهاد نمی‌شود) */
+    suspend fun setOneOff(transactionId: Long, isOneOff: Boolean)
+
     /**
      * دسته‌ی شخصی می‌سازد. parentId = null یعنی دسته‌ی اصلی جدید.
      * @param icon فقط برای دسته‌ی اصلی
@@ -205,6 +208,7 @@ class TransactionRepositoryImpl(
                     feeRial = f.description?.takeIf { it.startsWith(FEE_PREFIX) }?.removePrefix(FEE_PREFIX)?.toLongOrNull(),
                     smsId = f.smsId,
                     note = f.note,
+                    isOneOff = f.oneOffState == TransactionFlowEntity.ONE_OFF_YES,
                 )
             }
         }
@@ -247,6 +251,12 @@ class TransactionRepositoryImpl(
 
     override suspend fun rejectTransfer(suggestion: TransferSuggestion) {
         dao.setTransfer(suggestion.withdrawal.id, TransactionFlowEntity.TRANSFER_REJECTED, null, System.currentTimeMillis())
+    }
+
+    override suspend fun setOneOff(transactionId: Long, isOneOff: Boolean) {
+        val state = if (isOneOff) TransactionFlowEntity.ONE_OFF_YES else TransactionFlowEntity.ONE_OFF_REJECTED
+        dao.setOneOff(transactionId, state, System.currentTimeMillis())
+        onCategoryChanged()
     }
 
     override suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {
@@ -493,6 +503,7 @@ class TransactionRepositoryImpl(
                     toUpdate += item.toEntity(
                         old.id, old.categoryId, old.isAutoCategorized, old.notifiedAt, now,
                         old.transferState, old.transferPairId, categorizedAt = old.categorizedAt, note = old.note,
+                        oneOffState = old.oneOffState,
                     )
                     continue
                 }
@@ -615,7 +626,7 @@ class TransactionRepositoryImpl(
         } else {
             toUpdate += item.toEntity(
                 old.id, categoryId, categoryId != null, old.notifiedAt, now, transferState, old.transferPairId, learnedSuggestion,
-                note = old.note,
+                note = old.note, oneOffState = old.oneOffState,
             )
         }
     }
@@ -634,6 +645,8 @@ class TransactionRepositoryImpl(
         categorizedAt: Long? = null,
         /** یادداشت خود کاربر؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
         note: String? = null,
+        /** علامت «خرج یک‌باره»؛ با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود */
+        oneOffState: Int = TransactionFlowEntity.ONE_OFF_NONE,
     ) = TransactionFlowEntity(
         id = id,
         smsId = this.id,
@@ -659,6 +672,7 @@ class TransactionRepositoryImpl(
         categorizedAt = categorizedAt,
         account = account,
         note = note,
+        oneOffState = oneOffState,
     )
 
     private companion object {
