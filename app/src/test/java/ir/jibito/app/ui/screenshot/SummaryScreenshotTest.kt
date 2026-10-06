@@ -64,6 +64,10 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
         for ((style, dark) in variants) {
             shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}) }
         }
+        // عدد شش‌رقمی با فونت خیلی درشت: باید در یک خط بماند
+        shot("reveal_big", AppThemeStyle.DEFAULT, dark = true, padded = false, fontScale = 2f) {
+            FirstRunReveal(RevealStats(count = 128_400, months = 22, banks = 6, topCategory = "تاکسی اینترنتی", topSharePercent = 18), onDone = {})
+        }
     }
 
     @Test

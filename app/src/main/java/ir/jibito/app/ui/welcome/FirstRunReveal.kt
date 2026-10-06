@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -70,6 +71,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import java.util.Locale
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
+import ir.jibito.app.ui.common.rememberFitScale
 
 /** فقط یک بار، بعد از اولین خواندن پیامک‌ها روی این گوشی */
 class FirstRunFlag(context: Context) {
@@ -144,7 +153,7 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Caption(done, Modifier.padding(top = 20.dp))
+                Caption(done, Modifier.padding(top = 20.dp, start = 20.dp, end = 20.dp))
 
                 // حباب‌های پیامک + هاله + جیبی
                 Box(Modifier.fillMaxWidth().height(HERO_HEIGHT.dp), contentAlignment = Alignment.TopCenter) {
@@ -154,10 +163,17 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                     RevealMascot(done, Modifier.offset(y = MASCOT_TOP.dp))
                 }
 
-                CountLine(count.value.toInt(), Modifier.padding(top = 18.dp, start = 16.dp, end = 16.dp))
+                CountLine(count.value.toInt(), stats.count, Modifier.padding(top = 18.dp, start = 16.dp, end = 16.dp))
+                // «تراکنش» اول همین جمله، نه کنار عدد، تا عدد همه‌ی عرض را داشته باشد
                 Text(
-                    stringResource(R.string.reveal_found_sub),
-                    modifier = Modifier.padding(top = 8.dp, start = 24.dp, end = 24.dp),
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = TintPeach, fontWeight = FontWeight.Black)) {
+                            append(stringResource(R.string.reveal_unit_transactions))
+                        }
+                        append(' ')
+                        append(stringResource(R.string.reveal_found_sub))
+                    },
+                    modifier = Modifier.padding(horizontal = 24.dp),
                     color = Color.White.copy(alpha = 0.78f),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -205,7 +221,8 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
 /** بالای صفحه: موقع خواندن یک جمله‌ی کم‌رنگ؛ آخرش کپسول فیروزه‌ای با تیک */
 @Composable
 private fun Caption(done: Boolean, modifier: Modifier) {
-    Box(modifier.height(36.dp), contentAlignment = Alignment.Center) {
+    // کمینه، نه ارتفاع ثابت: با فونت درشت گوشی کپسول بلندتر می‌شود و متن بریده نمی‌شود
+    Box(modifier.heightIn(min = 36.dp), contentAlignment = Alignment.Center) {
         if (done) {
             Row(
                 Modifier
@@ -231,39 +248,39 @@ private fun Caption(done: Boolean, modifier: Modifier) {
     }
 }
 
-/** عدد بزرگ با جداکننده‌ی هزارگان و واحد «تراکنش»؛ اندازه با تعداد رقم کوچک می‌شود تا همیشه یک خط بماند */
+/**
+ * عدد بزرگ، تنها در یک خط و وسط صفحه. از ۸۸ شروع می‌شود و آن‌قدر کوچک می‌شود که عدد نهایی ([target])
+ * در عرض واقعی جا شود؛ اندازه با عدد نهایی سنجیده می‌شود تا وسط شمارش نپرد.
+ */
 @Composable
-private fun CountLine(value: Int, modifier: Modifier) {
-    val text = Jalali.toPersianDigits(String.format(Locale.US, "%,d", value).replace(',', '٬'))
-    val size = when {
-        text.length <= 3 -> 88.sp
-        text.length <= 5 -> 76.sp
-        text.length <= 7 -> 60.sp
-        else -> 48.sp
-    }
-    Row(modifier, verticalAlignment = Alignment.Bottom) {
+private fun CountLine(value: Int, target: Int, modifier: Modifier) {
+    BoxWithConstraints(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val scale = rememberFitScale(maxWidth, groupedCount(target) to countStyle(COUNT_MAX_SP.sp))
         Text(
-            text,
-            modifier = Modifier.alignByBaseline(),
-            style = LocalTextStyle.current.copy(brush = Brush.verticalGradient(listOf(Color.White, Color.White, Color(0xFFFFC9B5)))),
-            fontSize = size,
-            lineHeight = size,
-            fontWeight = FontWeight.Black,
-            letterSpacing = (-1).sp,
+            groupedCount(value),
+            style = countStyle((COUNT_MAX_SP * scale).sp),
             maxLines = 1,
             softWrap = false,
         )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(R.string.reveal_unit_transactions),
-            modifier = Modifier.alignByBaseline(),
-            color = TintPeach,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
     }
 }
+
+private const val COUNT_MAX_SP = 88f
+
+private fun groupedCount(value: Int) = Jalali.toPersianDigits(String.format(Locale.US, "%,d", value).replace(',', '٬'))
+
+/** ارقام چپ‌به‌راست؛ ارتفاع خط کمی بیشتر از اندازه تا لبه‌ی ارقام بریده نشود */
+@Composable
+private fun countStyle(size: TextUnit) = LocalTextStyle.current.merge(
+    TextStyle(
+        color = Color.White,
+        fontSize = size,
+        lineHeight = size * 1.2f,
+        fontWeight = FontWeight.Black,
+        letterSpacing = (-1).sp,
+        textDirection = TextDirection.Ltr,
+    )
+)
 
 private data class StatCell(val value: String, val unit: String?, val label: String, val icon: ImageVector, val tint: Color)
 

@@ -46,6 +46,10 @@ import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.text.TextStyle
+import ir.jibito.app.ui.common.rememberFitScale
 
 /**
  * سربرگ برگه: کاشی بانک (لوگوی رنگی، یا آیکون خطی اگر لوگو نداریم) کنار طرف حساب/بانک و روز و ساعت،
@@ -95,19 +99,30 @@ internal fun SheetHeader(transaction: Transaction, isDeposit: Boolean, showSms: 
         }
     }
 
-    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom) {
-        val amountColor = if (isDeposit) jt.income else colors.onSurface
-        Text(if (isDeposit) "+" else "−", fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-        Spacer(Modifier.width(6.dp))
-        Text(amount(Money.tomanNumber(t.amountRial)), fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(R.string.unit_toman),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = jt.muted,
-            modifier = Modifier.padding(bottom = 7.dp),
-        )
+    // مبلغ بزرگ با فونت درشت گوشی: همه کمی کوچک می‌شوند تا در یک خط بمانند
+    BoxWithConstraints(Modifier.padding(top = 10.dp).fillMaxWidth()) {
+        val sign = if (isDeposit) "+" else "−"
+        val number = amount(Money.tomanNumber(t.amountRial))
+        val toman = stringResource(R.string.unit_toman)
+        val big = LocalTextStyle.current.merge(TextStyle(fontSize = 30.sp, fontWeight = FontWeight.Black))
+        val small = LocalTextStyle.current.merge(TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium))
+        val fit = rememberFitScale(maxWidth, sign to big, number to big, toman to small, gap = 6.dp)
+        Row(verticalAlignment = Alignment.Bottom) {
+            val amountColor = if (isDeposit) jt.income else colors.onSurface
+            Text(sign, fontSize = 30.sp * fit, fontWeight = FontWeight.Black, color = amountColor, maxLines = 1, softWrap = false)
+            Spacer(Modifier.width(6.dp))
+            Text(number, fontSize = 30.sp * fit, fontWeight = FontWeight.Black, color = amountColor, maxLines = 1, softWrap = false)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                toman,
+                fontSize = 15.sp * fit,
+                fontWeight = FontWeight.Medium,
+                color = jt.muted,
+                modifier = Modifier.padding(bottom = 7.dp * fit),
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
