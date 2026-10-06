@@ -543,6 +543,7 @@
     <string name="trend_unit_million">میلیون تومان</string>
     <string name="trend_unit_thousand">هزار تومان</string>
     <string name="trend_so_far">تا امروز</string>
+    <string name="trend_one_off_note">★ ستون‌ها بدون خرج یک‌باره‌اند: %1$s</string>
     <string name="trend_average">خط نازک: میانگین ماه‌های قبل، %1$s %2$s</string>
 
     <!-- تراکنش‌ها -->
@@ -697,7 +698,9 @@
     <string name="reports_forecast_pattern">با الگوی خرج ماه قبل، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
     <string name="hero_one_off">+ %1$s خرج یک‌باره، جدا از بودجه</string>
     <string name="budget_one_off_apart">%1$s خرج یک‌باره هم داشت که از بودجه کم نشده.</string>
-    <string name="reports_one_off_note">%1$s تومان خرج یک‌باره این ماه داشتی؛ در مقایسه با ماه قبل و ریتم پیش‌بینی حساب نشده.</string>
+    <string name="reports_one_off_note">%1$s تومان خرج یک‌باره این ماه داشتی؛ در عدد بالا هست، ولی در نمودار، مقایسه با ماه قبل و ریتم پیش‌بینی نه.</string>
+    <string name="reports_months_one_off_note">نمودار بدون خرج یک‌باره است: %1$s</string>
+    <string name="reports_tip_one_off">+ %1$s خرج یک‌باره</string>
     <string name="reports_forecast_rhythm">با همین ریتم، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
     <string name="reports_forecast_under">%1$s تومان زیر بودجه.</string>
     <string name="reports_forecast_over">%1$s تومان بیشتر از بودجه.</string>

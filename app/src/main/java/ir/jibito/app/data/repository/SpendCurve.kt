@@ -39,6 +39,14 @@ data class SpendCurve(
     /** جمع خرج‌های یک‌باره‌ی این ماه تا امروز */
     val oneOffRial: Long get() = oneOff.lastOrNull() ?: 0L
 
+    /** خط نمودار: منحنی تجمعی بدون خرج‌های یک‌باره (هم‌سنگِ ماه قبل، پیش‌بینی و بودجه) */
+    val routineCumulative: List<Long>
+        get() = if (oneOff.isEmpty()) cumulative else cumulative.mapIndexed { i, v -> v - oneOff[i] }
+
+    /** پیش‌بینی بدون خرج‌های یک‌باره‌ی تا امروز (اولین عضو = آخرین عضو routineCumulative) */
+    val routineProjection: List<Long>
+        get() = if (oneOffRial == 0L) projection else projection.map { it - oneOffRial }
+
     /** مقدار نمودار در یک روز بدون خرج‌های یک‌باره؛ برای مقایسه با ماه قبل */
     fun routineAt(day: Int): Long? =
         valueAt(day)?.let { it - (oneOff.getOrNull(day.coerceAtMost(todayIndex)) ?: 0L) }

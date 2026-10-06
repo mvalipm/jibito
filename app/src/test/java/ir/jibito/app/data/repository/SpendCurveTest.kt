@@ -105,6 +105,10 @@ class SpendCurveTest {
         assertTrue(c.projectionFromPattern)
         assertEquals(502_000_000L, c.projectedEndRial)
         assertEquals(2_000_000L, c.routineAt(29))
+        // خط نمودار بدون خرج یک‌باره
+        assertEquals(List(5) { 2_000_000L }, c.routineCumulative)
+        assertEquals(c.routineCumulative.last(), c.routineProjection.first())
+        assertEquals(2_000_000L, c.routineProjection.last())
     }
 
     @Test
@@ -124,5 +128,7 @@ class SpendCurveTest {
         val c = SpendCurve.compute(listOf(on(mehr, 1, 2_000_000L)), mehr, now, budgetRial = null)
         assertEquals(0L, c.oneOffRial)
         assertEquals(c.valueAt(2), c.routineAt(2))
+        assertEquals(c.cumulative, c.routineCumulative)
+        assertEquals(c.projection, c.routineProjection)
     }
 }
