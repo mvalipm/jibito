@@ -1,5 +1,6 @@
 package ir.jibito.app.data.repository
 
+import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.JalaliMonth
@@ -28,10 +29,9 @@ class ReportRepository(private val db: AppDatabase) {
             dao.observeOverallBudget(),
         ) { rows, categories, overall ->
             val now = System.currentTimeMillis()
-            val excluded = BudgetRepositoryImpl.excludedFromSpend(categories)
-            val spends = rows.filter { it.categoryId == null || it.categoryId !in excluded }.map { it.dateEpoch to it.amount }
+            val spends = SpendRollup.spendsOnly(rows, categories)
             MonthReport(
-                curve = SpendCurve.compute(spends, month, now, overall?.monthlyLimitRial),
+                curve = SpendCurve.compute(spends.map { it.dateEpoch to it.amount }, month, now, overall?.monthlyLimitRial),
                 insights = ReportInsights.compute(rows, categories, month, now),
             )
         }.flowOn(Dispatchers.Default)

@@ -2,6 +2,7 @@ package ir.jibito.app.data.category
 
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.CategorySum
+import ir.jibito.app.data.local.entity.DatedAmount
 
 /**
  * جمع زدن مبلغ‌ها روی «دسته‌ی اصلی»: خرج «سوخت» جزو «خودرو شخصی» و آن هم جزو «حمل‌ونقل» است.
@@ -34,7 +35,7 @@ object SpendRollup {
             }
             val root = rootOf(cat, byId)
             when {
-                !cat.countsAsSpend || !root.countsAsSpend -> excluded += s.totalRial
+                !countsAsSpend(cat, root) -> excluded += s.totalRial
                 root.isArchived -> uncategorized += s.totalRial
                 else -> byRoot[root.id] = (byRoot[root.id] ?: 0L) + s.totalRial
             }
@@ -52,7 +53,7 @@ object SpendRollup {
         for (s in sums) {
             val cat = s.categoryId?.let { byId[it] } ?: continue
             val root = rootOf(cat, byId)
-            if (!root.countsAsSpend || !cat.countsAsSpend || root.isArchived) continue
+            if (!countsAsSpend(cat, root) || root.isArchived) continue
             // نزدیک‌ترین والدی که مستقیم زیر دسته‌ی اصلی است
             var child: CategoryEntity? = if (cat.id == root.id) null else cat
             var steps = 0
@@ -64,6 +65,24 @@ object SpendRollup {
             bucket[child] = (bucket[child] ?: 0L) + s.totalRial
         }
         return result
+    }
+
+    /**
+     * تنها تعریفِ بخش دسته‌ایِ «خرج»: دسته‌ای که خودش یا دسته‌ی اصلی‌اش «خرج نیست» (پس‌انداز، قرض دادن).
+     * بخش تراکنشی (ناموفق، حذف‌شده، انتقال به خودم) در SQL است: COUNTED_FLOWS.
+     */
+    fun countsAsSpend(cat: CategoryEntity, root: CategoryEntity): Boolean = cat.countsAsSpend && root.countsAsSpend
+
+    /** دسته‌هایی که خرج حساب نمی‌شوند (با زیردسته‌هایشان) */
+    fun excludedIds(categories: List<CategoryEntity>): Set<Long> {
+        val byId = categories.associateBy { it.id }
+        return categories.filter { !countsAsSpend(it, rootOf(it, byId)) }.mapTo(HashSet()) { it.id }
+    }
+
+    /** فقط برداشت‌هایی که خرج حساب می‌شوند (بی‌دسته هم خرج است)؛ برای گزارش‌هایی که تراکنش‌ها را جدا لازم دارند */
+    fun spendsOnly(rows: List<DatedAmount>, categories: List<CategoryEntity>): List<DatedAmount> {
+        val excluded = excludedIds(categories)
+        return rows.filter { it.categoryId == null || it.categoryId !in excluded }
     }
 
     /** دسته‌ی اصلی (بالاترین والد)؛ در برابر حلقه‌ی اشتباهی هم امن است */

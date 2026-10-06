@@ -16,7 +16,6 @@ import ir.jibito.app.R
 import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
-import ir.jibito.app.data.repository.BudgetRepositoryImpl
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,9 +45,8 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
 
         val categories = db.categoryDao().all()
         val byId = categories.associateBy { it.id }
-        val excluded = BudgetRepositoryImpl.excludedFromSpend(categories)
         val rows = db.summaryDao().amounts(FlowType.WITHDRAWAL.code, now - 14 * WeeklyDigestRule.DAY_MS, now)
-        val spends = rows.filter { it.categoryId == null || it.categoryId !in excluded }.map { row ->
+        val spends = SpendRollup.spendsOnly(rows, categories).map { row ->
             Triple(row.dateEpoch, row.amount, row.categoryId?.let { byId[it] }?.let { SpendRollup.rootOf(it, byId).id })
         }
         val digest = WeeklyDigestRule.summarize(spends, now)

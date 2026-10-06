@@ -131,8 +131,7 @@ class BudgetRepositoryImpl(
             dao.observeAmounts(FlowType.WITHDRAWAL.code, from, month.endMillis()),
             db.categoryDao().observeAll(),
         ) { rows, categories ->
-            val excluded = excludedFromSpend(categories)
-            val spends = rows.filter { it.categoryId == null || it.categoryId !in excluded }.map { it.dateEpoch to it.amount }
+            val spends = SpendRollup.spendsOnly(rows, categories).map { it.dateEpoch to it.amount }
             SpendTrend.compute(spends, month, count, System.currentTimeMillis())
         }.flowOn(Dispatchers.Default)
     }
@@ -162,12 +161,6 @@ class BudgetRepositoryImpl(
          * خلاصه‌ی ماه از روی جمع هر دسته: خرج‌ها روی «دسته‌ی اصلی» جمع می‌شوند (SpendRollup).
          * درآمدها یک لایه‌اند.
          */
-        /** دسته‌هایی که خرج حساب نمی‌شوند (پس‌انداز، قرض دادن و زیردسته‌هایشان)، مثل SpendRollup */
-        fun excludedFromSpend(categories: List<CategoryEntity>): Set<Long> {
-            val byId = categories.associateBy { it.id }
-            return categories.filter { !it.countsAsSpend || !SpendRollup.rootOf(it, byId).countsAsSpend }.mapTo(HashSet()) { it.id }
-        }
-
         fun buildSummary(
             month: JalaliMonth,
             spendSums: List<CategorySum>,

@@ -52,8 +52,7 @@ object ReportInsights {
      */
     fun compute(rows: List<DatedAmount>, categories: List<CategoryEntity>, month: JalaliMonth, now: Long): List<Insight> {
         val byId = categories.associateBy { it.id }
-        val excluded = BudgetRepositoryImpl.excludedFromSpend(categories)
-        val spends = rows.filter { it.categoryId == null || it.categoryId !in excluded }
+        val spends = SpendRollup.spendsOnly(rows, categories)
         return listOfNotNull(
             *categoryChanges(spends, byId, month, now).toTypedArray(),
             busiestDay(spends, month),
