@@ -1,5 +1,7 @@
 package ir.jibito.app.data.repository
 
+import ir.jibito.app.data.local.entity.CategoryEntity
+import ir.jibito.app.data.local.entity.CategorySum
 import ir.jibito.app.util.JalaliMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -50,5 +52,31 @@ class MonthSummaryTest {
         assertEquals(0.10f, pace, 0.001f)
         assertNull(summary(18_000_000, null).paceDelta(mid))
         assertNull(summary(18_000_000, 30_000_000).paceDelta(month.endMillis() + day))
+    }
+
+    @Test
+    fun `خرج یک‌باره در جمع ماه هست ولی از بودجه کم نمی‌شود`() {
+        val home = CategoryEntity(id = 1, name = "خانه و خانواده", flowType = 2)
+        val food = CategoryEntity(id = 2, name = "خوراک", flowType = 2)
+        val s = BudgetRepositoryImpl.buildSummary(
+            month = month,
+            spendSums = listOf(
+                // ۱۰۰ میلیارد ریال خرید خانه + ۵ میلیون خرج عادی خانه
+                CategorySum(1, 100_005_000_000L, oneOffRial = 100_000_000_000L),
+                CategorySum(2, 8_000_000L),
+                CategorySum(null, 2_000_000L, oneOffRial = 1_000_000L),
+            ),
+            incomeSums = emptyList(),
+            categories = listOf(home, food),
+            budgets = mapOf(1L to 10_000_000L),
+            overallBudgetRial = 30_000_000L,
+        )
+        assertEquals(100_015_000_000L, s.totalSpentRial)
+        assertEquals(100_001_000_000L, s.oneOffRial)
+        assertEquals(14_000_000L, s.budgetSpentRial)
+        assertEquals(16_000_000L, s.overallRemainingRial)
+        val h = s.categories.single { it.categoryId == 1L }
+        assertEquals(100_005_000_000L, h.spentRial)
+        assertEquals(5_000_000L, h.budgetSpentRial)
     }
 }

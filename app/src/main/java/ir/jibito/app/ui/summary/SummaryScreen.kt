@@ -281,7 +281,8 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
     val tint = categoryTint(c.colorHex, c.icon)
     val base = tint.fg
     val budget = c.budgetRial
-    val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
+    // خرج یک‌باره از بودجه کم نمی‌شود
+    val level = if (budget != null) BudgetLevel.of(c.budgetSpentRial, budget) else 0
     val barColor = when (level) {
         100 -> JibitoTheme.colors.alert
         80 -> JibitoTheme.colors.amber
@@ -311,8 +312,8 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
                     Text(
                         text = when {
                             budget == null -> stringResource(R.string.summary_no_budget)
-                            level == 100 -> stringResource(R.string.summary_over_budget, amount(Money.toman(c.spentRial - budget)))
-                            else -> stringResource(R.string.summary_remaining, amount(Money.toman(budget - c.spentRial)))
+                            level == 100 -> stringResource(R.string.summary_over_budget, amount(Money.toman(c.budgetSpentRial - budget)))
+                            else -> stringResource(R.string.summary_remaining, amount(Money.toman(budget - c.budgetSpentRial)))
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (level == 100) colors.error else colors.onSurfaceVariant,
@@ -336,7 +337,7 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
             }
             if (budget != null && budget > 0) {
                 Spacer(Modifier.height(10.dp))
-                val fraction = (c.spentRial.toFloat() / budget.toFloat()).coerceIn(0f, 1f)
+                val fraction = (c.budgetSpentRial.toFloat() / budget.toFloat()).coerceIn(0f, 1f)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     LinearProgressIndicator(
                         progress = { fraction },
@@ -348,7 +349,7 @@ private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
                         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
                     )
                     Spacer(Modifier.size(10.dp))
-                    val percent = (c.spentRial * 100 / budget).coerceAtMost(999)
+                    val percent = (c.budgetSpentRial * 100 / budget).coerceAtMost(999)
                     Text(
                         Jalali.toPersianDigits("$percent٪"),
                         style = MaterialTheme.typography.labelMedium,

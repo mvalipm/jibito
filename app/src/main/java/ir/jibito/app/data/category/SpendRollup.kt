@@ -17,30 +17,47 @@ object SpendRollup {
         val uncategorized: Long,
         /** «بیرون از خرج»: پس‌انداز، قرض دادن */
         val excluded: Long,
+        /** دسته‌ی اصلی ← چه مقدار از خرجش یک‌باره است (جزو byRoot هم هست) */
+        val oneOffByRoot: Map<Long, Long> = emptyMap(),
+        /** خرج یک‌باره‌ی بی‌دسته (جزو uncategorized هم هست) */
+        val oneOffUncategorized: Long = 0,
     ) {
         /** کل خرج = دسته‌ها + بی‌دسته (بیرون از خرج حساب نمی‌شود) */
         val total: Long get() = byRoot.values.sum() + uncategorized
+
+        /** چه مقدار از total خرج یک‌باره است */
+        val oneOffTotal: Long get() = oneOffByRoot.values.sum() + oneOffUncategorized
+
+        /** خرجی که از بودجه کم می‌شود: کل خرج بدون خرج‌های یک‌باره */
+        val budgetTotal: Long get() = total - oneOffTotal
+
+        /** خرج یک دسته‌ی اصلی که از بودجه‌اش کم می‌شود */
+        fun budgetSpentOf(rootId: Long): Long = (byRoot[rootId] ?: 0L) - (oneOffByRoot[rootId] ?: 0L)
     }
 
     fun rollup(categories: List<CategoryEntity>, sums: List<CategorySum>): Result {
         val byId = categories.associateBy { it.id }
         val byRoot = HashMap<Long, Long>()
+        val oneOffByRoot = HashMap<Long, Long>()
         var uncategorized = 0L
+        var oneOffUncategorized = 0L
         var excluded = 0L
         for (s in sums) {
             val cat = s.categoryId?.let { byId[it] }
-            if (cat == null) {
-                uncategorized += s.totalRial
-                continue
-            }
-            val root = rootOf(cat, byId)
+            val root = cat?.let { rootOf(it, byId) }
             when {
+                cat == null || root == null || (countsAsSpend(cat, root) && root.isArchived) -> {
+                    uncategorized += s.totalRial
+                    oneOffUncategorized += s.oneOffRial
+                }
                 !countsAsSpend(cat, root) -> excluded += s.totalRial
-                root.isArchived -> uncategorized += s.totalRial
-                else -> byRoot[root.id] = (byRoot[root.id] ?: 0L) + s.totalRial
+                else -> {
+                    byRoot[root.id] = (byRoot[root.id] ?: 0L) + s.totalRial
+                    if (s.oneOffRial != 0L) oneOffByRoot[root.id] = (oneOffByRoot[root.id] ?: 0L) + s.oneOffRial
+                }
             }
         }
-        return Result(byRoot, uncategorized, excluded)
+        return Result(byRoot, uncategorized, excluded, oneOffByRoot, oneOffUncategorized)
     }
 
     /**

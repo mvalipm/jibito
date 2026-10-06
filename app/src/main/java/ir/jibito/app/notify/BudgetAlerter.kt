@@ -46,12 +46,13 @@ class BudgetAlerter(
         val categories = db.categoryDao().all().filter { it.flowType == FlowType.WITHDRAWAL.code }
         // خرج‌ها روی دسته‌ی اصلی جمع می‌شوند (بودجه فقط روی دسته‌ی اصلی است)
         val spend = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis()))
-        checkOverall(month, spend.total)
+        // خرج یک‌باره (خرید خانه…) از بودجه کم نمی‌شود
+        checkOverall(month, spend.budgetTotal)
 
         val byId = categories.associateBy { it.id }
         for (budget in dao.budgets()) {
             val category = byId[budget.categoryId] ?: continue
-            val spent = spend.byRoot[budget.categoryId] ?: 0L
+            val spent = spend.budgetSpentOf(budget.categoryId)
             val level = BudgetLevel.of(spent, budget.monthlyLimitRial)
             val alreadyAlerted = if (budget.alertedMonthKey == month.key) budget.alertedLevel else 0
             if (level > alreadyAlerted) {

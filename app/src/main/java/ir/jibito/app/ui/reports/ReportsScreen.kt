@@ -443,12 +443,14 @@ private fun MonthChart(curve: SpendCurve) {
             amount(Money.compact(end)),
         )
         val budget = curve.budgetRial
+        // خرج یک‌باره از بودجه کم نمی‌شود
+        val budgetEnd = end - curve.oneOffRial
         val second = when {
             budget == null -> null
-            end <= budget -> stringResource(R.string.reports_forecast_under, amount(Money.compact(budget - end)))
-            else -> stringResource(R.string.reports_forecast_over, amount(Money.compact(end - budget)))
+            budgetEnd <= budget -> stringResource(R.string.reports_forecast_under, amount(Money.compact(budget - budgetEnd)))
+            else -> stringResource(R.string.reports_forecast_over, amount(Money.compact(budgetEnd - budget)))
         }
-        val over = budget != null && end > budget
+        val over = budget != null && budgetEnd > budget
         Note(
             text = if (second == null) first else "$first $second",
             bg = if (over) t.amberTint else t.sugBg,

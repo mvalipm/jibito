@@ -83,17 +83,17 @@ fun rememberTodoStories(
         }
         s?.categories?.forEach { c ->
             val budget = c.budgetRial ?: return@forEach
-            val level = BudgetLevel.of(c.spentRial, budget)
+            val level = BudgetLevel.of(c.budgetSpentRial, budget)
             if (level >= 80) {
                 val tint = categoryTint(c.colorHex, c.icon)
                 add(
                     TodoStory(
                         "budget-${c.categoryId}", if (level >= 100) t.alert else t.amber, tint.bg, tint.fg, tint.icon, tint.glyph,
-                        label = Jalali.toPersianDigits("${c.name} ${c.spentRial * 100 / budget}٪"),
+                        label = Jalali.toPersianDigits("${c.name} ${c.budgetSpentRial * 100 / budget}٪"),
                         detail = Jalali.toPersianDigits(
                             stringResource(
                                 R.string.todo_budget_detail,
-                                if (hidden) HIDDEN_AMOUNT else Money.compact(c.spentRial),
+                                if (hidden) HIDDEN_AMOUNT else Money.compact(c.budgetSpentRial),
                                 if (hidden) HIDDEN_AMOUNT else Money.compactAdjective(budget),
                             )
                         ),

@@ -89,7 +89,8 @@ fun CategoryDetailSheet(
     val dark = JibitoTheme.colors.dark
     val base = ChartColors.forCategory(c.colorHex, dark)
     val budget = c.budgetRial
-    val level = if (budget != null) BudgetLevel.of(c.spentRial, budget) else 0
+    // خرج یک‌باره از بودجه کم نمی‌شود
+    val level = if (budget != null) BudgetLevel.of(c.budgetSpentRial, budget) else 0
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -123,7 +124,7 @@ fun CategoryDetailSheet(
                 // بودجه
                 Spacer(Modifier.height(18.dp))
                 if (budget != null && budget > 0) {
-                    val fraction = (c.spentRial.toFloat() / budget).coerceIn(0f, 1f)
+                    val fraction = (c.budgetSpentRial.toFloat() / budget).coerceIn(0f, 1f)
                     val barColor = when (level) {
                         100 -> JibitoTheme.colors.alert
                         80 -> JibitoTheme.colors.amber
@@ -140,12 +141,19 @@ fun CategoryDetailSheet(
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        if (level == 100) stringResource(R.string.summary_over_budget, Money.toman(c.spentRial - budget))
-                        else stringResource(R.string.overall_remaining, Money.toman(budget - c.spentRial), Money.toman(budget)),
+                        if (level == 100) stringResource(R.string.summary_over_budget, Money.toman(c.budgetSpentRial - budget))
+                        else stringResource(R.string.overall_remaining, Money.toman(budget - c.budgetSpentRial), Money.toman(budget)),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (level == 100) colors.error else colors.onSurface,
                     )
+                    if (c.oneOffRial > 0) {
+                        Text(
+                            stringResource(R.string.budget_one_off_apart, Money.toman(c.oneOffRial)),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = onEditBudget, shape = RoundedCornerShape(14.dp)) {
                         Text(stringResource(R.string.detail_edit_budget))

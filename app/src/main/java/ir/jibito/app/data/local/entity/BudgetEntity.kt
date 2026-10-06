@@ -51,6 +51,8 @@ data class OverallBudgetEntity(
 data class CategorySum(
     val categoryId: Long?,
     val totalRial: Long,
+    /** چه مقدار از totalRial خرج یک‌باره است (خرید خانه…): جزو جمع هست، ولی از بودجه کم نمی‌شود */
+    val oneOffRial: Long = 0,
 )
 
 /** مبلغ یک تراکنش با دسته و زمانش (برای روند چندماهه و خلاصه‌ی هفتگی) */

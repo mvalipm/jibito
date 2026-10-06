@@ -294,7 +294,8 @@ interface SummaryDao {
      * جمع زدن روی دسته‌ی اصلی (درخت) در کاتلین انجام می‌شود: SpendRollup.
      */
     @Query(
-        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
+        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial, " +
+            "COALESCE(SUM(CASE WHEN oneOffState = 1 THEN amount ELSE 0 END), 0) AS oneOffRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
             " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to GROUP BY categoryId"
     )
     fun observeSums(flowType: Int, from: Long, to: Long): Flow<List<CategorySum>>
@@ -313,7 +314,8 @@ interface SummaryDao {
     suspend fun amounts(flowType: Int, from: Long, to: Long): List<DatedAmount>
 
     @Query(
-        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
+        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial, " +
+            "COALESCE(SUM(CASE WHEN oneOffState = 1 THEN amount ELSE 0 END), 0) AS oneOffRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
             " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to GROUP BY categoryId"
     )
     suspend fun sums(flowType: Int, from: Long, to: Long): List<CategorySum>

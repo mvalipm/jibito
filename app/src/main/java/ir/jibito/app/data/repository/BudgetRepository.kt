@@ -30,12 +30,17 @@ data class MonthSummary(
     val overallBudgetRial: Long? = null,
     /** پس‌انداز و قرض دادن: از حساب رفته ولی خرج حساب نمی‌شود */
     val excludedRial: Long = 0,
+    /** چه مقدار از totalSpentRial خرج یک‌باره است (خرید خانه…): جزو خرج ماه هست، ولی از بودجه کم نمی‌شود */
+    val oneOffRial: Long = 0,
 ) {
+    /** خرجی که از بودجه‌ی کل کم می‌شود */
+    val budgetSpentRial: Long get() = totalSpentRial - oneOffRial
+
     /** جمع بودجه‌ی دسته‌ها (برای پیشنهاد بودجه‌ی کل) */
     val categoryBudgetsSumRial: Long get() = categories.sumOf { it.budgetRial ?: 0L }
 
     /** باقی‌مانده از بودجه‌ی کل (منفی یعنی بیشتر از بودجه خرج شده) */
-    val overallRemainingRial: Long? get() = overallBudgetRial?.let { it - totalSpentRial }
+    val overallRemainingRial: Long? get() = overallBudgetRial?.let { it - budgetSpentRial }
 
     /**
      * «روزی چقدر می‌تونی خرج کنی تا آخر ماه»: باقی‌مانده تقسیم بر روزهای باقی‌مانده (با امروز).
@@ -50,7 +55,7 @@ data class MonthSummary(
     }
 
     /** چه کسری از بودجه‌ی کل خرج شده (می‌تواند بیشتر از ۱ باشد)؛ بدون بودجه null */
-    fun spentFraction(): Float? = overallBudgetRial?.takeIf { it > 0 }?.let { (totalSpentRial.toDouble() / it).toFloat() }
+    fun spentFraction(): Float? = overallBudgetRial?.takeIf { it > 0 }?.let { (budgetSpentRial.toDouble() / it).toFloat() }
 
     /**
      * سرعت خرج نسبت به زمان: مثبت یعنی تندتر از گذشت ماه خرج شده (مثلاً ۰٫۰۸ = ۸٪ جلوتر از زمان)،
@@ -82,7 +87,12 @@ data class CategorySpend(
     val budgetRial: Long?,
     /** خرج هر زیردسته (لایه‌ی ۲، با جزئیاتش)؛ name = null یعنی مستقیم روی خود دسته‌ی اصلی. بیشترین اول. */
     val children: List<SubSpend> = emptyList(),
-)
+    /** چه مقدار از spentRial خرج یک‌باره است؛ از بودجه‌ی دسته کم نمی‌شود */
+    val oneOffRial: Long = 0,
+) {
+    /** خرجی که از بودجه‌ی این دسته کم می‌شود */
+    val budgetSpentRial: Long get() = spentRial - oneOffRial
+}
 
 data class SubSpend(val name: String?, val spentRial: Long)
 
@@ -183,6 +193,7 @@ class BudgetRepositoryImpl(
                 .map { root ->
                     val spendPair = root.toSpend(spend.byRoot[root.id] ?: 0L, budgets[root.id])
                     spendPair.first.copy(
+                        oneOffRial = spend.oneOffByRoot[root.id] ?: 0L,
                         children = children[root.id].orEmpty()
                             .map { (child, amount) -> SubSpend(child?.name, amount) }
                             .sortedByDescending { it.spentRial },
@@ -208,6 +219,7 @@ class BudgetRepositoryImpl(
                 uncategorizedIncomeRial = income.uncategorized,
                 overallBudgetRial = overallBudgetRial,
                 excludedRial = spend.excluded,
+                oneOffRial = spend.oneOffTotal,
             )
         }
 
