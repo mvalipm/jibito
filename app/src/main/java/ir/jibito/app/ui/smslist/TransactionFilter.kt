@@ -48,7 +48,4 @@ fun countMatching(
 }
 
 /** دسته‌هایی مثل پس‌انداز (یا زیردسته‌هایشان) که در جمع خرج روز حساب نمی‌شوند، مثل صفحه‌ی خلاصه */
-fun nonSpendCategoryIds(categories: List<Category>): Set<Long> {
-    val byId = categories.associateBy { it.id }
-    return categories.filter { !it.countsAsSpend || !CategoryTree.rootOf(it, byId).countsAsSpend }.mapTo(HashSet()) { it.id }
-}
+fun nonSpendCategoryIds(categories: List<Category>): Set<Long> = CategoryTree.nonSpendIds(categories)

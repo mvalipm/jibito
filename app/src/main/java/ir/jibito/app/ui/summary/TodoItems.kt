@@ -49,6 +49,8 @@ fun rememberTodoStories(
     val hidden = LocalHideAmounts.current
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
+    val oneOffFlow = remember { app.container.transactionRepository.observeOneOffSuggestions() }
+    val oneOffSuggestions by oneOffFlow.collectAsState(initial = emptyList())
     val recurringFlow = remember { app.container.recurringSuggestions.observe() }
     val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val uncategorizedFlow = remember { uncategorizedThisMonth(app) }
@@ -123,6 +125,27 @@ fun rememberTodoStories(
                     actions = listOf(
                         TodoAction(stringResource(R.string.todo_transfer_yes)) { scope.launch { repository.confirmTransfer(suggestion) } },
                         TodoAction(stringResource(R.string.transfer_no)) { scope.launch { repository.rejectTransfer(suggestion) } },
+                    ),
+                    onClick = onOpenTransactions,
+                )
+            )
+        }
+        oneOffSuggestions.firstOrNull()?.let { tx ->
+            val repository = app.container.transactionRepository
+            val amountText = if (hidden) HIDDEN_AMOUNT else Money.compact(tx.transaction.amountRial)
+            val name = tx.merchant ?: tx.categoryName ?: tx.note
+            add(
+                TodoStory(
+                    "oneoff-${tx.id}", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null,
+                    label = stringResource(R.string.todo_one_off),
+                    detail = Jalali.toPersianDigits(
+                        if (name != null) stringResource(R.string.todo_one_off_detail_named, amountText, name)
+                        else stringResource(R.string.todo_one_off_detail, amountText)
+                    ),
+                    // همان‌جا جواب داده می‌شود؛ «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.todo_one_off_yes)) { scope.launch { repository.setOneOff(tx.id, true) } },
+                        TodoAction(stringResource(R.string.todo_one_off_no)) { scope.launch { repository.setOneOff(tx.id, false) } },
                     ),
                     onClick = onOpenTransactions,
                 )

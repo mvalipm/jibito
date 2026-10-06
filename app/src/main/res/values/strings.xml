@@ -516,6 +516,11 @@
     <string name="todo_uncategorized">خرج بی‌دسته</string>
     <string name="todo_review">%1$d پیامک مبهم</string>
     <string name="todo_transfer">انتقال به خودت؟</string>
+    <string name="todo_one_off">خرج یک‌باره بود؟</string>
+    <string name="todo_one_off_detail">%1$s تومان، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_detail_named">%1$s تومان برای «%2$s»، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_yes">آره، یک‌باره بود</string>
+    <string name="todo_one_off_no">نه</string>
     <string name="todo_recurring">%1$s ماهانه؟</string>
     <string name="todo_notif_detail">هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.</string>
     <string name="todo_uncategorized_detail">دسته بده تا «کجا رفت؟» درست نشونت بده.</string>
