@@ -166,6 +166,8 @@ internal fun TransactionRow(
     }
     val meta = listOfNotNull(
         kind,
+        // خرج یک‌باره (خرید خانه…): از بودجه و میانگین جداست
+        stringResource(R.string.tx_meta_one_off).takeIf { sms.isOneOff && !failed && !selfTransfer },
         sms.merchant?.takeIf { sms.note != null },
         Jalali.time(sms.dateMillis),
         bank,

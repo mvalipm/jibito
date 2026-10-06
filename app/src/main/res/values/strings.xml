@@ -177,6 +177,7 @@
     <string name="sheet_self_transfer">انتقال بین حساب‌های خودم</string>
     <string name="sheet_self_transfer_short">نه درآمد حساب می‌شه، نه خرج</string>
     <string name="sheet_one_off">خرج یک‌باره</string>
+    <string name="tx_meta_one_off">★ یک‌باره</string>
     <string name="sheet_one_off_short">خرید بزرگ و نامعمول، مثل خونه یا ماشین</string>
     <string name="sheet_close">بستن</string>
     <string name="sheet_report_privacy">عددها پوشیده ارسال می‌شن</string>
