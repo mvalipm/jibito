@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">جیبیتو</string>
     <string name="welcome_tagline">خرج‌هات خودشون ثبت می‌شن.</string>
-    <string name="welcome_body">پیامک بانک که بیاد، جیبیتو خودش می‌خونه و ثبت می‌کنه. تو فقط با یه لمس می‌گی خرجِ چی بوده.</string>
+    <string name="welcome_body">پیامک بانک رو خودش می‌خونه؛ تو فقط با یه لمس می‌گی خرجِ چی بوده.</string>
     <string name="sample_amount">۲۵۰٬۰۰۰</string>
     <string name="cat_food">غذا</string>
     <string name="cat_transport">رفت‌وآمد</string>
@@ -552,7 +552,7 @@
     <string name="sample_done">✓ ثبت شد! بقیه‌ش با جیبیتو</string>
     <string name="sample_hint">یکی رو بزن، ببین چقدر ساده‌ست</string>
     <string name="sample_merchant">کافه لمیز</string>
-    <string name="sample_sms_body">برداشت: ۲,۵۰۰,۰۰۰ ریال\nمانده: ۴۱,۲۳۰,۰۰۰ ریال</string>
+    <string name="sample_sms_body">برداشت: ۲٬۵۰۰٬۰۰۰ ریال\nمانده: ۴۱٬۲۳۰٬۰۰۰ ریال</string>
     <string name="sample_sms_sender">بانک ملت</string>
     <string name="settings_banner_fix">درستش کن</string>
     <string name="settings_banner_notify">نوتیف خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود.</string>
