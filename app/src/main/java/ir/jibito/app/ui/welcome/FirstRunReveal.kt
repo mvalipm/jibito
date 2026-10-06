@@ -77,6 +77,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.TextUnit
 import ir.jibito.app.ui.common.rememberFitScale
 
@@ -256,9 +257,13 @@ private fun Caption(done: Boolean, modifier: Modifier) {
 private fun CountLine(value: Int, target: Int, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val scale = rememberFitScale(maxWidth, groupedCount(target) to countStyle(COUNT_MAX_SP.sp))
+        // پهنای متن همه‌ی عرض است نه اندازه‌ی دقیق عدد: با پهنای تنگ، اندروید گاهی آخرین رقم را به خط
+        // دوم می‌برد و maxLines = 1 آن را دور می‌اندازد (۱٬۴۰۸ روی گوشی «۱٬۴۰» دیده می‌شد)
         Text(
             groupedCount(value),
+            modifier = Modifier.fillMaxWidth().testTag(COUNT_TAG),
             style = countStyle((COUNT_MAX_SP * scale).sp),
+            textAlign = TextAlign.Center,
             maxLines = 1,
             softWrap = false,
         )
@@ -267,9 +272,12 @@ private fun CountLine(value: Int, target: Int, modifier: Modifier) {
 
 private const val COUNT_MAX_SP = 88f
 
+/** برای تست روی امولاتور */
+const val COUNT_TAG = "reveal_count"
+
 private fun groupedCount(value: Int) = Jalali.toPersianDigits(String.format(Locale.US, "%,d", value).replace(',', '٬'))
 
-/** ارقام چپ‌به‌راست؛ ارتفاع خط کمی بیشتر از اندازه تا لبه‌ی ارقام بریده نشود */
+/** ارقام چپ‌به‌راست؛ ارتفاع خط کمی بیشتر از اندازه تا لبه‌ی ارقام بریده نشود. فاصله‌ی منفی بین ارقام نه: پهنای سنجیده را از پهنای واقعی کمتر می‌کرد */
 @Composable
 private fun countStyle(size: TextUnit) = LocalTextStyle.current.merge(
     TextStyle(
@@ -277,7 +285,6 @@ private fun countStyle(size: TextUnit) = LocalTextStyle.current.merge(
         fontSize = size,
         lineHeight = size * 1.2f,
         fontWeight = FontWeight.Black,
-        letterSpacing = (-1).sp,
         textDirection = TextDirection.Ltr,
     )
 )
