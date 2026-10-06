@@ -167,9 +167,14 @@ jobs:
 
   # تست‌های روی امولاتور (app/src/androidTest) برای مسیرهای حیاتی: رسیدن پیامک، دکمه‌های نوتیفیکیشن، بازگردانی پشتیبان.
   # هر تست با Orchestrator در فرایند جدا و با داده‌ی پاک اجرا می‌شود.
+  # روی دو نسخه: اندروید ۱۴ (رایج) و اندروید ۱۶ (همان targetSdk اپ، تا رفتارهای تازه‌ی آن هم آزموده شوند)
   instrumented:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [34, 36]
     steps:
       - name: Get code
         uses: actions/checkout@v4
@@ -199,7 +204,7 @@ jobs:
       - name: Run instrumented tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           disable-animations: true
@@ -212,6 +217,8 @@ jobs:
       # شمار تست‌ها در لاگ و خلاصه‌ی اجرا؛ اگر هیچ تستی اجرا نشده باشد، شکست (سبزِ بی‌تست قبول نیست)
       - name: Instrumented test summary
         if: always()
+        env:
+          API_LEVEL: ${{ matrix.api-level }}
         run: |
           python3 - <<'PY'
           import glob, os, xml.etree.ElementTree as ET
@@ -222,7 +229,7 @@ jobs:
                   status = 'FAILED' if tc.find('failure') is not None or tc.find('error') is not None else ('SKIPPED' if tc.find('skipped') is not None else 'passed')
                   bad += status != 'passed'
                   rows.append(f"| {tc.get('classname', '').split('.')[-1]} | {tc.get('name')} | {status} |")
-          out = ['### Instrumented tests', f'{total} tests, {bad} not passed', '', '| class | test | result |', '|---|---|---|'] + sorted(rows)
+          out = [f"### Instrumented tests (API {os.environ['API_LEVEL']})", f'{total} tests, {bad} not passed', '', '| class | test | result |', '|---|---|---|'] + sorted(rows)
           print('\n'.join(out))
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as s:
               s.write('\n'.join(out) + '\n')
@@ -247,7 +254,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: instrumented-test-reports
+          name: instrumented-test-reports-api${{ matrix.api-level }}
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/

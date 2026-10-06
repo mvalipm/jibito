@@ -17,7 +17,9 @@ android {
     defaultConfig {
         applicationId = "ir.jibito.app"
         minSdk = 26
-        targetSdk = 35
+        // اندروید ۱۶. اندروید ۱۷ (۳۷) عمداً عقب افتاده: آن‌جا پیامک‌های رمز یک‌بارمصرف ۳ ساعت از اپ پنهان می‌مانند
+        // و اسم فروشگاهِ خرید اینترنتی (از پیامک «رمز دوم») از دست می‌رود؛ اول باید برایش راه دیگری پیدا شود.
+        targetSdk = 36
         // versionCode دستی نیست: در GitHub Actions شماره‌ی اجرای workflow است (برای همه‌ی شاخه‌ها یک شمارنده
         // که فقط بالا می‌رود)، پس هر APK تازه، از هر شاخه‌ای، روی نسخه‌ی قبلی نصب می‌شود و دو شاخه هیچ‌وقت
         // عدد تکراری یا کمتر نمی‌سازند. VERSION_CODE_BASE بالاتر از همه‌ی versionCodeهای دستیِ قبلی (تا ۷۵) است.
@@ -86,6 +88,10 @@ android {
         checkDependencies = false
         // «نسخه‌ی تازه‌تر هست»: نتیجه‌اش با هر انتشار بیرونی عوض می‌شود، نه با کد ما؛ ارتقای کتابخانه‌ها جدا و آگاهانه انجام می‌شود
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+        // targetSdk 36 عمدی است (توضیح بالای targetSdk)؛ تا حل مسئله‌ی پیامک رمز در اندروید ۱۷، هشدارش خاموش است
+        disable += "OldTargetApi"
+        // هر هشدار تازه‌ی لینت هم ساخت را می‌شکند (دیگر هیچ هشداری نمانده)
+        warningsAsErrors = true
     }
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
