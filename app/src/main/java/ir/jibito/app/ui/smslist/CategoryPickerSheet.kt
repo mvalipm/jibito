@@ -5,6 +5,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.Role
+import androidx.core.graphics.toColorInt
 import ir.jibito.app.data.sms.SmsSenderLookup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -839,7 +840,7 @@ internal fun String.normalizedForSearch(): String =
     trim().replace('ي', 'ی').replace('ك', 'ک').replace("‌", "").replace(" ", "").lowercase()
 
 internal fun String?.toColorOrNull(): Color? = try {
-    this?.let { Color(android.graphics.Color.parseColor(it)) }
+    this?.let { Color(it.toColorInt()) }
 } catch (e: IllegalArgumentException) {
     null
 }

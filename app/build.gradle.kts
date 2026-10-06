@@ -80,6 +80,8 @@ android {
     lint {
         abortOnError = true
         checkDependencies = false
+        // «نسخه‌ی تازه‌تر هست»: نتیجه‌اش با هر انتشار بیرونی عوض می‌شود، نه با کد ما؛ ارتقای کتابخانه‌ها جدا و آگاهانه انجام می‌شود
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
     }
     testOptions {
         // منابع اپ (رشته‌ها، فونت وزیرمتن) در تست‌های Robolectric هم در دسترس باشند (لازم برای تست اسکرین‌شات)

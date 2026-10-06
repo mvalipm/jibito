@@ -1,6 +1,7 @@
 package ir.jibito.app.data.recurring
 
 import android.content.Context
+import androidx.core.content.edit
 import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.data.repository.TransactionRepository
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,7 @@ class RecurringSuggestions(
     /** «نه»: این طرف حساب دیگر پیشنهاد نمی‌شود */
     fun dismiss(s: RecurringSuggestion) {
         val next = dismissed.value + s.key
-        prefs.edit().putStringSet(KEY_DISMISSED, next).apply()
+        prefs.edit { putStringSet(KEY_DISMISSED, next) }
         dismissed.value = next
     }
 

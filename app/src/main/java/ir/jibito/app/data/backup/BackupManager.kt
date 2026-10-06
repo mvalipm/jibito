@@ -2,8 +2,8 @@ package ir.jibito.app.data.backup
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
 import android.database.sqlite.SQLiteDatabase
+import androidx.core.content.edit
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.notify.NotificationStyleSettings
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +49,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
     val lastExportAt: StateFlow<Long?> = _lastExportAt
 
     private fun markExported(at: Long) {
-        statePrefs.edit().putLong(KEY_LAST_EXPORT, at).apply()
+        statePrefs.edit { putLong(KEY_LAST_EXPORT, at) }
         _lastExportAt.value = at
     }
 
@@ -203,7 +203,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
                 File(pending, ENTRY_PREFS).takeIf { it.exists() }?.let { file ->
                     runCatching { jsonToPrefs(context, JSONObject(file.readText())) }
                 }
-                context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE).edit().clear().commit()
+                context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE).edit(commit = true) { clear() }
                 pending.deleteRecursively()
                 true
             } catch (e: Exception) {
@@ -277,22 +277,23 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         internal fun jsonToPrefs(context: Context, root: JSONObject) {
             for (name in BACKED_UP_PREFS) {
                 val values = root.optJSONObject(name) ?: continue
-                val editor: SharedPreferences.Editor = context.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear()
-                for (key in values.keys()) {
-                    val typed = values.optJSONObject(key) ?: continue
-                    when (typed.optString("t")) {
-                        "b" -> editor.putBoolean(key, typed.getBoolean("v"))
-                        "i" -> editor.putInt(key, typed.getInt("v"))
-                        "l" -> editor.putLong(key, typed.getLong("v"))
-                        "f" -> editor.putFloat(key, typed.getDouble("v").toFloat())
-                        "s" -> editor.putString(key, typed.getString("v"))
-                        "ss" -> {
-                            val array = typed.getJSONArray("v")
-                            editor.putStringSet(key, (0 until array.length()).mapTo(HashSet()) { array.getString(it) })
+                context.getSharedPreferences(name, Context.MODE_PRIVATE).edit(commit = true) {
+                    clear()
+                    for (key in values.keys()) {
+                        val typed = values.optJSONObject(key) ?: continue
+                        when (typed.optString("t")) {
+                            "b" -> putBoolean(key, typed.getBoolean("v"))
+                            "i" -> putInt(key, typed.getInt("v"))
+                            "l" -> putLong(key, typed.getLong("v"))
+                            "f" -> putFloat(key, typed.getDouble("v").toFloat())
+                            "s" -> putString(key, typed.getString("v"))
+                            "ss" -> {
+                                val array = typed.getJSONArray("v")
+                                putStringSet(key, (0 until array.length()).mapTo(HashSet()) { array.getString(it) })
+                            }
                         }
                     }
                 }
-                editor.commit()
             }
         }
     }

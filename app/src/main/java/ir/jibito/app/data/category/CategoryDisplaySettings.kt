@@ -1,6 +1,7 @@
 package ir.jibito.app.data.category
 
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,13 +26,13 @@ class CategoryDisplaySettings(context: Context) {
 
     fun setDepth(depth: Int) {
         val d = depth.coerceIn(1, MAX_DEPTH)
-        prefs.edit().putInt(KEY_DEPTH, d).apply()
+        prefs.edit { putInt(KEY_DEPTH, d) }
         _depth.value = d
     }
 
     fun setRootVisible(rootId: Long, visible: Boolean) {
         val next = if (visible) _hiddenRoots.value - rootId else _hiddenRoots.value + rootId
-        prefs.edit().putStringSet(KEY_HIDDEN, next.map { it.toString() }.toSet()).apply()
+        prefs.edit { putStringSet(KEY_HIDDEN, next.map { it.toString() }.toSet()) }
         _hiddenRoots.value = next
     }
 

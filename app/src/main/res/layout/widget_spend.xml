@@ -5,10 +5,12 @@
   رنگ زمینه حال بودجه است (SpendWidget)؛ بدون بودجه، زمینه‌ی کرم و حلقه پنهان.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
     android:layoutDirection="rtl"
     android:orientation="horizontal"
@@ -23,11 +25,13 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
+        <!-- عکس جیبی با حال بودجه عوض می‌شود (setImageViewResource)، پس ImageView جدا می‌ماند -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:id="@+id/widget_mascot"
@@ -133,7 +137,8 @@
                 android:includeFontPadding="false"
                 android:text="@string/widget_ring_label"
                 android:textColor="#D9FFFFFF"
-                android:textSize="10sp" />
+                android:textSize="10sp"
+                tools:ignore="SmallSp" />
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>

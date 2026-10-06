@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import androidx.core.content.edit
 import java.util.Locale
 import android.content.pm.PackageManager
 import android.os.Build
@@ -191,10 +192,6 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
 
     val smsPermissions = arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS)
 
-    /** نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است؛ بعد از پیامک و جدا از آن پرسیده می‌شود */
-    fun needsNotificationPermission() =
-        Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)
-
     // «فعلاً دستی ثبت می‌کنم»: کاربر بدون اجازه‌ی پیامک وارد اپ شده؛ دفعه‌های بعد هم مستقیم وارد می‌شود
     val onboardingPrefs = remember { context.getSharedPreferences(PREFS_ONBOARDING, Context.MODE_PRIVATE) }
     fun manualOnly() = onboardingPrefs.getBoolean(KEY_MANUAL_ONLY, false)
@@ -211,7 +208,8 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
     }
 
     fun enterApp() {
-        if (needsNotificationPermission()) {
+        // نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است؛ بعد از پیامک و جدا از آن پرسیده می‌شود
+        if (Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)) {
             notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             screen = Screen.SmsList
@@ -222,7 +220,7 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         if (hasSmsPermissions()) {
-            onboardingPrefs.edit().putBoolean(KEY_MANUAL_ONLY, false).apply()
+            onboardingPrefs.edit { putBoolean(KEY_MANUAL_ONLY, false) }
             enterApp()
         } else {
             wasDenied = true
@@ -248,7 +246,7 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
                 }
             },
             onManualClick = {
-                onboardingPrefs.edit().putBoolean(KEY_MANUAL_ONLY, true).apply()
+                onboardingPrefs.edit { putBoolean(KEY_MANUAL_ONLY, true) }
                 screen = Screen.SmsList
             },
         )

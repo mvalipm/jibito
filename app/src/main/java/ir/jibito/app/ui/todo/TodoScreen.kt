@@ -315,7 +315,7 @@ private fun AllClear() {
             .padding(start = 24.dp, end = 24.dp, top = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Mascot(130.dp, MascotFace.HAPPY)
+        Mascot(130.dp, face = MascotFace.HAPPY)
         Spacer(Modifier.height(16.dp))
         Text(
             stringResource(R.string.review_all_done),

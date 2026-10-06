@@ -1,6 +1,7 @@
 package ir.jibito.app.data.bank
 
 import android.content.Context
+import androidx.core.content.edit
 
 /**
  * بانک یا موسسه‌ای که در فهرست اپ نیست و کاربر خودش اضافه کرده (مثلاً «کارگزاری مفید»).
@@ -28,7 +29,7 @@ class CustomInstitutions(context: Context) {
         val current = read()
         val id = maxOf(FIRST_ID, (current.maxOfOrNull { it.id } ?: (FIRST_ID - 1)) + 1)
         val next = current + Bank(id = id, name = name, parserKey = "smart", senders = emptySet())
-        prefs.edit().putStringSet(KEY, next.map { "${it.id}|${it.name}" }.toSet()).apply()
+        prefs.edit { putStringSet(KEY, next.map { "${it.id}|${it.name}" }.toSet()) }
         BankDirectory.setCustom(next)
         return id
     }

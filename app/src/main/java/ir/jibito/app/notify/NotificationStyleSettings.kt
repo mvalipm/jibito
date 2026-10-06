@@ -2,6 +2,7 @@ package ir.jibito.app.notify
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.core.content.edit
 import ir.jibito.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +44,7 @@ class NotificationStyleSettings(context: Context) {
     val style: StateFlow<NotificationStyle> = _style.asStateFlow()
 
     fun set(style: NotificationStyle) {
-        prefs.edit().putString(KEY_STYLE, style.code).apply()
+        prefs.edit { putString(KEY_STYLE, style.code) }
         _style.value = style
     }
 

@@ -1,6 +1,7 @@
 package ir.jibito.app.data.security
 
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,7 @@ class AppLockSettings(context: Context) {
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
     fun setEnabled(value: Boolean) {
-        prefs.edit().putBoolean(KEY_ENABLED, value).apply()
+        prefs.edit { putBoolean(KEY_ENABLED, value) }
         _enabled.value = value
     }
 

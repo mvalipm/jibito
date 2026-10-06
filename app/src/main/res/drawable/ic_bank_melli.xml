@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="VectorPath"
     android:width="48dp" android:height="48dp"
     android:viewportWidth="512" android:viewportHeight="512">
     <group android:translateX="27.643" android:translateY="26.000"

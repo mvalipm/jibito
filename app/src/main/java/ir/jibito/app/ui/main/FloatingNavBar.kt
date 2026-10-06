@@ -44,6 +44,7 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
@@ -120,7 +121,7 @@ fun FloatingNavBar(
         // کپسول تب فعال (در راست‌به‌چپ offset خودش از راست حساب می‌شود)
         Box(
             Modifier
-                .offset(x = indicatorOffset)
+                .offset { IntOffset(indicatorOffset.roundToPx(), 0) }
                 .width(itemWidth)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(29.dp))

@@ -1,6 +1,7 @@
 package ir.jibito.app.data.wallet
 
 import android.content.Context
+import androidx.core.content.edit
 import ir.jibito.app.domain.BankBalance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,10 @@ class WalletSettings(context: Context) {
 
     /** برای «برگردان»: همان حالت قبلی */
     fun set(excluded: Set<String>) {
-        prefs.edit().putStringSet(KEY_EXCLUDED, HashSet(excluded)).remove(KEY_LEGACY).apply()
+        prefs.edit {
+            putStringSet(KEY_EXCLUDED, HashSet(excluded))
+            remove(KEY_LEGACY)
+        }
         _excluded.value = excluded
     }
 

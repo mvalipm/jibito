@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import ir.jibito.app.R
 import ir.jibito.app.util.Money
 
@@ -111,7 +112,7 @@ internal fun String.toLatinDigits(): String = buildString {
 }
 
 internal fun String?.toColorOrNull(): Color? = try {
-    this?.let { Color(android.graphics.Color.parseColor(it)) }
+    this?.let { Color(it.toColorInt()) }
 } catch (e: IllegalArgumentException) {
     null
 }
