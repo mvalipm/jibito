@@ -49,6 +49,15 @@ class ReviewDetectorTest {
     }
 
     @Test
+    fun `پیامک با برچسب تبلیغات وارد صندوق نمی‌شود، حتی با مبلغ و موجودی`() {
+        val ad = "#تبلیغات\nبسته‌ی اینترنت 10 گیگ فقط 120,000 ریال از موجودی شارژ. برای هر مخاطب، آوای متفاوت انتخاب کنید. " +
+            "فعال‌سازی «آوای انتظار مخاطب خاص»: ارسال 3 به 8989"
+        assertEquals(0, ReviewDetector.contentScore(n(ad)))
+        assertFalse(ReviewDetector.isCandidate(n(ad), ReviewDetector.BANK_SENDER_BONUS))
+        assertFalse(ReviewDetector.isCandidate(n("خرید شارژ 50,000 ریال با 10% هدیه\nلغو11")))
+    }
+
+    @Test
     fun `امتیاز وزن‌دار - کلمه‌ی ضعیف تنها کافی نیست`() {
         // فقط «خرید» و یک عدد: امتیاز کم ← به صندوق نمی‌رود
         assertFalse(ReviewDetector.isCandidate(n("سفارش خرید شما شماره 12345 ثبت شد")))
