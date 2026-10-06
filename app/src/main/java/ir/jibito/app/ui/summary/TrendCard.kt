@@ -84,8 +84,9 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
     val percent: Int? = if (trend.isCurrent) {
         trend.vsLastMonthPercent
     } else {
-        previous?.takeIf { it.spentRial > 0 }?.let {
-            ((months.last().spentRial - it.spentRial) * 100.0 / it.spentRial).roundToInt()
+        // بدون خرج‌های یک‌باره (خرید خانه…)، تا مقایسه معنی داشته باشد
+        previous?.takeIf { it.routineRial > 0 }?.let {
+            ((months.last().routineRial - it.routineRial) * 100.0 / it.routineRial).roundToInt()
         }
     }
 

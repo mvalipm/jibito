@@ -107,4 +107,19 @@ class ReportInsightsTest {
         // کمتر از ۴ هفته سابقه: الگو نیست
         assertNull(ReportInsights.weekdayPeak(rows.take(20), now))
     }
+
+    @Test
+    fun `خرج یک‌باره در نکته‌ها حساب نمی‌شود`() {
+        val now = mehr.startMillis() + 9 * day + noon
+        val rows = listOf(
+            on(shahrivar, 3, 10_000_000L, 1),
+            on(mehr, 2, 10_000_000L, 1),
+            on(mehr, 4, 3_000_000L, null),
+            // خرید خانه: نه «رستوران ۱۰۰۰۰٪ بیشتر» و نه «پرخرج‌ترین روز»
+            on(mehr, 6, 100_000_000_000L, 1).copy(isOneOff = true),
+        )
+        val all = ReportInsights.compute(rows, categories, mehr, now)
+        assertTrue(all.none { it is Insight.CategoryChange })
+        assertEquals(2, all.filterIsInstance<Insight.BusiestDay>().single().day)
+    }
 }

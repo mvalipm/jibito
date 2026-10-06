@@ -131,8 +131,11 @@ class BudgetRepositoryImpl(
             dao.observeAmounts(FlowType.WITHDRAWAL.code, from, month.endMillis()),
             db.categoryDao().observeAll(),
         ) { rows, categories ->
-            val spends = SpendRollup.spendsOnly(rows, categories).map { it.dateEpoch to it.amount }
-            SpendTrend.compute(spends, month, count, System.currentTimeMillis())
+            val (oneOffs, spends) = SpendRollup.spendsOnly(rows, categories).partition { it.isOneOff }
+            SpendTrend.compute(
+                spends.map { it.dateEpoch to it.amount }, month, count, System.currentTimeMillis(),
+                oneOffs = oneOffs.map { it.dateEpoch to it.amount },
+            )
         }.flowOn(Dispatchers.Default)
     }
 

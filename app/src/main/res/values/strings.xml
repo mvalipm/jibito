@@ -690,6 +690,7 @@
     <string name="reports_tip_previous">%1$s در همین روز: %2$s</string>
     <string name="reports_tip_forecast">پیش‌بینی</string>
     <string name="reports_forecast_pattern">با الگوی خرج ماه قبل، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
+    <string name="reports_one_off_note">%1$s تومان خرج یک‌باره این ماه داشتی؛ در مقایسه با ماه قبل و ریتم پیش‌بینی حساب نشده.</string>
     <string name="reports_forecast_rhythm">با همین ریتم، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
     <string name="reports_forecast_under">%1$s تومان زیر بودجه.</string>
     <string name="reports_forecast_over">%1$s تومان بیشتر از بودجه.</string>

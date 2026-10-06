@@ -58,4 +58,6 @@ data class DatedAmount(
     val categoryId: Long?,
     val amount: Long,
     val dateEpoch: Long,
+    /** خرج یک‌باره (خرید خانه…): در جمع‌ها هست، ولی پایه‌ی میانگین، مقایسه و پیش‌بینی نیست */
+    val isOneOff: Boolean = false,
 )
