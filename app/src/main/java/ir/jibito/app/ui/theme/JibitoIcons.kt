@@ -77,6 +77,13 @@ object JibitoIcons {
         }
     }
 
+    /** پایین (فلش «پیامک ← تراکنش» در خوش‌آمد) */
+    val ChevronDown: ImageVector by lazy {
+        lineIcon("chevron_down") {
+            moveTo(6f, 9.5f); lineTo(12f, 15.5f); lineTo(18f, 9.5f)
+        }
+    }
+
     val Check: ImageVector by lazy {
         lineIcon("check") {
             moveTo(5f, 12.5f); lineTo(10f, 17.5f); lineTo(19f, 7f)
