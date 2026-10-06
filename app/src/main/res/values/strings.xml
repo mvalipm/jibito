@@ -516,6 +516,11 @@
     <string name="todo_uncategorized">خرج بی‌دسته</string>
     <string name="todo_review">%1$d پیامک مبهم</string>
     <string name="todo_transfer">انتقال به خودت؟</string>
+    <string name="todo_one_off">خرج یک‌باره بود؟</string>
+    <string name="todo_one_off_detail">%1$s تومان، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_detail_named">%1$s تومان برای «%2$s»، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_yes">آره، یک‌باره بود</string>
+    <string name="todo_one_off_no">نه</string>
     <string name="todo_recurring">%1$s ماهانه؟</string>
     <string name="todo_notif_detail">هشدار بودجه و «این خرج مال چی بود؟» بهت نمی‌رسه.</string>
     <string name="todo_uncategorized_detail">دسته بده تا «کجا رفت؟» درست نشونت بده.</string>
@@ -690,6 +695,8 @@
     <string name="reports_tip_previous">%1$s در همین روز: %2$s</string>
     <string name="reports_tip_forecast">پیش‌بینی</string>
     <string name="reports_forecast_pattern">با الگوی خرج ماه قبل، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
+    <string name="hero_one_off">+ %1$s خرج یک‌باره، جدا از بودجه</string>
+    <string name="budget_one_off_apart">%1$s خرج یک‌باره هم داشت که از بودجه کم نشده.</string>
     <string name="reports_one_off_note">%1$s تومان خرج یک‌باره این ماه داشتی؛ در مقایسه با ماه قبل و ریتم پیش‌بینی حساب نشده.</string>
     <string name="reports_forecast_rhythm">با همین ریتم، آخر %1$s به حدود %2$s تومان می‌رسی.</string>
     <string name="reports_forecast_under">%1$s تومان زیر بودجه.</string>

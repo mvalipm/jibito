@@ -237,9 +237,9 @@ private fun noteFor(c: CategorySpend?): String? {
     c ?: return null
     val budget = c.budgetRial?.takeIf { it > 0 }
     return when {
-        budget != null && c.spentRial > budget ->
-            Jalali.toPersianDigits(stringResource(R.string.where_over_budget, (c.spentRial * 100 / budget - 100).toInt()))
-        budget != null -> stringResource(R.string.where_left_budget, amount(Money.compact(budget - c.spentRial)))
+        budget != null && c.budgetSpentRial > budget ->
+            Jalali.toPersianDigits(stringResource(R.string.where_over_budget, (c.budgetSpentRial * 100 / budget - 100).toInt()))
+        budget != null -> stringResource(R.string.where_left_budget, amount(Money.compact(budget - c.budgetSpentRial)))
         else -> c.children.filter { it.name != null && it.spentRial > 0 }
             .sortedByDescending { it.spentRial }
             .take(2)

@@ -49,6 +49,8 @@ fun rememberTodoStories(
     val hidden = LocalHideAmounts.current
     val transfersFlow = remember { app.container.transactionRepository.observeTransferSuggestions() }
     val transferSuggestions by transfersFlow.collectAsState(initial = emptyList())
+    val oneOffFlow = remember { app.container.transactionRepository.observeOneOffSuggestions() }
+    val oneOffSuggestions by oneOffFlow.collectAsState(initial = emptyList())
     val recurringFlow = remember { app.container.recurringSuggestions.observe() }
     val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val uncategorizedFlow = remember { uncategorizedThisMonth(app) }
@@ -83,17 +85,17 @@ fun rememberTodoStories(
         }
         s?.categories?.forEach { c ->
             val budget = c.budgetRial ?: return@forEach
-            val level = BudgetLevel.of(c.spentRial, budget)
+            val level = BudgetLevel.of(c.budgetSpentRial, budget)
             if (level >= 80) {
                 val tint = categoryTint(c.colorHex, c.icon)
                 add(
                     TodoStory(
                         "budget-${c.categoryId}", if (level >= 100) t.alert else t.amber, tint.bg, tint.fg, tint.icon, tint.glyph,
-                        label = Jalali.toPersianDigits("${c.name} ${c.spentRial * 100 / budget}٪"),
+                        label = Jalali.toPersianDigits("${c.name} ${c.budgetSpentRial * 100 / budget}٪"),
                         detail = Jalali.toPersianDigits(
                             stringResource(
                                 R.string.todo_budget_detail,
-                                if (hidden) HIDDEN_AMOUNT else Money.compact(c.spentRial),
+                                if (hidden) HIDDEN_AMOUNT else Money.compact(c.budgetSpentRial),
                                 if (hidden) HIDDEN_AMOUNT else Money.compactAdjective(budget),
                             )
                         ),
@@ -123,6 +125,27 @@ fun rememberTodoStories(
                     actions = listOf(
                         TodoAction(stringResource(R.string.todo_transfer_yes)) { scope.launch { repository.confirmTransfer(suggestion) } },
                         TodoAction(stringResource(R.string.transfer_no)) { scope.launch { repository.rejectTransfer(suggestion) } },
+                    ),
+                    onClick = onOpenTransactions,
+                )
+            )
+        }
+        oneOffSuggestions.firstOrNull()?.let { tx ->
+            val repository = app.container.transactionRepository
+            val amountText = if (hidden) HIDDEN_AMOUNT else Money.compact(tx.transaction.amountRial)
+            val name = tx.merchant ?: tx.categoryName ?: tx.note
+            add(
+                TodoStory(
+                    "oneoff-${tx.id}", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null,
+                    label = stringResource(R.string.todo_one_off),
+                    detail = Jalali.toPersianDigits(
+                        if (name != null) stringResource(R.string.todo_one_off_detail_named, amountText, name)
+                        else stringResource(R.string.todo_one_off_detail, amountText)
+                    ),
+                    // همان‌جا جواب داده می‌شود؛ «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.todo_one_off_yes)) { scope.launch { repository.setOneOff(tx.id, true) } },
+                        TodoAction(stringResource(R.string.todo_one_off_no)) { scope.launch { repository.setOneOff(tx.id, false) } },
                     ),
                     onClick = onOpenTransactions,
                 )

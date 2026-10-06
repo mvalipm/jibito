@@ -13,6 +13,8 @@ import ir.jibito.app.data.sms.SmsRowMatcher
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.domain.Category
+import ir.jibito.app.domain.CategoryTree
+import ir.jibito.app.domain.OneOffDetector
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
@@ -113,6 +115,9 @@ interface TransactionRepository {
     /** علامت زدن/برداشتن «خرج یک‌باره»؛ برداشتنِ علامت یعنی «یک‌باره نیست» (دیگر پیشنهاد نمی‌شود) */
     suspend fun setOneOff(transactionId: Long, isOneOff: Boolean)
 
+    /** خریدهای اخیرِ خیلی بزرگ‌تر از معمول که شاید «خرج یک‌باره» باشند (قانون‌ها در OneOffDetector)؛ بزرگ‌ترین اول */
+    fun observeOneOffSuggestions(): Flow<List<Transaction>>
+
     /**
      * دسته‌ی شخصی می‌سازد. parentId = null یعنی دسته‌ی اصلی جدید.
      * @param icon فقط برای دسته‌ی اصلی
@@ -162,6 +167,11 @@ class TransactionRepositoryImpl(
 
     override fun observeTransferSuggestions(): Flow<List<TransferSuggestion>> = sharedTransferSuggestions
 
+    override fun observeOneOffSuggestions(): Flow<List<Transaction>> =
+        combine(sharedTransactions, observeCategories()) { all, categories ->
+            OneOffDetector.find(all, CategoryTree.nonSpendIds(categories), System.currentTimeMillis())
+        }.flowOn(Dispatchers.Default)
+
     /**
      * فهرست تراکنش‌ها: یک بار برای همه‌ی صفحه‌ها (نه یک بار برای هر صفحه) و بیرون از رشته‌ی اصلی (UI)،
      * تا با هزاران تراکنش هم صفحه گیر نکند. ۵ ثانیه بعد از رفتن آخرین صفحه، خاموش می‌شود.
@@ -209,6 +219,7 @@ class TransactionRepositoryImpl(
                     smsId = f.smsId,
                     note = f.note,
                     isOneOff = f.oneOffState == TransactionFlowEntity.ONE_OFF_YES,
+                    isOneOffRejected = f.oneOffState == TransactionFlowEntity.ONE_OFF_REJECTED,
                 )
             }
         }

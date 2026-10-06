@@ -92,7 +92,8 @@ fun daysLeft(s: MonthSummary, nowMillis: Long): Int {
  */
 fun moodOf(s: MonthSummary, nowMillis: Long): MoodLine {
     val budget = s.overallBudgetRial?.takeIf { it > 0 }
-    val spent = s.totalSpentRial
+    // خرج یک‌باره (خرید خانه…) از بودجه کم نمی‌شود
+    val spent = if (budget == null) s.totalSpentRial else s.budgetSpentRial
     if (budget == null) {
         return MoodLine(Mood.CALM, if (spent == 0L) R.string.hero_no_spend else R.string.hero_no_budget)
     }
@@ -226,7 +227,7 @@ fun SummaryHero(
             // نوار بودجه
             if (budget != null) {
                 BudgetBar(
-                    spent = (s.totalSpentRial.toFloat() / budget).coerceIn(0f, 1f),
+                    spent = (s.budgetSpentRial.toFloat() / budget).coerceIn(0f, 1f),
                     today = s.timeFraction(nowMillis),
                     marker = moodColor,
                 )
@@ -235,7 +236,7 @@ fun SummaryHero(
                         Jalali.toPersianDigits(
                             stringResource(
                                 R.string.hero_of_budget,
-                                "${(s.totalSpentRial * 100 / budget).coerceAtMost(999)}٪",
+                                "${(s.budgetSpentRial * 100 / budget).coerceAtMost(999)}٪",
                                 if (hidden) HIDDEN_AMOUNT else Money.compactAdjective(budget),
                             )
                         ),
@@ -253,6 +254,18 @@ fun SummaryHero(
                         },
                         color = Color.White.copy(alpha = 0.92f),
                         fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+                // خرج یک‌باره جدا از بودجه (عدد درشت بالا آن را دارد، نوار بودجه نه)
+                if (s.oneOffRial > 0) {
+                    Text(
+                        Jalali.toPersianDigits(
+                            stringResource(R.string.hero_one_off, if (hidden) HIDDEN_AMOUNT else Money.compact(s.oneOffRial))
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                     )
                 }

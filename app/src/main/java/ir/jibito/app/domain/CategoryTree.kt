@@ -16,6 +16,12 @@ object CategoryTree {
         return d
     }
 
+    /** دسته‌هایی مثل پس‌انداز (یا زیردسته‌هایشان) که خرج حساب نمی‌شوند؛ همان قاعده‌ی SpendRollup.excludedIds */
+    fun nonSpendIds(categories: List<Category>): Set<Long> {
+        val byId = categories.associateBy { it.id }
+        return categories.filter { !it.countsAsSpend || !rootOf(it, byId).countsAsSpend }.mapTo(HashSet()) { it.id }
+    }
+
     fun rootOf(c: Category, byId: Map<Long, Category>): Category {
         var current = c
         var steps = 0

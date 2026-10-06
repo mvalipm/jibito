@@ -45,7 +45,16 @@ class SpendWidget : AppWidgetProvider() {
     }
 
     /** اعداد ویجت (به ریال) */
-    data class Numbers(val todayRial: Long, val monthRial: Long, val overallBudgetRial: Long?)
+    data class Numbers(
+        val todayRial: Long,
+        val monthRial: Long,
+        val overallBudgetRial: Long?,
+        /** چه مقدار از monthRial خرج یک‌باره است (از بودجه کم نمی‌شود) */
+        val monthOneOffRial: Long = 0,
+    ) {
+        /** خرجی که از بودجه‌ی کل کم می‌شود */
+        val budgetSpentRial: Long get() = monthRial - monthOneOffRial
+    }
 
     companion object {
 
@@ -85,9 +94,9 @@ class SpendWidget : AppWidgetProvider() {
             val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return Mood.NONE
             val month = JalaliMonth.of(now)
             val time = (now - month.startMillis()).toDouble() / (month.endMillis() - month.startMillis())
-            val spent = n.monthRial.toDouble() / budget
+            val spent = n.budgetSpentRial.toDouble() / budget
             return when {
-                n.monthRial >= budget -> Mood.OVER
+                n.budgetSpentRial >= budget -> Mood.OVER
                 spent >= 0.8 || spent - time >= ON_TRACK_MARGIN -> Mood.WARN
                 else -> Mood.CALM
             }
@@ -153,14 +162,14 @@ class SpendWidget : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_ring_box, View.GONE)
                 return views
             }
-            val left = budget - n.monthRial
+            val left = budget - n.budgetSpentRial
             views.setTextViewText(
                 R.id.widget_month,
                 if (left >= 0) context.getString(R.string.widget_left, Money.compact(left))
                 else context.getString(R.string.widget_over, Money.compact(-left)),
             )
             views.setTextColor(R.id.widget_month, text)
-            val percent = (n.monthRial * 100 / budget).toInt()
+            val percent = (n.budgetSpentRial * 100 / budget).toInt()
             val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
             views.setViewVisibility(R.id.widget_ring_box, View.VISIBLE)
             views.setProgressBar(R.id.widget_ring, 100, percent.coerceIn(0, 100), false)
@@ -186,8 +195,8 @@ class SpendWidget : AppWidgetProvider() {
             val dayEnd = (dayStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
             val month = JalaliMonth.of(now)
             val today = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, dayStart.timeInMillis, dayEnd.timeInMillis)).total
-            val monthTotal = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis())).total
-            return Numbers(today, monthTotal, dao.overallBudget()?.monthlyLimitRial)
+            val monthSpend = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis()))
+            return Numbers(today, monthSpend.total, dao.overallBudget()?.monthlyLimitRial, monthSpend.oneOffTotal)
         }
     }
 }
