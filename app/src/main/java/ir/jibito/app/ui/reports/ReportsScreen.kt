@@ -381,7 +381,8 @@ private fun MonthChart(curve: SpendCurve) {
     val previousName = monthName(curve.month.plus(-1))
     val name = monthName(curve.month)
     val active = selected ?: curve.todayIndex
-    val value = curve.valueAt(active) ?: curve.spentRial
+    // عدد بالا بدون انتخاب: کل خرج (با خرج یک‌باره)؛ روز انتخاب‌شده: همان مقدار خط نمودار
+    val value = if (selected == null) curve.spentRial else curve.routineAt(active) ?: curve.spentRial
     val future = active > curve.todayIndex
     val label = when {
         selected == null -> stringResource(if (curve.isCurrent) R.string.reports_spent_so_far else R.string.reports_spent_month, name)
@@ -395,16 +396,17 @@ private fun MonthChart(curve: SpendCurve) {
     val data = remember(curve) {
         LineChartData(
             slots = curve.days,
-            values = curve.cumulative,
+            // خط و پیش‌بینی بدون خرج یک‌باره، هم‌سنگِ ماه قبل و خط بودجه
+            values = curve.routineCumulative,
             ghost = curve.previous,
-            projection = curve.projection,
+            projection = curve.routineProjection,
             reference = curve.budgetRial,
         )
     }
     val budgetLabel = curve.budgetRial?.let { amount(stringResource(R.string.reports_budget_line, Money.compact(it))) }
     val tipForecast = stringResource(R.string.reports_tip_forecast)
     val tipTitles = (0..data.lastIndex).associateWith { i ->
-        val v = curve.valueAt(i) ?: 0L
+        val v = curve.routineAt(i) ?: 0L
         dayLabel(i + 1, curve.month) + " — " + amount(Money.compact(v)) + if (i > curve.todayIndex) " ($tipForecast)" else ""
     }
     val tipSubs = (0..data.lastIndex).associateWith { i ->
@@ -482,7 +484,7 @@ private fun MonthsChart(trend: SpendTrend) {
     val (label, value) = if (pick == null) {
         stringResource(R.string.reports_monthly_average) to average
     } else {
-        months[pick].month.title to months[pick].spentRial
+        months[pick].month.title to months[pick].routineRial
     }
     val chip = if (pick == null) {
         // آخرین ماه نسبت به میانگین
@@ -497,7 +499,8 @@ private fun MonthsChart(trend: SpendTrend) {
     Headline(label, value, chip.first, chip.second)
 
     val data = remember(months, average) {
-        LineChartData(slots = months.size, values = months.map { it.spentRial }, reference = average, fromZero = false)
+        // بدون خرج یک‌باره، هم‌سنگِ خط میانگین (خرید خانه‌ای بقیه‌ی ماه‌ها را صاف نکند)
+        LineChartData(slots = months.size, values = months.map { it.routineRial }, reference = average, fromZero = false)
     }
     val averageLabel = amount(stringResource(R.string.reports_average_line, Money.compact(average)))
     SpendLineChart(
@@ -510,10 +513,29 @@ private fun MonthsChart(trend: SpendTrend) {
         description = stringResource(R.string.cd_reports_chart),
         modifier = Modifier.padding(top = 4.dp),
         referenceLabel = { ReferenceLabel(averageLabel) },
-        tooltip = { i -> Tooltip(months[i].month.title + " — " + amount(Money.compact(months[i].spentRial)), null) },
+        tooltip = { i ->
+            val m = months[i]
+            val oneOff = m.spentRial - m.routineRial
+            Tooltip(
+                m.month.title + " — " + amount(Money.compact(m.routineRial)),
+                if (oneOff > 0) amount(stringResource(R.string.reports_tip_one_off, Money.compact(oneOff))) else null,
+            )
+        },
     )
     AxisLabels(monthName(months.first().month), monthName(months.last().month))
     Legend(listOf(LegendStyle.SOLID to stringResource(R.string.reports_legend_monthly)))
+    val oneOffMonths = months.filter { it.spentRial > it.routineRial }
+    if (oneOffMonths.isNotEmpty() && !LocalHideAmounts.current) {
+        val names = oneOffMonths.map { monthName(it.month) }
+        val list = oneOffMonths.indices.joinToString("، ") { k ->
+            names[k] + " " + Money.compact(oneOffMonths[k].spentRial - oneOffMonths[k].routineRial)
+        }
+        Note(
+            text = Jalali.toPersianDigits(stringResource(R.string.reports_months_one_off_note, list)),
+            bg = t.sugBg,
+            fg = t.sugFg,
+        )
+    }
 }
 
 @Composable
