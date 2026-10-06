@@ -1,12 +1,5 @@
 package ir.jibito.app.ui.smslist
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.RadioButton
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.ui.semantics.Role
-import androidx.core.graphics.toColorInt
-import ir.jibito.app.data.sms.SmsSenderLookup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,15 +16,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -40,40 +32,24 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
-import java.util.Locale
-import ir.jibito.app.ui.theme.DesignIcons
-import ir.jibito.app.ui.common.BankLogos
-import ir.jibito.app.ui.common.openSupportChat
-import ir.jibito.app.ui.common.shareText
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.res.painterResource
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.Image
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.CategoryTint
 import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.ui.common.CategoryIconTile
-import ir.jibito.app.ui.common.amount
 import androidx.compose.foundation.layout.width
 import ir.jibito.app.domain.CategoryTree
 import androidx.compose.ui.unit.sp
@@ -84,13 +60,8 @@ import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.repository.TransactionNotes
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
-import ir.jibito.app.util.Jalali
-import ir.jibito.app.util.Money
 import androidx.compose.material3.Icon
 import ir.jibito.app.ui.theme.JibitoIcons
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
-import ir.jibito.app.data.review.WrongReadingReport
 
 /**
  * برگه‌ای که از پایین صفحه باز می‌شود: «این خرج مال چی بود؟» / «این پول از کجا اومد؟» — خلوت و سریع:
@@ -485,445 +456,3 @@ private fun CategoryTile(
         )
     }
 }
-
-/**
- * سربرگ برگه: کاشی بانک (لوگوی رنگی، یا آیکون خطی اگر لوگو نداریم) کنار طرف حساب/بانک و روز و ساعت،
- * دکمه‌ی کوچک «پیامک»، مبلغ درشت، و زیرش نوع تراکنش و مانده‌ی حساب (اگر پیامک داشت).
- */
-@Composable
-private fun SheetHeader(transaction: Transaction, isDeposit: Boolean, showSms: Boolean, onToggleSms: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val jt = JibitoTheme.colors
-    val t = transaction.transaction
-    val bankName = transaction.bank?.name?.let(::shortBankName)
-    val manualSource = stringResource(R.string.tx_manual_source)
-    val title = transaction.merchant ?: transaction.bank?.name ?: manualSource.takeIf { transaction.isManual }.orEmpty()
-    val subtitle = listOfNotNull(
-        bankName?.takeIf { transaction.merchant != null },
-        "${Jalali.dayTitle(transaction.dateMillis)} · ${Jalali.time(transaction.dateMillis)}",
-    ).joinToString(" · ")
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (transaction.bank != null) {
-            BankBadge(transaction.bank.id)
-            Spacer(Modifier.width(12.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, fontSize = 12.sp, color = jt.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (transaction.body.isNotBlank()) {
-            Row(
-                Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (showSms) jt.chip else Color.Transparent)
-                    .border(1.dp, jt.border, RoundedCornerShape(12.dp))
-                    .clickable(onClick = onToggleSms)
-                    .padding(horizontal = 9.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(DesignIcons.Message, contentDescription = null, tint = colors.primary, modifier = Modifier.size(15.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    stringResource(if (showSms) R.string.sheet_hide_sms else R.string.sheet_show_sms),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.primary,
-                )
-            }
-        }
-    }
-
-    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.Bottom) {
-        val amountColor = if (isDeposit) jt.income else colors.onSurface
-        Text(if (isDeposit) "+" else "−", fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-        Spacer(Modifier.width(6.dp))
-        Text(amount(Money.tomanNumber(t.amountRial)), fontSize = 30.sp, fontWeight = FontWeight.Black, color = amountColor)
-        Spacer(Modifier.width(6.dp))
-        Text(
-            stringResource(R.string.unit_toman),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = jt.muted,
-            modifier = Modifier.padding(bottom = 7.dp),
-        )
-    }
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            (if (isDeposit) "↓ " else "↑ ") + stringResource(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal),
-            modifier = Modifier
-                .background(if (isDeposit) jt.tealTint else jt.chip, RoundedCornerShape(10.dp))
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            color = if (isDeposit) jt.income else colors.onSurface,
-            fontSize = 11.5.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        t.balanceRial?.let { balance ->
-            Spacer(Modifier.width(8.dp))
-            Text(
-                stringResource(R.string.tx_balance, amount(Money.toman(balance))),
-                fontSize = 12.sp,
-                color = jt.muted,
-            )
-        }
-    }
-}
-
-/** کاشی ۴۴ تایی بانک: لوگوی رنگی روی زمینه‌ی ساده؛ بانکی که لوگو ندارد ← آیکون خطی بانک */
-@Composable
-private fun BankBadge(bankId: Int) {
-    val jt = JibitoTheme.colors
-    val logo = BankLogos.of(bankId)
-    val shape = RoundedCornerShape(14.dp)
-    Box(
-        Modifier
-            .size(44.dp)
-            .clip(shape)
-            .background(if (logo != null && !jt.dark) Color.White else jt.chip)
-            .then(if (logo != null) Modifier.border(1.dp, jt.border, shape) else Modifier)
-            .padding(if (logo != null) 6.dp else 0.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (logo != null) {
-            Image(painterResource(logo), contentDescription = null, modifier = Modifier.fillMaxSize())
-        } else {
-            Icon(DesignIcons.Bank, contentDescription = null, tint = jt.muted, modifier = Modifier.size(22.dp))
-        }
-    }
-}
-
-/**
- * کارت پیامک: اول چیزهایی که اپ از پیامک فهمید (مبلغ، زمان، کارمزد، مانده)، بعد متن خام پیامک
- * (چپ‌چین و با فونت ثابت تا عددها به‌هم نریزند)، و آخر «اشتباه خونده شده؟» با یادداشت حریم خصوصی.
- */
-@Composable
-private fun SmsReceipt(transaction: Transaction) {
-    val colors = MaterialTheme.colorScheme
-    val jt = JibitoTheme.colors
-    val t = transaction.transaction
-    val shape = RoundedCornerShape(18.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(jt.chip)
-            .border(1.dp, jt.border, shape)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        val rows = listOfNotNull(
-            stringResource(R.string.sheet_receipt_amount) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(t.amountRial))),
-            stringResource(R.string.sheet_receipt_time) to Jalali.format(transaction.dateMillis),
-            transaction.feeRial?.let { stringResource(R.string.sheet_receipt_fee) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(it))) },
-            t.balanceRial?.let { stringResource(R.string.sheet_receipt_balance) to stringResource(R.string.sheet_receipt_rial, amount(rialNumber(it))) },
-        )
-        rows.forEach { (label, value) ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(label, fontSize = 13.sp, color = jt.muted)
-                Spacer(Modifier.weight(1f))
-                Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                Spacer(Modifier.width(6.dp))
-                Icon(DesignIcons.Check, contentDescription = null, tint = jt.income, modifier = Modifier.size(14.dp))
-            }
-        }
-
-        // متن خام پیامک: چپ‌به‌راست، چون بیشترش عدد است
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Text(
-                text = transaction.body,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .background(jt.sheet, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                lineHeight = 20.sp,
-                color = colors.onSurfaceVariant,
-            )
-        }
-
-        // مبلغ یا نوع اشتباه خوانده شده؟ اول «چه چیزی غلطه؟»، بعد گزارش (با رقم‌های پوشیده) برای بهتر شدن پارسر
-        if (!transaction.isManual) {
-            var reporting by rememberSaveable { mutableStateOf(false) }
-            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    stringResource(R.string.sheet_report_wrong),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { reporting = true }
-                        .padding(vertical = 6.dp),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.primary,
-                )
-                Spacer(Modifier.weight(1f))
-                Icon(JibitoIcons.Lock, contentDescription = null, tint = jt.muted, modifier = Modifier.size(13.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(stringResource(R.string.sheet_report_privacy), fontSize = 11.sp, color = jt.muted)
-            }
-            if (reporting) {
-                WrongReadingDialog(transaction, onDismiss = { reporting = false })
-            }
-        }
-    }
-}
-
-/** مبلغ ریالی با جداکننده‌ی هزارگان، همان واحدی که پیامک گفته (مثلاً ۳۰٬۰۰۰٬۰۰۰) */
-private fun rialNumber(rial: Long): String =
-    Jalali.toPersianDigits(String.format(Locale.US, "%,d", rial).replace(',', '٬'))
-
-/** «انتقال بین حساب‌های خودم»: یک ردیف با کلید روشن/خاموش (نه خرج حساب می‌شود نه درآمد) */
-@Composable
-private fun SelfTransferRow(checked: Boolean, onChange: (Boolean) -> Unit) {
-    val jt = JibitoTheme.colors
-    SwitchRow(
-        icon = DesignIcons.Transfer,
-        title = stringResource(R.string.sheet_self_transfer),
-        subtitle = stringResource(R.string.sheet_self_transfer_short),
-        fg = jt.transferFg,
-        bg = jt.transferBg,
-        checked = checked,
-        onChange = onChange,
-    )
-}
-
-/** «خرج یک‌باره»: خرید بزرگ و نامعمول (خانه، ماشین…) که الگوی خرج ماه‌ها را به هم نزند */
-@Composable
-private fun OneOffRow(checked: Boolean, onChange: (Boolean) -> Unit) {
-    val jt = JibitoTheme.colors
-    SwitchRow(
-        icon = DesignIcons.Star,
-        title = stringResource(R.string.sheet_one_off),
-        subtitle = stringResource(R.string.sheet_one_off_short),
-        fg = jt.sugFg,
-        bg = jt.sugBg,
-        checked = checked,
-        onChange = onChange,
-    )
-}
-
-/** ردیفِ آیکون + عنوان + توضیح + کلید روشن/خاموش (حاشیه‌ی رنگی وقتی روشن است) */
-@Composable
-private fun SwitchRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    fg: Color,
-    bg: Color,
-    checked: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    val jt = JibitoTheme.colors
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .border(1.dp, if (checked) fg else jt.border, shape)
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier.size(30.dp).background(bg, RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(subtitle, fontSize = 11.sp, color = jt.muted)
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = null,
-            colors = SwitchDefaults.colors(checkedTrackColor = fg),
-        )
-    }
-}
-
-/** زیردسته‌های دسته‌ی باز (و جزئیاتِ زیردسته‌ی باز) */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SubPanel(
-    root: Category,
-    subs: List<Category>,
-    childrenOf: Map<Long?, List<Category>>,
-    selectedId: Long?,
-    openSubId: Long?,
-    onOpenSub: (Long) -> Unit,
-    onPick: (Long?) -> Unit,
-    onAdd: (parentId: Long) -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .background(colors.surfaceVariant.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
-            .padding(10.dp)
-    ) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CategoryChip(
-                label = stringResource(R.string.sheet_all_of, root.name),
-                selected = root.id == selectedId,
-                onClick = { onPick(root.id) },
-            )
-            subs.forEach { sub ->
-                val details = childrenOf[sub.id].orEmpty()
-                val isOpen = openSubId == sub.id
-                CategoryChip(
-                    label = sub.name + if (details.isNotEmpty()) (if (isOpen) "  ⌄" else "  ›") else "",
-                    selected = sub.id == selectedId || details.any { it.id == selectedId },
-                    onClick = { if (details.isEmpty()) onPick(sub.id) else onOpenSub(sub.id) },
-                )
-            }
-            AddChip("＋") { onAdd(root.id) }
-        }
-        subs.firstOrNull { it.id == openSubId }?.let { open ->
-            Spacer(Modifier.height(8.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CategoryChip(
-                    label = stringResource(R.string.sheet_all_of, open.name),
-                    selected = open.id == selectedId,
-                    onClick = { onPick(open.id) },
-                )
-                childrenOf[open.id].orEmpty().forEach { d ->
-                    CategoryChip(label = d.name, selected = d.id == selectedId, onClick = { onPick(d.id) })
-                }
-                AddChip("＋") { onAdd(open.id) }
-            }
-        }
-        if (!root.countsAsSpend) {
-            Text(
-                stringResource(R.string.sheet_not_spend_hint),
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-    }
-}
-
-@Composable
-internal fun CategoryChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    highlighted: Boolean = false,
-    leadingIcon: (@Composable () -> Unit)? = null,
-) {
-    val colors = MaterialTheme.colorScheme
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label, fontWeight = if (selected || highlighted) FontWeight.Bold else FontWeight.Normal) },
-        leadingIcon = leadingIcon,
-        shape = RoundedCornerShape(17.dp),
-        border = null,
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = if (highlighted) JibitoTheme.colors.sugBg else JibitoTheme.colors.chip,
-            labelColor = if (highlighted) JibitoTheme.colors.sugFg else colors.onSurface,
-            iconColor = colors.primary,
-            selectedContainerColor = colors.primary,
-            selectedLabelColor = colors.onPrimary,
-            selectedLeadingIconColor = colors.onPrimary,
-        ),
-    )
-}
-
-/** برای جست‌وجو: ی/ک عربی، نیم‌فاصله و فاصله یکسان می‌شوند */
-internal fun String.normalizedForSearch(): String =
-    trim().replace('ي', 'ی').replace('ك', 'ک').replace("‌", "").replace(" ", "").lowercase()
-
-internal fun String?.toColorOrNull(): Color? = try {
-    this?.let { Color(it.toColorInt()) }
-} catch (e: IllegalArgumentException) {
-    null
-}
-
-@Composable
-private fun AddChip(label: String, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Text(
-        label,
-        modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, colors.primary.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
-        color = colors.primary,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-    )
-}
-
-/** «چه چیزی غلط خونده شده؟» و بعد ارسال گزارش (رقم‌ها پوشیده، به‌علاوه‌ی علت، سرشماره و نسخه‌ی اپ) */
-@Composable
-private fun WrongReadingDialog(transaction: Transaction, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val chooserTitle = stringResource(R.string.review_share_title)
-    var reason by rememberSaveable { mutableStateOf<WrongReadingReport.Reason?>(null) }
-    val labels = mapOf(
-        WrongReadingReport.Reason.AMOUNT to R.string.report_reason_amount,
-        WrongReadingReport.Reason.TYPE to R.string.report_reason_type,
-        WrongReadingReport.Reason.MERCHANT to R.string.report_reason_merchant,
-        WrongReadingReport.Reason.SHOULD_BE_TRANSFER to R.string.report_reason_transfer,
-        WrongReadingReport.Reason.OTHER to R.string.report_reason_other,
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.report_reason_title), fontWeight = FontWeight.Bold) },
-        text = {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            Column(Modifier.selectableGroup()) {
-                labels.forEach { (r, label) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .selectable(selected = reason == r, role = Role.RadioButton, onClick = { reason = r })
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = reason == r, onClick = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(label))
-                    }
-                }
-            }
-            }
-        },
-        confirmButton = {
-            // اصلی: چت پشتیبانی در بله (متن گزارش کپی می‌شود تا کاربر فقط بچسباند و بفرستد)؛ فرعی: هر راه دیگری
-            val copiedHint = stringResource(R.string.report_copied_paste)
-            Row {
-                TextButton(
-                    enabled = reason != null,
-                    onClick = {
-                        shareText(context, reportText(context, transaction, reason), chooserTitle)
-                        onDismiss()
-                    },
-                ) { Text(stringResource(R.string.report_send_other)) }
-                TextButton(
-                    enabled = reason != null,
-                    onClick = {
-                        openSupportChat(context, reportText(context, transaction, reason), copiedHint, chooserTitle)
-                        onDismiss()
-                    },
-                ) { Text(stringResource(R.string.report_send_bale), fontWeight = FontWeight.Bold) }
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.budget_dialog_cancel)) } },
-    )
-}
-
-private fun reportText(context: Context, transaction: Transaction, reason: WrongReadingReport.Reason?): String {
-    val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
-    val sender = SmsSenderLookup.sender(context, transaction.smsId)
-    return WrongReadingReport.text(transaction, reason, sender, version)
-}
-
