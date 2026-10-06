@@ -89,4 +89,40 @@ class SpendCurveTest {
         assertEquals(1_000_000L, c.spentRial)
         assertTrue(c.projection.isEmpty())
     }
+
+    @Test
+    fun `خرج یک‌باره در منحنی این ماه هست ولی در ماه قبل و مقایسه نه`() {
+        val now = mehr.startMillis() + 4 * day + noon // ۵ مهر
+        val spends = listOf(on(shahrivar, 1, 10_000_000L), on(mehr, 1, 2_000_000L))
+        val oneOffs = listOf(on(shahrivar, 10, 1_000_000_000_000L), on(mehr, 3, 500_000_000L))
+        val c = SpendCurve.compute(spends, mehr, now, budgetRial = null, oneOffs = oneOffs)
+        assertEquals(listOf(2_000_000L, 2_000_000L, 502_000_000L, 502_000_000L, 502_000_000L), c.cumulative)
+        assertEquals(10_000_000L, c.previous.last())
+        assertEquals(500_000_000L, c.oneOffRial)
+        assertEquals(2_000_000L, c.routineAt(0))
+        assertEquals(2_000_000L, c.routineAt(4))
+        // الگوی ماه قبل (بدون خرید یک‌باره‌اش) بعد از روز ۵ خرجی نداشت
+        assertTrue(c.projectionFromPattern)
+        assertEquals(502_000_000L, c.projectedEndRial)
+        assertEquals(2_000_000L, c.routineAt(29))
+    }
+
+    @Test
+    fun `ریتم پیش‌بینی خرج یک‌باره را تکرار نمی‌کند`() {
+        val now = mehr.startMillis() + 4 * day + noon // ۵ مهر، ماه قبل بی‌خرج
+        val c = SpendCurve.compute(
+            listOf(on(mehr, 1, 2_000_000L)), mehr, now, budgetRial = null,
+            oneOffs = listOf(on(mehr, 2, 100_000_000L)),
+        )
+        assertFalse(c.projectionFromPattern)
+        assertEquals(112_000_000L, c.projectedEndRial)
+    }
+
+    @Test
+    fun `بدون خرج یک‌باره چیزی عوض نمی‌شود`() {
+        val now = mehr.startMillis() + 4 * day + noon
+        val c = SpendCurve.compute(listOf(on(mehr, 1, 2_000_000L)), mehr, now, budgetRial = null)
+        assertEquals(0L, c.oneOffRial)
+        assertEquals(c.valueAt(2), c.routineAt(2))
+    }
 }

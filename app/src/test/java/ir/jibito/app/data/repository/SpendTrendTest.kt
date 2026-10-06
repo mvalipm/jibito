@@ -60,4 +60,26 @@ class SpendTrendTest {
         assertFalse(past.isCurrent)
         assertNull(past.projectedRial)
     }
+
+    @Test
+    fun `خرج یک‌باره در ستون هست ولی در میانگین، مقایسه و ریتم پیش‌بینی نه`() {
+        val now = mehr.startMillis() + 10 * day
+        val spends = listOf(
+            shahrivar.startMillis() + 2 * day to 4_000_000L,
+            mehr.startMillis() + 1 * day to 3_000_000L,
+            mehr.startMillis() + 9 * day to 2_000_000L,
+        )
+        val oneOffs = listOf(
+            shahrivar.startMillis() + 5 * day to 100_000_000_000L, // خرید خانه
+            mehr.startMillis() + 3 * day to 50_000_000_000L,
+        )
+        val t = SpendTrend.compute(spends, mehr, count = 3, now = now, oneOffs = oneOffs)
+        assertEquals(listOf(0L, 100_004_000_000L, 50_005_000_000L), t.months.map { it.spentRial })
+        assertEquals(listOf(0L, 4_000_000L, 5_000_000L), t.months.map { it.routineRial })
+        assertEquals(4_000_000L, t.lastMonthSameTimeRial)
+        assertEquals(25, t.vsLastMonthPercent)
+        assertEquals(4_000_000L, t.averageRial)
+        // ریتم ۱۰ روز اول (۵ میلیون) سه برابر می‌شود؛ خرج یک‌باره فقط یک بار اضافه می‌شود
+        assertEquals(50_015_000_000L, t.projectedRial)
+    }
 }

@@ -52,7 +52,8 @@ object ReportInsights {
      */
     fun compute(rows: List<DatedAmount>, categories: List<CategoryEntity>, month: JalaliMonth, now: Long): List<Insight> {
         val byId = categories.associateBy { it.id }
-        val spends = SpendRollup.spendsOnly(rows, categories)
+        // خرج یک‌باره (خرید خانه…) الگو نیست: نه تغییر دسته، نه پرخرج‌ترین روز، نه روز هفته
+        val spends = SpendRollup.spendsOnly(rows, categories).filter { !it.isOneOff }
         return listOfNotNull(
             *categoryChanges(spends, byId, month, now).toTypedArray(),
             busiestDay(spends, month),

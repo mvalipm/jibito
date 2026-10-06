@@ -388,7 +388,8 @@ private fun MonthChart(curve: SpendCurve) {
         future -> stringResource(R.string.reports_forecast_label, dayLabel(active + 1, curve.month))
         else -> dayLabel(active + 1, curve.month)
     }
-    val chip = compareChip(value, curve.previousAt(active), previousName)
+    // مقایسه بدون خرج‌های یک‌باره (منحنی ماه قبل هم بدون آن‌هاست)
+    val chip = compareChip(curve.routineAt(active) ?: value, curve.previousAt(active), previousName)
     Headline(label, value, chip?.first, chip?.second ?: true)
 
     val data = remember(curve) {
@@ -454,6 +455,13 @@ private fun MonthChart(curve: SpendCurve) {
             fg = if (over) t.amberTintFg else t.sugFg,
         )
     }
+    if (curve.oneOffRial > 0) {
+        Note(
+            text = stringResource(R.string.reports_one_off_note, amount(Money.compact(curve.oneOffRial))),
+            bg = t.sugBg,
+            fg = t.sugFg,
+        )
+    }
 }
 
 /** ۶ یا ۱۲ ماه اخیر: خرج هر ماهِ تمام‌شده، با خط میانگین */
@@ -476,11 +484,12 @@ private fun MonthsChart(trend: SpendTrend) {
     }
     val chip = if (pick == null) {
         // آخرین ماه نسبت به میانگین
+        // میانگین بدون خرج‌های یک‌باره است؛ ماه هم همین‌طور مقایسه می‌شود
         val last = months.last()
-        val percent = ((last.spentRial - average) * 100.0 / average).roundToInt()
+        val percent = ((last.routineRial - average) * 100.0 / average).roundToInt()
         monthName(last.month) + " · " + averageChip(percent) to (percent < SAME_PERCENT)
     } else {
-        val percent = ((value - average) * 100.0 / average).roundToInt()
+        val percent = ((months[pick].routineRial - average) * 100.0 / average).roundToInt()
         averageChip(percent) to (percent < SAME_PERCENT)
     }
     Headline(label, value, chip.first, chip.second)

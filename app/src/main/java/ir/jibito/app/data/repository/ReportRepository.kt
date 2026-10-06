@@ -29,9 +29,12 @@ class ReportRepository(private val db: AppDatabase) {
             dao.observeOverallBudget(),
         ) { rows, categories, overall ->
             val now = System.currentTimeMillis()
-            val spends = SpendRollup.spendsOnly(rows, categories)
+            val (oneOffs, spends) = SpendRollup.spendsOnly(rows, categories).partition { it.isOneOff }
             MonthReport(
-                curve = SpendCurve.compute(spends.map { it.dateEpoch to it.amount }, month, now, overall?.monthlyLimitRial),
+                curve = SpendCurve.compute(
+                    spends.map { it.dateEpoch to it.amount }, month, now, overall?.monthlyLimitRial,
+                    oneOffs = oneOffs.map { it.dateEpoch to it.amount },
+                ),
                 insights = ReportInsights.compute(rows, categories, month, now),
             )
         }.flowOn(Dispatchers.Default)

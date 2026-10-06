@@ -7,6 +7,7 @@ import java.util.Calendar
 /**
  * خرج تجمعی روزبه‌روزِ یک ماه در برابر ماه قبل (نمودار اصلی «گزارش‌ها»).
  * همان تعریف خرج صفحه‌ی خلاصه و روند: بدون خرید ناموفق، انتقال به خودم و دسته‌هایی مثل پس‌انداز.
+ * خرج یک‌باره (خرید خانه…) در منحنی این ماه هست، ولی در منحنی ماه قبل، مقایسه و الگوی پیش‌بینی نه.
  * همه‌ی مبلغ‌ها ریال.
  */
 data class SpendCurve(
@@ -15,7 +16,7 @@ data class SpendCurve(
     val days: Int,
     /** خرج از اول ماه تا آخر هر روز؛ برای ماه جاری فقط تا امروز (آخرین عضو = امروز) */
     val cumulative: List<Long>,
-    /** همین منحنی برای کل ماه قبل */
+    /** همین منحنی برای کل ماه قبل، بدون خرج‌های یک‌باره (پایه‌ی مقایسه) */
     val previous: List<Long>,
     val isCurrent: Boolean,
     /**
@@ -28,10 +29,19 @@ data class SpendCurve(
     val projectionFromPattern: Boolean,
     /** بودجه‌ی کل ماه؛ null یعنی تعیین نشده */
     val budgetRial: Long?,
+    /** خرج‌های یک‌باره‌ی این ماه، تجمعی (هم‌اندازه‌ی cumulative)؛ خالی یعنی نداشته */
+    val oneOff: List<Long> = emptyList(),
 ) {
     val todayIndex: Int get() = cumulative.lastIndex
     val spentRial: Long get() = cumulative.lastOrNull() ?: 0L
     val projectedEndRial: Long? get() = projection.lastOrNull()
+
+    /** جمع خرج‌های یک‌باره‌ی این ماه تا امروز */
+    val oneOffRial: Long get() = oneOff.lastOrNull() ?: 0L
+
+    /** مقدار نمودار در یک روز بدون خرج‌های یک‌باره؛ برای مقایسه با ماه قبل */
+    fun routineAt(day: Int): Long? =
+        valueAt(day)?.let { it - (oneOff.getOrNull(day.coerceAtMost(todayIndex)) ?: 0L) }
 
     /** خرج تجمعی ماه قبل تا همین روز (ماه کوتاه‌تر: تا آخرش) */
     fun previousAt(day: Int): Long? = previous.getOrNull(day.coerceAtMost(previous.lastIndex))
@@ -72,15 +82,24 @@ data class SpendCurve(
         }
 
         /**
-         * @param spends (زمان، مبلغ ریال) خرج‌هایی که حساب می‌شوند؛ حداقل از اول ماه قبل تا آخر month
+         * @param spends (زمان، مبلغ ریال) خرج‌های عادی که حساب می‌شوند؛ حداقل از اول ماه قبل تا آخر month
+         * @param oneOffs خرج‌های یک‌باره‌ی همان بازه
          */
-        fun compute(spends: List<Pair<Long, Long>>, month: JalaliMonth, now: Long, budgetRial: Long?): SpendCurve {
+        fun compute(
+            spends: List<Pair<Long, Long>>,
+            month: JalaliMonth,
+            now: Long,
+            budgetRial: Long?,
+            oneOffs: List<Pair<Long, Long>> = emptyList(),
+        ): SpendCurve {
             val days = daysIn(month)
-            val full = cumulativeOf(spends, month)
+            val routineFull = cumulativeOf(spends, month)
+            val oneOffFull = cumulativeOf(oneOffs, month)
             val previous = cumulativeOf(spends, month.plus(-1)).toList()
             val isCurrent = now >= month.startMillis() && now < month.endMillis()
             val today = if (isCurrent) dayOfMonth(now) - 1 else days - 1
-            val cumulative = full.take(today + 1)
+            val oneOff = oneOffFull.take(today + 1)
+            val cumulative = (0..today).map { routineFull[it] + oneOff[it] }
 
             val fromPattern = isCurrent && (previous.lastOrNull() ?: 0L) >= MIN_PATTERN_RIAL
             val projection = when {
@@ -89,10 +108,14 @@ data class SpendCurve(
                     val base = previous[today.coerceAtMost(previous.lastIndex)]
                     (today until days).map { d -> cumulative[today] + (previous[d.coerceAtMost(previous.lastIndex)] - base) }
                 }
-                today + 1 >= MIN_RHYTHM_DAYS -> (today until days).map { d -> cumulative[today] * (d + 1) / (today + 1) }
+                // ریتم فقط از خرج‌های عادی؛ خرج یک‌باره تکرار نمی‌شود
+                today + 1 >= MIN_RHYTHM_DAYS -> (today until days).map { d -> routineFull[today] * (d + 1) / (today + 1) + oneOff[today] }
                 else -> emptyList()
             }
-            return SpendCurve(month, days, cumulative, previous, isCurrent, projection, fromPattern, budgetRial)
+            return SpendCurve(
+                month, days, cumulative, previous, isCurrent, projection, fromPattern, budgetRial,
+                oneOff = if (oneOff.lastOrNull() == 0L) emptyList() else oneOff,
+            )
         }
     }
 }

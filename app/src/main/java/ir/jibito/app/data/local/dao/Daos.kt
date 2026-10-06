@@ -301,13 +301,13 @@ interface SummaryDao {
 
     /** همان شرط‌های observeSums، ولی هر تراکنش جدا با زمانش (روند ماه‌ها، خلاصه‌ی هفتگی) */
     @Query(
-        "SELECT categoryId, amount, dateEpoch FROM transaction_flows WHERE " + COUNTED_FLOWS +
+        "SELECT categoryId, amount, dateEpoch, oneOffState = 1 AS isOneOff FROM transaction_flows WHERE " + COUNTED_FLOWS +
             " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to"
     )
     fun observeAmounts(flowType: Int, from: Long, to: Long): Flow<List<DatedAmount>>
 
     @Query(
-        "SELECT categoryId, amount, dateEpoch FROM transaction_flows WHERE " + COUNTED_FLOWS +
+        "SELECT categoryId, amount, dateEpoch, oneOffState = 1 AS isOneOff FROM transaction_flows WHERE " + COUNTED_FLOWS +
             " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to"
     )
     suspend fun amounts(flowType: Int, from: Long, to: Long): List<DatedAmount>
