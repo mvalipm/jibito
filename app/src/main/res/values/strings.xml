@@ -518,8 +518,10 @@
     <string name="todo_review">%1$d پیامک مبهم</string>
     <string name="todo_transfer">انتقال به خودت؟</string>
     <string name="todo_one_off">خرج یک‌باره بود؟</string>
-    <string name="todo_one_off_detail">%1$s تومان، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
-    <string name="todo_one_off_detail_named">%1$s تومان برای «%2$s»، خیلی بیشتر از معمول. اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_detail">%1$s تومان · %2$s. خیلی بیشتر از معمول؛ اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_one_off_detail_named">%1$s تومان برای «%2$s» · %3$s. خیلی بیشتر از معمول؛ اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
+    <string name="todo_page_of">%1$d از %2$d</string>
+    <string name="todo_page_hint">برای بعدی بکش</string>
     <string name="todo_one_off_yes">آره، یک‌باره بود</string>
     <string name="todo_one_off_no">نه</string>
     <string name="todo_recurring">%1$s ماهانه؟</string>

@@ -61,6 +61,11 @@ data class TodoStory(
     val detail: String? = null,
     /** دکمه‌های داخل کارت برای کارهای یک‌لمسی (مثلاً «روشن کن»، «آره / نه»)؛ اولی دکمه‌ی اصلی است */
     val actions: List<TodoAction> = emptyList(),
+    /**
+     * چند مورد از یک نوع سؤال در یک کارت (مثلاً چند «خرج یک‌باره بود؟»): کاربر چپ و راست می‌کشد و
+     * هر کدام را که خواست جواب می‌دهد. وقتی پر است، detail و actions خود کارت به کار نمی‌روند.
+     */
+    val pages: List<TodoPage> = emptyList(),
     val onClick: () -> Unit,
 ) {
     /**
@@ -72,6 +77,9 @@ data class TodoStory(
 
 /** یک دکمه‌ی داخل کارت کار */
 data class TodoAction(val label: String, val onClick: () -> Unit)
+
+/** یک مورد از کارت چندتایی: توضیح و دکمه‌های خودش. key پایدار (مثلاً شناسه‌ی تراکنش) تا بعد از جواب، جای بقیه نپرد. */
+data class TodoPage(val key: String, val detail: String, val actions: List<TodoAction>)
 
 fun isUrgentTodo(id: String): Boolean = id == "review" || id == "uncat" || id.startsWith("budget-")
 

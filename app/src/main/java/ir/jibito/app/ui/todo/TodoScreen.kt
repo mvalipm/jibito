@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -53,6 +55,7 @@ import ir.jibito.app.ui.common.ToastMessage
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.summary.SummaryViewModel
+import ir.jibito.app.ui.summary.TodoAction
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.summary.todoPriority
@@ -177,9 +180,11 @@ private fun SectionLabel(text: String, color: Color) {
 /**
  * یک کار: آیکون در مربع گرد (مثل بقیه‌ی اپ)، عنوان و یک جمله توضیح.
  * کارهای یک‌لمسی دکمه‌های خودشان را همین‌جا دارند.
+ * کارت چندتایی (pages): توضیح و دکمه‌ها ورق می‌خورند؛ کاربر چپ و راست می‌کشد و هر مورد را که خواست جواب می‌دهد.
  */
 @Composable
 private fun TodoCard(s: TodoStory) {
+    val pager = if (s.pages.isNotEmpty()) rememberPagerState(pageCount = { s.pages.size }) else null
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     val shape = RoundedCornerShape(22.dp)
@@ -208,41 +213,94 @@ private fun TodoCard(s: TodoStory) {
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(s.label, fontSize = 16.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
-                s.detail?.let {
-                    Spacer(Modifier.height(2.dp))
-                    Text(it, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.label, modifier = Modifier.weight(1f, fill = false), fontSize = 16.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
+                    // «۲ از ۵» برای کارت چندتایی
+                    if (pager != null && s.pages.size > 1) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            Jalali.toPersianDigits(
+                                stringResource(R.string.todo_page_of, (pager.currentPage + 1).coerceAtMost(s.pages.size), s.pages.size)
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(s.bg)
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = s.fg,
+                        )
+                    }
+                }
+                if (pager == null) {
+                    s.detail?.let {
+                        Spacer(Modifier.height(2.dp))
+                        Text(it, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                    }
                 }
             }
-            if (s.actions.isEmpty()) {
+            if (s.actions.isEmpty() && pager == null) {
                 Spacer(Modifier.width(8.dp))
                 Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = t.faint, modifier = Modifier.size(20.dp))
             }
         }
-        if (s.actions.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                s.actions.forEachIndexed { i, a ->
-                    val primary = i == 0
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .heightIn(min = 40.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (primary) t.btnBg else t.chip)
-                            .clickable(role = Role.Button, onClick = a.onClick)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            a.label,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (primary) t.btnFg else colors.onBackground,
-                            maxLines = 1,
-                        )
-                    }
+        if (pager != null) {
+            HorizontalPager(
+                state = pager,
+                key = { s.pages.getOrNull(it)?.key ?: it },
+                pageSpacing = 16.dp,
+                verticalAlignment = Alignment.Top,
+            ) { page ->
+                val p = s.pages.getOrNull(page) ?: return@HorizontalPager
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                    Spacer(Modifier.height(10.dp))
+                    ActionButtons(p.actions)
                 }
+            }
+            if (s.pages.size > 1) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.todo_page_hint),
+                    modifier = Modifier.fillMaxWidth(),
+                    fontSize = 11.sp,
+                    color = t.faint,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else if (s.actions.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            ActionButtons(s.actions)
+        }
+    }
+}
+
+/** دکمه‌های یک کار؛ اولی دکمه‌ی اصلی است */
+@Composable
+private fun ActionButtons(actions: List<TodoAction>) {
+    val t = JibitoTheme.colors
+    val colors = MaterialTheme.colorScheme
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        actions.forEachIndexed { i, a ->
+            val primary = i == 0
+            Box(
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 40.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (primary) t.btnBg else t.chip)
+                    .clickable(role = Role.Button, onClick = a.onClick)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    a.label,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (primary) t.btnFg else colors.onBackground,
+                    maxLines = 1,
+                )
             }
         }
     }

@@ -76,7 +76,7 @@ class OneOffDetectorTest {
         val rows = history() + listOf(
             tx(mehr, 5, big, oneOff = true),
             tx(mehr, 5, big, rejected = true),
-            tx(mehr.plus(-2), 1, big), // بیشتر از ۴۵ روز پیش
+            tx(mehr.plus(-13), 1, big), // بیشتر از یک سال پیش
             tx(mehr, 5, big, type = FlowType.DEPOSIT),
             tx(mehr, 5, big, selfTransfer = true),
             tx(mehr, 5, big, categoryId = 9),
@@ -88,6 +88,15 @@ class OneOffDetectorTest {
     fun `خرج یک‌باره‌ی قبلی پایه‌ی ماه معمولی نیست`() {
         // شهریور یک خرید خانه داشت؛ نباید «ماه معمولی» را بزرگ کند
         val rows = history() + tx(mehr.plus(-1), 10, 1_000_000_000_000L, oneOff = true) + tx(mehr, 5, 3_000_000_000L)
+        assertEquals(1, OneOffDetector.find(rows, emptySet(), now).size)
+    }
+
+    @Test
+    fun `خریدهای چند ماه پیش هم با ماه معمولی قبل از خودشان سنجیده می‌شوند`() {
+        // ۸ ماه پیش: سه ماه قبلش هر ماه ۴۰۰ میلیون تومان؛ خرید ۲ میلیارد تومانی ← پیشنهاد
+        val old = mehr.plus(-8)
+        val rows = (1..3).flatMap { m -> (1..40).map { i -> tx(old.plus(-m), 1 + i % 28, 100_000_000L) } } +
+            tx(old, 10, 20_000_000_000L)
         assertEquals(1, OneOffDetector.find(rows, emptySet(), now).size)
     }
 }
