@@ -128,6 +128,7 @@ internal fun suggestQuestion(name: String): String {
  * اگر اپ دسته‌ای حدس زده، دو دکمه زیرش می‌آید: «سوپرمارکته؟ آره» و «یه چیز دیگه».
  * @param tint ظاهر دسته‌ی اصلی تراکنش (اگر دسته دارد)
  * @param onAcceptSuggestion پذیرفتن دسته‌ی پیشنهادی با یک لمس؛ null یعنی پیشنهادی نیست
+ * @param suggestionName اسم دسته‌ی پیشنهادی که نشان داده می‌شود (در عمق مجاز کاربر)؛ پیش‌فرض همان پیشنهاد ذخیره‌شده
  */
 @Composable
 internal fun TransactionRow(
@@ -137,6 +138,7 @@ internal fun TransactionRow(
     onAcceptSuggestion: (() -> Unit)? = null,
     /** متن جست‌وجو: هر جای عنوان و توضیح که پیدا شد، پررنگ می‌شود */
     highlight: String? = null,
+    suggestionName: String? = sms.suggestedCategory,
 ) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
@@ -228,7 +230,7 @@ internal fun TransactionRow(
                 Amount(sign, tx.amountRial, amountColor, strike)
             }
         }
-        if (uncategorized && onAcceptSuggestion != null && sms.suggestedCategory != null) {
+        if (uncategorized && onAcceptSuggestion != null && suggestionName != null) {
             Row(Modifier.padding(start = 66.dp, bottom = 10.dp)) {
                 Row(
                     Modifier
@@ -241,7 +243,7 @@ internal fun TransactionRow(
                 ) {
                     Icon(DesignIcons.Check, contentDescription = null, tint = t.sugFg, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(suggestQuestion(sms.suggestedCategory), color = t.sugFg, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(suggestQuestion(suggestionName), color = t.sugFg, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(

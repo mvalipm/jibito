@@ -53,4 +53,30 @@ object CategoryTree {
         }
         return current
     }
+
+    /**
+     * همان [atDepth] با جدول «شناسه ← شناسه‌ی پدر» (برای جاهایی که CategoryEntity دارند، مثل نوتیفیکیشن).
+     * اگر پدری در جدول نبود، بالاترین دسته‌ی پیداشده برمی‌گردد.
+     */
+    fun idAtDepth(id: Long, parentOf: Map<Long, Long?>, maxDepth: Int): Long {
+        val chain = generateSequence(id) { parentOf[it] }.take(10).toList() // خودش، پدر، …، دسته‌ی اصلی
+        return chain[(chain.size - maxDepth).coerceIn(0, chain.lastIndex)]
+    }
+
+    /**
+     * پیشنهاد اپ (اسم دسته) برای ردیف تراکنش: همان قاعده‌ی برگه‌ی انتخاب — در عمق مجاز و بدون دسته‌های اصلی پنهان.
+     * null اگر دسته‌ای با این اسم و نوع نیست یا دسته‌ی اصلی‌اش پنهان است.
+     */
+    fun suggestionAt(
+        name: String?,
+        flowType: Int,
+        categories: List<Category>,
+        byId: Map<Long, Category>,
+        maxDepth: Int,
+        hiddenRoots: Set<Long>,
+    ): Category? {
+        val c = name?.let { n -> categories.firstOrNull { it.name == n && it.flowType == flowType } } ?: return null
+        if (rootOf(c, byId).id in hiddenRoots) return null
+        return atDepth(c, byId, maxDepth)
+    }
 }

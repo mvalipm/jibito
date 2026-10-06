@@ -376,15 +376,17 @@ fun SmsListScreen(
                         }
                     }
                     items(group.items, key = { it.id }) { sms ->
-                        val suggestedId = sms.suggestedCategory?.let { name ->
-                            categories.firstOrNull { it.name == name && it.flowType == sms.transaction.type.code }?.id
-                        }
+                        // پیشنهاد اپ در عمق و با دسته‌های اصلی‌ای که کاربر در تنظیمات گذاشته («سوخت» ← «حمل‌ونقل»)
+                        val suggestion = CategoryTree.suggestionAt(
+                            sms.suggestedCategory, sms.transaction.type.code, categories, byId, displayDepth, hiddenRoots,
+                        )
                         Box(Modifier.padding(horizontal = 20.dp)) {
                             TransactionRow(
                                 sms = sms,
                                 tint = tintOf(sms, byId),
                                 onClick = { selectedId = sms.id },
-                                onAcceptSuggestion = suggestedId?.let { id -> { pickCategory(sms, id) } },
+                                onAcceptSuggestion = suggestion?.let { c -> { pickCategory(sms, c.id) } },
+                                suggestionName = suggestion?.name,
                                 highlight = highlight,
                             )
                         }

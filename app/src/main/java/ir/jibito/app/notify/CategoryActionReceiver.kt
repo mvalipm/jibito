@@ -62,7 +62,7 @@ class CategoryActionReceiver : BroadcastReceiver() {
         val notifier = TransactionNotifier(context, container.database)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val reply = container.transactionRepository.applyNoteReply(transactionId, text)
+                val reply = container.transactionRepository.applyNoteReply(transactionId, text, container.categoryDisplay.depth.value)
                 when {
                     // متن خالی ← همان سؤال دوباره (بی‌صدا)
                     reply == null -> notifier.askAgainAnyway(transactionId)

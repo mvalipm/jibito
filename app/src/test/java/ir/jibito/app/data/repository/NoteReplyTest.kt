@@ -57,6 +57,30 @@ class NoteReplyTest {
         assertEquals(true, row.categorizedAt != null)
     }
 
+    /** کاربری که در تنظیمات لایه‌ها را کم کرده: دسته‌ی جورشده تا همان لایه بالا می‌رود */
+    @Test
+    fun matchFollowsTheChosenDepth() = runBlocking {
+        val transport = db.categoryDao().insert(CategoryEntity(name = "حمل‌ونقل", flowType = 2))
+        val car = db.categoryDao().insert(CategoryEntity(name = "خودرو شخصی", flowType = 2, parentId = transport))
+        val fuel = db.categoryDao().insert(CategoryEntity(name = "سوخت", flowType = 2, parentId = car))
+
+        // فقط دسته‌ی اصلی: «بنزین زدم» ← «سوخت» ← «حمل‌ونقل»
+        val onlyRoots = db.transactionFlowDao().insert(tx(smsId = 1))
+        val reply = repo.applyNoteReply(onlyRoots, "بنزین زدم", maxDepth = 1)!!
+        assertEquals(transport, reply.categoryId)
+        assertEquals("حمل‌ونقل", reply.categoryName)
+        assertEquals(transport, db.transactionFlowDao().byId(onlyRoots)!!.categoryId)
+        assertEquals("بنزین زدم", db.transactionFlowDao().byId(onlyRoots)!!.note)
+
+        // تا زیردسته: اسم دقیق دسته‌ی لایه‌ی ۳ هم به زیردسته می‌رسد
+        val twoLevels = db.transactionFlowDao().insert(tx(smsId = 2))
+        assertEquals(car, repo.applyNoteReply(twoLevels, "سوخت", maxDepth = 2)!!.categoryId)
+
+        // همه‌ی لایه‌ها (پیش‌فرض): همان دسته‌ی دقیق
+        val all = db.transactionFlowDao().insert(tx(smsId = 3))
+        assertEquals(fuel, repo.applyNoteReply(all, "بنزین زدم")!!.categoryId)
+    }
+
     @Test
     fun unmatchedTextIsOnlyANote() = runBlocking {
         db.categoryDao().insert(CategoryEntity(name = "کافه", flowType = 2))
