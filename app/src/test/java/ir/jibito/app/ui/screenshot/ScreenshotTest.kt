@@ -181,7 +181,13 @@ class ScreenshotTest {
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
             TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
-            TodoStory("transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟", "اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", actions = listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})) {},
+            TodoStory(
+                "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟",
+                pages = listOf(
+                    TodoPage("t1", "۵ میلیون تومان از ملت به سامان · دیروز. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})),
+                    TodoPage("t2", "۲ میلیون تومان از ملت به پاسارگاد · ۳ مهر", listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})),
+                ),
+            ) {},
             // کارت چندتایی: صفحه‌ی اول از سه صفحه
             TodoStory(
                 "oneoff", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null, "خرج یک‌باره بود؟",
