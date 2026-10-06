@@ -9,8 +9,8 @@ import ir.jibito.app.util.JalaliMonth
  */
 object OneOffDetector {
 
-    /** فقط خریدهای همین چند روز اخیر پرسیده می‌شوند (خرید قدیمی را کاربر یادش نیست) */
-    const val LOOKBACK_DAYS = 45
+    /** خریدهای یک سال اخیر (بلندترین بازه‌ی گزارش‌ها)؛ قدیمی‌تر روی هیچ گزارشی اثر ندارد */
+    const val LOOKBACK_DAYS = 365
 
     /** کمتر از ۵۰ میلیون تومان «خرید بزرگ» نیست، هرچقدر هم خرج ماهانه کم باشد */
     const val MIN_RIAL = 500_000_000L

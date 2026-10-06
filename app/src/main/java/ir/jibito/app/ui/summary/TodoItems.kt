@@ -130,23 +130,33 @@ fun rememberTodoStories(
                 )
             )
         }
-        oneOffSuggestions.firstOrNull()?.let { tx ->
+        if (oneOffSuggestions.isNotEmpty()) {
             val repository = app.container.transactionRepository
-            val amountText = if (hidden) HIDDEN_AMOUNT else Money.compact(tx.transaction.amountRial)
-            val name = tx.merchant ?: tx.categoryName ?: tx.note
+            val yes = stringResource(R.string.todo_one_off_yes)
+            val no = stringResource(R.string.todo_one_off_no)
+            // همه‌ی پیشنهادها در یک کارت؛ کاربر چپ و راست می‌کشد و هر کدام را که خواست جواب می‌دهد (بزرگ‌ترین اول)
+            val pages = oneOffSuggestions.map { tx ->
+                val amountText = if (hidden) HIDDEN_AMOUNT else Money.compact(tx.transaction.amountRial)
+                val name = tx.merchant ?: tx.categoryName ?: tx.note
+                val date = Jalali.dayTitle(tx.dateMillis)
+                TodoPage(
+                    key = tx.id.toString(),
+                    detail = Jalali.toPersianDigits(
+                        if (name != null) stringResource(R.string.todo_one_off_detail_named, amountText, name, date)
+                        else stringResource(R.string.todo_one_off_detail, amountText, date)
+                    ),
+                    // «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود
+                    actions = listOf(
+                        TodoAction(yes) { scope.launch { repository.setOneOff(tx.id, true) } },
+                        TodoAction(no) { scope.launch { repository.setOneOff(tx.id, false) } },
+                    ),
+                )
+            }
             add(
                 TodoStory(
-                    "oneoff-${tx.id}", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null,
+                    "oneoff", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null,
                     label = stringResource(R.string.todo_one_off),
-                    detail = Jalali.toPersianDigits(
-                        if (name != null) stringResource(R.string.todo_one_off_detail_named, amountText, name)
-                        else stringResource(R.string.todo_one_off_detail, amountText)
-                    ),
-                    // همان‌جا جواب داده می‌شود؛ «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود
-                    actions = listOf(
-                        TodoAction(stringResource(R.string.todo_one_off_yes)) { scope.launch { repository.setOneOff(tx.id, true) } },
-                        TodoAction(stringResource(R.string.todo_one_off_no)) { scope.launch { repository.setOneOff(tx.id, false) } },
-                    ),
+                    pages = pages,
                     onClick = onOpenTransactions,
                 )
             )
@@ -205,6 +215,7 @@ fun todoPriority(id: String): Int = when {
     id == "uncat" -> 1
     id.startsWith("budget-") -> 2
     id == "transfer" -> 3
+    id == "oneoff" -> 3
     id == "account" -> 4
     id == "rec" -> 5
     else -> 6
