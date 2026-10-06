@@ -25,7 +25,8 @@ android {
         // عدد تکراری یا کمتر نمی‌سازند. VERSION_CODE_BASE بالاتر از همه‌ی versionCodeهای دستیِ قبلی (تا ۷۵) است.
         // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
         versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "0.51.0"
+        // هر PR که امکان یا migration تازه دارد این را بالا می‌برد و یک خط به CHANGELOG.md (ریشه‌ی ریپو) اضافه می‌کند
+        versionName = "0.52.0"
 
         // تست‌های روی گوشی/امولاتور (app/src/androidTest)؛ هر تست در فرایند خودش و با داده‌ی پاک (Orchestrator)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -100,7 +101,38 @@ android {
         unitTests.all {
             // تست Migration ها ساختار هر نسخه را از همین فایل‌های JSON می‌خواند
             it.systemProperty("room.schemaDir", "$projectDir/schemas")
+            // ChangelogTest: CHANGELOG.md باید برای همین versionName بخش داشته باشد
+            it.systemProperty("jibito.changelog", rootProject.file("CHANGELOG.md").path)
+            it.systemProperty("jibito.versionName", defaultConfig.versionName.orEmpty())
         }
+    }
+}
+
+/** CHANGELOG.md ریشه‌ی ریپو را در assets اپ می‌گذارد (صفحه‌ی «چه چیزی تازه است» همان را نشان می‌دهد) */
+abstract class CopyChangelog : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val changelog: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val out = outputDir.get().asFile
+        out.deleteRecursively()
+        out.mkdirs()
+        changelog.get().asFile.copyTo(File(out, "CHANGELOG.md"))
+    }
+}
+
+val copyChangelog = tasks.register<CopyChangelog>("copyChangelog") {
+    changelog.set(rootProject.layout.projectDirectory.file("CHANGELOG.md"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(copyChangelog, CopyChangelog::outputDir)
     }
 }
 

@@ -57,7 +57,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** زیرصفحه‌های تنظیمات */
-internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced, NotificationStyle }
+internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced, NotificationStyle, WhatsNew }
 
 /**
  * تنظیمات: یک فهرست گروه‌بندی‌شده که هر ردیفش «مقدار فعلی» را هم نشان می‌دهد
@@ -347,6 +347,14 @@ private fun SettingsHub(
             )
             RowDivider()
             SettingsRow(
+                icon = SettingsIcons.Sparkle,
+                tint = tones.amber,
+                title = stringResource(R.string.whats_new_title),
+                value = Jalali.toPersianDigits(stringResource(R.string.whats_new_version, version.substringBefore('-'))),
+                onClick = { onOpen(SettingsPage.WhatsNew) },
+            )
+            RowDivider()
+            SettingsRow(
                 icon = SettingsIcons.Heart,
                 tint = tones.alert,
                 title = stringResource(R.string.settings_feedback_title),
@@ -453,6 +461,10 @@ private fun SettingsPageScreen(
             SettingsPage.NotificationStyle -> {
                 SettingsPageHeader(stringResource(R.string.settings_notif_style_title), onBack)
                 NotificationStylePageContent()
+            }
+            SettingsPage.WhatsNew -> {
+                SettingsPageHeader(stringResource(R.string.whats_new_title), onBack)
+                WhatsNewPageContent()
             }
         }
     }

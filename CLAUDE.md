@@ -6,6 +6,12 @@
 - commitهای خودکار «Update screenshot references [skip ci]» CI را اجرا نمی‌کنند؛ اگر آخرین commit همین است، قبل از merge یک بار workflow «Build APK» را دستی (بدون record_screenshots) روی همان شاخه اجرا کن و منتظر سبز شدنش بمان.
 - اگر CI قرمز شد، merge نکن: اول درستش کن.
 
+## نسخه و CHANGELOG
+- هر PR که امکان تازه یا migration (تغییر پایگاه داده) دارد، `versionName` را در `app/build.gradle.kts` بالا ببرد و یک خط در بخش همان نسخه در `CHANGELOG.md` بنویسد (اگر بخش آن نسخه نیست، `## نسخه` تازه بالای فایل).
+- متن خط برای کاربر است: فارسی ساده، بدون اسم فایل و اصطلاح فنی.
+- صفحه‌ی «چه چیزی تازه است» داخل اپ همین فایل را نشان می‌دهد (Gradle موقع ساخت آن را در assets می‌گذارد)؛ متن را جای دیگری تکرار نکن.
+- `ChangelogTest` در CI می‌شکند اگر بالاترین بخش `CHANGELOG.md` با `versionName` یکی نباشد.
+
 ## ساخت و تست
 - محیط ابری Android SDK ندارد؛ ساخت و تست‌های اندرویدی فقط در CI (GitHub Actions، `.github/workflows/build.yml`) اجرا می‌شوند.
 - تست‌های روی امولاتور (`app/src/androidTest`) در کار `instrumented` همان workflow روی اندروید ۱۴ و ۱۶ اجرا می‌شوند؛ پیامک بانکیِ لازم برای `SmsReceiveTest` را خود CI با `adb emu sms send` در صندوق امولاتور می‌گذارد.
