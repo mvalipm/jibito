@@ -440,6 +440,18 @@
     <string name="hero_past_calm">ماه رو با %1$s اضافه بستی. آفرین!</string>
 
     <!-- کارهای لازم -->
+    <string name="steps_title">قدم‌های اول</string>
+    <string name="steps_progress">%1$d از %2$d</string>
+    <string name="steps_hide">بستن قدم‌های اول</string>
+    <string name="steps_cat">به یه خرج دسته بده</string>
+    <string name="steps_cat_detail">بعد از چند بار، خودم یاد می‌گیرم دسته‌ی همون فروشگاه رو بذارم.</string>
+    <string name="steps_notif">نوتیف رو روشن کن</string>
+    <string name="steps_notif_detail">هر خرج تازه که اومد، همون‌جا می‌پرسم «مال چی بود؟».</string>
+    <string name="steps_budget">بودجه‌ی ماهانه بذار</string>
+    <string name="steps_budget_detail">تا نزدیک سقفش رسیدی، خبرت می‌کنم.</string>
+    <string name="steps_lock">قفل اپ رو روشن کن</string>
+    <string name="steps_lock_detail">با همون قفل گوشی؛ کسی بی‌اجازه خرج‌هات رو نمی‌بینه.</string>
+    <string name="steps_done_a11y">انجام شد</string>
     <string name="todo_title">کارهای لازم</string>
     <string name="todo_urgent_count">%1$d کار فوری</string>
     <string name="todo_section_now">الان</string>
