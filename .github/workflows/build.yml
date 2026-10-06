@@ -80,6 +80,18 @@ jobs:
           set -o pipefail
           ./gradlew lintDebug --stacktrace 2>&1 | tee -a build.log
 
+      # گزارش متنی لینت (همه‌ی هشدارها) در لاگ و خلاصه‌ی اجرای CI؛ حتی اگر لینت شکست بخورد
+      - name: Show lint report
+        if: always()
+        run: |
+          report=$(find app/build -name 'lint-results-debug.txt' -print -quit 2>/dev/null)
+          if [ -n "$report" ]; then
+            cat "$report"
+            { echo '### Lint'; echo '```'; cat "$report"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Lint text report not found"; find app/build -name 'lint-results*' || true
+          fi
+
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v4
@@ -87,6 +99,7 @@ jobs:
           name: lint-report
           path: |
             app/build/reports/lint-results-debug.html
+            app/build/**/lint-results-debug.txt
           if-no-files-found: ignore
 
       # نسخه‌ی انتشار (R8) همیشه ساخته می‌شود تا خرابی‌اش همان موقع معلوم شود؛ امضا فقط اگر کلید در Secrets باشد
