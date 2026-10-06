@@ -2,6 +2,7 @@ package ir.jibito.app.data.category
 
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.CategorySum
+import ir.jibito.app.data.local.entity.DatedAmount
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -62,5 +63,19 @@ class TaxonomyTest {
         assertEquals(100L, r.uncategorized)
         assertEquals(1_000L, r.excluded)
         assertEquals(800L, r.total)
+    }
+
+    @Test
+    fun `ردیف‌های خرج همان قاعده‌ی جمع دسته‌ها را دارند`() {
+        val food = CategoryEntity(id = 1, name = "خوراک")
+        val savings = CategoryEntity(id = 4, name = "پس‌انداز و قرض", countsAsSpend = false)
+        // زیردسته‌ای که خودش «خرج است» ولی دسته‌ی اصلی‌اش نه ← خرج نیست
+        val lend = CategoryEntity(id = 5, name = "قرض دادم", parentId = 4)
+        val categories = listOf(food, savings, lend)
+        assertEquals(setOf(4L, 5L), SpendRollup.excludedIds(categories))
+        val rows = listOf(DatedAmount(1, 100, 0), DatedAmount(5, 1_000, 0), DatedAmount(null, 70, 0), DatedAmount(99, 30, 0))
+        assertEquals(listOf(100L, 70L, 30L), SpendRollup.spendsOnly(rows, categories).map { it.amount })
+        val sums = rows.groupBy { it.categoryId }.map { (id, r) -> CategorySum(id, r.sumOf { it.amount }) }
+        assertEquals(SpendRollup.spendsOnly(rows, categories).sumOf { it.amount }, SpendRollup.rollup(categories, sums).total)
     }
 }

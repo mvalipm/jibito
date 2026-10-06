@@ -275,50 +275,42 @@ interface CategoryDao {
     suspend fun byUsage(flowType: Int): List<CategoryEntity>
 }
 
+/**
+ * تنها تعریفِ «کدام تراکنش در جمع‌ها حساب می‌شود» در SQL: خریدهای ناموفق، حذف‌شده‌ها و انتقال به خودم نه.
+ * همه‌ی کوئری‌های گزارش و خلاصه همین را به کار می‌برند؛ قاعده‌ی تازه (مثلاً «خرج یک‌باره») فقط اینجا اضافه می‌شود.
+ * بخش دسته‌ای قاعده (پس‌انداز و قرض دادن خرج نیستند) در کاتلین است: SpendRollup.
+ */
+const val COUNTED_FLOWS = "isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1"
+
 @Dao
 interface SummaryDao {
 
     /**
-     * جمع واریز یا برداشت هر دسته در یک بازه (null = بی‌دسته).
-     * خریدهای ناموفق، حذف‌شده‌ها و انتقال به خودم حساب نمی‌شوند.
+     * جمع واریز یا برداشت هر دسته در یک بازه (null = بی‌دسته)؛ فقط تراکنش‌های COUNTED_FLOWS.
      * جمع زدن روی دسته‌ی اصلی (درخت) در کاتلین انجام می‌شود: SpendRollup.
      */
     @Query(
-        """
-        SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
-          AND dateEpoch >= :from AND dateEpoch < :to
-        GROUP BY categoryId
-        """
+        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
+            " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to GROUP BY categoryId"
     )
     fun observeSums(flowType: Int, from: Long, to: Long): Flow<List<CategorySum>>
 
     /** همان شرط‌های observeSums، ولی هر تراکنش جدا با زمانش (روند ماه‌ها، خلاصه‌ی هفتگی) */
     @Query(
-        """
-        SELECT categoryId, amount, dateEpoch FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
-          AND dateEpoch >= :from AND dateEpoch < :to
-        """
+        "SELECT categoryId, amount, dateEpoch FROM transaction_flows WHERE " + COUNTED_FLOWS +
+            " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to"
     )
     fun observeAmounts(flowType: Int, from: Long, to: Long): Flow<List<DatedAmount>>
 
     @Query(
-        """
-        SELECT categoryId, amount, dateEpoch FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
-          AND dateEpoch >= :from AND dateEpoch < :to
-        """
+        "SELECT categoryId, amount, dateEpoch FROM transaction_flows WHERE " + COUNTED_FLOWS +
+            " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to"
     )
     suspend fun amounts(flowType: Int, from: Long, to: Long): List<DatedAmount>
 
     @Query(
-        """
-        SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows
-        WHERE isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1 AND flowType = :flowType
-          AND dateEpoch >= :from AND dateEpoch < :to
-        GROUP BY categoryId
-        """
+        "SELECT categoryId, COALESCE(SUM(amount), 0) AS totalRial FROM transaction_flows WHERE " + COUNTED_FLOWS +
+            " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to GROUP BY categoryId"
     )
     suspend fun sums(flowType: Int, from: Long, to: Long): List<CategorySum>
 
