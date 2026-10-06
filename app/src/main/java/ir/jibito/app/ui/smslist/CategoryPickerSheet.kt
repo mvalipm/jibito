@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -114,6 +115,8 @@ fun CategoryPickerSheet(
     onDelete: (() -> Unit)? = null,
     /** ذخیره‌ی یادداشت خود کاربر (برگه بسته نمی‌شود)؛ null یعنی جعبه‌ی یادداشت نشان داده نشود */
     onNote: ((String) -> Unit)? = null,
+    /** علامت زدن/برداشتن «خرج یک‌باره»؛ null یعنی ردیفش نشان داده نشود */
+    onOneOff: ((Boolean) -> Unit)? = null,
     /** پرکاربردترین دسته‌های کاربر برای این نوع (بیشترین اول) */
     frequentIds: List<Long> = emptyList(),
     /** چند لایه دیده شود (۱ تا ۳) */
@@ -368,6 +371,14 @@ fun CategoryPickerSheet(
                 if (!transaction.isManual) {
                     Spacer(Modifier.height(10.dp))
                     SelfTransferRow(checked = transaction.isSelfTransfer, onChange = { saveNote(); onSelfTransfer(it) })
+                }
+
+                // خرج یک‌باره (خرید خانه، ماشین…): فقط برای خرجی که حساب می‌شود
+                val countsAsSpend = transaction.transaction.type == FlowType.WITHDRAWAL &&
+                    !transaction.isSelfTransfer && !transaction.isFailedPurchase
+                if (onOneOff != null && countsAsSpend) {
+                    Spacer(Modifier.height(10.dp))
+                    OneOffRow(checked = transaction.isOneOff, onChange = { saveNote(); onOneOff(it) })
                 }
 
                 if (transaction.merchant != null) {
@@ -664,6 +675,44 @@ private fun rialNumber(rial: Long): String =
 /** «انتقال بین حساب‌های خودم»: یک ردیف با کلید روشن/خاموش (نه خرج حساب می‌شود نه درآمد) */
 @Composable
 private fun SelfTransferRow(checked: Boolean, onChange: (Boolean) -> Unit) {
+    val jt = JibitoTheme.colors
+    SwitchRow(
+        icon = DesignIcons.Transfer,
+        title = stringResource(R.string.sheet_self_transfer),
+        subtitle = stringResource(R.string.sheet_self_transfer_short),
+        fg = jt.transferFg,
+        bg = jt.transferBg,
+        checked = checked,
+        onChange = onChange,
+    )
+}
+
+/** «خرج یک‌باره»: خرید بزرگ و نامعمول (خانه، ماشین…) که الگوی خرج ماه‌ها را به هم نزند */
+@Composable
+private fun OneOffRow(checked: Boolean, onChange: (Boolean) -> Unit) {
+    val jt = JibitoTheme.colors
+    SwitchRow(
+        icon = DesignIcons.Star,
+        title = stringResource(R.string.sheet_one_off),
+        subtitle = stringResource(R.string.sheet_one_off_short),
+        fg = jt.sugFg,
+        bg = jt.sugBg,
+        checked = checked,
+        onChange = onChange,
+    )
+}
+
+/** ردیفِ آیکون + عنوان + توضیح + کلید روشن/خاموش (حاشیه‌ی رنگی وقتی روشن است) */
+@Composable
+private fun SwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    fg: Color,
+    bg: Color,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val jt = JibitoTheme.colors
     val shape = RoundedCornerShape(16.dp)
@@ -671,26 +720,26 @@ private fun SelfTransferRow(checked: Boolean, onChange: (Boolean) -> Unit) {
         Modifier
             .fillMaxWidth()
             .clip(shape)
-            .border(1.dp, if (checked) jt.transferFg else jt.border, shape)
+            .border(1.dp, if (checked) fg else jt.border, shape)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(30.dp).background(jt.transferBg, RoundedCornerShape(10.dp)),
+            Modifier.size(30.dp).background(bg, RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(DesignIcons.Transfer, contentDescription = null, tint = jt.transferFg, modifier = Modifier.size(18.dp))
+            Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.sheet_self_transfer), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(stringResource(R.string.sheet_self_transfer_short), fontSize = 11.sp, color = jt.muted)
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            Text(subtitle, fontSize = 11.sp, color = jt.muted)
         }
         Switch(
             checked = checked,
             onCheckedChange = null,
-            colors = SwitchDefaults.colors(checkedTrackColor = jt.transferFg),
+            colors = SwitchDefaults.colors(checkedTrackColor = fg),
         )
     }
 }

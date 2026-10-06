@@ -41,7 +41,7 @@ interface TransactionFlowDao {
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
     /** همه‌ی ردیف‌های پیامکی (ثبت دستی نه)؛ smsId ردیفی که شناسه‌اش آزاد شده null است */
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, categorizedAt, note FROM transaction_flows WHERE source != 'MANUAL'")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, categorizedAt, note, oneOffState FROM transaction_flows WHERE source != 'MANUAL'")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** «زمان + متن» ردیف‌های پیامکی، برای پیدا کردن ردیف قبلی وقتی شناسه‌ی پیامک‌ها عوض شده (گوشی تازه) */
@@ -72,6 +72,10 @@ interface TransactionFlowDao {
     /** یادداشت خود کاربر؛ null یعنی پاک شود */
     @Query("UPDATE transaction_flows SET note = :note, updatedAt = :now WHERE id = :id")
     suspend fun setNote(id: Long, note: String?, now: Long)
+
+    /** خرج یک‌باره: ۰ عادی، ۱ یک‌باره، ۲ «یک‌باره نیست» */
+    @Query("UPDATE transaction_flows SET oneOffState = :state, updatedAt = :now WHERE id = :id")
+    suspend fun setOneOff(id: Long, state: Int, now: Long)
 
     @Query("SELECT * FROM transaction_flows WHERE id = :id")
     suspend fun byId(id: Long): TransactionFlowEntity?

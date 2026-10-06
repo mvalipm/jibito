@@ -135,6 +135,10 @@ class TransactionsViewModel(
         viewModelScope.launch { repository.setSelfTransfer(transactionId, isSelfTransfer) }
     }
 
+    fun setOneOff(transactionId: Long, isOneOff: Boolean) {
+        viewModelScope.launch { repository.setOneOff(transactionId, isOneOff) }
+    }
+
     fun confirmTransfer(suggestion: TransferSuggestion) {
         viewModelScope.launch { repository.confirmTransfer(suggestion) }
     }

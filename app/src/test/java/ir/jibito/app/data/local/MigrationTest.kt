@@ -60,6 +60,18 @@ class MigrationTest {
     @Test fun migrateFrom11() = migrateFrom(11)
     @Test fun migrateFrom12() = migrateFrom(12)
     @Test fun migrateFrom13() = migrateFrom(13)
+    @Test fun migrateFrom14() = migrateFrom(14)
+
+    @Test
+    fun oneOffNoneForExistingRowsAfter14To15() {
+        createAt(14)
+        openWithRoom().use { db ->
+            db.openHelper.readableDatabase.query("SELECT oneOffState FROM transaction_flows WHERE smsId = 77").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("old rows are not one-off", 0, it.getInt(0))
+            }
+        }
+    }
 
     @Test
     fun noteEmptyForExistingRowsAfter13To14() {

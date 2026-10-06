@@ -109,6 +109,7 @@ object DesignIcons {
     val Bank by lazy { svg("bank", BANK) }
     val Repeat by lazy { svg("repeat", REPEAT) }
     val Transfer by lazy { svg("transfer", TRANSFER) }
+    val Star by lazy { svg("star", STAR) }
     val Failed by lazy { svg("failed", FAILED) }
     val Message by lazy { svg("message", MESSAGE) }
     val Fingerprint by lazy { svg("fingerprint", FINGERPRINT) }
