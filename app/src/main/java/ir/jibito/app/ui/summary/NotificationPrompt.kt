@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.activity.compose.LocalActivity
@@ -81,5 +82,5 @@ private fun isSnoozed(context: Context): Boolean {
 }
 
 private fun snooze(context: Context) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putLong(KEY_SNOOZED_AT, System.currentTimeMillis()).apply()
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putLong(KEY_SNOOZED_AT, System.currentTimeMillis()) }
 }

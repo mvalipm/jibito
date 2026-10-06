@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import ir.jibito.app.MainActivity
 import ir.jibito.app.R
 import ir.jibito.app.data.category.SpendRollup
@@ -34,7 +35,7 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
     fun setEnabled(value: Boolean) {
-        prefs.edit().putBoolean(KEY_ENABLED, value).apply()
+        prefs.edit { putBoolean(KEY_ENABLED, value) }
         _enabled.value = value
     }
 
@@ -53,7 +54,7 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
         val digest = WeeklyDigestRule.summarize(spends, now, oneOffs.map { it.dateEpoch to it.amount })
         // هفته‌ی بی‌خرج: چیزی برای گفتن نیست (و نوتیفیکیشن بی‌فایده نمی‌فرستیم)
         if (digest.thisWeekRial == 0L || show(digest, digest.topRootId?.let { byId[it]?.name })) {
-            prefs.edit().putLong(KEY_LAST_SLOT, WeeklyDigestRule.lastSlot(now)).apply()
+            prefs.edit { putLong(KEY_LAST_SLOT, WeeklyDigestRule.lastSlot(now)) }
         }
     }
 

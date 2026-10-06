@@ -20,7 +20,7 @@ import ir.jibito.app.ui.theme.Coral
  * تزئینی است (اسم اپ کنارش نوشته می‌شود)، پس صفحه‌خوان آن را نمی‌خواند.
  */
 @Composable
-fun JibitoLogo(size: Dp = 64.dp, modifier: Modifier = Modifier) {
+fun JibitoLogo(modifier: Modifier = Modifier, size: Dp = 64.dp) {
     Box(
         modifier
             .size(size)

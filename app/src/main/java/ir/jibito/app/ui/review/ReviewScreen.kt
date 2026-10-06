@@ -121,7 +121,7 @@ fun ReviewScreen(onClose: () -> Unit) {
                     .padding(start = 20.dp, end = 20.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Mascot(44.dp, MascotFace.UNSURE)
+                Mascot(44.dp, face = MascotFace.UNSURE)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -225,14 +225,15 @@ private fun ReviewPager(
             val sameSenderOthers = currentList.count {
                 it.smsId != item.smsId && BankDirectory.normalizeSender(it.sender) == target
             }
-            // فاصله‌ی این کارت از کارت وسط (۰ = وسط، ۱ = یک کارت آن‌طرف‌تر)
-            val offset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
-            val distance = kotlin.math.abs(offset).coerceIn(0f, 1f)
             Box(
                 Modifier
                     .fillMaxSize()
                     .padding(vertical = 4.dp)
+                    // موقعیت pager فقط در مرحله‌ی رسم خوانده می‌شود تا کشیدن کارت‌ها recomposition نسازد
                     .graphicsLayer {
+                        // فاصله‌ی این کارت از کارت وسط (۰ = وسط، ۱ = یک کارت آن‌طرف‌تر)
+                        val offset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+                        val distance = kotlin.math.abs(offset).coerceIn(0f, 1f)
                         val scale = 1f - 0.08f * distance
                         scaleX = scale
                         scaleY = scale
@@ -268,7 +269,7 @@ private fun AllDone(onClose: () -> Unit) {
                 .padding(start = 30.dp, end = 30.dp, top = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Mascot(150.dp, MascotFace.HAPPY, Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value })
+            Mascot(150.dp, Modifier.graphicsLayer { scaleX = pop.value; scaleY = pop.value }, face = MascotFace.HAPPY)
             Spacer(Modifier.height(18.dp))
             Text(
                 stringResource(R.string.review_all_done),

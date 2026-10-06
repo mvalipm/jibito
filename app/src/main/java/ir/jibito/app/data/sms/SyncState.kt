@@ -1,6 +1,7 @@
 package ir.jibito.app.data.sms
 
 import android.content.Context
+import androidx.core.content.edit
 import androidx.core.content.pm.PackageInfoCompat
 
 /**
@@ -30,7 +31,7 @@ class SyncState(context: Context) {
         needsFullScan(lastSmsId, lastFullScanAt, prefs.getLong(KEY_LAST_FULL_VERSION, -1L), appVersion, now)
 
     fun save(maxId: Long, maxDate: Long, otpSenders: Set<String>, fullScanAt: Long?) {
-        prefs.edit().apply {
+        prefs.edit {
             if (maxId > lastSmsId) putLong(KEY_LAST_ID, maxId)
             if (maxDate > lastSmsDate) putLong(KEY_LAST_DATE, maxDate)
             if (fullScanAt != null) {
@@ -38,7 +39,7 @@ class SyncState(context: Context) {
                 putLong(KEY_LAST_FULL_VERSION, appVersion)
             }
             putStringSet(KEY_OTP_SENDERS, HashSet(otpSenders))
-        }.apply()
+        }
     }
 
     companion object {

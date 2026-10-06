@@ -3,9 +3,7 @@
     <string name="app_name">جیبیتو</string>
     <string name="welcome_tagline">خرج‌هات خودشون ثبت می‌شن.</string>
     <string name="welcome_body">پیامک بانک که بیاد، جیبیتو خودش می‌خونه و ثبت می‌کنه. تو فقط با یه لمس می‌گی خرجِ چی بوده.</string>
-    <string name="sample_label">نمونه‌ی یک تراکنش</string>
     <string name="sample_amount">۲۵۰٬۰۰۰</string>
-    <string name="sample_source">برداشت از بانک ملت</string>
     <string name="cat_food">غذا</string>
     <string name="cat_transport">رفت‌وآمد</string>
     <string name="cat_shopping">خرید</string>
@@ -21,7 +19,6 @@
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>
     <string name="perm_open_settings">باز کردن تنظیمات اپ</string>
     <string name="list_title">تراکنش‌ها</string>
-    <string name="list_count">%1$d تراکنش از پیامک‌های بانکی پیدا شد</string>
     <string name="list_loading">دارم پیامک‌های بانکت رو می‌خونم…</string>
     <string name="list_syncing">دارم پیامک‌های تازه رو بررسی می‌کنم…</string>
     <string name="bank_unknown">بانک</string>
@@ -29,14 +26,11 @@
     <string name="tx_deposit">واریز</string>
     <string name="tx_withdrawal">برداشت</string>
     <string name="tx_failed_purchase">تراکنش ناموفق</string>
-    <string name="tx_refunded">پول به حسابت برگشت — این مبلغ خرج حساب نمی‌شه.</string>
-    <string name="tx_suggested_category">پیشنهاد دسته: %1$s</string>
     <string name="unit_toman">تومان</string>
     <string name="tx_balance">مانده: %1$s</string>
     <string name="notif_channel_name">تراکنش‌های تازه</string>
     <string name="notif_channel_desc">وقتی خرجی از پیامک بانک ثبت می‌شه، می‌پرسه مال چی بوده</string>
     <string name="notif_question">مال چی بود؟ یه لمس کافیه.</string>
-    <string name="tx_add_category">انتخاب دسته</string>
     <string name="tx_fee">کارمزد %1$s</string>
     <string name="search_hint">اسم، بانک، دسته یا مبلغ…</string>
     <string name="search_date_all">همه</string>
@@ -110,11 +104,7 @@
     <string name="transfer_progress">۱ از %1$d</string>
     <string name="transfer_details">جزئیات</string>
     <string name="transfer_less">بستن</string>
-    <string name="balances_title">چقد دارم؟</string>
-    <string name="balances_total_hint">از %1$d بانک</string>
     <string name="balances_today">مانده‌ی امروز</string>
-    <string name="balances_yesterday">مانده‌ی دیروز</string>
-    <string name="balances_days_ago">مانده‌ی %1$d روز پیش</string>
     <string name="tx_manual_expense">خرج نقدی</string>
     <string name="tx_manual_income">درآمد نقدی</string>
     <string name="tx_manual_source">ثبت دستی</string>
@@ -167,7 +157,6 @@
     <string name="sheet_not_spend_hint">این‌ها خرج حساب نمی‌شن و از بودجه کم نمی‌کنن.</string>
     <string name="sheet_learning_hint">از انتخاب‌هات یاد می‌گیرم و دفعه‌ی بعد خودم دسته رو می‌ذارم.</string>
     <string name="tx_self_transfer">انتقال به حساب خودم</string>
-    <string name="tx_self_transfer_chip">خرج حساب نمی‌شه</string>
     <string name="sheet_self_transfer">انتقال بین حساب‌های خودم</string>
     <string name="sheet_self_transfer_short">نه درآمد حساب می‌شه، نه خرج</string>
     <string name="sheet_one_off">خرج یک‌باره</string>
@@ -212,43 +201,20 @@
     <string name="settings_rescan_title">دوباره خوندن پیامک‌ها</string>
     <string name="settings_rescan_hint">جیبیتو هر ۱۵ دقیقه خودش پیامک‌های تازه رو می‌خونه. اگه حس کردی تراکنشی جا افتاده، از این‌جا کل صندوق پیامک رو دوباره بخون.</string>
     <string name="settings_rescan_button">همین الان دوباره بخون</string>
-    <string name="settings_permissions_title">نوتیف و دسترسی‌ها</string>
     <string name="settings_perm_sms">خوندن پیامک</string>
     <string name="settings_perm_notify">نوتیف</string>
     <string name="settings_perm_ok">روشنه</string>
     <string name="settings_perm_missing">خاموشه</string>
-    <string name="settings_open_app_settings">باز کردن تنظیمات اپ در گوشی</string>
     <string name="settings_version">جیبیتو · نسخه‌ی %1$s</string>
-    <string name="summary_prev_month">ماه قبل</string>
-    <string name="summary_next_month">ماه بعد</string>
     <string name="summary_spent">خرج %1$s</string>
     <string name="summary_uncategorized">بی‌دسته</string>
     <string name="summary_categories">خرج دسته‌ها</string>
-    <string name="glance_remaining">%1$s مونده از %2$s</string>
-    <string name="glance_over">%1$s بیشتر از بودجه‌ی %2$s</string>
-    <string name="glance_daily">روزی %1$s</string>
-    <string name="glance_income">درآمد %1$s</string>
-    <string name="glance_net_plus">%1$s اضافه</string>
-    <string name="glance_net_minus">%1$s کسری</string>
-    <string name="glance_saved">پس‌انداز %1$s</string>
     <string name="glance_no_spend">این ماه هنوز خرجی نیومده.</string>
-    <string name="glance_of_budget">بودجه %1$s</string>
     <string name="glance_show_all">همه‌ی دسته‌ها و بودجه‌ها ›</string>
     <string name="glance_all_title">همه‌ی دسته‌ها و بودجه‌ها</string>
-    <string name="pace_on_track">طبق برنامه</string>
-    <string name="pace_faster">%1$d٪ تندتر از ماه</string>
-    <string name="pace_ahead">از برنامه جلویی 👍</string>
-    <string name="attn_over_budget">%1$s از بودجه رد شد (%2$s٪)</string>
-    <string name="attn_near_budget">%1$s به %2$s٪ بودجه رسید</string>
-    <string name="attn_uncategorized">%1$s تومان خرج بی‌دسته ← دسته‌بندی کن</string>
-    <string name="attn_transfers">%1$d انتقال احتمالی بین حساب‌های خودت</string>
-    <string name="attn_review">%1$d پیامک منتظر بررسی</string>
-    <string name="tx_filter_uncategorized">فقط خرج‌های بی‌دسته</string>
-    <string name="summary_no_spend_yet">هنوز خرجی ثبت نشده</string>
     <string name="summary_show_idle">+ %1$d دسته‌ی دیگر (این ماه بدون خرج)</string>
     <string name="summary_hide_idle">− بستن %1$d دسته‌ی بدون خرج</string>
     <string name="summary_tap_for_detail">برای دیدن ریز خرج و تعیین بودجه، روی هر دسته بزن</string>
-    <string name="chart_where_title">کجا رفت؟</string>
     <string name="chart_rest">بقیه</string>
     <string name="detail_set_budget">تعیین بودجه‌ی ماهانه</string>
     <string name="detail_edit_budget">تغییر بودجه</string>
@@ -285,12 +251,9 @@
     <string name="notif_auto_channel_name">دسته‌بندی خودکار</string>
     <string name="notif_auto_channel_desc">خبر آرام وقتی جیبیتو خودش دسته‌ی یک تراکنش رو گذاشته</string>
     <string name="review_title">بررسی</string>
-    <string name="review_count">%1$d پیامک</string>
-    <string name="review_later">بعداً</string>
     <string name="review_unknown_sender">فرستنده‌ی ناشناس</string>
     <string name="review_pick_amount">مبلغ کدومه؟ روش بزن</string>
     <string name="review_pick_balance">مانده کدومه؟ (اختیاری)</string>
-    <string name="review_confirm">ثبت تراکنش</string>
     <string name="review_not_transaction">ربطی به پول نداره</string>
     <string name="review_ignore_sender">این سرشماره اصلاً بانکی نیست</string>
     <string name="review_ignore_sender_hint">پیامک‌های بعدیِ این سرشماره دیگه به بررسی نمیان.</string>
@@ -302,7 +265,6 @@
     <string name="institution_name_hint">مثلاً کارگزاری مفید (فرستنده: %1$s)</string>
     <string name="institution_save">افزودن و انتخاب</string>
     <string name="review_share">ارسال برای بهبود اپ</string>
-    <string name="review_share_hint">همه‌ی عددها (مبلغ، شماره کارت و حساب) قبل از ارسال با # پوشونده می‌شن.</string>
     <string name="review_share_title">ارسال نمونه با…</string>
     <string name="review_all_done">همه‌چی مرتبه!</string>
     <string name="review_back">برگرد به کارها</string>
@@ -379,7 +341,6 @@
     <string name="widget_name">خرج امروز</string>
     <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
     <string name="widget_today">امروز</string>
-    <string name="widget_amount">%1$s تومان</string>
     <string name="widget_month">این ماه %1$s</string>
     <string name="widget_left">%1$s مونده از بودجه‌ی ماه</string>
     <string name="widget_over">این ماه %1$s از بودجه زدی بیرون</string>
@@ -400,18 +361,13 @@
     <string name="recurring_suggest_body">حدود %1$s · معمولاً روز %2$d ماه · در %3$d ماه اخیر</string>
     <string name="recurring_suggest_yes">یادم بنداز</string>
     <string name="recurring_suggest_no">نه</string>
-    <string name="attn_recurring">«%1$s» هر ماه پرداخت می‌شه؟ یادآوری بسازم</string>
     <string name="recurring_channel_name">یادآوری پرداخت‌ها</string>
     <string name="recurring_channel_desc">روز موعد پرداخت‌های ماهانه (اجاره، قسط…)</string>
     <string name="recurring_notif_title">امروز موعد «%1$s»ه</string>
     <string name="recurring_notif_title_late">موعد «%1$s» روز %2$d بود</string>
     <string name="recurring_notif_body">%1$s</string>
 
-    <!-- نوتیفیکیشن خاموش -->
-    <string name="attn_notifications_off">نوتیفیکیشن خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود. روشنش کن</string>
-
     <!-- فهرست روزبه‌روز و «برگردان» -->
-    <string name="day_spend">%1$s تومان خرج</string>
     <string name="undo">برگردون</string>
     <string name="undo_categorized">رفت تو %1$s</string>
     <string name="undo_uncategorized">دسته‌ش برداشته شد</string>
@@ -423,14 +379,11 @@
     <string name="cd_clear_text">پاک کردن</string>
     <string name="cd_add_manual">ثبت دستی خرج یا درآمد</string>
     <string name="cd_back">برگشت</string>
-    <string name="cd_selected">انتخاب‌شده</string>
     <string name="cd_pick_category">انتخاب دسته</string>
     <string name="cd_clear_filter">برداشتن فیلتر</string>
 
     <!-- گزارش پیامکی که اشتباه خوانده شده -->
     <!-- اولین آشنایی، بعد از اولین خواندن پیامک‌ها -->
-    <string name="reveal_span">از %1$d ماه گذشته</string>
-    <string name="reveal_span_banks">از %1$d ماه گذشته، در %2$d بانک</string>
     <string name="reveal_next">از این به بعد هر خرج تازه خودش ثبت می‌شه؛ تو فقط با یه لمس می‌گی مال چی بود.</string>
     <string name="reveal_go">بزن بریم</string>
 
@@ -448,9 +401,6 @@
 
     <!-- روند ماه‌ها -->
     <string name="trend_title">%1$d ماه اخیر</string>
-    <string name="vs_last_month_more">%1$d٪ بیشتر از همین موقعِ ماه قبل</string>
-    <string name="vs_last_month_less">%1$d٪ کمتر از همین موقعِ ماه قبل</string>
-    <string name="vs_last_month_same">تقریباً همون اندازه‌ی همین موقعِ ماه قبل</string>
 
     <string name="report_reason_title">چی غلط خونده شده؟</string>
     <string name="report_reason_amount">مبلغ غلطه</string>
@@ -491,7 +441,6 @@
 
     <!-- کارهای لازم -->
     <string name="todo_title">کارهای لازم</string>
-    <string name="todo_count">%1$d مورد</string>
     <string name="todo_urgent_count">%1$d کار فوری</string>
     <string name="todo_section_now">الان</string>
     <string name="todo_section_suggestions">پیشنهادها</string>

@@ -1,6 +1,7 @@
 package ir.jibito.app.ui.theme
 
 import android.content.Context
+import androidx.core.content.edit
 import ir.jibito.app.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,17 +47,17 @@ class ThemeSettings(context: Context) {
     val hideAmounts: StateFlow<Boolean> = _hideAmounts.asStateFlow()
 
     fun set(style: AppThemeStyle) {
-        prefs.edit().putString(KEY, style.name).apply()
+        prefs.edit { putString(KEY, style.name) }
         _style.value = style
     }
 
     fun setDarkMode(mode: DarkMode) {
-        prefs.edit().putString(KEY_DARK, mode.name).apply()
+        prefs.edit { putString(KEY_DARK, mode.name) }
         _darkMode.value = mode
     }
 
     fun setHideAmounts(hide: Boolean) {
-        prefs.edit().putBoolean(KEY_HIDE, hide).apply()
+        prefs.edit { putBoolean(KEY_HIDE, hide) }
         _hideAmounts.value = hide
     }
 

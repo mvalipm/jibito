@@ -85,7 +85,7 @@ enum class MascotFace {
  * @param smileStroke ضخامت خط لبخند (در اندازه‌های خیلی کوچک پررنگ‌تر)
  */
 @Composable
-fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = Modifier, smileStroke: Float = 4f) {
+fun Mascot(width: Dp, modifier: Modifier = Modifier, face: MascotFace = MascotFace.HAPPY, smileStroke: Float = 4f) {
     Canvas(modifier.size(width, width * 130f / 120f)) {
         scale(size.width / 120f, size.height / 130f, pivot = Offset.Zero) {
             drawCircle(MascotCoin, radius = 13f, center = Offset(80f, 22f))
@@ -119,7 +119,7 @@ fun Mascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = 
 
 /** همان [Mascot] با امضای صفحه‌های خوش‌آمد، اجازه و تنظیمات */
 @Composable
-fun PocketMascot(face: MascotFace, size: Dp = 140.dp, modifier: Modifier = Modifier) = Mascot(size, face, modifier)
+fun PocketMascot(face: MascotFace, modifier: Modifier = Modifier, size: Dp = 140.dp) = Mascot(size, modifier, face)
 
 /** «حذف انیمیشن‌ها»ی گوشی روشن است؟ */
 @Composable
@@ -132,9 +132,9 @@ fun rememberMotionOff(): Boolean {
 
 /** جیبی که آرام بالا و پایین می‌رود (حالت‌های خالی صفحه‌ها) */
 @Composable
-fun BobbingMascot(width: Dp, face: MascotFace = MascotFace.HAPPY, modifier: Modifier = Modifier) {
+fun BobbingMascot(width: Dp, modifier: Modifier = Modifier, face: MascotFace = MascotFace.HAPPY) {
     val y = loopingValue(0f, -6f, 1200, label = "bob")
-    Mascot(width, face, modifier.graphicsLayer { translationY = y * density })
+    Mascot(width, modifier.graphicsLayer { translationY = y * density }, face)
 }
 
 // ── کاشی دسته ──

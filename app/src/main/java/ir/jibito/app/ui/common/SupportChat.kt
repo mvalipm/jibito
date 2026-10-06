@@ -4,8 +4,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
+import androidx.core.net.toUri
 
 /** چت پشتیبانی جیبیتو در پیام‌رسان بله (با شناسه، تا شماره‌ی تلفن پشتیبانی هیچ‌جا دیده نشود) */
 const val SUPPORT_BALE_URL = "https://ble.ir/jibito_support"
@@ -18,7 +18,7 @@ fun openSupportChat(context: Context, text: String, copiedHint: String, chooserT
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("jibito support", text))
     val opened = runCatching {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SUPPORT_BALE_URL)))
+        context.startActivity(Intent(Intent.ACTION_VIEW, SUPPORT_BALE_URL.toUri()))
     }.isSuccess
     if (opened) {
         Toast.makeText(context, copiedHint, Toast.LENGTH_LONG).show()

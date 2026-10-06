@@ -1,5 +1,6 @@
 package ir.jibito.app.ui.welcome
 
+import androidx.core.content.edit
 import ir.jibito.app.ui.common.loopingValue
 import android.content.Context
 import androidx.activity.compose.BackHandler
@@ -77,7 +78,7 @@ class FirstRunFlag(context: Context) {
     val done: Boolean get() = prefs.getBoolean(KEY_DONE, false)
 
     fun markDone() {
-        prefs.edit().putBoolean(KEY_DONE, true).apply()
+        prefs.edit { putBoolean(KEY_DONE, true) }
     }
 
     private companion object {
@@ -396,8 +397,8 @@ private fun RevealMascot(done: Boolean, modifier: Modifier) {
     val sy = if (done) 1f else 1f - 0.05f * wave
     Mascot(
         132.dp,
-        if (done) MascotFace.HAPPY else MascotFace.CHOMP,
-        modifier.graphicsLayer {
+        face = if (done) MascotFace.HAPPY else MascotFace.CHOMP,
+        modifier = modifier.graphicsLayer {
             scaleX = sx
             scaleY = sy
             translationY = if (done) y * density else 0f

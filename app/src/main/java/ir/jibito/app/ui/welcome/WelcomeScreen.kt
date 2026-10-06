@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -75,7 +76,7 @@ fun WelcomeScreen(onStart: () -> Unit) {
     val t = JibitoTheme.colors
     val motionOff = rememberMotionOff()
     // ۰: فقط پیامک، ۱: تراکنش هم آمده
-    var phase by rememberSaveable { mutableStateOf(if (motionOff) 1 else 0) }
+    var phase by rememberSaveable { mutableIntStateOf(if (motionOff) 1 else 0) }
     var picked by rememberSaveable { mutableStateOf<Int?>(null) }
     LaunchedEffect(Unit) {
         if (phase == 0) {
