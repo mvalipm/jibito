@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import ir.jibito.app.MainActivity
 import ir.jibito.app.R
 import ir.jibito.app.data.bank.BankDirectory
+import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
@@ -260,14 +261,12 @@ class TransactionNotifier(
         )
     }
 
-    /** دکمه‌های دسته: اول دسته‌ی پیشنهادی (از مقصد خرید)، بعد پرکاربردترین دسته‌های خود کاربر. */
+    /** دکمه‌های دسته: پیشنهاد اپ و پرکاربردها، در عمق و با دسته‌های اصلی‌ای که کاربر در تنظیمات گذاشته (NotificationButtons). */
     private suspend fun pickCategories(flow: TransactionFlowEntity, count: Int): List<CategoryEntity> {
         // برداشت ← دسته‌های خرج، واریز ← دسته‌های درآمد
         val byUsage = db.categoryDao().byUsage(flow.flowType)
-        val suggested = flow.suggestedCategory?.let { name -> byUsage.firstOrNull { it.name == name } }
-        return (listOfNotNull(suggested) + byUsage.filter { !it.name.startsWith("سایر") })
-            .distinctBy { it.id }
-            .take(count)
+        val display = CategoryDisplaySettings(context)
+        return NotificationButtons.choose(flow.suggestedCategory, byUsage, count, display.depth.value, display.hiddenRoots.value)
     }
 
     private fun ensureChannel() {

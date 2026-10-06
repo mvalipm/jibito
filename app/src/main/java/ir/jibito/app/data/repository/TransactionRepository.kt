@@ -3,6 +3,7 @@ package ir.jibito.app.data.repository
 import androidx.room.withTransaction
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.category.CategoryLearning
 import ir.jibito.app.data.category.ReplyCategoryMatcher
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
@@ -87,8 +88,9 @@ interface TransactionRepository {
     /**
      * نوشته‌ی جعبه‌ی «بنویس» نوتیفیکیشن: همیشه یادداشت می‌شود، و اگر با اطمینان به یک دسته رسید
      * (ReplyCategoryMatcher) دسته هم می‌گیرد (مثل انتخاب خود کاربر، با یادگیری). متن خالی ← null و هیچ تغییری.
+     * @param maxDepth چند لایه‌ی دسته که کاربر در تنظیمات می‌بیند؛ دسته‌ی جورشده تا همان لایه بالا می‌رود («سوخت» ← «حمل‌ونقل»)
      */
-    suspend fun applyNoteReply(transactionId: Long, text: String): NoteReply?
+    suspend fun applyNoteReply(transactionId: Long, text: String, maxDepth: Int = CategoryDisplaySettings.MAX_DEPTH): NoteReply?
 
     /**
      * حالت فعلی این تراکنش و هر تراکنشی که تغییر دسته یا حذفش ممکن است رویش اثر بگذارد
@@ -609,15 +611,16 @@ class TransactionRepositoryImpl(
         dao.setNote(transactionId, TransactionNotes.clean(note), System.currentTimeMillis())
     }
 
-    override suspend fun applyNoteReply(transactionId: Long, text: String): NoteReply? {
+    override suspend fun applyNoteReply(transactionId: Long, text: String, maxDepth: Int): NoteReply? {
         val note = TransactionNotes.clean(text) ?: return null
         val row = dao.byId(transactionId) ?: return null
         dao.setNote(transactionId, note, System.currentTimeMillis())
         val candidates = db.categoryDao().all()
             .filter { !it.isArchived && it.flowType == row.flowType }
             .map { ReplyCategoryMatcher.Candidate(it.id, it.name, it.parentId) }
-        val match = ReplyCategoryMatcher.match(note, candidates)?.let { id -> candidates.first { it.id == id } }
-            ?: return NoteReply(note, null, null)
+        val matchedId = ReplyCategoryMatcher.match(note, candidates) ?: return NoteReply(note, null, null)
+        val liftedId = CategoryTree.idAtDepth(matchedId, candidates.associate { it.id to it.parentId }, maxDepth)
+        val match = candidates.first { it.id == liftedId }
         setCategory(transactionId, match.id)
         return NoteReply(note, match.id, match.name)
     }
