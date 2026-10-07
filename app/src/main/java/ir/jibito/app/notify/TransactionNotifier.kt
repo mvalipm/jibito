@@ -50,9 +50,10 @@ class TransactionNotifier(
                     if (flow.notifiedAt == null) dao.markNotified(flow.id, now) else manager.cancel(notificationId(flow.id))
                 }
                 flow.notifiedAt != null -> Unit
-                // بی‌دسته ← «مال چی بود؟» با دکمه‌ها
+                // بی‌دسته ← «مال چی بود؟» با دکمه‌ها. فهرست بالا ممکن است کهنه باشد (همگام‌سازی دیگری یا
+                // لمس دکمه‌ی نوتیفیکیشن همین حالا کارش را کرده)؛ پس اول در یک قدم رزرو، بعد پرسیدن
                 flow.categoryId == null -> {
-                    if (show(flow)) dao.markNotified(flow.id, now)
+                    if (dao.claimQuestion(flow.id, now) == 1 && !show(flow)) dao.clearNotified(flow.id)
                 }
                 // اپ خودش دسته گذاشته ← یک خبر آرام: «✓ رفت‌وآمد (خودکار)»؛ برای تغییر، روی آن بزن
                 flow.isAutoCategorized -> {

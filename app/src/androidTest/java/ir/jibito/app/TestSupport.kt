@@ -4,7 +4,9 @@ import android.Manifest
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.rule.GrantPermissionRule
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.WorkQuery
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.repository.SOURCE_SMS_AUTO
@@ -32,7 +34,14 @@ object TestSupport {
      * تا وسط تست نوتیفیکیشن یا دیتابیس را عوض نکنند (مثلاً سؤال «مال چی بود؟» را دوباره نشان دهند).
      */
     fun stopBackgroundWork() {
-        WorkManager.getInstance(app).cancelAllWork().result.get()
+        val workManager = WorkManager.getInstance(app)
+        workManager.cancelAllWork().result.get()
+        // لغو فوری نیست: کاری که همین حالا در حال اجراست چند لحظه بعد می‌ایستد؛ تا آن موقع صبر می‌شود
+        val running = WorkQuery.fromStates(WorkInfo.State.RUNNING)
+        val deadline = System.currentTimeMillis() + 10_000
+        while (workManager.getWorkInfos(running).get().isNotEmpty() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100)
+        }
     }
 
     /** تا [timeoutMillis] صبر می‌کند تا [check] چیزی غیر null بدهد */
