@@ -48,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.EmptyStart
+import ir.jibito.app.ui.common.rememberSmsAccess
 import ir.jibito.app.domain.BankBalance
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -85,6 +87,9 @@ fun SmsListScreen(
     /** تراکنشی که برگه‌ی دسته‌اش باید باز شود (از نوتیفیکیشن) */
     openTransactionId: Long? = null,
     onOpened: () -> Unit = {},
+    /** برگه‌ی ثبت دستی باید باز شود (دکمه‌ی «ثبت اولین خرج» در «خلاصه») */
+    openManual: Boolean = false,
+    onManualOpened: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: TransactionsViewModel = viewModel(
@@ -113,6 +118,13 @@ fun SmsListScreen(
     val colors = MaterialTheme.colorScheme
 
     var addingManual by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openManual) {
+        if (openManual) {
+            addingManual = true
+            onManualOpened()
+        }
+    }
+    val smsAccess = rememberSmsAccess()
     var showSearch by rememberSaveable { mutableStateOf(false) }
     val search by viewModel.search.collectAsState()
     val visible by viewModel.visible.collectAsState()
@@ -316,6 +328,11 @@ fun SmsListScreen(
             hiddenRoots = hiddenRoots,
             onOpen = { sms -> selectedId = sms.id },
             onPick = { sms, categoryId -> pickCategory(sms, categoryId) },
+            emptyStart = if (messages?.isEmpty() == true && !isSyncing) {
+                { EmptyStart(smsAccess.granted, onAddManual = { addingManual = true }, onAllowSms = smsAccess.allow) }
+            } else {
+                null
+            },
         )
     }
 

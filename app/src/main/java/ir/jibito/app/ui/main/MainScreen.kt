@@ -143,6 +143,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var openCategory by rememberSaveable { mutableStateOf<Long?>(null) }
     // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
     var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
+    // «ثبت اولین خرج» در «خلاصه» ← برگه‌ی ثبت دستی در «تراکنش‌ها»
+    var pendingManual by rememberSaveable { mutableStateOf(false) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
@@ -241,6 +243,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpenSettings = ::openSettings,
                                 openCategoryId = openCategory,
                                 onCategoryOpened = { openCategory = null },
+                                onAddManual = {
+                                    onlyUncategorized = false
+                                    pendingManual = true
+                                    go(Tab.Transactions)
+                                },
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -249,6 +256,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onFilterChange = { onlyUncategorized = it },
                                 openTransactionId = pendingOpen,
                                 onOpened = { pendingOpen = null },
+                                openManual = pendingManual,
+                                onManualOpened = { pendingManual = false },
                             )
                         }
                         composable(Tab.Reports.route) { ReportsScreen(onOpenAccount = ::openAccount) }
