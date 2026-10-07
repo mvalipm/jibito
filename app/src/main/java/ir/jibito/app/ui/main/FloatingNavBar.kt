@@ -47,10 +47,11 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.hazeBlur
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.Vazirmatn
 import ir.jibito.app.util.Jalali
@@ -98,16 +99,16 @@ fun FloatingNavBar(
                 spotColor = if (t.dark) Color.Black else Color(0xFF461E14),
             )
             .clip(shape)
-            .hazeEffect(
-                state = hazeState,
-                style = HazeStyle(
-                    backgroundColor = glass.copy(alpha = 1f),
-                    tints = listOf(HazeTint(glass)),
-                    blurRadius = 18.dp,
-                    noiseFactor = 0f,
+            .hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = HazeBlurStyle {
+                    backgroundColor(glass.copy(alpha = 1f))
+                    colorEffects(listOf(HazeColorEffect.tint(glass)))
+                    blurRadius(18.dp)
+                    noiseFactor(0f)
                     // اندروید قدیمی (بدون تار شدن): سطح تقریباً مات
-                    fallbackTint = HazeTint(glass.copy(alpha = 0.96f)),
-                ),
+                    fallbackColorEffect(HazeColorEffect.tint(glass.copy(alpha = 0.96f)))
+                },
             )
             .border(1.dp, if (t.dark) Color.White.copy(alpha = 0.07f) else Color(0x0F1C1B22), shape)
             .padding(6.dp),
