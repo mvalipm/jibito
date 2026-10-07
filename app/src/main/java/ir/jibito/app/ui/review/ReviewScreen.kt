@@ -38,6 +38,9 @@ import androidx.compose.material3.IconButton
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.Tip
+import ir.jibito.app.ui.common.TipCard
+import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.ui.theme.JibitoTheme
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
@@ -140,6 +143,15 @@ fun ReviewScreen(onClose: () -> Unit) {
             }
         }
 
+        val reviewTip = rememberTip(Tip.REVIEW)
+        if (reviewTip.visible && !pending.isNullOrEmpty()) {
+            TipCard(
+                stringResource(R.string.tip_review),
+                onDismiss = reviewTip.dismiss,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp),
+            )
+        }
+
         val list = pending
         when {
             list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -147,6 +159,7 @@ fun ReviewScreen(onClose: () -> Unit) {
             else -> ReviewPager(
                 list = list,
                 onConfirm = { item, type, amount, balance, bankId ->
+                    reviewTip.dismiss()
                     haptics.confirm()
                     viewModel.confirm(item, type, amount, balance, bankId)
                 },

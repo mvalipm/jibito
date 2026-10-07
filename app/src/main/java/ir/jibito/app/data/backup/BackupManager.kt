@@ -118,7 +118,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             // آخرین قدم: علامت «آماده‌ی جایگزینی» (تا نیمه‌کاره‌ها هرگز اعمال نشوند)
             File(pending, READY_MARK).writeText("1")
             ok = true
-            summary.copy(createdAt = meta?.getProperty(META_CREATED_AT)?.toLongOrNull())
+            summary.copy(createdAt = meta.getProperty(META_CREATED_AT)?.toLongOrNull())
         } finally {
             if (!ok) pending.deleteRecursively()
         }

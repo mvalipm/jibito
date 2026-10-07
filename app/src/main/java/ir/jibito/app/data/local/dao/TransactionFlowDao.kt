@@ -45,6 +45,19 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET notifiedAt = :now WHERE id = :id")
     suspend fun markNotified(id: Long, now: Long)
 
+    /**
+     * «مال چی بود؟» را در یک قدم برای این تراکنش رزرو می‌کند: فقط اگر هنوز دسته ندارد و قبلاً پرسیده نشده.
+     * دو همگام‌سازی هم‌زمان (یا همگام‌سازی و لمس دکمه‌ی نوتیفیکیشن) با این، سؤال را دو بار نمی‌پرسند
+     * و «رفت تو …» را با سؤال کهنه عوض نمی‌کنند.
+     * @return ۱ یعنی همین فراخوانی باید بپرسد؛ ۰ یعنی پیش‌تر پرسیده شده یا دسته گرفته
+     */
+    @Query("UPDATE transaction_flows SET notifiedAt = :now WHERE id = :id AND notifiedAt IS NULL AND categoryId IS NULL")
+    suspend fun claimQuestion(id: Long, now: Long): Int
+
+    /** نوتیفیکیشن نشان داده نشد (مثلاً اجازه‌اش نیست): دفعه‌ی بعد دوباره امتحان شود */
+    @Query("UPDATE transaction_flows SET notifiedAt = NULL WHERE id = :id")
+    suspend fun clearNotified(id: Long)
+
     /** دسته‌ای که خود کاربر انتخاب کرده (دیگر «خودکار» نیست)؛ زمان انتخاب برای یادگیری ثبت می‌شود. */
     @Query(
         """

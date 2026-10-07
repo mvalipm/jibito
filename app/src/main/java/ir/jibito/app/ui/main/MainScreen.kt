@@ -71,12 +71,10 @@ import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.todo.TodoScreen
 import ir.jibito.app.util.Changelog
 import ir.jibito.app.util.Jalali
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import ir.jibito.app.ui.welcome.FirstRunReveal
-import ir.jibito.app.ui.welcome.RevealStats
+import ir.jibito.app.ui.welcome.syncWithReveal
 
 private enum class Tab(val route: String, val label: Int) {
     Summary("summary", R.string.tab_summary),
@@ -143,6 +141,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var openCategory by rememberSaveable { mutableStateOf<Long?>(null) }
     // تراکنشی که از نوتیفیکیشن آمده و هنوز برگه‌اش باز نشده
     var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
+    // «ثبت اولین خرج» در «خلاصه» ← برگه‌ی ثبت دستی در «تراکنش‌ها»
+    var pendingManual by rememberSaveable { mutableStateOf(false) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
@@ -167,8 +167,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         onOpenHandled()
     }
 
-    // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند
-    var reveal by remember { mutableStateOf<RevealStats?>(null) }
+    // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند (موقع باز شدن، یا بعداً با دادن اجازه)
+    val reveal by container.firstRun.pending.collectAsState()
 
     // «چه چیزی تازه است»: بعد از به‌روزرسانی یک بار؛ «دیده‌شده» وقتی ثبت می‌شود که کاربر پنجره را ببندد
     var whatsNew by remember { mutableStateOf<List<Changelog.Release>>(emptyList()) }
@@ -178,28 +178,15 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
     }
     LaunchedEffect(Unit) {
-        val repository = container.transactionRepository
-        val firstRun = !container.firstRun.done
-        // کاربری که از نسخه‌ی قبل به‌روز کرده، داده دارد و این صفحه را نمی‌بیند
-        val hadData = !firstRun || repository.observeTransactions().first().isNotEmpty()
-        var found = 0
         // خطای همگام‌سازی نباید اپ را موقع باز شدن ببندد (وگرنه هر بار باز کردن = بسته شدن)؛ ثبت می‌شود
         // «فعلاً دستی»: بدون اجازه‌ی پیامک چیزی برای خواندن نیست (و خطای بی‌جا هم ثبت نشود)
         val canReadSms = ContextCompat.checkSelfPermission(appContext, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
         try {
-            if (canReadSms) found = repository.syncFromSms()
+            if (canReadSms) syncWithReveal(container)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             ErrorLog.record(appContext, "sync on open", e)
-        }
-        if (firstRun && canReadSms) {
-            container.firstRun.markDone()
-            if (!hadData && found > 0) {
-                // فهرست مشترک تراکنش‌ها کمی بعد از ذخیره به‌روز می‌شود
-                val all = withTimeoutOrNull(3_000) { repository.observeTransactions().first { it.size >= found } }
-                reveal = all?.let { RevealStats.of(it) } ?: RevealStats(count = found, months = 0, banks = 0)
-            }
         }
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
@@ -241,6 +228,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpenSettings = ::openSettings,
                                 openCategoryId = openCategory,
                                 onCategoryOpened = { openCategory = null },
+                                onAddManual = {
+                                    onlyUncategorized = false
+                                    pendingManual = true
+                                    go(Tab.Transactions)
+                                },
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -249,6 +241,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onFilterChange = { onlyUncategorized = it },
                                 openTransactionId = pendingOpen,
                                 onOpened = { pendingOpen = null },
+                                openManual = pendingManual,
+                                onManualOpened = { pendingManual = false },
                             )
                         }
                         composable(Tab.Reports.route) { ReportsScreen(onOpenAccount = ::openAccount) }
@@ -317,7 +311,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
             )
         }
 
-        reveal?.let { stats -> FirstRunReveal(stats, onDone = { reveal = null }) }
+        reveal?.let { stats -> FirstRunReveal(stats, onDone = { container.firstRun.pending.value = null }) }
         if (whatsNew.isNotEmpty() && reveal == null) {
             WhatsNewDialog(whatsNew, onDismiss = {
                 container.whatsNewSeen.markSeen(installedVersion(appContext))

@@ -64,6 +64,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.Tip
+import ir.jibito.app.ui.common.TipCard
+import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendTrend
 import ir.jibito.app.data.wallet.AccountRef
@@ -123,6 +126,7 @@ fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
             open = if (open == section) null else section.also(prefs::recordOpen)
         },
         newInsights = ReportSections.hasNew(insights, seen),
+        thinTip = rememberTip(Tip.REPORTS_THIN).let { if (it.visible) it.dismiss else null },
     )
 }
 
@@ -144,6 +148,8 @@ fun ReportsContent(
     onToggle: (ReportSection) -> Unit = {},
     /** «جیبی چی فهمید؟» نکته‌ای دارد که هنوز دیده نشده */
     newInsights: Boolean = false,
+    /** نکته‌ی «ماه اول» هنوز بسته نشده؛ بستنش. null یعنی نشان داده نشود */
+    thinTip: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
@@ -196,6 +202,12 @@ fun ReportsContent(
                         range == ReportRange.MONTH && report != null -> MonthChart(report.curve)
                         range != ReportRange.MONTH && months != null -> MonthsChart(months)
                         else -> Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    }
+                    // ماه اول: هنوز ماه قبلی برای مقایسه و پیش‌بینی نیست
+                    if (thinTip != null && range == ReportRange.MONTH && report != null && report.curve.isCurrent &&
+                        report.curve.previous.all { it == 0L }
+                    ) {
+                        TipCard(stringResource(R.string.tip_reports_thin), onDismiss = thinTip, modifier = Modifier.padding(top = 12.dp))
                     }
                 }
             }

@@ -141,6 +141,13 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// هر هشدار کامپایلر کاتلین (کد اپ و تست‌ها) ساخت را می‌شکند، تا هشدارها جمع نشوند
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
 
@@ -158,6 +165,7 @@ dependencies {
 
     // پس‌زمینه‌ی شیشه‌ای مات نوار پایین (تار کردن محتوای زیرش)
     implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.androidx.work.runtime.ktx)
     // پروفایل‌های آماده‌ی کتابخانه‌ها (Compose و…) را روی گوشی نصب می‌کند تا اپ سریع‌تر باز شود؛
     // مهم برای نصب از کافه‌بازار و مایکت که مثل گوگل‌پلی پروفایل ابری ندارند

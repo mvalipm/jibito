@@ -38,6 +38,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.todo.FirstStep
+import ir.jibito.app.ui.common.EmptyStart
+import ir.jibito.app.ui.common.TipCard
+import androidx.compose.foundation.layout.Spacer
 import ir.jibito.app.ui.todo.FirstStepsUi
 import ir.jibito.app.ui.todo.TodoList
 
@@ -91,6 +94,30 @@ class TabsScreenshotTest : ScreenshotTestBase() {
         for (dark in listOf(false, true)) shot("todofirststeps", AppThemeStyle.DEFAULT, dark, padded = false) {
             Box(Modifier.fillMaxWidth().height(860.dp)) {
                 TodoList(stories().take(2), firstSteps = steps)
+            }
+        }
+    }
+
+    /** کاربر بی هیچ تراکنشی: بی اجازه‌ی پیامک («فعلاً دستی»، وسط «تراکنش‌ها») و با اجازه ولی بی پیامک بانکی (کارت «خلاصه») */
+    @Test
+    fun emptyStart() {
+        for (dark in listOf(false, true)) shot("emptystart", AppThemeStyle.DEFAULT, dark) {
+            Column {
+                EmptyStart(smsGranted = false, onAddManual = {}, onAllowSms = {})
+                Spacer(Modifier.height(24.dp))
+                EmptyStart(smsGranted = true, onAddManual = {}, onAllowSms = {}, card = true)
+            }
+        }
+    }
+
+    /** نکته‌ی یک‌باره (بالای «تراکنش‌ها»، «بررسی» و «گزارش‌ها») */
+    @Test
+    fun tipCard() {
+        for (dark in listOf(false, true)) shot("tip", AppThemeStyle.DEFAULT, dark) {
+            Column {
+                TipCard("خرجی که دسته نداره رو بزن و بگو مال چی بود. چند بار که برای یه فروشگاه بگی، از اون به بعد خودم دسته‌ش رو می‌ذارم.", onDismiss = {})
+                Spacer(Modifier.height(12.dp))
+                TipCard("اگه این پول رو بین کارت‌های خودت جابه‌جا کردی، «آره» بزن تا نه خرج حساب بشه نه درآمد.", onDismiss = {})
             }
         }
     }

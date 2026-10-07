@@ -1,8 +1,6 @@
 package ir.jibito.app.ui.welcome
 
-import androidx.core.content.edit
 import ir.jibito.app.ui.common.loopingValue
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
@@ -80,21 +78,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.TextUnit
 import ir.jibito.app.ui.common.rememberFitScale
-
-/** فقط یک بار، بعد از اولین خواندن پیامک‌ها روی این گوشی */
-class FirstRunFlag(context: Context) {
-    private val prefs = context.getSharedPreferences("first_run", Context.MODE_PRIVATE)
-
-    val done: Boolean get() = prefs.getBoolean(KEY_DONE, false)
-
-    fun markDone() {
-        prefs.edit { putBoolean(KEY_DONE, true) }
-    }
-
-    private companion object {
-        const val KEY_DONE = "reveal_done"
-    }
-}
 
 private val RevealBg = Color(0xFF17141C)
 private val TintTeal = Color(0xFF17BEBB)

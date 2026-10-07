@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.EmptyStart
+import ir.jibito.app.ui.common.rememberNoTransactions
+import ir.jibito.app.ui.common.rememberSmsAccess
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.DarkMode
 import ir.jibito.app.ui.theme.DesignIcons
@@ -76,6 +79,8 @@ fun SummaryScreen(
     openCategoryId: Long? = null,
     /** بعد از باز کردن openCategoryId صدا زده می‌شود تا دوباره باز نشود */
     onCategoryOpened: () -> Unit = {},
+    /** «ثبت اولین خرج» وقتی هنوز هیچ تراکنشی نیست */
+    onAddManual: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val viewModel: SummaryViewModel = viewModel(
@@ -96,6 +101,8 @@ fun SummaryScreen(
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     BackHandler(enabled = showAll) { showAll = false }
+    val noTransactions = rememberNoTransactions()
+    val smsAccess = rememberSmsAccess()
     LaunchedEffect(openCategoryId) {
         val id = openCategoryId ?: return@LaunchedEffect
         viewModel.setMonth(JalaliMonth.current())
@@ -131,8 +138,23 @@ fun SummaryScreen(
                         onOpenSettings = onOpenSettings,
                     )
                 }
-                item(key = "where") {
-                    WhereSection(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                // هنوز هیچ تراکنشی نیست: به‌جای عددهای صفر، چرا خالی است و قدم بعدی
+                if (noTransactions == true) {
+                    item(key = "start") {
+                        EmptyStart(
+                            smsAccess.granted,
+                            onAddManual = onAddManual,
+                            onAllowSms = smsAccess.allow,
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
+                            card = true,
+                        )
+                    }
+                }
+                // «کجا رفت؟» بی هیچ تراکنشی فقط یک «خرجی نیومده»ی تکراری است
+                if (noTransactions != true) {
+                    item(key = "where") {
+                        WhereSection(s, onOpenCategory = { detailId = it }, onShowAll = { showAll = true })
+                    }
                 }
                 trend?.takeIf { tr -> tr.months.lastOrNull()?.month == s.month && tr.months.any { it.spentRial > 0 } }?.let { tr ->
                     item(key = "trend") {

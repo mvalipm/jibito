@@ -209,7 +209,7 @@ fun FirstStepsCard(ui: FirstStepsUi, modifier: Modifier = Modifier) {
             val hide = stringResource(R.string.steps_hide)
             Box(
                 Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .clickable(role = Role.Button, onClick = ui.onHide)
                     .semantics { contentDescription = hide },

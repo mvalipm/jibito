@@ -29,7 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,11 +52,12 @@ import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.ErrorLog
 import ir.jibito.app.util.Jalali
+import ir.jibito.app.ui.welcome.syncWithReveal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** زیرصفحه‌های تنظیمات */
-internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced, NotificationStyle, WhatsNew }
+internal enum class SettingsPage { Backup, Export, Accounts, CategoryDisplay, CustomCategories, Recurring, Theme, Privacy, Advanced, NotificationStyle, WhatsNew, Help }
 
 /**
  * تنظیمات: یک فهرست گروه‌بندی‌شده که هر ردیفش «مقدار فعلی» را هم نشان می‌دهد
@@ -74,12 +74,12 @@ fun SettingsScreen(onBack: (() -> Unit)? = null) {
     val repository = app.container.transactionRepository
     val categoriesFlow = remember { repository.observeCategories() }
     val categories by categoriesFlow.collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
     val permissions = rememberSettingsPermissions(onSmsGranted = {
-        // دسترسی تازه داده شد ← پیامک‌ها همین الان خوانده شوند
-        scope.launch {
+        // دسترسی تازه داده شد ← پیامک‌ها همین الان خوانده شوند (و اگر اولین بار است، «جیبت رو شناختم»)
+        // در دامنه‌ی خود اپ: برگشتن از تنظیمات نباید خواندن یا «جیبت رو شناختم» را نیمه‌کاره بگذارد
+        app.container.appScope.launch {
             try {
-                repository.syncFromSms()
+                syncWithReveal(app.container)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -339,6 +339,14 @@ private fun SettingsHub(
         val errorCount = remember { ErrorLog.count(context) }
         SettingsGroup(stringResource(R.string.settings_group_about)) {
             SettingsRow(
+                icon = SettingsIcons.Help,
+                tint = tones.teal,
+                title = stringResource(R.string.help_title),
+                value = stringResource(R.string.help_sub),
+                onClick = { onOpen(SettingsPage.Help) },
+            )
+            RowDivider()
+            SettingsRow(
                 icon = SettingsIcons.Shield,
                 tint = tones.teal,
                 title = stringResource(R.string.settings_privacy_title),
@@ -465,6 +473,10 @@ private fun SettingsPageScreen(
             SettingsPage.WhatsNew -> {
                 SettingsPageHeader(stringResource(R.string.whats_new_title), onBack)
                 WhatsNewPageContent()
+            }
+            SettingsPage.Help -> {
+                SettingsPageHeader(stringResource(R.string.help_title), onBack)
+                HelpPageContent()
             }
         }
     }
