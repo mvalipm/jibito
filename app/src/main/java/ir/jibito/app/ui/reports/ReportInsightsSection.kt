@@ -26,13 +26,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.Insight
 import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.common.amount
-import ir.jibito.app.ui.summary.SectionHeader
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.categoryTint
@@ -44,17 +44,14 @@ import kotlin.math.roundToInt
 
 // ── «جیبی چی فهمید؟» ──
 
+/** کارت‌های نکته در یک ردیف افقی (داخل کارت تاشوی «جیبی چی فهمید؟») */
 @Composable
-internal fun InsightsSection(insights: List<Insight>, month: JalaliMonth) {
-    Column(Modifier.padding(top = 24.dp)) {
-        SectionHeader(title = stringResource(R.string.reports_insights_title))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(top = 10.dp),
-        ) {
-            items(insights) { InsightCard(it, month) }
-        }
+internal fun InsightsRow(insights: List<Insight>, month: JalaliMonth, contentPadding: PaddingValues) {
+    LazyRow(
+        contentPadding = contentPadding,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        items(insights) { InsightCard(it, month) }
     }
 }
 
@@ -113,11 +110,11 @@ private fun InsightCard(insight: Insight, month: JalaliMonth) {
 }
 
 @Composable
-private fun IconTile(path: String, bg: Color, fg: Color) {
+internal fun IconTile(path: String, bg: Color, fg: Color, size: Dp = 36.dp) {
     val icon = remember(path) { DesignIcons.svg("insight", path) }
     Box(
         Modifier
-            .size(36.dp)
+            .size(size)
             .clip(RoundedCornerShape(12.dp))
             .background(bg),
         contentAlignment = Alignment.Center,
