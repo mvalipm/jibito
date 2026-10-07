@@ -70,6 +70,7 @@ import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendTrend
 import ir.jibito.app.data.wallet.AccountRef
+import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.data.wallet.BalanceOverview
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.amount
@@ -92,7 +93,12 @@ import kotlinx.coroutines.launch
  * «خلاصه» به «الان وضعم چطوره؟» جواب می‌دهد؛ این تب به روند و مقایسه.
  */
 @Composable
-fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
+fun ReportsScreen(
+    onOpenAccount: (AccountRef?) -> Unit = {},
+    /** از سرصفحه‌ی «خلاصه» آمده («پولت تا حقوق می‌رسه؟»): کارت موجودی، بازه‌ی «این ماه» */
+    openBalance: Boolean = false,
+    onBalanceOpened: () -> Unit = {},
+) {
     val context = LocalContext.current
     val app = context.applicationContext as JibitoApplication
     val viewModel: ReportsViewModel = viewModel(
@@ -102,6 +108,8 @@ fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
     val report by viewModel.report.collectAsState()
     val months by viewModel.months.collectAsState()
     val balances by viewModel.balances.collectAsState()
+    val forecastRepository = app.container.forecastRepository
+    val forecastState by forecastRepository.state.collectAsState(initial = null)
     val prefs = remember { ReportSectionPrefs(context) }
     var open by rememberSaveable { mutableStateOf<ReportSection?>(prefs.favorite()) }
     var seen by remember { mutableStateOf(prefs.seenInsights) }
@@ -111,6 +119,13 @@ fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
         if (open == ReportSection.INSIGHTS && insights.isNotEmpty()) {
             prefs.markSeen(insights)
             seen = prefs.seenInsights
+        }
+    }
+    LaunchedEffect(openBalance) {
+        if (openBalance) {
+            open = ReportSection.BALANCE
+            viewModel.setRange(ReportRange.MONTH)
+            onBalanceOpened()
         }
     }
     ReportsContent(
@@ -127,6 +142,8 @@ fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
         },
         newInsights = ReportSections.hasNew(insights, seen),
         thinTip = rememberTip(Tip.REPORTS_THIN).let { if (it.visible) it.dismiss else null },
+        forecast = forecastState?.forecast,
+        onNotSalary = forecastState?.forecast?.salary?.let { salary -> { forecastRepository.rejectSalary(salary) } },
     )
 }
 
@@ -150,6 +167,10 @@ fun ReportsContent(
     newInsights: Boolean = false,
     /** نکته‌ی «ماه اول» هنوز بسته نشده؛ بستنش. null یعنی نشان داده نشود */
     thinTip: (() -> Unit)? = null,
+    /** «پولم تا حقوق می‌رسه؟» (زیر نمودار موجودی) */
+    forecast: BalanceForecast? = null,
+    /** «این حقوقم نیست» */
+    onNotSalary: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
@@ -224,7 +245,14 @@ fun ReportsContent(
             ) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 14.dp)) {
                     RangeSelector(range, onRange)
-                    BalanceContent(balances, onOpenAccount, showTitle = false)
+                    BalanceContent(
+                        balances,
+                        onOpenAccount,
+                        showTitle = false,
+                        forecast = forecast,
+                        forecastOnChart = range == ReportRange.MONTH,
+                        onNotSalary = onNotSalary,
+                    )
                 }
             }
         }

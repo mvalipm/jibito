@@ -48,6 +48,7 @@ import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.wallet.AccountRef
 import ir.jibito.app.data.wallet.AccountTrend
 import ir.jibito.app.data.wallet.BalanceHistory
+import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.data.wallet.BalanceOverview
 import ir.jibito.app.data.wallet.BalanceSeries
 import ir.jibito.app.ui.common.LocalHideAmounts
@@ -90,6 +91,12 @@ internal fun BalanceContent(
     onOpen: (AccountRef?) -> Unit,
     nowMillis: Long = System.currentTimeMillis(),
     showTitle: Boolean = true,
+    /** «پولم تا حقوق می‌رسه؟»؛ null یعنی پیش‌بینی‌ای نیست */
+    forecast: BalanceForecast? = null,
+    /** ادامه‌ی نقطه‌چین روی نمودار (فقط بازه‌ی «این ماه»؛ در بازه‌های چندماهه فقط جمله و توضیح) */
+    forecastOnChart: Boolean = false,
+    /** «این حقوقم نیست» */
+    onNotSalary: (() -> Unit)? = null,
 ) {
     when {
         LocalHideAmounts.current -> {
@@ -112,7 +119,12 @@ internal fun BalanceContent(
                 series = overview.total,
                 label = stringResource(R.string.balance_title),
                 lineColor = JibitoTheme.colors.btnBg,
+                forecast = forecast?.takeIf { forecastOnChart },
             )
+            if (forecast != null) {
+                ForecastNote(forecast)
+                ForecastBreakdown(forecast, onNotSalary)
+            }
             if (overview.total.hasTrend) {
                 Text(
                     stringResource(R.string.balance_total_note),
@@ -139,7 +151,7 @@ private fun CardTitle(text: String) {
  * سری بدون روند (کمتر از دو روز معلوم) فقط عدد امروز و یک یادداشت دارد.
  */
 @Composable
-internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color) {
+internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color, forecast: BalanceForecast? = null) {
     val t = JibitoTheme.colors
     val stats = series.stats()
     if (stats == null) {
@@ -150,10 +162,22 @@ internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color
     val from = series.firstKnown ?: 0
     val known = series.known
     val days = series.grid.starts.drop(from)
-    var selected by remember(series) { mutableStateOf<Int?>(null) }
+    // پیش‌بینی از امروز (آخرین روز سری) تا شب قبل از حقوق، و خودِ روز حقوق
+    val ahead = forecast?.takeIf { known.isNotEmpty() && it.days.first() == days.last() }
+    val salary = ahead?.salary
+    val payday = ahead?.paydayMillis
+    val projection = ahead?.let { f ->
+        listOf(known.last()) + f.values.drop(1) + listOfNotNull(salary?.let { f.endRial + it.amountRial }.takeIf { payday != null })
+    }.orEmpty()
+    val allDays = days + ahead?.days?.drop(1).orEmpty() + listOfNotNull(payday.takeIf { salary != null })
+    var selected by remember(series, ahead) { mutableStateOf<Int?>(null) }
     val active = selected ?: known.lastIndex
-    val value = known[active]
-    val headLabel = if (selected == null) label else dateLabel(days[active])
+    val value = known.getOrNull(active) ?: projection[active - known.lastIndex]
+    val headLabel = when {
+        selected == null -> label
+        active > known.lastIndex -> stringResource(R.string.forecast_point, dateLabel(allDays[active]))
+        else -> dateLabel(allDays[active])
+    }
     val startLabel = dateLabel(stats.startDay)
     val change = value - stats.startRial
     val chip = if (!series.hasTrend || active == 0) null else when {
@@ -167,7 +191,18 @@ internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color
         EmptyNote(stringResource(R.string.balance_need_days))
         return
     }
-    val data = remember(series) { LineChartData(slots = known.size, values = known, fromZero = false, step = true) }
+    val data = remember(series, ahead) {
+        LineChartData(
+            slots = known.size + (projection.size - 1).coerceAtLeast(0),
+            values = known,
+            projection = projection,
+            // کم می‌آورد: خط صفر
+            reference = 0L.takeIf { ahead != null && ahead.lowRial < 0 },
+            fromZero = false,
+            step = true,
+        )
+    }
+    val zeroLabel = stringResource(R.string.forecast_zero)
     SpendLineChart(
         data = data,
         selected = selected,
@@ -177,10 +212,19 @@ internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color
         referenceColor = t.amber,
         description = stringResource(R.string.cd_balance_chart),
         modifier = Modifier.padding(top = 4.dp),
+        referenceLabel = { ReferenceLabel(zeroLabel) },
         // فقط برای نقطه‌ی زیر انگشت ساخته می‌شود (یک سال = ۳۶۵ نقطه)
-        tooltip = { i -> Tooltip(dateLabel(days[i]) + " — " + amount(Money.compact(known[i])), null) },
+        tooltip = { i ->
+            val v = known.getOrNull(i) ?: projection[i - known.lastIndex]
+            val day = dateLabel(allDays[i])
+            Tooltip((if (i > known.lastIndex) stringResource(R.string.forecast_point, day) else day) + " — " + amount(Money.compact(v)), null)
+        },
     )
-    AxisLabels(dateLabel(days.first()), dateLabel(days[days.size / 2]), stringResource(R.string.balance_today))
+    AxisLabels(
+        dateLabel(allDays.first()),
+        dateLabel(allDays[allDays.size / 2]),
+        if (ahead == null) stringResource(R.string.balance_today) else dateLabel(allDays.last()),
+    )
     if (from > 0) {
         Text(
             stringResource(R.string.balance_since, startLabel),

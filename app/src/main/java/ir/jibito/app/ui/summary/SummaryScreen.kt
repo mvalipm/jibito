@@ -81,8 +81,11 @@ fun SummaryScreen(
     onCategoryOpened: () -> Unit = {},
     /** «ثبت اولین خرج» وقتی هنوز هیچ تراکنشی نیست */
     onAddManual: () -> Unit = {},
+    /** لمس «پولت تا حقوق می‌رسه؟» ← کارت موجودی در «گزارش‌ها» */
+    onOpenForecast: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
+    val forecastState by app.container.forecastRepository.state.collectAsState(initial = null)
     val viewModel: SummaryViewModel = viewModel(
         factory = SummaryViewModel.factory(app.container.budgetRepository)
     )
@@ -136,6 +139,8 @@ fun SummaryScreen(
                         onToggleDark = { themeSettings.setDarkMode(if (t.dark) DarkMode.LIGHT else DarkMode.DARK) },
                         onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
                         onOpenSettings = onOpenSettings,
+                        forecast = forecastState?.forecast,
+                        onOpenForecast = onOpenForecast,
                     )
                 }
                 // هنوز هیچ تراکنشی نیست: به‌جای عددهای صفر، چرا خالی است و قدم بعدی

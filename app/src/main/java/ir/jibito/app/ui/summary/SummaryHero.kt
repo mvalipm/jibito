@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.main.NavIcons
@@ -134,6 +135,9 @@ fun SummaryHero(
     onToggleHidden: () -> Unit,
     onOpenSettings: () -> Unit = {},
     nowMillis: Long = System.currentTimeMillis(),
+    /** «پولت تا حقوق می‌رسه؟»؛ فقط ماه جاری، و وقتی مبلغ‌ها پنهان نیستند */
+    forecast: BalanceForecast? = null,
+    onOpenForecast: () -> Unit = {},
 ) {
     val t = JibitoTheme.colors
     val hidden = LocalHideAmounts.current
@@ -305,6 +309,7 @@ fun SummaryHero(
                     lineHeight = 24.sp,
                 )
             }
+            if (forecast != null && isCurrent && !hidden) HeroForecastLine(forecast, onOpenForecast)
         }
     }
 }
