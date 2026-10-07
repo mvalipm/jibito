@@ -57,6 +57,8 @@ internal fun TransactionListBody(
     onPick: (Transaction, Long) -> Unit,
     /** هنوز هیچ تراکنشی نیست (نه حتی با فیلتر): به‌جای فهرست خالی، قدم بعدی نشان داده می‌شود */
     emptyStart: (@Composable () -> Unit)? = null,
+    /** نکته‌ی یک‌باره بالای فهرست (مثلاً «با یه لمس بگو مال چی بود») */
+    tip: (@Composable () -> Unit)? = null,
 ) {
     val t = JibitoTheme.colors
     val list = visible?.list
@@ -89,6 +91,11 @@ internal fun TransactionListBody(
             state = listState,
             contentPadding = PaddingValues(top = 4.dp, bottom = 88.dp + LocalBottomBarSpace.current),
         ) {
+            tip?.let { content ->
+                item(key = "tip") {
+                    Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) { content() }
+                }
+            }
             // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی و فشرده، بالای فهرست
             transferSuggestion?.let { suggestion ->
                 item(key = "transfer-suggestion") {

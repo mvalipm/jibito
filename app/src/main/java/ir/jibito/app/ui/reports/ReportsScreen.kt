@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.ui.common.Tip
+import ir.jibito.app.ui.common.TipCard
+import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendTrend
 import ir.jibito.app.data.wallet.AccountRef
@@ -63,6 +66,7 @@ fun ReportsScreen(onOpenAccount: (AccountRef?) -> Unit = {}) {
         onRange = viewModel::setRange,
         balances = balances,
         onOpenAccount = onOpenAccount,
+        thinTip = rememberTip(Tip.REPORTS_THIN).let { if (it.visible) it.dismiss else null },
     )
 }
 
@@ -79,6 +83,8 @@ fun ReportsContent(
     balances: BalanceOverview? = null,
     /** جزئیات یک حساب (null = همه‌ی حساب‌ها) */
     onOpenAccount: (AccountRef?) -> Unit = {},
+    /** نکته‌ی «ماه اول» هنوز بسته نشده؛ بستنش. null یعنی نشان داده نشود */
+    thinTip: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     LazyColumn(
@@ -96,6 +102,18 @@ fun ReportsContent(
                     range != ReportRange.MONTH && months != null -> MonthsChart(months)
                     else -> Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 }
+            }
+        }
+        // ماه اول: هنوز ماه قبلی برای مقایسه و پیش‌بینی نیست
+        if (thinTip != null && range == ReportRange.MONTH && report != null && report.curve.isCurrent &&
+            report.curve.previous.all { it == 0L }
+        ) {
+            item(key = "tip") {
+                TipCard(
+                    stringResource(R.string.tip_reports_thin),
+                    onDismiss = thinTip,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                )
             }
         }
         item(key = "balance") { BalanceCard(balances, onOpenAccount) }
