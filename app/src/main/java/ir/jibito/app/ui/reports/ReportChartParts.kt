@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,12 +45,13 @@ internal fun SegmentedTabs(
     labels: List<String>,
     selected: Int,
     onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+    outerPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
 ) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     Row(
-        modifier
+        Modifier
+            .padding(outerPadding)
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(t.chip)

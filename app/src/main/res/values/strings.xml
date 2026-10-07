@@ -675,7 +675,7 @@
     <string name="reports_summary_amount">%1$s: %2$s تومان</string>
     <string name="balance_hidden_short">پنهانه، چون مبلغ‌ها پنهان‌اند</string>
     <string name="reports_summary_balance">امروز %1$s تومان</string>
-    <string name="reports_summary_balance_change">امروز %1$s تومان · %2$s</string>
+    <string name="reports_summary_balance_change">امروز %1$s تومان؛ %2$s</string>
     <string name="reports_insights_count">%1$s نکته از الگوی خرجت</string>
     <string name="reports_insights_none">هنوز نکته‌ای پیدا نکردم؛ با چند خرید بیشتر، الگوی خرجت دستم میاد.</string>
     <string name="cd_reports_new">نکته‌ی تازه</string>

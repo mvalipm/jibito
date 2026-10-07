@@ -351,7 +351,7 @@ private fun spendSummary(range: ReportRange, report: MonthReport?, months: Spend
     return stringResource(R.string.reports_summary_amount, stringResource(R.string.reports_monthly_average), amount(Money.compact(average)))
 }
 
-/** «امروز ۴۵ میلیون تومان · ۲ میلیون بیشتر از ۱ مهر»؛ null وقتی جمعی برای گفتن نیست */
+/** «امروز ۴۵ میلیون تومان؛ ۲ میلیون بیشتر از ۱ مهر»؛ null وقتی جمعی برای گفتن نیست */
 @Composable
 private fun balanceSummary(overview: BalanceOverview?): String? {
     if (overview == null) return null
@@ -415,6 +415,6 @@ private fun RangeSelector(range: ReportRange, onRange: (ReportRange) -> Unit) {
         },
         selected = range.ordinal,
         onSelect = { onRange(ReportRange.entries[it]) },
-        modifier = Modifier.padding(bottom = 12.dp),
+        outerPadding = PaddingValues(bottom = 12.dp),
     )
 }
