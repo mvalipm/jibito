@@ -178,6 +178,7 @@ class TabsScreenshotTest : ScreenshotTestBase() {
 
     /** صفحه‌ی جزئیات حساب ملت: ۳ ماه، کف/سقف/تغییر، جمله‌ی جیبی و تراکنش‌ها */
     @Test
+    @Config(sdk = [34], qualifiers = "w400dp-h1400dp-xxhdpi")
     fun accountDetail() {
         val points = balancePoints()
         val grid = DayGrid.lastDays(AccountRange.QUARTER.days, now)
@@ -192,7 +193,8 @@ class TabsScreenshotTest : ScreenshotTestBase() {
         )
         val transactions = AccountTransactions(sample.filter { it.bank?.id == 11 }, emptyList())
         for (dark in listOf(false, true)) shot("account", AppThemeStyle.DEFAULT, dark, padded = false) {
-            Box(Modifier.fillMaxWidth().height(860.dp)) {
+            // آن‌قدر بلند که چند روزِ فهرست تراکنش‌ها (و حاشیه‌ی دو طرفش) هم در تصویر بیاید
+            Box(Modifier.fillMaxWidth().height(1400.dp)) {
                 AccountContent(
                     ref = ref,
                     range = AccountRange.QUARTER,
