@@ -63,6 +63,7 @@ internal object SettingsIcons {
     val Wrench by lazy { DesignIcons.svg("wrench", DesignIcons.WRENCH) }
     val Weekly by lazy { DesignIcons.svg("weekly", DesignIcons.CALENDAR) }
     val Sparkle by lazy { DesignIcons.svg("sparkle", DesignIcons.SPARKLE) }
+    val Help by lazy { DesignIcons.svg("help", "M12 21a9 9 0 1 0 0-18a9 9 0 1 0 0 18zM9.6 9.4a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2.2-2.5 3.6M12 17h.01") }
     val Pen by lazy { DesignIcons.svg("pen", "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4") }
 }
 

@@ -10,6 +10,8 @@ import ir.jibito.app.ui.settings.PermissionBanner
 import ir.jibito.app.ui.settings.SettingsSection
 import ir.jibito.app.ui.settings.ThemePicker
 import ir.jibito.app.ui.settings.WhatsNewList
+import ir.jibito.app.ui.settings.HelpList
+import ir.jibito.app.ui.settings.helpQuestions
 import ir.jibito.app.util.Changelog
 import ir.jibito.app.ui.theme.JibitoIcons
 import org.junit.runner.RunWith
@@ -44,6 +46,16 @@ class SettingsScreenshotTest : ScreenshotTestBase() {
             shot("settings_hub", style, dark) { SettingsHubSample() }
         }
         shot("settings_hub", AppThemeStyle.DEFAULT, false, fontScale = 2f) { SettingsHubSample() }
+    }
+
+    /** «راهنما»: پرسش‌های رایج (اولی باز)، دوباره دیدن نکته‌ها و پشتیبانی */
+    @Test
+    fun help() {
+        for (dark in listOf(false, true)) {
+            shot("help", AppThemeStyle.DEFAULT, dark) {
+                HelpList(helpQuestions(), tipsReset = false, onResetTips = {}, onAsk = {}, initiallyOpen = 0)
+            }
+        }
     }
 
     /** «چه چیزی تازه است»: هر نسخه در کارت خودش */

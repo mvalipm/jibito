@@ -32,6 +32,7 @@ class NotificationActionTest {
 
     @Before
     fun setUp() = runBlocking {
+        TestSupport.stopBackgroundWork()
         CategorySeeder(db).ensure()
         NotificationStyleSettings(app).set(NotificationStyle.BUTTONS)
     }

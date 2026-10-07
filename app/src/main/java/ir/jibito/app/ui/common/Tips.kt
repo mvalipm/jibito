@@ -53,6 +53,9 @@ class TipStore(context: Context) {
     fun seen(tip: Tip): Boolean = prefs.getBoolean(tip.key, false)
 
     fun markSeen(tip: Tip) = prefs.edit { putBoolean(tip.key, true) }
+
+    /** «دوباره نشون دادن نکته‌ها» در «راهنما» */
+    fun resetAll() = prefs.edit { clear() }
 }
 
 /** [visible]: هنوز دیده و بسته نشده. [dismiss]: دیگر هیچ‌وقت نشان داده نشود (مثلاً با «فهمیدم» یا انجام همان کار) */
