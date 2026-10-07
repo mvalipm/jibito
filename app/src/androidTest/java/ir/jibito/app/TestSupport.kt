@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.rule.GrantPermissionRule
+import androidx.work.WorkManager
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.repository.SOURCE_SMS_AUTO
@@ -24,6 +25,14 @@ object TestSupport {
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
         }
         return GrantPermissionRule.grant(*list.toTypedArray())
+    }
+
+    /**
+     * کارهای پس‌زمینه‌ی اپ (مثل همگام‌سازی دوره‌ای پیامک که با شروع اپ زمان‌بندی می‌شود) متوقف می‌شوند،
+     * تا وسط تست نوتیفیکیشن یا دیتابیس را عوض نکنند (مثلاً سؤال «مال چی بود؟» را دوباره نشان دهند).
+     */
+    fun stopBackgroundWork() {
+        WorkManager.getInstance(app).cancelAllWork().result.get()
     }
 
     /** تا [timeoutMillis] صبر می‌کند تا [check] چیزی غیر null بدهد */
