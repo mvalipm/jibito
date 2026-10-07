@@ -38,6 +38,7 @@ import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.todo.FirstStep
 import ir.jibito.app.ui.common.EmptyStart
+import ir.jibito.app.ui.common.TipCard
 import androidx.compose.foundation.layout.Spacer
 import ir.jibito.app.ui.todo.FirstStepsUi
 import ir.jibito.app.ui.todo.TodoList
@@ -104,6 +105,18 @@ class TabsScreenshotTest : ScreenshotTestBase() {
                 EmptyStart(smsGranted = false, onAddManual = {}, onAllowSms = {})
                 Spacer(Modifier.height(24.dp))
                 EmptyStart(smsGranted = true, onAddManual = {}, onAllowSms = {}, card = true)
+            }
+        }
+    }
+
+    /** نکته‌ی یک‌باره (بالای «تراکنش‌ها»، «بررسی» و «گزارش‌ها») */
+    @Test
+    fun tipCard() {
+        for (dark in listOf(false, true)) shot("tip", AppThemeStyle.DEFAULT, dark) {
+            Column {
+                TipCard("خرجی که دسته نداره رو بزن و بگو مال چی بود. چند بار که برای یه فروشگاه بگی، از اون به بعد خودم دسته‌ش رو می‌ذارم.", onDismiss = {})
+                Spacer(Modifier.height(12.dp))
+                TipCard("اگه این پول رو بین کارت‌های خودت جابه‌جا کردی، «آره» بزن تا نه خرج حساب بشه نه درآمد.", onDismiss = {})
             }
         }
     }

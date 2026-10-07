@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.R
 import ir.jibito.app.ui.common.EmptyStart
+import ir.jibito.app.ui.common.Tip
+import ir.jibito.app.ui.common.TipCard
+import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.ui.common.rememberSmsAccess
 import ir.jibito.app.domain.BankBalance
 import androidx.compose.runtime.LaunchedEffect
@@ -152,7 +155,11 @@ fun SmsListScreen(
     }
     val t = JibitoTheme.colors
     val byId = remember(categories) { categories.associateBy { it.id } }
+    // نکته‌های یک‌باره: انجام دادن خود کار هم یعنی «فهمیدم»
+    val uncatTip = rememberTip(Tip.UNCATEGORIZED)
+    val transferTip = rememberTip(Tip.TRANSFER)
     fun pickCategory(sms: Transaction, categoryId: Long?) {
+        if (categoryId != null) uncatTip.dismiss()
         haptics.confirm()
         val name = categoryId?.let { byId[it]?.name }
         viewModel.setCategory(sms, categoryId) { before ->
@@ -315,10 +322,12 @@ fun SmsListScreen(
             transferSuggestion = transferSuggestions.firstOrNull()?.takeIf { !showSearch },
             transferCount = transferSuggestions.size,
             onConfirmTransfer = { suggestion ->
+                transferTip.dismiss()
                 haptics.confirm()
                 viewModel.confirmTransfer(suggestion)
             },
             onRejectTransfer = { suggestion ->
+                transferTip.dismiss()
                 haptics.reject()
                 viewModel.rejectTransfer(suggestion)
             },
@@ -328,6 +337,17 @@ fun SmsListScreen(
             hiddenRoots = hiddenRoots,
             onOpen = { sms -> selectedId = sms.id },
             onPick = { sms, categoryId -> pickCategory(sms, categoryId) },
+            // پیشنهاد انتقال بالای فهرست است؛ نکته‌اش مهم‌تر از نکته‌ی دسته
+            tip = when {
+                showSearch -> null
+                hasSuggestion && transferTip.visible -> {
+                    { TipCard(stringResource(R.string.tip_transfer), onDismiss = transferTip.dismiss) }
+                }
+                uncategorizedCount > 0 && uncatTip.visible -> {
+                    { TipCard(stringResource(R.string.tip_uncategorized), onDismiss = uncatTip.dismiss) }
+                }
+                else -> null
+            },
             emptyStart = if (messages?.isEmpty() == true && !isSyncing) {
                 { EmptyStart(smsAccess.granted, onAddManual = { addingManual = true }, onAllowSms = smsAccess.allow) }
             } else {
