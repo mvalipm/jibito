@@ -141,6 +141,13 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+// هر هشدار کامپایلر کاتلین (کد اپ و تست‌ها) ساخت را می‌شکند، تا هشدارها جمع نشوند
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
 

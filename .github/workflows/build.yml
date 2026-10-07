@@ -33,6 +33,16 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # هیچ فایل کاتلین بالای ۵۰۰ خط نباشد (بدهی فنی: فایل‌های بزرگ دوباره جمع نشوند)
+      - name: Check Kotlin file sizes
+        run: |
+          big=$(find app/src -name '*.kt' -exec awk 'END { if (NR > 500) print NR, FILENAME }' {} \;)
+          if [ -n "$big" ]; then
+            echo "$big" | while read -r n f; do echo "::error file=$f::$n lines (limit 500). Split this file."; done
+            exit 1
+          fi
+          echo "All Kotlin files are at most 500 lines"
+
       # تست‌ها + اسکرین‌شات‌ها (Roborazzi) + APK آزمایشی.
       # اسکرین‌شات‌ها با تصویرهای مرجع app/src/test/screenshots مقایسه می‌شوند و هر تغییر ظاهری ساخت را می‌شکند.
       # مرجع‌ها از نو ساخته می‌شوند اگر هنوز نیستند، یا با اجرای دستی و record_screenshots.
