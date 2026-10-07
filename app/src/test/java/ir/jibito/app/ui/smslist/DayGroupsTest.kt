@@ -36,11 +36,12 @@ class DayGroupsTest {
         categoryId: Long? = null,
         failed: Boolean = false,
         selfTransfer: Boolean = false,
+        oneOff: Boolean = false,
     ) = Transaction(
         id = nextId++, bank = null, body = "", dateMillis = date,
         transaction = ParsedTransaction(type, amount), merchant = null, suggestedCategory = null,
         isFailedPurchase = failed, categoryId = categoryId, categoryName = null, categoryIcon = null,
-        isAutoCategorized = false, isSelfTransfer = selfTransfer,
+        isAutoCategorized = false, isSelfTransfer = selfTransfer, isOneOff = oneOff,
     )
 
     @Test
@@ -91,5 +92,19 @@ class DayGroupsTest {
         // سال شمسی دیگر ← سال هم نوشته می‌شود
         assertEquals("چهارشنبه ۲۹ اسفند ۱۴۰۳", Jalali.dayTitle(at(2025, 3, 19, 10), now))
         assertEquals("۰۹:۰۵", Jalali.time(at(2025, 10, 2, 9, 5)))
+    }
+
+    @Test
+    fun `خرج یک‌باره در نوار روز نیست و جدا جمع می‌شود`() {
+        val g = groupByDay(
+            listOf(
+                tx(at(2025, 10, 2, 18), 4_500_000),
+                tx(at(2025, 10, 2, 7), 8_610_000_000, oneOff = true),
+                tx(at(2025, 10, 2, 6), 1_000_000, selfTransfer = true, oneOff = true),
+            )
+        ).single()
+        assertEquals(4_500_000L, g.spendRial)
+        // انتقال به خودم خرج نیست، حتی با علامت یک‌باره
+        assertEquals(8_610_000_000L, g.oneOffRial)
     }
 }

@@ -124,7 +124,7 @@ abstract class ScreenshotTestBase {
         tx(5, 27, 3_000_000, merchant = "دیجی‌کالا", failed = true),
         tx(6, 28, 50_000_000, merchant = "کارت ۶۰۳۷", selfTransfer = true),
         tx(7, 29, 900_000),
-        tx(8, 30, 1_200_000_000, merchant = "لوازم خانگی سامان", categoryName = "لوازم خانه", categoryIcon = "🏠", oneOff = true),
+        tx(8, 30, 1_200_000_000, merchant = "لوازم خانگی سامان", oneOff = true),
     ).sortedByDescending { it.dateMillis }
 
     /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */

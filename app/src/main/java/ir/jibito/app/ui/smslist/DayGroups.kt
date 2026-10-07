@@ -9,8 +9,13 @@ data class DayGroup(
     /** ساعت ۰۰:۰۰ آن روز */
     val dayStartMillis: Long,
     val items: List<Transaction>,
-    /** جمع خرج آن روز (بدون خرید ناموفق، انتقال به خودم و دسته‌هایی که خرج حساب نمی‌شوند) */
+    /**
+     * جمع خرج آن روز (بدون خرید ناموفق، انتقال به خودم و دسته‌هایی که خرج حساب نمی‌شوند)،
+     * بدون خرج‌های یک‌باره: نوار روزها با هم مقایسه می‌شود و یک خرید خانه بقیه‌ی روزها را صاف نکند.
+     */
     val spendRial: Long,
+    /** خرج یک‌باره‌ی آن روز (خرید خانه…)؛ جدا کنار نوار نوشته می‌شود */
+    val oneOffRial: Long = 0,
 )
 
 /**
@@ -23,7 +28,12 @@ fun groupByDay(list: List<Transaction>, nonSpendCategoryIds: Set<Long> = emptySe
     var current = ArrayList<Transaction>()
     fun flush() {
         if (current.isNotEmpty()) {
-            groups += DayGroup(currentDay, current, current.sumOf { spendOf(it, nonSpendCategoryIds) })
+            val (oneOffs, routine) = current.filter { countsAsSpend(it, nonSpendCategoryIds) }.partition { it.isOneOff }
+            groups += DayGroup(
+                currentDay, current,
+                spendRial = routine.sumOf { it.transaction.amountRial },
+                oneOffRial = oneOffs.sumOf { it.transaction.amountRial },
+            )
         }
     }
     for (t in list) {
@@ -39,7 +49,6 @@ fun groupByDay(list: List<Transaction>, nonSpendCategoryIds: Set<Long> = emptySe
     return groups
 }
 
-private fun spendOf(t: Transaction, nonSpend: Set<Long>): Long =
-    if (t.transaction.type == FlowType.WITHDRAWAL && !t.isFailedPurchase && !t.isSelfTransfer &&
+private fun countsAsSpend(t: Transaction, nonSpend: Set<Long>): Boolean =
+    t.transaction.type == FlowType.WITHDRAWAL && !t.isFailedPurchase && !t.isSelfTransfer &&
         (t.categoryId == null || t.categoryId !in nonSpend)
-    ) t.transaction.amountRial else 0L

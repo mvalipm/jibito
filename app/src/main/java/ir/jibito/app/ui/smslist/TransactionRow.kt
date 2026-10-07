@@ -109,6 +109,17 @@ internal fun DayHeader(
             Spacer(Modifier.width(10.dp))
             Text(amount(Money.compact(group.spendRial)), fontSize = 13.sp, color = t.muted, maxLines = 1)
         }
+        // خرج یک‌باره جدا از نوار (نوار روزها را با هم مقایسه می‌کند)
+        if (group.oneOffRial > 0) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                amount(stringResource(R.string.day_one_off, Money.compact(group.oneOffRial))),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = t.sugFg,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -198,6 +209,8 @@ internal fun TransactionRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             when {
+                // خرج یک‌باره‌ی بی‌دسته: ستاره به‌جای «؟» خالی (متن «مال چی بود؟» هنوز دسته می‌خواهد)
+                uncategorized && sms.isOneOff -> CategoryIconTile(CategoryTint(t.sugBg, t.sugFg, DesignIcons.Star, null), size = 52.dp, radius = 18.dp, iconSize = 26.dp)
                 uncategorized -> UncategorizedTile()
                 failed -> CategoryIconTile(CategoryTint(t.failBg, t.failFg, DesignIcons.Failed, null), size = 52.dp, radius = 18.dp, iconSize = 26.dp)
                 selfTransfer -> CategoryIconTile(CategoryTint(t.transferBg, t.transferFg, DesignIcons.Transfer, null), size = 52.dp, radius = 18.dp, iconSize = 26.dp)
