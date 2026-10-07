@@ -162,14 +162,11 @@ internal fun BalanceChart(series: BalanceSeries, label: String, lineColor: Color
     val from = series.firstKnown ?: 0
     val known = series.known
     val days = series.grid.starts.drop(from)
-    // پیش‌بینی از امروز (آخرین روز سری) تا شب قبل از حقوق، و خودِ روز حقوق
+    // پیش‌بینی از امروز (آخرین روز سری) تا شب قبل از حقوق. خود حقوق روی نمودار نیست:
+    // پرشِ بزرگش مقیاس را آن‌قدر باز می‌کرد که خط موجودی صاف دیده می‌شد (جمله‌ی زیر نمودار آن را می‌گوید)
     val ahead = forecast?.takeIf { known.isNotEmpty() && it.days.first() == days.last() }
-    val salary = ahead?.salary
-    val payday = ahead?.paydayMillis
-    val projection = ahead?.let { f ->
-        listOf(known.last()) + f.values.drop(1) + listOfNotNull(salary?.let { f.endRial + it.amountRial }.takeIf { payday != null })
-    }.orEmpty()
-    val allDays = days + ahead?.days?.drop(1).orEmpty() + listOfNotNull(payday.takeIf { salary != null })
+    val projection = ahead?.let { f -> listOf(known.last()) + f.values.drop(1) }.orEmpty()
+    val allDays = days + ahead?.days?.drop(1).orEmpty()
     var selected by remember(series, ahead) { mutableStateOf<Int?>(null) }
     val active = selected ?: known.lastIndex
     val value = known.getOrNull(active) ?: projection[active - known.lastIndex]
