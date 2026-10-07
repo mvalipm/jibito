@@ -8,6 +8,7 @@ import ir.jibito.app.data.category.CategorySeeder
 import ir.jibito.app.notify.NotificationStyle
 import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.TransactionNotifier
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -50,7 +51,9 @@ class NotificationActionTest {
         val actions = question!!.actions.orEmpty()
         assertEquals("حالت «دکمه‌ها»: سه دکمه‌ی دسته", NotificationStyle.BUTTONS.categoryButtons, actions.size)
 
-        // لمس اولین دکمه
+        // لمس اولین دکمه، با مکثی مثل کاربر واقعی: اندروید به‌روزرسانیِ خیلی سریعِ پشت‌سرهمِ نوتیفیکیشن
+        // را دور می‌ریزد («Shedding events»)، و «رفت تو …» بی‌صدا گم می‌شد
+        delay(HUMAN_PAUSE_MILLIS)
         val picked = actions.first()
         picked.actionIntent.send()
         val categoryId = TestSupport.waitFor { db.transactionFlowDao().byId(id)?.categoryId }
@@ -63,10 +66,16 @@ class NotificationActionTest {
             notificationFor(id)?.takeIf { n -> n.actions.orEmpty().any { it.title.toString() == undoLabel } }
         }
         assertNotNull("بعد از انتخاب، نوتیفیکیشن «رفت تو …» با «برگردون» باید بیاید", pickedNotice)
+        delay(HUMAN_PAUSE_MILLIS)
         pickedNotice!!.actions.first { it.title.toString() == undoLabel }.actionIntent.send()
 
         val cleared = TestSupport.waitFor { db.transactionFlowDao().byId(id)?.takeIf { it.categoryId == null } }
         assertNotNull("«برگردون» باید دسته را بردارد", cleared)
         assertNull(cleared!!.categoryId)
+    }
+
+    private companion object {
+        /** فاصله‌ی دو به‌روزرسانی نوتیفیکیشن، کمتر از آن را اندروید ممکن است دور بریزد (سقف حدود ۵ در ثانیه) */
+        const val HUMAN_PAUSE_MILLIS = 1_500L
     }
 }
