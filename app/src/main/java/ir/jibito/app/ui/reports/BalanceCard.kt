@@ -61,7 +61,7 @@ import ir.jibito.app.util.Money
 import java.util.Calendar
 
 /**
- * کارت «موجودی حساب‌ها» در تب «گزارش‌ها»، زیر نمودار خرج و در همان بازه (ولی تا امروز):
+ * «موجودی حساب‌ها» در بازه‌ی انتخاب‌شده‌ی تب «گزارش‌ها» (ولی تا امروز):
  * جمع حساب‌هایی که در کیف پول حساب می‌شوند (نمودار پله‌ای) و زیرش هر حساب با خط روند کوچکش.
  * لمس هر حساب ← صفحه‌ی جزئیات همان حساب؛ «جزئیات همه‌ی حساب‌ها» ← همان صفحه برای جمع.
  * وقتی مبلغ‌ها پنهان‌اند کل روند پنهان است (از شکل نمودار مبلغ‌ها حدس زده می‌شوند) و دلیلش گفته می‌شود.
@@ -76,43 +76,55 @@ fun BalanceCard(
     nowMillis: Long = System.currentTimeMillis(),
 ) {
     Column(Modifier.padding(top = 16.dp)) {
-        ChartCard {
-            when {
-                LocalHideAmounts.current -> {
-                    CardTitle(stringResource(R.string.balance_title))
-                    EmptyNote(stringResource(R.string.balance_hidden))
-                }
-                overview == null -> Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                overview.accounts.none { BankDirectory.byId(it.ref.bankId) != null } -> {
-                    CardTitle(stringResource(R.string.balance_title))
-                    EmptyNote(stringResource(R.string.balance_empty))
-                }
-                // همه‌ی حساب‌ها از جمع بیرون‌اند: جمعی نیست، فقط حساب‌ها
-                overview.total.firstKnown == null -> {
-                    CardTitle(stringResource(R.string.balance_title))
-                    Spacer(Modifier.height(8.dp))
-                    AccountRows(overview.accounts, onOpen, nowMillis)
-                }
-                else -> {
-                    BalanceChart(
-                        series = overview.total,
-                        label = stringResource(R.string.balance_title),
-                        lineColor = JibitoTheme.colors.btnBg,
-                    )
-                    if (overview.total.hasTrend) {
-                        Text(
-                            stringResource(R.string.balance_total_note),
-                            modifier = Modifier.padding(top = 8.dp),
-                            fontSize = 11.sp,
-                            lineHeight = 18.sp,
-                            color = JibitoTheme.colors.faint,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    AccountRows(overview.accounts, onOpen, nowMillis)
-                    OpenAllRow(onClick = { onOpen(null) })
-                }
+        ChartCard { BalanceContent(overview, onOpen, nowMillis) }
+    }
+}
+
+/**
+ * محتوای «موجودی حساب‌ها» بدون قاب (داخل کارت تاشوی تب «گزارش‌ها» یا [BalanceCard]).
+ * @param showTitle عنوان کوچک حالت‌های خالی؛ کارت تاشو خودش عنوان دارد
+ */
+@Composable
+internal fun BalanceContent(
+    overview: BalanceOverview?,
+    onOpen: (AccountRef?) -> Unit,
+    nowMillis: Long = System.currentTimeMillis(),
+    showTitle: Boolean = true,
+) {
+    when {
+        LocalHideAmounts.current -> {
+            if (showTitle) CardTitle(stringResource(R.string.balance_title))
+            EmptyNote(stringResource(R.string.balance_hidden))
+        }
+        overview == null -> Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        overview.accounts.none { BankDirectory.byId(it.ref.bankId) != null } -> {
+            if (showTitle) CardTitle(stringResource(R.string.balance_title))
+            EmptyNote(stringResource(R.string.balance_empty))
+        }
+        // همه‌ی حساب‌ها از جمع بیرون‌اند: جمعی نیست، فقط حساب‌ها
+        overview.total.firstKnown == null -> {
+            if (showTitle) CardTitle(stringResource(R.string.balance_title))
+            Spacer(Modifier.height(8.dp))
+            AccountRows(overview.accounts, onOpen, nowMillis)
+        }
+        else -> {
+            BalanceChart(
+                series = overview.total,
+                label = stringResource(R.string.balance_title),
+                lineColor = JibitoTheme.colors.btnBg,
+            )
+            if (overview.total.hasTrend) {
+                Text(
+                    stringResource(R.string.balance_total_note),
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 11.sp,
+                    lineHeight = 18.sp,
+                    color = JibitoTheme.colors.faint,
+                )
             }
+            Spacer(Modifier.height(8.dp))
+            AccountRows(overview.accounts, onOpen, nowMillis)
+            OpenAllRow(onClick = { onOpen(null) })
         }
     }
 }

@@ -40,13 +40,17 @@ import ir.jibito.app.util.Money
 
 /** انتخاب بازه: ریل خاکستری با گزینه‌ی انتخاب‌شده‌ی روشن (تب «گزارش‌ها» و صفحه‌ی جزئیات حساب) */
 @Composable
-internal fun SegmentedTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+internal fun SegmentedTabs(
+    labels: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(t.chip)
             .padding(4.dp),

@@ -4,6 +4,7 @@ import ir.jibito.app.data.repository.Insight
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendCurve
 import ir.jibito.app.ui.reports.ReportRange
+import ir.jibito.app.ui.reports.ReportSection
 import ir.jibito.app.ui.reports.ReportsContent
 import ir.jibito.app.ui.reports.BalanceCard
 import ir.jibito.app.ui.account.AccountContent
@@ -94,7 +95,7 @@ class TabsScreenshotTest : ScreenshotTestBase() {
         }
     }
 
-    /** تب «گزارش‌ها»: خرج تجمعی مهر در برابر شهریور، بودجه، پیش‌بینی و نکته‌های «جیبی چی فهمید؟» */
+    /** تب «گزارش‌ها»: دکمه‌های تاشو؛ خرج تجمعی مهر در برابر شهریور، بودجه، پیش‌بینی و نکته‌های «جیبی چی فهمید؟» */
     @Test
     fun reportsTab() {
         val mehr = JalaliMonth(1405, 7)
@@ -111,7 +112,9 @@ class TabsScreenshotTest : ScreenshotTestBase() {
             Insight.BusiestDay(mehr, 6, 22_000_000L, 3),
             Insight.WeekdayPeak(java.util.Calendar.FRIDAY, 2.03),
         )
-        for (dark in listOf(false, true)) shot("reports", AppThemeStyle.DEFAULT, dark, padded = false) {
+        // «خرج» باز (با نقطه‌ی «تازه» روی نکته‌ها)، و «جیبی چی فهمید؟» باز با بقیه بسته و خلاصه‌دار
+        val shots = listOf("reports" to ReportSection.SPEND, "reports_insights" to ReportSection.INSIGHTS)
+        for ((name, open) in shots) for (dark in listOf(false, true)) shot(name, AppThemeStyle.DEFAULT, dark, padded = false) {
             val haze = remember { HazeState() }
             Box(Modifier.fillMaxWidth().height(860.dp)) {
                 CompositionLocalProvider(LocalBottomBarSpace provides 110.dp) {
@@ -123,6 +126,8 @@ class TabsScreenshotTest : ScreenshotTestBase() {
                         onRange = {},
                         modifier = Modifier.hazeSource(haze),
                         balances = BalanceHistory.overview(balancePoints(), emptyList(), emptySet(), DayGrid.of(mehr.startMillis(), now)),
+                        open = open,
+                        newInsights = open != ReportSection.INSIGHTS,
                     )
                 }
                 TabBar(selected = 2, haze = haze)
