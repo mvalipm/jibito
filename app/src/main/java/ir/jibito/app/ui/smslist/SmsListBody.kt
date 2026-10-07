@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +55,8 @@ internal fun TransactionListBody(
     hiddenRoots: Set<Long>,
     onOpen: (Transaction) -> Unit,
     onPick: (Transaction, Long) -> Unit,
+    /** هنوز هیچ تراکنشی نیست (نه حتی با فیلتر): به‌جای فهرست خالی، قدم بعدی نشان داده می‌شود */
+    emptyStart: (@Composable () -> Unit)? = null,
 ) {
     val t = JibitoTheme.colors
     val list = visible?.list
@@ -65,6 +69,10 @@ internal fun TransactionListBody(
                 Text(text = stringResource(R.string.list_loading), fontSize = 14.sp, color = t.muted)
             }
         }
+        list.isEmpty() && emptyStart != null && !searchActive -> Box(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 16.dp + LocalBottomBarSpace.current),
+            contentAlignment = Alignment.TopCenter,
+        ) { emptyStart() }
         list.isEmpty() && onlyUncategorized && !searchActive -> AllCategorized()
         list.isEmpty() -> Box(
             Modifier.fillMaxSize().padding(32.dp),
