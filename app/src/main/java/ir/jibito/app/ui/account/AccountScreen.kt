@@ -218,10 +218,26 @@ fun AccountContent(
                     val byId = tx.categories.associateBy { it.id }
                     val nonSpend = tx.categories.filterNot { it.countsAsSpend }.map { it.id }.toSet()
                     val groups = groupByDay(tx.items.take(MAX_TRANSACTIONS), nonSpend)
+                    // مثل فهرست تراکنش‌ها: نوار هر روز نسبت به پرخرج‌ترین روز، و حاشیه‌ی ۲۰ از دو طرف
+                    // (ردیف‌ها خودشان حاشیه ندارند؛ بی‌آن مبلغ از لبه‌ی صفحه بیرون می‌زد)
+                    val maxDay = groups.maxOfOrNull { it.spendRial }?.coerceAtLeast(1L) ?: 1L
+                    val spendDays = groups.filter { it.spendRial > 0 }
+                    val avgDay = if (spendDays.isEmpty()) 0L else spendDays.sumOf { it.spendRial } / spendDays.size
                     groups.forEach { group ->
-                        item(key = "day-${group.dayStartMillis}") { DayHeader(group, now) }
+                        item(key = "day-${group.dayStartMillis}") {
+                            Box(Modifier.padding(horizontal = 20.dp)) {
+                                DayHeader(
+                                    group,
+                                    now,
+                                    fraction = group.spendRial.toFloat() / maxDay,
+                                    heavy = spendDays.size > 1 && group.spendRial > avgDay * 5 / 4,
+                                )
+                            }
+                        }
                         items(group.items, key = { "tx-${it.id}" }) { sms ->
-                            TransactionRow(sms = sms, tint = tintOf(sms, byId), onClick = { onOpenTransaction(sms.id) })
+                            Box(Modifier.padding(horizontal = 20.dp)) {
+                                TransactionRow(sms = sms, tint = tintOf(sms, byId), onClick = { onOpenTransaction(sms.id) })
+                            }
                         }
                     }
                     val more = tx.items.size - MAX_TRANSACTIONS
