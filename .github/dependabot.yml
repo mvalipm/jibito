@@ -1,0 +1,25 @@
+# به‌روزرسانی خودکار کتابخانه‌ها و ابزارهای CI (جلوگیری از کهنه شدن = بدهی فنی).
+# ماهی یک بار؛ نسخه‌های جزئی/وصله‌ای در یک PR گروهی، نسخه‌های اصلی (major) هر کدام PR جدا برای بررسی دقیق‌تر.
+# هر PR مثل بقیه از CI کامل (تست‌ها، اسکرین‌شات‌ها، لینت، تست‌های امولاتور) رد می‌شود.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      gradle-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "ci"
