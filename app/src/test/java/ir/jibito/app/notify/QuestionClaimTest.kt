@@ -30,7 +30,8 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class QuestionClaimTest {
 
-    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val app: Application = ApplicationProvider.getApplicationContext()
+    private val context: Context get() = app
     private lateinit var db: AppDatabase
     private val dao get() = db.transactionFlowDao()
 
@@ -84,12 +85,12 @@ class QuestionClaimTest {
     @Test
     fun unshownQuestionIsTriedAgainLater() = runBlocking {
         // بدون اجازه‌ی نوتیفیکیشن (اندروید ۱۳ به بعد) سؤال نشان داده نمی‌شود ← رزرو برمی‌گردد
-        shadowOf(context as Application).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
         val id = dao.insert(withdrawal(3))
         TransactionNotifier(context, db).processRecent()
         assertNull("نشان داده نشد، پس دفعه‌ی بعد باید دوباره امتحان شود", dao.byId(id)?.notifiedAt)
 
-        shadowOf(context as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         TransactionNotifier(context, db).processRecent()
         assertNotNull(dao.byId(id)?.notifiedAt)
         val manager = context.getSystemService(NotificationManager::class.java)
