@@ -122,4 +122,23 @@ class ReportInsightsTest {
         assertTrue(all.none { it is Insight.CategoryChange })
         assertEquals(2, all.filterIsInstance<Insight.BusiestDay>().single().day)
     }
+
+    @Test
+    fun `خرج دلخواه نسبت به همین موقع ماه قبل`() {
+        val now = mehr.startMillis() + 9 * day + noon // ۱۰ مهر
+        val dining = CategoryEntity(id = 10, name = "رستوران", code = "dining")
+        val rent = CategoryEntity(id = 11, name = "اجاره", code = "home.rent")
+        val all = categories + dining + rent
+        val rows = listOf(
+            on(shahrivar, 3, 20_000_000L, 10),
+            on(shahrivar, 20, 90_000_000L, 10), // بعد از روز ۱۰: در مقایسه نیست
+            on(shahrivar, 2, 170_000_000L, 11),
+            on(mehr, 4, 12_000_000L, 10),
+            on(mehr, 2, 170_000_000L, 11),
+        )
+        val insight = ReportInsights.wantChange(rows, all, mehr, now)!!
+        assertEquals(-8_000_000L, insight.deltaRial)
+        assertEquals(-40, insight.percent)
+        assertNull(ReportInsights.wantChange(rows.filter { it.categoryId == 11L }, all, mehr, now))
+    }
 }

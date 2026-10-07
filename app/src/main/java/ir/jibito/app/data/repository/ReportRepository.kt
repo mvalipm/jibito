@@ -1,5 +1,7 @@
 package ir.jibito.app.data.repository
 
+import ir.jibito.app.data.category.NatureBreakdown
+import ir.jibito.app.data.category.NatureReport
 import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
@@ -37,6 +39,28 @@ class ReportRepository(private val db: AppDatabase) {
                 ),
                 insights = ReportInsights.compute(rows, categories, month, now),
             )
+        }.flowOn(Dispatchers.Default)
+    }
+
+    /**
+     * «خرجت چه‌جور بود؟» (NatureReport): برای این ماه تا امروز در برابر همین موقعِ ماه قبل؛
+     * برای [months] > ۱، همان تعداد ماهِ تمام‌شده‌ی قبل از [month] (بدون مقایسه).
+     */
+    fun observeNature(month: JalaliMonth, months: Int): Flow<NatureBreakdown> {
+        val current = months <= 1
+        val from = if (current) month.plus(-1).startMillis() else month.plus(-months).startMillis()
+        val to = if (current) month.endMillis() else month.startMillis()
+        return combine(
+            dao.observeAmounts(FlowType.WITHDRAWAL.code, from, to),
+            db.categoryDao().observeAll(),
+        ) { rows, categories ->
+            if (!current) return@combine NatureReport.compute(rows, categories, from, to)
+            val now = System.currentTimeMillis()
+            val start = month.startMillis()
+            val end = now.coerceIn(start, month.endMillis())
+            val previous = month.plus(-1)
+            val prevEnd = (previous.startMillis() + (end - start)).coerceAtMost(previous.endMillis())
+            NatureReport.compute(rows, categories, start, month.endMillis(), previous.startMillis(), prevEnd)
         }.flowOn(Dispatchers.Default)
     }
 }

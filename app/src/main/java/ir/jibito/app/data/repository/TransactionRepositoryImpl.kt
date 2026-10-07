@@ -193,6 +193,7 @@ class TransactionRepositoryImpl(
         parentId: Long?,
         flowType: Int,
         icon: String?,
+        nature: Int,
     ): CreateCategoryResult = db.withTransaction {
         val categoryDao = db.categoryDao()
         val all = categoryDao.all()
@@ -214,9 +215,14 @@ class TransactionRepositoryImpl(
                 isCustom = true,
                 // زیر «پس‌انداز و قرض» هم خرج حساب نمی‌شود
                 countsAsSpend = parent?.countsAsSpend ?: true,
+                nature = nature,
             )
         )
         CreateCategoryResult.Created(id)
+    }
+
+    override suspend fun setCategoryNature(categoryId: Long, nature: Int) {
+        db.categoryDao().setNature(categoryId, nature)
     }
 
     override suspend fun addManual(
@@ -354,6 +360,8 @@ class TransactionRepositoryImpl(
                     parentId = it.parentId,
                     countsAsSpend = it.countsAsSpend,
                     isCustom = it.isCustom,
+                    code = it.code,
+                    nature = it.nature,
                 )
             }
         }

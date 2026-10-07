@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import ir.jibito.app.data.category.NatureBreakdown
 import ir.jibito.app.data.repository.BalanceRepository
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.MonthReport
@@ -64,6 +65,11 @@ class ReportsViewModel(
         BalanceHistory.overview(source.points, source.links, source.excluded, grid)
     }
         .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** «خرجت چه‌جور بود؟» در همان بازه؛ null یعنی «هنوز در حال بارگذاری» */
+    val nature: StateFlow<NatureBreakdown?> = _range
+        .flatMapLatest { r -> reports.observeNature(month, r.months) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun setRange(range: ReportRange) {

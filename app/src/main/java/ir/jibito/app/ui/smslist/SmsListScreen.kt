@@ -424,8 +424,8 @@ fun SmsListScreen(
             } else {
                 null
             },
-            onCreate = { name, parentId, icon, onResult ->
-                viewModel.createCategoryAndPick(selected, name, parentId, icon) { result ->
+            onCreate = { name, parentId, icon, nature, onResult ->
+                viewModel.createCategoryAndPick(selected, name, parentId, icon, nature) { result ->
                     if (result is CreateCategoryResult.Created) selectedId = null
                     onResult(result)
                 }

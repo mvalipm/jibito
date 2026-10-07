@@ -1,5 +1,7 @@
 package ir.jibito.app.data.repository
 
+import ir.jibito.app.data.category.Nature
+import ir.jibito.app.data.category.NatureReport
 import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.DatedAmount
@@ -29,6 +31,9 @@ sealed interface Insight {
         /** چند برابرِ میانگین بقیه‌ی روزها */
         val times: Double,
     ) : Insight
+
+    /** خرج «دلخواه» (ماهیت خرج) نسبت به همین موقعِ ماه قبل بیشتر/کمتر شده */
+    data class NatureChange(val nature: Nature, val deltaRial: Long, val percent: Int) : Insight
 }
 
 object ReportInsights {
@@ -58,7 +63,19 @@ object ReportInsights {
             *categoryChanges(spends, byId, month, now).toTypedArray(),
             busiestDay(spends, month),
             weekdayPeak(spends, now),
+            wantChange(rows, categories, month, now),
         )
+    }
+
+    /** «خرج دلخواهت ۳۰٪ بیشتر از همین موقعِ شهریوره» (NatureReport) */
+    fun wantChange(rows: List<DatedAmount>, categories: List<CategoryEntity>, month: JalaliMonth, now: Long): Insight.NatureChange? {
+        val start = month.startMillis()
+        val end = now.coerceIn(start, month.endMillis())
+        val previous = month.plus(-1)
+        val prevEnd = (previous.startMillis() + (end - start)).coerceAtMost(previous.endMillis())
+        val r = NatureReport.compute(rows, categories, start, end, previous.startMillis(), prevEnd)
+        val percent = r.change(Nature.WANT) ?: return null
+        return Insight.NatureChange(Nature.WANT, r.amount(Nature.WANT) - (r.previous?.get(Nature.WANT) ?: 0L), percent)
     }
 
     /** بیشترین افزایش و بیشترین کاهش دسته‌ها نسبت به همین موقعِ ماه قبل */

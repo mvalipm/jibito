@@ -81,7 +81,7 @@ fun CategoryPickerSheet(
     /** علامت زدن/برداشتن «انتقال بین حساب‌های خودم» */
     onSelfTransfer: (Boolean) -> Unit,
     /** ساختن دسته‌ی شخصی (و انتخابش برای همین تراکنش): اسم، دسته‌ی بالاتر، آیکون، نتیجه */
-    onCreate: (String, Long?, String?, (CreateCategoryResult) -> Unit) -> Unit,
+    onCreate: (String, Long?, String?, Int, (CreateCategoryResult) -> Unit) -> Unit,
     onDismiss: () -> Unit,
     /** فقط برای تراکنش دستی: حذف آن */
     onDelete: (() -> Unit)? = null,
@@ -390,8 +390,9 @@ fun CategoryPickerSheet(
             target = target,
             roots = if (isDeposit) emptyList() else roots,
             byId = byId,
-            onConfirm = { name, parentId, icon, onResult -> saveNote(); onCreate(name, parentId, icon, onResult) },
+            onConfirm = { name, parentId, icon, nature, onResult -> saveNote(); onCreate(name, parentId, icon, nature, onResult) },
             onDismiss = { creating = null },
+            askNature = !isDeposit,
         )
     }
 }

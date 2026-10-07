@@ -105,6 +105,20 @@ private fun InsightCard(insight: Insight, month: JalaliMonth) {
                     note = stringResource(R.string.reports_weekday_note, day, times),
                 )
             }
+            is Insight.NatureChange -> {
+                val up = insight.deltaRial > 0
+                IconTile(DesignIcons.SHOP, t.uncatBg, t.uncatFg)
+                InsightTexts(
+                    title = stringResource(R.string.nature_want_title),
+                    value = Jalali.toPersianDigits(stringResource(if (up) R.string.reports_insight_more else R.string.reports_insight_less, abs(insight.percent))),
+                    valueColor = if (up) t.amberTintFg else t.tealTintFg,
+                    note = stringResource(
+                        if (up) R.string.reports_insight_more_note else R.string.reports_insight_less_note,
+                        amount(Money.compact(abs(insight.deltaRial))),
+                        monthName(month.plus(-1)),
+                    ),
+                )
+            }
         }
     }
 }
