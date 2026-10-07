@@ -54,6 +54,7 @@ import ir.jibito.app.ui.common.Mascot
 import ir.jibito.app.ui.common.ToastMessage
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.main.LocalBottomBarSpace
+import ir.jibito.app.ui.summary.BudgetDialog
 import ir.jibito.app.ui.summary.SummaryViewModel
 import ir.jibito.app.ui.summary.TodoAction
 import ir.jibito.app.ui.summary.TodoStory
@@ -99,8 +100,15 @@ fun TodoScreen(
         onOpenCategory = onOpenCategory,
         onToast = { toast = it },
     )
+    var editingBudget by remember { mutableStateOf(false) }
+    val firstSteps = rememberFirstSteps(
+        summary,
+        onOpenUncategorized = onOpenUncategorized,
+        onOpenTransactions = onOpenTransactions,
+        onEditBudget = { editingBudget = true },
+    )
     Box(Modifier.fillMaxSize()) {
-        TodoList(stories.sortedBy { todoPriority(it.id) })
+        TodoList(stories.sortedBy { todoPriority(it.id) }, firstSteps = firstSteps)
         JibiToast(
             message = toast,
             onDismiss = { toast = null },
@@ -110,6 +118,22 @@ fun TodoScreen(
                 .padding(top = 16.dp, start = 16.dp, end = 16.dp),
         )
     }
+    // قدم «بودجه‌ی ماهانه بذار»: همان پنجره‌ی بودجه‌ی کل «خلاصه»
+    val s = summary
+    if (editingBudget && s != null) {
+        BudgetDialog(
+            key = "overall",
+            title = stringResource(R.string.overall_dialog_title),
+            hint = stringResource(R.string.overall_dialog_hint),
+            initialRial = s.overallBudgetRial,
+            suggestionRial = s.categoryBudgetsSumRial.takeIf { it > 0 && it != s.overallBudgetRial },
+            onSave = { rial ->
+                viewModel.setOverallBudget(rial)
+                editingBudget = false
+            },
+            onDismiss = { editingBudget = false },
+        )
+    }
 }
 
 private const val TOAST_MILLIS = 4_000L
@@ -117,9 +141,10 @@ private const val TOAST_MILLIS = 4_000L
 /**
  * فهرست کارها (بدون وابستگی به داده، برای اسکرین‌شات هم) در دو گروه:
  * «الان» (کارهای فوری که روی تب شمرده می‌شوند) و «پیشنهادها».
+ * [firstSteps]: کارت «قدم‌های اول» برای کاربر تازه، بالای همه.
  */
 @Composable
-fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier) {
+fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier, firstSteps: FirstStepsUi? = null) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
     val urgent = items.filter { it.urgent }
@@ -150,7 +175,10 @@ fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier) {
                 }
             }
         }
-        if (items.isEmpty()) {
+        if (firstSteps != null) {
+            item(key = "first-steps") { FirstStepsCard(firstSteps) }
+        }
+        if (items.isEmpty() && firstSteps == null) {
             item(key = "empty") { AllClear() }
         }
         if (urgent.isNotEmpty()) {

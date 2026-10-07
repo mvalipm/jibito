@@ -36,6 +36,8 @@ import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.ui.main.LocalBottomBarSpace
+import ir.jibito.app.ui.todo.FirstStep
+import ir.jibito.app.ui.todo.FirstStepsUi
 import ir.jibito.app.ui.todo.TodoList
 
 /** اسکرین‌شات‌های تب‌های اصلی، گزارش‌ها و حساب‌ها (پایه‌ی مشترک: ScreenshotTestBase) */
@@ -69,6 +71,25 @@ class TabsScreenshotTest : ScreenshotTestBase() {
                     TodoList(stories(), Modifier.hazeSource(haze))
                 }
                 TabBar(selected = 3, haze = haze)
+            }
+        }
+    }
+
+    /** تب «کارها» برای کاربر تازه: کارت «قدم‌های اول» بالای کارها (یکی انجام‌شده) */
+    @Test
+    fun todoFirstSteps() {
+        val steps = FirstStepsUi(
+            listOf(
+                FirstStep("cat", "به یه خرج دسته بده", "بعد از چند بار، خودم یاد می‌گیرم دسته‌ی همون فروشگاه رو بذارم.", done = true) {},
+                FirstStep("notif", "نوتیف رو روشن کن", "هر خرج تازه که اومد، همون‌جا می‌پرسم «مال چی بود؟».", done = false) {},
+                FirstStep("budget", "بودجه‌ی ماهانه بذار", "تا نزدیک سقفش رسیدی، خبرت می‌کنم.", done = false) {},
+                FirstStep("lock", "قفل اپ رو روشن کن", "با همون قفل گوشی؛ کسی بی‌اجازه خرج‌هات رو نمی‌بینه.", done = false) {},
+            ),
+            onHide = {},
+        )
+        for (dark in listOf(false, true)) shot("todofirststeps", AppThemeStyle.DEFAULT, dark, padded = false) {
+            Box(Modifier.fillMaxWidth().height(860.dp)) {
+                TodoList(stories().take(2), firstSteps = steps)
             }
         }
     }

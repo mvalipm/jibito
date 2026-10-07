@@ -23,11 +23,11 @@ import androidx.activity.compose.LocalActivity
 
 /**
  * نوتیفیکیشن خاموش است؟ (یعنی «این خرج مال چی بود؟» و هشدار بودجه و یادآوری‌ها نمی‌آیند)
- * [visible]: باید پیشنهاد روشن کردن نشان داده شود. [fix]: با یک لمس درستش می‌کند:
+ * [visible]: باید پیشنهاد روشن کردن نشان داده شود. [enabled]: نوتیف همین الان روشن است. [fix]: با یک لمس درستش می‌کند:
  * پنجره‌ی اجازه‌ی اندروید، یا اگر کاربر قبلاً «دیگر نپرس» زده، صفحه‌ی تنظیمات نوتیفیکیشن اپ.
  * اگر کاربر بعد از لمس باز هم روشن نکرد، تا ۳۰ روز دیگر نشان داده نمی‌شود (یعنی خودش نخواسته).
  */
-class NotificationPromptState(val visible: Boolean, val fix: () -> Unit)
+class NotificationPromptState(val visible: Boolean, val enabled: Boolean, val fix: () -> Unit)
 
 @Composable
 fun rememberNotificationPrompt(): NotificationPromptState {
@@ -51,7 +51,7 @@ fun rememberNotificationPrompt(): NotificationPromptState {
         }
     }
 
-    return NotificationPromptState(visible = !enabled && !snoozed) {
+    return NotificationPromptState(visible = !enabled && !snoozed, enabled = enabled) {
         snooze(context)
         snoozed = true
         val permissionMissing = Build.VERSION.SDK_INT >= 33 &&
