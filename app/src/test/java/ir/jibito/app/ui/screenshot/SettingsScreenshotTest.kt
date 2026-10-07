@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import ir.jibito.app.ui.settings.PermissionBanner
 import ir.jibito.app.ui.settings.SettingsSection
 import ir.jibito.app.ui.settings.ThemePicker
+import ir.jibito.app.ui.settings.WhatsNewList
+import ir.jibito.app.util.Changelog
 import ir.jibito.app.ui.theme.JibitoIcons
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -42,5 +44,20 @@ class SettingsScreenshotTest : ScreenshotTestBase() {
             shot("settings_hub", style, dark) { SettingsHubSample() }
         }
         shot("settings_hub", AppThemeStyle.DEFAULT, false, fontScale = 2f) { SettingsHubSample() }
+    }
+
+    /** «چه چیزی تازه است»: هر نسخه در کارت خودش */
+    @Test
+    fun whatsNew() {
+        val releases = listOf(
+            Changelog.Release("0.52.0", listOf(
+                "صفحه‌ی «چه چیزی تازه است»: بعد از هر به‌روزرسانی، تغییرهای تازه یک بار نشان داده می‌شوند.",
+                "تب «گزارش‌ها» با منحنی خرج ماه، نکته‌ها و روند موجودی.",
+            )),
+            Changelog.Release("0.51.0", listOf("چند حساب در یک بانک: موجودی هر حساب جدا نشان داده می‌شود.")),
+        )
+        for (dark in listOf(false, true)) {
+            shot("whats_new", AppThemeStyle.DEFAULT, dark) { WhatsNewList(releases) }
+        }
     }
 }

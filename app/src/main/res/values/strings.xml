@@ -595,6 +595,10 @@
     <string name="settings_theme_sub">%1$s · %2$s</string>
     <string name="settings_privacy_title">حریم خصوصی</string>
     <string name="settings_privacy_sub">داده‌هات فقط رو گوشی خودته</string>
+    <string name="whats_new_title">چه چیزی تازه است</string>
+    <string name="whats_new_version">نسخه‌ی %1$s</string>
+    <string name="whats_new_ok">باشه</string>
+    <string name="whats_new_empty">فهرست تغییرها پیدا نشد.</string>
     <string name="settings_privacy_intro">جیبیتو از پول تو سر در میاره، پس باید خیالت راحت باشه. این‌ها قول‌های ماست:</string>
     <string name="settings_privacy_local">جیبیتو سرور نداره؛ تراکنش‌ها و پیامک‌هات فقط رو همین گوشی می‌مونن.</string>
     <string name="settings_privacy_bank_only">فقط پیامک‌های بانکی بررسی می‌شن؛ بقیه‌ی پیامک‌هات به کار جیبیتو نمیاد.</string>

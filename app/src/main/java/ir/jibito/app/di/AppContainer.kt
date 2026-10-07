@@ -31,6 +31,7 @@ import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.WeeklyDigest
 import ir.jibito.app.ui.welcome.FirstRunFlag
+import ir.jibito.app.ui.settings.WhatsNewSeen
 
 /**
  * جای ساختن اشیای اصلی اپ (دیتابیس، Repository ها).
@@ -73,6 +74,9 @@ class AppContainer(context: Context) {
 
     /** صفحه‌ی «N تراکنش پیدا شد» فقط یک بار */
     val firstRun: FirstRunFlag by lazy { FirstRunFlag(appContext) }
+
+    /** «چه چیزی تازه است» بعد از به‌روزرسانی فقط یک بار */
+    val whatsNewSeen: WhatsNewSeen by lazy { WhatsNewSeen(appContext) }
 
     /** خلاصه‌ی هفتگی (جمعه‌ها عصر) */
     val weeklyDigest: WeeklyDigest by lazy { WeeklyDigest(appContext, database) }

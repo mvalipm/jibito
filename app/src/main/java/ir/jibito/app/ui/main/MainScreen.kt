@@ -60,14 +60,20 @@ import ir.jibito.app.data.wallet.AccountRef
 import android.net.Uri
 import ir.jibito.app.ui.review.ReviewScreen
 import ir.jibito.app.ui.settings.SettingsScreen
+import ir.jibito.app.ui.settings.WhatsNewDialog
+import ir.jibito.app.ui.settings.installedVersion
+import ir.jibito.app.ui.settings.pendingWhatsNew
 import ir.jibito.app.ui.smslist.SmsListScreen
 import ir.jibito.app.ui.summary.SummaryScreen
 import ir.jibito.app.ui.summary.SummaryViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.todo.TodoScreen
+import ir.jibito.app.util.Changelog
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.RevealStats
@@ -164,7 +170,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند
     var reveal by remember { mutableStateOf<RevealStats?>(null) }
 
+    // «چه چیزی تازه است»: بعد از به‌روزرسانی یک بار؛ «دیده‌شده» وقتی ثبت می‌شود که کاربر پنجره را ببندد
+    var whatsNew by remember { mutableStateOf<List<Changelog.Release>>(emptyList()) }
+
     val appContext = LocalContext.current.applicationContext
+    LaunchedEffect(Unit) {
+        whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
+    }
     LaunchedEffect(Unit) {
         val repository = container.transactionRepository
         val firstRun = !container.firstRun.done
@@ -306,5 +318,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         }
 
         reveal?.let { stats -> FirstRunReveal(stats, onDone = { reveal = null }) }
+        if (whatsNew.isNotEmpty() && reveal == null) {
+            WhatsNewDialog(whatsNew, onDismiss = {
+                container.whatsNewSeen.markSeen(installedVersion(appContext))
+                whatsNew = emptyList()
+            })
+        }
     }
 }
