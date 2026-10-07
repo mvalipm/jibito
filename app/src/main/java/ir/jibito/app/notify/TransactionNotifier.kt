@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
@@ -245,8 +246,19 @@ class TransactionNotifier(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
             .addAction(0, context.getString(R.string.undo), CategoryActionReceiver.undoIntent(context, transactionId))
+            .addExtras(Bundle().apply { putBoolean(EXTRA_PICKED, true) })
             .build()
         NotificationManagerCompat.from(context).notify(notificationId(transactionId), notification)
+    }
+
+    /**
+     * سؤال «مال چی بود؟» این تراکنش هنوز روی صفحه است، با این‌که «رفت تو …» نشان داده شد:
+     * اندروید به‌روزرسانیِ پشت‌سرهم را گاهی دور می‌ریزد («Shedding events»). اگر کاربر خودش بسته باشد false.
+     */
+    fun isQuestionStillShown(transactionId: Long): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val shown = manager.activeNotifications.firstOrNull { it.id == notificationId(transactionId) } ?: return false
+        return !shown.notification.extras.getBoolean(EXTRA_PICKED)
     }
 
     private fun ensureAutoChannel() {
@@ -286,6 +298,8 @@ class TransactionNotifier(
         private const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
         /** نوتیفیکیشن «رفت تو …» بعد از این مدت خودش بسته می‌شود */
         private const val PICKED_TIMEOUT_MILLIS = 6_000L
+        /** نشانه‌ی نوتیفیکیشن «رفت تو …» در extras (برای isQuestionStillShown) */
+        private const val EXTRA_PICKED = "ir.jibito.app.picked"
 
         fun notificationId(transactionId: Long): Int = (transactionId % Int.MAX_VALUE).toInt()
     }
