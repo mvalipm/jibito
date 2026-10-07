@@ -68,15 +68,17 @@ private const val REST_KEY = -1L
  * «کجا رفت؟» (طرح «جیبی»): نوار سهم دسته‌ها که روی هر تیکه‌اش می‌شود زد،
  * زیرش دسته‌ی انتخاب‌شده درشت (آیکون، اسم، یک نکته، درصد و مبلغ) و کپسول‌های همه‌ی دسته‌ها.
  * لمس دسته‌ی درشت ← ریز خرج و بودجه‌ی همان دسته. «همه‌ی دسته‌ها و بودجه‌ها ›» فهرست کامل را باز می‌کند.
+ * سهم‌ها بدون خرج یک‌باره‌اند (یک خرید خانه بقیه‌ی دسته‌ها را از نوار محو نکند)؛ خرج یک‌باره کنار مبلغ دسته
+ * و زیر نوار جدا نوشته می‌شود.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () -> Unit) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
-    val total = s.totalSpentRial
-    val spent = s.categories.filter { it.spentRial > 0 }.sortedByDescending { it.spentRial }.take(WHERE_SLICES)
-    val rest = total - spent.sumOf { it.spentRial }
+    val total = s.budgetSpentRial
+    val spent = s.categories.filter { it.budgetSpentRial > 0 }.sortedByDescending { it.budgetSpentRial }.take(WHERE_SLICES)
+    val rest = total - spent.sumOf { it.budgetSpentRial }
     var picked by rememberSaveable(s.month.key) { mutableStateOf<Long?>(null) }
     val selected = picked?.takeIf { p -> p == REST_KEY && rest > 0 || spent.any { it.categoryId == p } }
         ?: spent.firstOrNull()?.categoryId
@@ -94,11 +96,12 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                     fontSize = 14.sp,
                     color = t.muted,
                 )
+                OneOffNote(s.oneOffRial)
                 return@Column
             }
 
             // نوار سهم‌ها: تکه‌ی انتخاب‌شده بلندتر و پررنگ
-            val slices = spent.map { Slice(it.categoryId, it.name, it.spentRial, categoryTint(it.colorHex, it.icon), it) } +
+            val slices = spent.map { Slice(it.categoryId, it.name, it.budgetSpentRial, categoryTint(it.colorHex, it.icon), it) } +
                 if (rest > 0) listOf(Slice(REST_KEY, stringResource(R.string.chart_rest), rest, restTint(), null)) else emptyList()
             Row(
                 Modifier
@@ -128,6 +131,8 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                     )
                 }
             }
+
+            OneOffNote(s.oneOffRial)
 
             // دسته‌ی انتخاب‌شده، درشت
             val current = slices.firstOrNull { it.key == selected } ?: slices.first()
@@ -227,8 +232,30 @@ private fun SelectedRow(slice: Slice, total: Long, onClick: () -> Unit) {
                 color = slice.tint.fg,
             )
             Text(amount(Money.compact(slice.amount)), fontSize = 12.sp, color = t.muted)
+            // خرج یک‌باره‌ی همین دسته، جدا از سهمش
+            slice.spend?.oneOffRial?.takeIf { it > 0 }?.let { oneOff ->
+                Text(
+                    amount(stringResource(R.string.day_one_off, Money.compact(oneOff))),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = t.sugFg,
+                )
+            }
         }
     }
+}
+
+/** «+ ★ ۱۰ میلیارد خرج یک‌باره، جدا از این سهم‌ها» زیر نوار؛ بی‌خرج یک‌باره چیزی نمی‌کشد */
+@Composable
+private fun OneOffNote(oneOffRial: Long) {
+    if (oneOffRial <= 0) return
+    Text(
+        Jalali.toPersianDigits(stringResource(R.string.where_one_off, amount(Money.compact(oneOffRial)))),
+        modifier = Modifier.padding(top = 8.dp),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        color = JibitoTheme.colors.sugFg,
+    )
 }
 
 /** یک نکته زیر اسم دسته: وضع بودجه‌اش، یا بزرگ‌ترین زیردسته‌هایش */

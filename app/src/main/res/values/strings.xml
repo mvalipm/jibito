@@ -193,6 +193,7 @@
     <string name="sheet_one_off">خرج یک‌باره</string>
     <string name="tx_meta_one_off">★ یک‌باره</string>
     <string name="day_one_off">+ ★ %1$s</string>
+    <string name="where_one_off">+ ★ %1$s خرج یک‌باره، جدا از این سهم‌ها</string>
     <string name="sheet_one_off_short">خرید بزرگ و نامعمول، مثل خونه یا ماشین</string>
     <string name="sheet_close">بستن</string>
     <string name="sheet_report_privacy">عددها پوشیده ارسال می‌شن</string>
