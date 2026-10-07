@@ -50,6 +50,21 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
         }
     }
 
+    /** خرید یک‌باره‌ی ۱ میلیارد تومانی در «خانه و خانواده»: سهم‌ها بدونش، و جدا کنار مبلغ و زیر نوار */
+    @Test
+    fun whereWithOneOff() {
+        val oneOff = 10_000_000_000L
+        val base = summary(17_400_000)
+        val s = base.copy(
+            totalSpentRial = base.totalSpentRial + oneOff,
+            oneOffRial = oneOff,
+            categories = base.categories.map { if (it.categoryId == 4L) it.copy(spentRial = it.spentRial + oneOff, oneOffRial = oneOff) else it },
+        )
+        shot("where_oneoff", AppThemeStyle.DEFAULT, dark = false, padded = false) {
+            WhereSection(s, onOpenCategory = {}, onShowAll = {})
+        }
+    }
+
     @Test
     fun trend() {
         for ((style, dark) in variants) shot("trend", style, dark, padded = false) { TrendCard(trendSample) }
