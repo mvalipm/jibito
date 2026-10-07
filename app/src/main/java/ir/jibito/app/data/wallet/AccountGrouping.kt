@@ -80,7 +80,7 @@ object AccountGrouping {
                 listOf(AccountBalance(bankId, null, null, latest.remainAfter, latest.dateEpoch))
             } else {
                 withAccount
-                    .groupBy { byKey[bankId to it.account!!]?.groupAccount ?: it.account!! }
+                    .groupBy { byKey[bankId to it.account!!]?.groupAccount ?: it.account }
                     .map { (rep, groupRows) ->
                         val latest = groupRows.maxBy { it.dateEpoch }
                         AccountBalance(bankId, rep, byKey[bankId to rep]?.name, latest.remainAfter, latest.dateEpoch)

@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
      * جهت زبان گوشی (مثلاً انگلیسی، چپ‌به‌راست) را می‌گرفتند و نوشته‌ها یک لحظه سمت چپ دیده می‌شدند.
      */
     override fun attachBaseContext(newBase: Context) {
-        val persian = Locale("fa")
+        val persian = Locale.forLanguageTag("fa")
         val config = Configuration(newBase.resources.configuration).apply {
             setLocale(persian)
             setLayoutDirection(persian)
