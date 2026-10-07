@@ -95,7 +95,7 @@ fun TipCard(text: String, onDismiss: () -> Unit, modifier: Modifier = Modifier) 
         Spacer(Modifier.width(4.dp))
         Box(
             Modifier
-                .heightIn(min = 40.dp)
+                .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(50))
                 .clickable(role = Role.Button, onClick = onDismiss)
                 .padding(horizontal = 10.dp, vertical = 8.dp),

@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +33,7 @@ import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.settings.rememberSettingsPermissions
 import ir.jibito.app.ui.theme.JibitoTheme
+import ir.jibito.app.ui.welcome.syncWithReveal
 import ir.jibito.app.util.ErrorLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.map
@@ -57,12 +57,13 @@ class SmsAccess(val granted: Boolean, val allow: () -> Unit)
 @Composable
 fun rememberSmsAccess(): SmsAccess {
     val context = LocalContext.current
-    val repository = (context.applicationContext as JibitoApplication).container.transactionRepository
-    val scope = rememberCoroutineScope()
+    val container = (context.applicationContext as JibitoApplication).container
     val permissions = rememberSettingsPermissions(onSmsGranted = {
-        scope.launch {
+        // در دامنه‌ی خود اپ، نه این صفحه: صفحه‌ی خالی با آمدن تراکنش‌ها می‌رود و نباید خواندن یا «جیبت رو شناختم» را نیمه‌کاره بگذارد
+        container.appScope.launch {
             try {
-                repository.syncFromSms()
+                // کسی که اول «فعلاً دستی» زده، حالا اولین بار است که پیامک‌هایش خوانده می‌شود ← «جیبت رو شناختم»
+                syncWithReveal(container)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
