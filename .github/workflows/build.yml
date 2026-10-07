@@ -188,6 +188,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # جای خالی دیسک ماشین GitHub برای امولاتور کم شده بود (۶٫۷ گیگ داشت، ۷٫۴ گیگ لازم بود و امولاتور بالا نمی‌آمد)؛
+      # ابزارهای از پیش نصب‌شده‌ای که این پروژه لازم ندارد پاک می‌شوند
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/lib/node_modules
+          df -h /
+
       # شتاب سخت‌افزاری امولاتور روی ماشین لینوکس GitHub
       - name: Enable KVM
         run: |
@@ -208,6 +216,8 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
+          # دیسک امولاتور کوچک‌تر از پیش‌فرض (۶ گیگ)؛ اپ و تست‌ها خیلی کمتر لازم دارند
+          disk-size: 2048M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: |
             adb emu sms send 20004000 "بانک ملی ایران\nبرداشت\nمبلغ:1,357,000\nمانده:9,000,000\nحساب:0101XXXX"

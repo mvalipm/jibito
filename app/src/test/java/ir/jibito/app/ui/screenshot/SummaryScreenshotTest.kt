@@ -68,6 +68,10 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
         shot("reveal_big", AppThemeStyle.DEFAULT, dark = true, padded = false, fontScale = 2f) {
             FirstRunReveal(RevealStats(count = 128_400, months = 22, banks = 6, topCategory = "تاکسی اینترنتی", topSharePercent = 18), onDone = {})
         }
+        // عددی که روی گوشی رقم آخرش افتاده بود («۱٬۴۰» به‌جای ۱٬۴۰۸)
+        shot("reveal_1408", AppThemeStyle.DEFAULT, dark = true, padded = false) {
+            FirstRunReveal(RevealStats(count = 1_408, months = 22, banks = 6, topCategory = "پس‌انداز و سرمایه‌گذاری", topSharePercent = 0), onDone = {})
+        }
     }
 
     @Test
