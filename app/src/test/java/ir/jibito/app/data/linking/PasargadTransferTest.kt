@@ -57,6 +57,7 @@ class PasargadTransferTest {
         ).single()
         assertEquals("اسنپ مارکت", linked.merchant)
         assertNull(linked.feeRial)
+        assertEquals("شناسه‌ی رمزِ وصل‌شده برای نگه داشتن متنش", 1L, linked.otpId)
         assertEquals("سوپرمارکت", CategorySuggester.suggest(linked.merchant))
     }
 

@@ -62,6 +62,22 @@ class MigrationTest {
     @Test fun migrateFrom13() = migrateFrom(13)
     @Test fun migrateFrom14() = migrateFrom(14)
     @Test fun migrateFrom15() = migrateFrom(15)
+    @Test fun migrateFrom16() = migrateFrom(16)
+
+    @Test
+    fun otpBodyEmptyAndNoMerchantRulesAfter16To17() {
+        createAt(16)
+        openWithRoom().use { db ->
+            db.openHelper.readableDatabase.query("SELECT otpBody FROM transaction_flows WHERE smsId = 77").use {
+                assertTrue(it.moveToFirst())
+                assertTrue("old rows have no OTP text yet", it.isNull(0))
+            }
+            db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM merchant_rules").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("no taught rules after the migration", 0, it.getInt(0))
+            }
+        }
+    }
 
     @Test
     fun natureDefaultForExistingCategoriesAfter15To16() {

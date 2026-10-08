@@ -35,6 +35,8 @@ data class LinkedTransaction(
     val refund: TxRecord? = null,
     /** کارمزد انتقال (برداشت − مبلغ رمز)، اگر برداشت به رمزِ انتقال وصل شده باشد */
     val feeRial: Long? = null,
+    /** شناسه‌ی پیامک رمز دومی که به این برداشت وصل شد */
+    val otpId: Long? = null,
 ) {
     val isFailedPurchase: Boolean get() = refund != null
 }
@@ -104,6 +106,7 @@ object PurchaseLinker {
         val merchantOf = HashMap<Long, String?>()
         val feeOf = HashMap<Long, Long>()
         val linkedToOtp = HashSet<Long>()
+        val otpOf = HashMap<Long, Long>()
 
         // مرحله‌ی ۱: هر برداشت ← آخرین رمز دوم مناسبِ قبل از آن
         for (w in txs) {
@@ -123,6 +126,7 @@ object PurchaseLinker {
             usedOtps += otp.id
             linkedToOtp += w.id
             merchantOf[w.id] = otp.otp.merchant
+            otpOf[w.id] = otp.id
             val fee = w.tx.amountRial - otp.otp.amountRial!!
             if (fee > 0) feeOf[w.id] = fee
         }
@@ -147,7 +151,7 @@ object PurchaseLinker {
 
         return txs
             .filter { it.id !in usedRefunds }
-            .map { LinkedTransaction(it, merchantOf[it.id], refundOf[it.id], feeOf[it.id]) }
+            .map { LinkedTransaction(it, merchantOf[it.id], refundOf[it.id], feeOf[it.id], otpOf[it.id]) }
             .sortedByDescending { it.record.timeMillis }
     }
 }

@@ -45,6 +45,19 @@ class WrongReadingReportTest {
     }
 
     @Test
+    fun `اسم فروشگاه رو نخوند - متن رمز دوم هم با رقم‌های پوشیده می‌رود`() {
+        val purchase = tx.copy(
+            body = "777.888.16305454.1\n-12,321,000\n07/16_09:57\nمانده: 13,451,930",
+            transaction = ParsedTransaction(FlowType.WITHDRAWAL, 12_321_000, 13_451_930),
+            otpBody = "پاسارگاد\nخرید\nاسنپ مارکت\nمبلغ:12,321,000\nرمز: 04720\n09:57:36",
+        )
+        val out = WrongReadingReport.text(purchase, WrongReadingReport.Reason.MERCHANT_MISSING)
+        assertTrue(out.contains("مشکل: اسم فروشگاه رو نخوند"))
+        assertTrue(out.contains("——— پیامک رمز دوم\nپاسارگاد\nخرید\nاسنپ مارکت\nمبلغ:[مبلغ]\nرمز: #####\n##:##:##"))
+        assertFalse("no digit leaves the phone", out.any { it.isDigit() })
+    }
+
+    @Test
     fun `سرشماره‌ی شبه‌موبایل پوشانده می‌شود`() {
         assertEquals("###########", WrongReadingReport.maskSender("09121234567"))
         assertEquals("200033", WrongReadingReport.maskSender("200033"))
