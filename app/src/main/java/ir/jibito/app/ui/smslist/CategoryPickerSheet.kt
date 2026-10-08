@@ -134,6 +134,13 @@ fun CategoryPickerSheet(
         .filter { CategoryTree.rootOf(it, byId).id !in hiddenRoots && it.countsAsSpend }
         .distinctBy { it.id }
         .take(6)
+    // اپ پیشنهادی ندارد (مثلاً بیشتر واریزها که طرف حساب ندارند) ← پرکاربردترین دسته‌ی کاربر برای همین نوع،
+    // همان که دکمه‌ی اول نوتیفیکیشن است (NotificationButtons: بدون «سایر…» و دسته‌های پنهان)
+    val frequentTop = if (suggested != null) null else frequentIds.asSequence()
+        .mapNotNull { byId[it] }
+        .filter { !it.name.startsWith("سایر") }
+        .map { CategoryTree.atDepth(it, byId, depth) }
+        .firstOrNull { CategoryTree.rootOf(it, byId).id !in hiddenRoots }
 
     ModalBottomSheet(
         onDismissRequest = { saveNote(); onDismiss() },
@@ -262,8 +269,10 @@ fun CategoryPickerSheet(
                         )
                         Spacer(Modifier.height(8.dp))
                     }
-                    // پیشنهاد اپ روی خود کاشی (حلقه + برچسب)، تا وقتی دسته‌ای انتخاب نشده
-                    val suggestedRootId = suggested?.takeIf { selectedId == null }?.let { CategoryTree.rootOf(it, byId).id }
+                    // پیشنهاد اپ (یا اگر نداشت، پرکاربردترین دسته) روی خود کاشی: حلقه + برچسب، تا وقتی دسته‌ای انتخاب نشده
+                    val hint = if (selectedId != null) null else suggested ?: frequentTop
+                    val hintRootId = hint?.let { CategoryTree.rootOf(it, byId).id }
+                    val hintLabel = stringResource(if (suggested != null) R.string.sheet_suggested else R.string.sheet_frequent)
                     val tiles: List<Category?> = roots + listOf(null) // null = «＋ دسته‌ی جدید»
                     tiles.chunked(GRID_COLUMNS).forEach { row ->
                         Row(Modifier.fillMaxWidth()) {
@@ -284,7 +293,7 @@ fun CategoryPickerSheet(
                                             name = root.name,
                                             selected = root.id == selectedRootId,
                                             open = root.id == openRootId,
-                                            suggested = root.id == suggestedRootId,
+                                            badge = hintLabel.takeIf { root.id == hintRootId },
                                             onClick = {
                                                 // فقط دسته‌ی اصلی (یا بی‌زیردسته) ← همین لمس = ثبت
                                                 if (depth == 1 || (!hasSubs && isDeposit)) {
@@ -401,7 +410,7 @@ private const val GRID_COLUMNS = 4
 
 /**
  * کاشیِ یک دسته‌ی اصلی در شبکه (طرح «جیبی»): مربع گرد‌گوشه‌ی رنگی با آیکون خطی + اسم یک‌خطی.
- * [suggested]: پیشنهاد اپ ← حلقه‌ی رنگی دور کاشی و برچسب «پیشنهاد» بالایش.
+ * [badge]: پیشنهاد اپ (یا پرکاربردترین دسته) ← حلقه‌ی رنگی دور کاشی و برچسب «پیشنهاد»/«پرکاربرد» بالایش.
  */
 @Composable
 private fun CategoryTile(
@@ -410,8 +419,9 @@ private fun CategoryTile(
     selected: Boolean,
     open: Boolean,
     onClick: () -> Unit,
-    suggested: Boolean = false,
+    badge: String? = null,
 ) {
+    val suggested = badge != null
     val colors = MaterialTheme.colorScheme
     val jt = JibitoTheme.colors
     val shape = RoundedCornerShape(18.dp)
@@ -433,7 +443,7 @@ private fun CategoryTile(
             CategoryIconTile(tint, size = 54.dp, radius = 18.dp, iconSize = 26.dp, modifier = ring)
             if (suggested && !selected) {
                 Text(
-                    stringResource(R.string.sheet_suggested),
+                    badge.orEmpty(),
                     modifier = Modifier
                         .offset(y = (-7).dp)
                         .background(jt.coral, RoundedCornerShape(8.dp))
