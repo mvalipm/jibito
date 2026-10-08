@@ -50,7 +50,9 @@ internal fun HeroForecastLine(f: BalanceForecast, onClick: () -> Unit) {
         }
     }
     // کم می‌آید: کپسول روشن با متن مرجانی، تا روی هر رنگ سرصفحه خوانا و متفاوت از جمله‌ی بودجه باشد
-    val bg = if (f.enough) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.94f)
+    // می‌رسد: مثل دکمه‌های سرصفحه، در حالت روشن سیاه کم‌رنگ تا متن سفید کنتراست کافی داشته باشد
+    val calmBg = if (t.dark) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.14f)
+    val bg = if (f.enough) calmBg else Color.White.copy(alpha = 0.94f)
     val fg = if (f.enough) Color.White else t.alert
     Row(
         Modifier

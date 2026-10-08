@@ -125,7 +125,7 @@ fun SummaryScreen(
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
-            val heroLine = moodOf(s, System.currentTimeMillis())
+            val heroLine = moodOf(s, System.currentTimeMillis(), forecastState?.forecast)
             LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp + LocalBottomBarSpace.current),
