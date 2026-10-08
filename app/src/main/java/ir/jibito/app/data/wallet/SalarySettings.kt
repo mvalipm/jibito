@@ -10,12 +10,13 @@ import kotlinx.coroutines.flow.asStateFlow
 data class SalaryChoice(val confirmed: Salary?, val dismissed: Set<String>)
 
 /**
- * حقوقی که کاربر تأیید کرده (برای «پولم تا حقوق بعدی می‌رسه؟») و پیشنهادهای ردشده؛ فقط روی همین گوشی.
+ * حقوقی که کاربر تأیید کرده (برای «پولم تا حقوق بعدی می‌رسه؟») و پیشنهادهای ردشده؛ با پشتیبان منتقل می‌شود
+ * (BackupManager.BACKED_UP_PREFS) تا بعد از بازگردانی سؤال «این واریز حقوقته؟» دوباره نیاید.
  * مبلغ و روزِ ذخیره‌شده فقط پشتوانه‌اند: تا وقتی همان واریز هنوز تشخیص داده می‌شود، عددهای تازه‌ی آن به کار می‌رود.
  */
 class SalarySettings(context: Context) {
 
-    private val prefs = context.getSharedPreferences("salary", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _choice = MutableStateFlow(load())
     val choice: StateFlow<SalaryChoice> = _choice.asStateFlow()
 
@@ -53,11 +54,13 @@ class SalarySettings(context: Context) {
         return SalaryChoice(confirmed, prefs.getStringSet(KEY_DISMISSED, emptySet()).orEmpty().toSet())
     }
 
-    private companion object {
-        const val KEY_KEY = "key"
-        const val KEY_BANK = "bank"
-        const val KEY_AMOUNT = "amount"
-        const val KEY_DAY = "day"
-        const val KEY_DISMISSED = "dismissed"
+    companion object {
+        /** در پشتیبان‌گیری هم ذخیره می‌شود (BackupManager.BACKED_UP_PREFS) */
+        const val PREFS = "salary"
+        private const val KEY_KEY = "key"
+        private const val KEY_BANK = "bank"
+        private const val KEY_AMOUNT = "amount"
+        private const val KEY_DAY = "day"
+        private const val KEY_DISMISSED = "dismissed"
     }
 }
