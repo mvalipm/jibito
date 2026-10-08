@@ -146,8 +146,8 @@ fun rememberTodoStories(
                     "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null,
                     label = stringResource(R.string.todo_transfer),
                     pages = pages,
-                    // لمس خود کارت، فهرست تراکنش‌ها را باز می‌کند
-                    onClick = onOpenTransactions,
+                    // این سؤال فقط همین‌جا پرسیده می‌شود (نه بالای «تراکنش‌ها»)؛ جواب با دکمه‌های خود کارت است
+                    onClick = {},
                 )
             )
         }

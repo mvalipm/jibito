@@ -29,10 +29,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyListState
-import ir.jibito.app.domain.TransferSuggestion
 
 /**
- * بدنه‌ی فهرست تراکنش‌ها: در حال خواندن، خالی، یا فهرست روزبه‌روز با پیشنهاد انتقال بالای آن.
+ * بدنه‌ی فهرست تراکنش‌ها: در حال خواندن، خالی، یا فهرست روزبه‌روز.
+ * پیشنهاد «انتقال به خودت؟» این‌جا نیست و فقط در تب «کارها» پرسیده می‌شود.
  * فیلتر، جست‌وجو و گروه‌بندی روزانه در ViewModel انجام شده؛ این‌جا فقط نمایش است.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -45,10 +45,6 @@ internal fun TransactionListBody(
     /** متن جست‌وجو برای پررنگ کردن در ردیف‌ها (فقط وقتی جست‌وجو باز است) */
     highlight: String?,
     listState: LazyListState,
-    transferSuggestion: TransferSuggestion?,
-    transferCount: Int,
-    onConfirmTransfer: (TransferSuggestion) -> Unit,
-    onRejectTransfer: (TransferSuggestion) -> Unit,
     categories: List<Category>,
     byId: Map<Long, Category>,
     displayDepth: Int,
@@ -94,19 +90,6 @@ internal fun TransactionListBody(
             tip?.let { content ->
                 item(key = "tip") {
                     Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) { content() }
-                }
-            }
-            // پیشنهاد «انتقال بین حساب‌های خودم»: یکی‌یکی و فشرده، بالای فهرست
-            transferSuggestion?.let { suggestion ->
-                item(key = "transfer-suggestion") {
-                    Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
-                        TransferSuggestionCard(
-                            suggestion = suggestion,
-                            total = transferCount,
-                            onYes = { onConfirmTransfer(suggestion) },
-                            onNo = { onRejectTransfer(suggestion) },
-                        )
-                    }
                 }
             }
             // روزبه‌روز: سرتیتر چسبان «امروز ━━━ ۶۰۵ هزار» و تراکنش‌های آن روز
