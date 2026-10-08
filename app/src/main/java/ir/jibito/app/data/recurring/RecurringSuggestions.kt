@@ -39,7 +39,8 @@ class RecurringSuggestions(
         dismissed.value = next
     }
 
-    private companion object {
+    companion object {
+        /** در پشتیبان‌گیری هم ذخیره می‌شود (BackupManager.BACKED_UP_PREFS) */
         const val PREFS = "recurring_suggestions"
         const val KEY_DISMISSED = "dismissed"
     }
