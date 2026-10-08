@@ -202,18 +202,10 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
     }
     var wasDenied by rememberSaveable { mutableStateOf(false) }
 
-    // جواب پنجره‌ی نوتیفیکیشن هر چه باشد، وارد اپ می‌شویم (اختیاری است)
-    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        screen = Screen.SmsList
-    }
-
+    // اجازه‌ی نوتیفیکیشن این‌جا پرسیده نمی‌شود: پشت سر اجازه‌ی پیامک و پیش از دیدن هر فایده‌ای، بیشتر رد می‌شود.
+    // بعد از «جیبت رو شناختم» (یا اولین خواندن پیامک‌ها) در MainScreen پرسیده می‌شود
     fun enterApp() {
-        // نوتیفیکیشن فقط از اندروید ۱۳ اجازه‌ی جدا دارد و اختیاری است؛ بعد از پیامک و جدا از آن پرسیده می‌شود
-        if (Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)) {
-            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            screen = Screen.SmsList
-        }
+        screen = Screen.SmsList
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
