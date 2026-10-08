@@ -57,9 +57,11 @@ import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.summary.BudgetDialog
 import ir.jibito.app.ui.summary.SummaryViewModel
 import ir.jibito.app.ui.summary.TodoAction
+import ir.jibito.app.ui.summary.TodoPage
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.summary.todoPriority
+import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
@@ -95,12 +97,13 @@ fun TodoScreen(
         pendingReview = pendingReview,
         onOpenReview = onOpenReview,
         onOpenUncategorized = onOpenUncategorized,
-        onOpenTransactions = onOpenTransactions,
         onOpenSettings = onOpenSettings,
         onOpenCategory = onOpenCategory,
         onToast = { toast = it },
     )
     var editingBudget by remember { mutableStateOf(false) }
+    // مورد لمس‌شده‌ی یک کارت چندتایی: پیامک‌هایش در برگه‌ی پایین (کلیدش، تا بعد از جواب دادن جای دیگر هم بسته بماند)
+    var smsPage by remember { mutableStateOf<Pair<String, TodoPage>?>(null) }
     val firstSteps = rememberFirstSteps(
         summary,
         onOpenUncategorized = onOpenUncategorized,
@@ -108,7 +111,11 @@ fun TodoScreen(
         onEditBudget = { editingBudget = true },
     )
     Box(Modifier.fillMaxSize()) {
-        TodoList(stories.sortedBy { todoPriority(it.id) }, firstSteps = firstSteps)
+        TodoList(
+            stories.sortedBy { todoPriority(it.id) },
+            firstSteps = firstSteps,
+            onOpenSms = { story, page -> smsPage = story.label to page },
+        )
         JibiToast(
             message = toast,
             onDismiss = { toast = null },
@@ -117,6 +124,9 @@ fun TodoScreen(
                 .statusBarsPadding()
                 .padding(top = 16.dp, start = 16.dp, end = 16.dp),
         )
+    }
+    smsPage?.let { (title, page) ->
+        TodoSmsSheet(title = title, page = page, onDismiss = { smsPage = null })
     }
     // قدم «بودجه‌ی ماهانه بذار»: همان پنجره‌ی بودجه‌ی کل «خلاصه»
     val s = summary
@@ -144,7 +154,13 @@ private const val TOAST_MILLIS = 4_000L
  * [firstSteps]: کارت «قدم‌های اول» برای کاربر تازه، بالای همه.
  */
 @Composable
-fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier, firstSteps: FirstStepsUi? = null) {
+fun TodoList(
+    items: List<TodoStory>,
+    modifier: Modifier = Modifier,
+    firstSteps: FirstStepsUi? = null,
+    /** لمس یک مورد از کارت چندتایی که پیامک دارد */
+    onOpenSms: (TodoStory, TodoPage) -> Unit = { _, _ -> },
+) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
     val urgent = items.filter { it.urgent }
@@ -183,11 +199,11 @@ fun TodoList(items: List<TodoStory>, modifier: Modifier = Modifier, firstSteps: 
         }
         if (urgent.isNotEmpty()) {
             item(key = "sec-now") { SectionLabel(stringResource(R.string.todo_section_now), t.uncatFg) }
-            items(urgent, key = { it.id }) { TodoCard(it) }
+            items(urgent, key = { it.id }) { TodoCard(it, onOpenSms) }
         }
         if (suggestions.isNotEmpty()) {
             item(key = "sec-sug") { SectionLabel(stringResource(R.string.todo_section_suggestions), t.muted) }
-            items(suggestions, key = { it.id }) { TodoCard(it) }
+            items(suggestions, key = { it.id }) { TodoCard(it, onOpenSms) }
         }
     }
 }
@@ -209,9 +225,10 @@ private fun SectionLabel(text: String, color: Color) {
  * یک کار: آیکون در مربع گرد (مثل بقیه‌ی اپ)، عنوان و یک جمله توضیح.
  * کارهای یک‌لمسی دکمه‌های خودشان را همین‌جا دارند.
  * کارت چندتایی (pages): توضیح و دکمه‌ها ورق می‌خورند؛ کاربر چپ و راست می‌کشد و هر مورد را که خواست جواب می‌دهد.
+ * لمس توضیح یک مورد، پیامک‌های همان تراکنش را نشان می‌دهد (رمز دوم، کسر، واریز) تا کاربر خودش ببیند و تصمیم بگیرد.
  */
 @Composable
-private fun TodoCard(s: TodoStory) {
+private fun TodoCard(s: TodoStory, onOpenSms: (TodoStory, TodoPage) -> Unit) {
     val pager = if (s.pages.isNotEmpty()) rememberPagerState(pageCount = { s.pages.size }) else null
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
@@ -282,7 +299,23 @@ private fun TodoCard(s: TodoStory) {
                 val p = s.pages.getOrNull(page) ?: return@HorizontalPager
                 Column {
                     Spacer(Modifier.height(8.dp))
-                    Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                    if (p.sms.isEmpty()) {
+                        Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                    } else {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onOpenSms(s, p) }
+                        ) {
+                            Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
+                            Row(Modifier.padding(top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(DesignIcons.Message, contentDescription = null, tint = colors.primary, modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.todo_show_sms), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     ActionButtons(p.actions)
                 }
@@ -306,7 +339,7 @@ private fun TodoCard(s: TodoStory) {
 
 /** دکمه‌های یک کار؛ اولی دکمه‌ی اصلی است */
 @Composable
-private fun ActionButtons(actions: List<TodoAction>) {
+internal fun ActionButtons(actions: List<TodoAction>) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

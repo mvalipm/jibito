@@ -14,6 +14,7 @@ import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.wallet.AccountGrouping
 import ir.jibito.app.data.repository.MonthSummary
+import ir.jibito.app.domain.Transaction
 import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.ui.common.HIDDEN_AMOUNT
 import ir.jibito.app.ui.common.LocalHideAmounts
@@ -39,7 +40,6 @@ fun rememberTodoStories(
     pendingReview: Int,
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
-    onOpenTransactions: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
     onToast: (ToastMessage) -> Unit = {},
@@ -120,6 +120,7 @@ fun rememberTodoStories(
             val yes = stringResource(R.string.todo_transfer_yes)
             val no = stringResource(R.string.transfer_no)
             val unknown = stringResource(R.string.bank_unknown)
+            val otpLabel = stringResource(R.string.todo_sms_otp)
             // همه‌ی پیشنهادها در یک کارت ورق‌خور (تازه‌ترها اول)؛ هر کدام همان‌جا جواب داده می‌شود
             val pages = transferSuggestions.map { suggestion ->
                 val w = suggestion.withdrawal
@@ -139,6 +140,8 @@ fun rememberTodoStories(
                         TodoAction(yes) { scope.launch { repository.confirmTransfer(suggestion) } },
                         TodoAction(no) { scope.launch { repository.rejectTransfer(suggestion) } },
                     ),
+                    sms = smsOf(w, otpLabel, stringResource(R.string.todo_sms_withdrawal, w.bank?.name ?: unknown)) +
+                        smsOf(d, otpLabel, stringResource(R.string.todo_sms_deposit, d.bank?.name ?: unknown)),
                 )
             }
             add(
@@ -146,7 +149,7 @@ fun rememberTodoStories(
                     "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null,
                     label = stringResource(R.string.todo_transfer),
                     pages = pages,
-                    // این سؤال فقط همین‌جا پرسیده می‌شود (نه بالای «تراکنش‌ها»)؛ جواب با دکمه‌های خود کارت است
+                    // این سؤال فقط همین‌جا پرسیده می‌شود (نه بالای «تراکنش‌ها»)؛ لمس هر مورد پیامک‌هایش را نشان می‌دهد
                     onClick = {},
                 )
             )
@@ -155,6 +158,8 @@ fun rememberTodoStories(
             val repository = app.container.transactionRepository
             val yes = stringResource(R.string.todo_one_off_yes)
             val no = stringResource(R.string.todo_one_off_no)
+            val unknown = stringResource(R.string.bank_unknown)
+            val otpLabel = stringResource(R.string.todo_sms_otp)
             // همه‌ی پیشنهادها در یک کارت؛ کاربر چپ و راست می‌کشد و هر کدام را که خواست جواب می‌دهد (بزرگ‌ترین اول)
             val pages = oneOffSuggestions.map { tx ->
                 val amountText = if (hidden) HIDDEN_AMOUNT else Money.compact(tx.transaction.amountRial)
@@ -171,6 +176,7 @@ fun rememberTodoStories(
                         TodoAction(yes) { scope.launch { repository.setOneOff(tx.id, true) } },
                         TodoAction(no) { scope.launch { repository.setOneOff(tx.id, false) } },
                     ),
+                    sms = smsOf(tx, otpLabel, stringResource(R.string.todo_sms_withdrawal, tx.bank?.name ?: unknown)),
                 )
             }
             add(
@@ -178,7 +184,8 @@ fun rememberTodoStories(
                     "oneoff", t.teal, t.sugBg, t.sugFg, DesignIcons.Star, null,
                     label = stringResource(R.string.todo_one_off),
                     pages = pages,
-                    onClick = onOpenTransactions,
+                    // لمس هر مورد پیامک‌هایش را نشان می‌دهد (نه کل فهرست تراکنش‌ها)
+                    onClick = {},
                 )
             )
         }
@@ -263,6 +270,12 @@ fun todoPriority(id: String): Int = when {
     id == "rec" || id == "salary" -> 5
     else -> 6
 }
+
+/** پیامک‌های یک تراکنش برای برگه‌ی «پیامک‌ها»: اول رمز دوم (اگر به آن وصل شده)، بعد خود پیامک؛ ثبت دستی پیامک ندارد */
+private fun smsOf(tx: Transaction, otpLabel: String, label: String): List<TodoSms> = listOfNotNull(
+    tx.otpBody?.takeIf { it.isNotBlank() }?.let { TodoSms(otpLabel, null, it) },
+    tx.body.takeIf { it.isNotBlank() && !tx.isManual }?.let { TodoSms(label, tx.dateMillis, it) },
+)
 
 /** چند خرج این ماه هنوز دسته ندارند */
 private fun uncategorizedThisMonth(app: Context) =

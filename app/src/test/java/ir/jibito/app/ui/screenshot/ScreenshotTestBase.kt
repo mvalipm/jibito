@@ -22,6 +22,7 @@ import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.summary.SummaryHero
 import ir.jibito.app.ui.summary.TodoAction
 import ir.jibito.app.ui.summary.TodoPage
+import ir.jibito.app.ui.summary.TodoSms
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.categoryTint
@@ -127,6 +128,18 @@ abstract class ScreenshotTestBase {
         tx(8, 30, 1_200_000_000, merchant = "لوازم خانگی سامان", oneOff = true),
     ).sortedByDescending { it.dateMillis }
 
+    /** یک پیشنهاد انتقال با پیامک‌هایش (رمز دوم، کسر، واریز): در کارت «کارها» و برگه‌ی پیامک‌ها */
+    protected fun transferPage() = TodoPage(
+        "t1",
+        "۵ میلیون تومان از ملت به سامان · دیروز. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.",
+        listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {}),
+        sms = listOf(
+            TodoSms("پیامک رمز دوم", null, "رمز دوم: 482913\nانتقال وجه\nمبلغ: 50,000,000 ریال\nبه: 6219-86**-****-4410"),
+            TodoSms("کسر از بانک ملت", now - 86_400_000L, "بانک ملت\nانتقال از 6104***1234\nمبلغ: 50,000,000-\nمانده: 12,450,000\n0709-1832"),
+            TodoSms("واریز به بانک سامان", now - 86_340_000L, "بانک سامان\nواریز به 849-800-****-1\nمبلغ: 50,000,000+\nمانده: 61,200,000\n05/07/09 18:33"),
+        ),
+    )
+
     /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */
     @Composable
     protected fun stories(): List<TodoStory> {
@@ -139,7 +152,7 @@ abstract class ScreenshotTestBase {
             TodoStory(
                 "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟",
                 pages = listOf(
-                    TodoPage("t1", "۵ میلیون تومان از ملت به سامان · دیروز. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.", listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})),
+                    transferPage(),
                     TodoPage("t2", "۲ میلیون تومان از ملت به پاسارگاد · ۳ مهر", listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})),
                 ),
             ) {},
