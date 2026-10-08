@@ -45,7 +45,7 @@ object BankDirectory {
         Bank(id = 21, name = "بانک دی", parserKey = "dey", senders = setOf("20004002", "200043", "30002726", "daybank")),
         Bank(id = 22, name = "بانک آینده", parserKey = "ayandeh", senders = setOf("20004001", "200042")),
         Bank(id = 23, name = "بانک گردشگری", parserKey = "gardeshgari", senders = setOf("2000300")),
-        Bank(id = 24, name = "بانک سپه", parserKey = "sepah", senders = setOf("200015")),
+        Bank(id = 24, name = "بانک سپه", parserKey = "sepah", senders = setOf("200015", "sepahbank")),
         Bank(id = 25, name = "بانک مهرایران", parserKey = "mehr_iran", senders = setOf("30008528")),
         Bank(id = 26, name = "بانک قرض الحسنه رسالت", parserKey = "pasargad", senders = setOf("20004747", "resalatbank")),
         Bank(id = 27, name = "بانک توسعه صادرات", parserKey = "toseeh_saderat", senders = setOf("200048")),
