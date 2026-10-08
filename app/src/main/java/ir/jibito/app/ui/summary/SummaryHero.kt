@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -49,6 +48,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -74,6 +74,7 @@ import ir.jibito.app.ui.theme.Vazirmatn
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
+import kotlin.math.roundToInt
 
 /** خمیدگی پایین سرصفحه */
 private val CURVE = 40.dp
@@ -421,54 +422,65 @@ private fun heroControlColor(dark: Boolean) = if (dark) Color.White.copy(alpha =
 @Composable
 private fun BudgetBar(spent: Float, today: Float?, marker: Color) {
     val fill by animateFloatAsState(spent, tween(900, easing = CubicBezierEasing(0.34f, 1.3f, 0.64f, 1f)), label = "budgetFill")
-    BoxWithConstraints(Modifier.fillMaxWidth().height(22.dp), contentAlignment = Alignment.CenterStart) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(12.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color.Black.copy(alpha = 0.22f))
-        ) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (today != null) TodayLabel(today.coerceIn(0f, 1f))
+        BoxWithConstraints(Modifier.fillMaxWidth().height(22.dp), contentAlignment = Alignment.CenterStart) {
             Box(
                 Modifier
-                    .fillMaxWidth(fill.coerceIn(0f, 1f))
-                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .height(12.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White)
-            )
-        }
-        if (today != null) {
-            // خط ۳ پیکسلی به رنگ حال جیب با حلقه‌ی سفید دورش
-            val x: Dp = (maxWidth * today.coerceIn(0f, 1f) - 3.5.dp).coerceAtLeast(0.dp)
-            // برچسب «امروز» بالای خط، وسطش روی خط (عرض صفر + wrapContentWidth بی‌حد، تا با فونت بزرگ هم بریده نشود)
-            Box(
-                Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = x + 3.5.dp, y = (-17).dp)
-                    .width(0.dp)
-                    .wrapContentWidth(unbounded = true)
-                    .clearAndSetSemantics {},
+                    .background(Color.Black.copy(alpha = 0.22f))
             ) {
-                Text(
-                    stringResource(R.string.hero_today),
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false,
+                Box(
+                    Modifier
+                        .fillMaxWidth(fill.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.White)
                 )
             }
-            Box(
-                Modifier
-                    .offset(x = x)
-                    .width(7.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(3.5.dp))
-                    .background(Color.White)
-                    .padding(2.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(marker)
-            )
+            if (today != null) {
+                // خط ۳ پیکسلی به رنگ حال جیب با حلقه‌ی سفید دورش
+                val x: Dp = (maxWidth * today.coerceIn(0f, 1f) - 3.5.dp).coerceAtLeast(0.dp)
+                Box(
+                    Modifier
+                        .offset(x = x)
+                        .width(7.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(3.5.dp))
+                        .background(Color.White)
+                        .padding(2.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(marker)
+                )
+            }
         }
     }
+}
+
+/**
+ * «امروز» بالای نوار بودجه، وسطش روی خط امروز؛ نزدیک دو سر نوار داخل عرض می‌ماند.
+ * ردیف خودش را دارد (نه بیرون از مرز نوار) تا همیشه کشیده شود؛ برای TalkBack پنهان است چون تنها معنایی ندارد.
+ */
+@Composable
+private fun TodayLabel(today: Float) {
+    Text(
+        stringResource(R.string.hero_today),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics {}
+            .layout { measurable, constraints ->
+                val p = measurable.measure(constraints.copy(minWidth = 0))
+                val center = (constraints.maxWidth * today).roundToInt()
+                val x = (center - p.width / 2).coerceIn(0, (constraints.maxWidth - p.width).coerceAtLeast(0))
+                // placeRelative: در راست‌به‌چپ از راست حساب می‌شود، مثل خط امروز
+                layout(constraints.maxWidth, p.height) { p.placeRelative(x, 0) }
+            },
+        color = Color.White,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        softWrap = false,
+    )
 }
