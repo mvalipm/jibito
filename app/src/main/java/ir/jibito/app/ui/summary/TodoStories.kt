@@ -39,8 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 
@@ -98,14 +98,14 @@ fun SectionHeader(title: String, note: String? = null, noteColor: Color? = null,
             modifier = Modifier
                 .weight(1f)
                 .semantics { heading() },
-            fontSize = 18.sp,
+            style = JibitoText.sectionTitle,
             fontWeight = FontWeight.Black,
             color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
         )
         if (note != null) {
             Text(
                 note,
-                fontSize = 13.sp,
+                style = JibitoText.body,
                 color = noteColor ?: t.muted,
                 fontWeight = if (noteBold) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.padding(bottom = 2.dp),

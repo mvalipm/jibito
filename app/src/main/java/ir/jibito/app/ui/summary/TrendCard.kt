@@ -39,11 +39,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.SpendTrend
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
@@ -120,7 +120,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
             Text(
                 unitName,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 2.dp),
-                fontSize = 11.sp,
+                style = JibitoText.tiny,
                 color = t.muted,
             )
         }
@@ -222,7 +222,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                                     // زمینه‌ی هم‌رنگ صفحه تا خط میانگین از روی عدد رد نشود
                                     .background(colors.background)
                                     .padding(horizontal = 2.dp),
-                                fontSize = 11.sp,
+                                style = JibitoText.tiny,
                                 fontWeight = FontWeight.Bold,
                                 color = if (current) (if (t.dark) colors.onBackground else highlight) else t.faint,
                                 maxLines = 1,
@@ -245,7 +245,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                     Text(
                         // فونت بزرگ گوشی: شماره‌ی ماه به جای اسم
                         if (largeText) Jalali.toPersianDigits(m.month.month.toString()) else Jalali.MONTH_NAMES[m.month.month - 1],
-                        fontSize = 12.sp,
+                        style = JibitoText.small,
                         fontWeight = if (current) FontWeight.Black else FontWeight.Medium,
                         color = if (current) colors.onBackground else t.muted,
                         textAlign = TextAlign.Center,
@@ -253,7 +253,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (current && trend.isCurrent) {
-                        Text(stringResource(R.string.trend_so_far), fontSize = 10.sp, color = t.muted, maxLines = 1)
+                        Text(stringResource(R.string.trend_so_far), style = JibitoText.micro, color = t.muted, maxLines = 1)
                     }
                 }
             }
@@ -262,7 +262,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
             Text(
                 Jalali.toPersianDigits(stringResource(R.string.trend_average, Money.inUnit(average, unit), unitName)),
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
-                fontSize = 11.sp,
+                style = JibitoText.tiny,
                 color = t.muted,
             )
         }
@@ -273,7 +273,7 @@ fun TrendCard(trend: SpendTrend, highlight: Color = JibitoTheme.colors.moodCalm)
             Text(
                 Jalali.toPersianDigits(stringResource(R.string.trend_one_off_note, list)),
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp),
-                fontSize = 11.sp,
+                style = JibitoText.tiny,
                 color = t.sugFg,
             )
         }
