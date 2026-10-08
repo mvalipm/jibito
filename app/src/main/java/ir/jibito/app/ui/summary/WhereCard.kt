@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,9 +31,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,8 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,10 +89,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
         ?: spent.firstOrNull()?.categoryId
 
     Column(Modifier.padding(top = 22.dp)) {
-        SectionHeader(
-            title = stringResource(R.string.where_title),
-            note = if (total > 0) stringResource(R.string.where_hint) else null,
-        )
+        SectionHeader(title = stringResource(R.string.where_title))
         Column(Modifier.padding(horizontal = 20.dp)) {
             if (total <= 0 || spent.isEmpty()) {
                 Text(
@@ -100,7 +102,8 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                 return@Column
             }
 
-            // نوار سهم‌ها: تکه‌ی انتخاب‌شده بلندتر و پررنگ
+            // نوار سهم‌ها: تکه‌ی انتخاب‌شده بلندتر و پررنگ. فقط نمایشی است؛ تکه‌های کوچک برای لمس خیلی ریزند
+            // و انتخاب دسته با کپسول‌های زیر است
             val slices = spent.map { Slice(it.categoryId, it.name, it.budgetSpentRial, categoryTint(it.colorHex, it.icon), it) } +
                 if (rest > 0) listOf(Slice(REST_KEY, stringResource(R.string.chart_rest), rest, restTint(), null)) else emptyList()
             Row(
@@ -123,11 +126,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                             .alpha(a)
                             .clip(RoundedCornerShape(7.dp))
                             .background(slice.tint.fg)
-                            .clickable { picked = slice.key }
-                            .semantics {
-                                contentDescription = "${slice.name} $share"
-                                this.selected = on
-                            },
+                            .semantics { contentDescription = "${slice.name} $share" },
                     )
                 }
             }
@@ -147,22 +146,30 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                 SelectedRow(slice, total, onClick = { slice.spend?.let { onOpenCategory(it.categoryId) } })
             }
 
-            // کپسول همه‌ی دسته‌ها
+            // کپسول همه‌ی دسته‌ها: ۴۰dp دیده می‌شود، ولی ناحیه‌ی لمسش ۴۸dp است (۴dp بالا و پایین؛ فاصله‌ی دیدنیِ ردیف‌ها همان ۸dp)
             FlowRow(
-                Modifier.padding(top = 14.dp),
+                Modifier.padding(top = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 slices.forEach { slice ->
                     val on = slice.key == selected
                     val bg by animateColorAsState(if (on) slice.tint.bg else t.chip, tween(300), label = "chipBg")
+                    val interaction = remember { MutableInteractionSource() }
                     Row(
                         Modifier
-                            .height(34.dp)
-                            .clip(RoundedCornerShape(17.dp))
+                            .selectable(
+                                selected = on,
+                                interactionSource = interaction,
+                                indication = null,
+                                role = Role.Tab,
+                                onClick = { picked = slice.key },
+                            )
+                            .padding(vertical = 4.dp)
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(20.dp))
                             .background(bg)
-                            .clickable { picked = slice.key }
-                            .padding(horizontal = 12.dp),
+                            .indication(interaction, ripple())
+                            .padding(horizontal = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(Modifier.size(8.dp).clip(CircleShape).background(slice.tint.fg))
@@ -175,10 +182,10 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
             Text(
                 stringResource(R.string.glance_show_all),
                 modifier = Modifier
-                    .padding(top = 10.dp)
+                    .padding(top = 6.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onShowAll)
-                    .padding(vertical = 8.dp, horizontal = 2.dp),
+                    .clickable(role = Role.Button, onClick = onShowAll)
+                    .padding(vertical = 14.dp, horizontal = 2.dp),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.primary,

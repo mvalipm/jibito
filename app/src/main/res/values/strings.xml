@@ -484,7 +484,12 @@
     <string name="hero_over">این ماه %1$s از بودجه زدی بیرون.</string>
     <string name="hero_warn">یواش‌تر! %1$d٪ بودجه رفته و هنوز %2$d روز مونده.</string>
     <string name="hero_warn_last_day">یواش‌تر! %1$d٪ بودجه رفته؛ امروز روز آخره.</string>
-    <string name="hero_warn_pace">یه کم تند می‌ری؛ با همین ریتم آخر ماه %1$s از بودجه می‌زنی بیرون.</string>
+    <string name="hero_warn_pace">یه کم تند می‌ری؛ با همین ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی.</string>
+    <string name="hero_warn_pace_fast">تند می‌ری؛ با همین ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی.</string>
+    <string name="hero_warn_pace_far">خیلی تند می‌ری؛ با این ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی، یعنی حدود %2$d برابرش.</string>
+    <string name="hero_balance_short_salary">بودجه‌ت جا داره، ولی موجودی حسابت تا حقوق نمی‌رسه.</string>
+    <string name="hero_balance_short_month">بودجه‌ت جا داره، ولی موجودی حسابت تا آخر ماه نمی‌رسه.</string>
+    <string name="hero_today">امروز</string>
     <string name="hero_calm">اوضاع آرومه؛ با همین ریتم آخر ماه %1$s اضافه میاری.</string>
     <string name="hero_calm_on_track">اوضاع آرومه؛ درست طبق برنامه پیش می‌ری.</string>
     <string name="hero_calm_start">ماه تازه شروع شده؛ اوضاع آرومه.</string>
@@ -530,7 +535,6 @@
 
     <!-- کجا رفت؟ و روند -->
     <string name="where_title">کجا رفت؟</string>
-    <string name="where_hint">روی هر تیکه بزن</string>
     <string name="where_over_budget">%1$d٪ بالای بودجه‌ش</string>
     <string name="where_left_budget">%1$s مونده از بودجه‌ش</string>
     <string name="trend_less">%1$d٪ کمتر از %2$s</string>
