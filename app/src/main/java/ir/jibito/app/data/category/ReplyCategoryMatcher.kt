@@ -8,7 +8,9 @@ package ir.jibito.app.data.category
  * ۲. یکی از تکه‌های اسم دسته («فست فود» ← «رستوران و فست‌فود»)
  * ۳. همان دو، با یک حرف غلط تایپی («رستوان»)؛ فقط برای متن‌های بلندتر
  * ۴. اسم کامل یک دسته داخل متن («خرید لباس بچه» ← «لباس»)
- * ۵. فرهنگ کلمه‌های CategorySuggester («اسنپ تا فرودگاه» ← «تاکسی اینترنتی»)
+ * ۵. اسم چندکلمه‌ای یک دسته داخل متن با یک حرف غلط یا محاوره‌ای («شارژ ساختمون مهر» ← «شارژ ساختمان»)؛
+ *    اسم تک‌کلمه‌ای نه، چون «اینترنتی» هم با یک حرف «اینترنت» می‌شود
+ * ۶. فرهنگ کلمه‌های CategorySuggester («اسنپ تا فرودگاه» ← «تاکسی اینترنتی»)
  *
  * اگر چند دسته‌ی بی‌ربط جور شوند (مثلاً دو «سایر» زیر دو دسته‌ی اصلی) چیزی انتخاب نمی‌شود؛
  * ولی اگر همه روی یک شاخه باشند (دسته‌ی اصلی و زیردسته‌اش) دقیق‌ترین انتخاب می‌شود.
@@ -40,6 +42,17 @@ object ReplyCategoryMatcher {
         if (contained.isNotEmpty()) {
             val longest = contained.maxOf { compact(it.second).length }
             pick(contained.filter { compact(it.second).length == longest }.map { it.first }, byId)?.let { return it }
+        }
+        val words = spaced.split(' ')
+        val nearly = named.filter { (_, name) ->
+            val size = name.split(' ').size
+            val target = compact(name)
+            size > 1 && target.length >= TYPO_MIN_LENGTH &&
+                words.windowed(size).any { withinOneEdit(target, it.joinToString("")) }
+        }
+        if (nearly.isNotEmpty()) {
+            val longest = nearly.maxOf { compact(it.second).length }
+            pick(nearly.filter { compact(it.second).length == longest }.map { it.first }, byId)?.let { return it }
         }
         val target = CategorySuggester.suggest(spaced) ?: return null
         val targetKey = compact(normalize(target))
