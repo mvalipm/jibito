@@ -39,7 +39,7 @@ fun moodOf(s: MonthSummary, nowMillis: Long, forecast: BalanceForecast? = null):
     if (s.overallBudgetRial?.takeIf { it > 0 } == null) return line.copy(mood = Mood.WARN)
     return MoodLine(
         Mood.WARN,
-        if (forecast?.paydayMillis != null) R.string.hero_balance_short_salary else R.string.hero_balance_short_month,
+        if (forecast.paydayMillis != null) R.string.hero_balance_short_salary else R.string.hero_balance_short_month,
     )
 }
 
