@@ -242,6 +242,15 @@ class CategorySuggesterTest {
         assertEquals("نظافت", reply("قالیشویی فرش‌ها"))
         assertEquals("کلاس و دوره", reply("شهریه آموزشگاه زبان بچه"))
         assertNull(reply("دادم به علی"))
+        // «شارژ» تنها یعنی شارژ موبایل، ولی «شارژ ساختمون» (محاوره‌ای) نه
+        assertEquals("شارژ ساختمان", reply("شارژ ساختمون"))
+        assertEquals("شارژ ساختمان", reply("شارژ ساختمون مهر"))
+        assertEquals("شارژ ساختمان", reply("پول شارژ ساختمون"))
+        assertEquals("شارژ ساختمان", reply("حق شارژ"))
+        assertEquals("شارژ موبایل", reply("شارژ ایرانسل"))
+        assertEquals("قرض دادم", reply("قرض دادن به علی"))
+        // اسم تک‌کلمه‌ای با یک حرف غلط داخل متن جور نمی‌شود («اینترنتی» ← «اینترنت» نه)
+        assertNull(reply("خرید اینترنتی"))
     }
 
     @Test
