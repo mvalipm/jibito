@@ -69,7 +69,9 @@ import ir.jibito.app.ui.common.TipCard
 import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.data.repository.MonthReport
 import ir.jibito.app.data.repository.SpendTrend
+import ir.jibito.app.data.category.NatureBreakdown
 import ir.jibito.app.data.wallet.AccountRef
+import ir.jibito.app.domain.Category
 import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.data.wallet.BalanceOverview
 import ir.jibito.app.ui.common.LocalHideAmounts
@@ -108,6 +110,9 @@ fun ReportsScreen(
     val report by viewModel.report.collectAsState()
     val months by viewModel.months.collectAsState()
     val balances by viewModel.balances.collectAsState()
+    val nature by viewModel.nature.collectAsState()
+    val categories by remember { app.container.transactionRepository.observeCategories() }.collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
     val forecastRepository = app.container.forecastRepository
     val forecastState by forecastRepository.state.collectAsState(initial = null)
     val prefs = remember { ReportSectionPrefs(context) }
@@ -143,6 +148,9 @@ fun ReportsScreen(
         newInsights = ReportSections.hasNew(insights, seen),
         thinTip = rememberTip(Tip.REPORTS_THIN).let { if (it.visible) it.dismiss else null },
         forecast = forecastState?.forecast,
+        nature = nature,
+        categories = categories,
+        onSetNature = { c, n -> scope.launch { app.container.transactionRepository.setCategoryNature(c.id, n) } },
         onNotSalary = forecastState?.forecast?.salary?.let { salary -> { forecastRepository.rejectSalary(salary) } },
     )
 }
@@ -171,6 +179,10 @@ fun ReportsContent(
     forecast: BalanceForecast? = null,
     /** «این حقوقم نیست» */
     onNotSalary: (() -> Unit)? = null,
+    /** «خرجت چه‌جور بود؟»؛ null یعنی «هنوز در حال بارگذاری» */
+    nature: NatureBreakdown? = null,
+    categories: List<Category> = emptyList(),
+    onSetNature: (Category, Int) -> Unit = { _, _ -> },
 ) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
@@ -253,6 +265,22 @@ fun ReportsContent(
                         forecastOnChart = range == ReportRange.MONTH,
                         onNotSalary = onNotSalary,
                     )
+                }
+            }
+        }
+        item(key = ReportSection.NATURE.name) {
+            SectionCard(
+                title = stringResource(R.string.nature_title),
+                icon = DesignIcons.SHOP,
+                iconBg = t.uncatBg,
+                iconFg = t.uncatFg,
+                summary = natureSummary(nature),
+                expanded = open == ReportSection.NATURE,
+                onToggle = { toggle(ReportSection.NATURE) },
+            ) {
+                Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 14.dp)) {
+                    RangeSelector(range, onRange)
+                    NatureContent(nature, categories, monthName(month.plus(-1)), onSetNature)
                 }
             }
         }

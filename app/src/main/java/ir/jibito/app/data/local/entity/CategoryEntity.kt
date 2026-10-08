@@ -36,4 +36,9 @@ data class CategoryEntity(
     @ColumnInfo(defaultValue = "1") val countsAsSpend: Boolean = true,
     /** شناسه‌ی ثابت دسته‌های پیش‌فرض، مثلاً «food.market»؛ برای دسته‌های کاربر null (از نسخه‌ی ۱۰) */
     @ColumnInfo(defaultValue = "NULL") val code: String? = null,
+    /**
+     * ماهیت خرج که خود کاربر انتخاب کرده (از نسخه‌ی ۱۶): ۱ = اجباری، ۲ = ضروری، ۳ = دلخواه؛
+     * ۰ یعنی پیش‌فرض (از روی code یا دسته‌ی بالاتر، SpendNature).
+     */
+    @ColumnInfo(defaultValue = "0") val nature: Int = 0,
 )

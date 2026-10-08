@@ -56,6 +56,10 @@ data class Category(
     val countsAsSpend: Boolean = true,
     /** دسته‌ای که خود کاربر ساخته */
     val isCustom: Boolean = false,
+    /** شناسه‌ی ثابت دسته‌های پیش‌فرض (مثلاً «home.rent»)؛ برای دسته‌های کاربر null */
+    val code: String? = null,
+    /** ماهیت خرجی که کاربر انتخاب کرده؛ ۰ = پیش‌فرض (SpendNature) */
+    val nature: Int = 0,
 )
 
 /** آخرین مانده‌ی یک حساب (از آخرین پیامکی که مانده داشت) */

@@ -65,6 +65,10 @@ interface CategoryDao {
     @Query("UPDATE categories SET name = :name WHERE id = :id")
     suspend fun rename(id: Long, name: String)
 
+    /** ماهیت خرج (SpendNature)؛ ۰ = برگشت به پیش‌فرض */
+    @Query("UPDATE categories SET nature = :nature WHERE id = :id")
+    suspend fun setNature(id: Long, nature: Int)
+
     /** دسته‌ی قدیمی‌ای که جای مشخصی در ساختار جدید ندارد ← دسته‌ی شخصی کاربر */
     @Query("UPDATE categories SET isCustom = 1, sortOrder = :sortOrder WHERE id = :id")
     suspend fun markCustom(id: Long, sortOrder: Int)

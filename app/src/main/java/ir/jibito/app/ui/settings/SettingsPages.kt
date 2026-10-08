@@ -247,14 +247,15 @@ internal fun CustomCategoriesPageContent(categories: List<Category>) {
             target = CreateTarget(parentId = null, chooseParent = true),
             roots = categories.filter { it.parentId == null && it.flowType == FlowType.WITHDRAWAL.code },
             byId = byId,
-            onConfirm = { name, parentId, icon, onResult ->
+            onConfirm = { name, parentId, icon, nature, onResult ->
                 scope.launch {
-                    val result = repository.createCategory(name, parentId, FlowType.WITHDRAWAL.code, icon)
+                    val result = repository.createCategory(name, parentId, FlowType.WITHDRAWAL.code, icon, nature)
                     onResult(result)
                     if (result is CreateCategoryResult.Created) adding = false
                 }
             },
             onDismiss = { adding = false },
+            askNature = true,
         )
     }
 

@@ -57,7 +57,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /** نسخه‌ی فعلی ساختار دیتابیس (برای Migration ها، پشتیبان‌گیری و تست‌ها) */
-        const val VERSION = 15
+        const val VERSION = 16
 
         /** اسم فایل دیتابیس روی گوشی */
         const val NAME = "jibito.db"

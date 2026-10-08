@@ -39,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import ir.jibito.app.R
+import ir.jibito.app.data.category.Nature
+import ir.jibito.app.data.category.SpendNature
+import ir.jibito.app.ui.reports.natureName
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.category.CustomCategories
 import ir.jibito.app.domain.CategoryTree
@@ -65,8 +68,11 @@ internal fun NewCategoryDialog(
     target: CreateTarget,
     roots: List<Category>,
     byId: Map<Long, Category>,
-    onConfirm: (String, Long?, String?, (CreateCategoryResult) -> Unit) -> Unit,
+    /** آخرین عدد: ماهیت خرج (Nature.code یا SpendNature.DEFAULT = مثل دسته‌ی بالاتر) */
+    onConfirm: (String, Long?, String?, Int, (CreateCategoryResult) -> Unit) -> Unit,
     onDismiss: () -> Unit,
+    /** دسته‌ی خرج: «ماهیت خرج» هم پرسیده شود (برای واریز معنی ندارد) */
+    askNature: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     var name by remember { mutableStateOf(target.prefill) }
@@ -74,6 +80,9 @@ internal fun NewCategoryDialog(
     // زیردسته بی‌انتخاب ← آیکون دسته‌ی اصلی‌اش
     var picked by remember { mutableStateOf<String?>(null) }
     val icon = picked ?: if (parentId == null) CustomCategories.ICONS.first() else null
+    // دسته‌ی اصلی شخصی پیش‌فرضی ندارد ← «دلخواه»؛ زیردسته مثل دسته‌ی بالاترش
+    var nature by remember { mutableStateOf(SpendNature.DEFAULT) }
+    val effectiveNature = if (parentId == null && nature == SpendNature.DEFAULT) Nature.WANT.code else nature
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val errEmpty = stringResource(R.string.custom_error_empty)
@@ -146,6 +155,28 @@ internal fun NewCategoryDialog(
                         }
                     }
                     Spacer(Modifier.height(10.dp))
+                    if (askNature) {
+                        Text(
+                            stringResource(R.string.nature_new_label),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (parentId != null) {
+                                CategoryChip(
+                                    label = stringResource(R.string.nature_pick_parent),
+                                    selected = nature == SpendNature.DEFAULT,
+                                    onClick = { nature = SpendNature.DEFAULT },
+                                )
+                            }
+                            Nature.entries.forEach { n ->
+                                CategoryChip(label = natureName(n), selected = effectiveNature == n.code, onClick = { nature = n.code })
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
                     if (target.chooseParent && roots.isNotEmpty()) {
                         Text(
                             stringResource(R.string.custom_where),
@@ -179,7 +210,7 @@ internal fun NewCategoryDialog(
                 enabled = !saving,
                 onClick = {
                     saving = true
-                    onConfirm(name, parentId, icon) { result ->
+                    onConfirm(name, parentId, icon, if (askNature) effectiveNature else SpendNature.DEFAULT) { result ->
                         saving = false
                         if (result is CreateCategoryResult.Invalid) {
                             error = when (result.reason) {

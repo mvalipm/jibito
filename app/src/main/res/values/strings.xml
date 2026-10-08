@@ -767,6 +767,28 @@
     <string name="todo_salary_detail">حدود %1$s تومان، هر ماه حوالی روز %2$d به %3$s. اگه بگی آره، پیش‌بینی موجودی تا حقوق بعدی حساب می‌شه.</string>
     <string name="salary_yes">آره، حقوقمه</string>
     <string name="salary_no">نه</string>
+
+    <!-- «ماهیت خرج»: اجباری، ضروری، دلخواه -->
+    <string name="nature_title">خرجت چه‌جور بود؟</string>
+    <string name="nature_must">اجباری</string>
+    <string name="nature_need">ضروری</string>
+    <string name="nature_want">دلخواه</string>
+    <string name="nature_unknown">هنوز معلوم نیست</string>
+    <string name="nature_must_hint">تعهدی که باید پرداخت بشه: اجاره، قسط، قبض، بیمه</string>
+    <string name="nature_need_hint">برای زندگی لازمه ولی مقدارش دست توئه: خوراک، دارو، رفت‌وآمد</string>
+    <string name="nature_want_hint">می‌شه نخرید یا کمتر خرید: رستوران، تفریح، پوشاک</string>
+    <string name="nature_unknown_hint">خرج‌های بی‌دسته، یا دسته‌ی شخصی‌ای که هنوز ماهیتش رو نگفتی</string>
+    <string name="nature_summary">%1$d٪ اجباری · %2$d٪ دلخواه</string>
+    <string name="nature_share">%1$d٪</string>
+    <string name="nature_empty">هنوز خرجی با دسته در این بازه نیست.</string>
+    <string name="nature_tap_hint">ماهیت یک دسته جور نیست؟ رویش بزن و عوضش کن.</string>
+    <string name="nature_want_less">خرج دلخواهت %1$d٪ کمتر از همین موقعِ %2$s بود. آفرین!</string>
+    <string name="nature_want_more">خرج دلخواهت %1$d٪ بیشتر از همین موقعِ %2$s بود.</string>
+    <string name="nature_want_title">خرج دلخواه</string>
+    <string name="nature_pick_title">ماهیت «%1$s»</string>
+    <string name="nature_pick_default">پیش‌فرض (%1$s)</string>
+    <string name="nature_pick_parent">مثل دسته‌ی بالاتر</string>
+    <string name="nature_new_label">ماهیت خرج</string>
     <string name="account_range_month">۳۰ روز</string>
     <string name="account_range_quarter">۳ ماه</string>
     <string name="account_range_year">۱ سال</string>

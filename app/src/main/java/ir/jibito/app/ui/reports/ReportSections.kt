@@ -8,6 +8,7 @@ import ir.jibito.app.data.repository.Insight
 enum class ReportSection {
     SPEND,
     BALANCE,
+    NATURE,
     INSIGHTS,
 }
 
@@ -36,6 +37,7 @@ object ReportSections {
         is Insight.CategoryChange -> "cat:${insight.categoryId}:${if (insight.deltaRial > 0) "up" else "down"}"
         is Insight.BusiestDay -> "day:${insight.month.year}-${insight.month.month}-${insight.day}"
         is Insight.WeekdayPeak -> "weekday:${insight.weekday}"
+        is Insight.NatureChange -> "nature:${insight.nature.name}:${if (insight.deltaRial > 0) "up" else "down"}"
     }
 
     fun hasNew(insights: List<Insight>, seen: Set<String>): Boolean = insights.any { key(it) !in seen }

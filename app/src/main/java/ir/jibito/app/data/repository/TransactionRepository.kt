@@ -1,5 +1,6 @@
 package ir.jibito.app.data.repository
 
+import ir.jibito.app.data.category.SpendNature
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.category.ReplyCategoryMatcher
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
@@ -87,7 +88,10 @@ interface TransactionRepository {
      * دسته‌ی شخصی می‌سازد. parentId = null یعنی دسته‌ی اصلی جدید.
      * @param icon فقط برای دسته‌ی اصلی
      */
-    suspend fun createCategory(name: String, parentId: Long?, flowType: Int, icon: String?): CreateCategoryResult
+    suspend fun createCategory(name: String, parentId: Long?, flowType: Int, icon: String?, nature: Int = SpendNature.DEFAULT): CreateCategoryResult
+
+    /** ماهیت خرج یک دسته (Nature.code)؛ SpendNature.DEFAULT = برگشت به پیش‌فرض */
+    suspend fun setCategoryNature(categoryId: Long, nature: Int)
 
     /** حذف دسته‌ی شخصی (و زیردسته‌هایش): تراکنش‌هایشان به دسته‌ی بالاتر یا بی‌دسته می‌روند */
     suspend fun deleteCustomCategory(categoryId: Long)

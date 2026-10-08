@@ -91,10 +91,11 @@ class TransactionsViewModel(
         name: String,
         parentId: Long?,
         icon: String?,
+        nature: Int,
         onResult: (CreateCategoryResult) -> Unit,
     ) {
         viewModelScope.launch {
-            val result = repository.createCategory(name, parentId, transaction.transaction.type.code, icon)
+            val result = repository.createCategory(name, parentId, transaction.transaction.type.code, icon, nature)
             if (result is CreateCategoryResult.Created) {
                 if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
                 repository.setCategory(transaction.id, result.id)

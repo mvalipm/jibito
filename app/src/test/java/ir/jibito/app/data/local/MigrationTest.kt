@@ -61,6 +61,18 @@ class MigrationTest {
     @Test fun migrateFrom12() = migrateFrom(12)
     @Test fun migrateFrom13() = migrateFrom(13)
     @Test fun migrateFrom14() = migrateFrom(14)
+    @Test fun migrateFrom15() = migrateFrom(15)
+
+    @Test
+    fun natureDefaultForExistingCategoriesAfter15To16() {
+        createAt(15)
+        openWithRoom().use { db ->
+            db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM categories WHERE nature != 0").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("old categories keep the default nature", 0, it.getInt(0))
+            }
+        }
+    }
 
     @Test
     fun oneOffNoneForExistingRowsAfter14To15() {

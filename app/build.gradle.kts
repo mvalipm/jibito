@@ -26,7 +26,7 @@ android {
         // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
         versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
         // هر PR که امکان یا migration تازه دارد این را بالا می‌برد و یک خط به CHANGELOG.md (ریشه‌ی ریپو) اضافه می‌کند
-        versionName = "0.54.0"
+        versionName = "0.55.0"
 
         // تست‌های روی گوشی/امولاتور (app/src/androidTest)؛ هر تست در فرایند خودش و با داده‌ی پاک (Orchestrator)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
