@@ -10,8 +10,11 @@ import kotlin.math.roundToInt
 /** حال جیب این ماه: رنگ سرصفحه و جمله‌ی زیرش از همین می‌آید */
 enum class Mood { CALM, WARN, OVER }
 
-/** حال جیب و جمله‌اش (منطق جدا از ظاهر، برای تست) */
-data class MoodLine(val mood: Mood, val sentence: Int, val args: List<Any> = emptyList())
+/**
+ * حال جیب و جمله‌اش (منطق جدا از ظاهر، برای تست).
+ * attention: جمله به چیزی جز بودجه اشاره می‌کند (موجودی حساب)؛ رنگ همان رنگ بودجه می‌ماند ولی آیکون هشدار است.
+ */
+data class MoodLine(val mood: Mood, val sentence: Int, val args: List<Any> = emptyList(), val attention: Boolean = false)
 
 private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 
@@ -26,20 +29,22 @@ fun daysLeft(s: MonthSummary, nowMillis: Long): Int {
  * - بیشتر از بودجه ← «بیرون زد» (قرمز)
  * - ۸۰٪ بودجه رفته، یا با همین ریتم آخر ماه بیرون می‌زند ← «یواش‌تر» (کهربایی)؛
  *   هرچه پیش‌بینی از بودجه دورتر، جمله تندتر (تا ۱۲۰٪ «یه کم»، تا ۱۷۵٪ «تند»، بیشتر «خیلی تند… N برابر»)
- * - موجودی حساب‌ها تا حقوق (یا آخر ماه) نمی‌رسد ← دست‌کم «یواش‌تر»، حتی اگر بودجه جا دارد؛
- *   تا سرصفحه «آرومه» نگوید و کارت پیش‌بینی زیرش «تموم می‌شه»
  * - بقیه ← «آروم» (فیروزه‌ای)؛ بدون بودجه هم آروم است و پیشنهاد سقف می‌دهد.
+ *
+ * رنگ فقط از بودجه می‌آید: بیشتر کردن بودجه باید رنگ را عوض کند، و موجودی حساب ربطی به آن ندارد.
+ * ولی اگر بودجه آروم است و موجودی تا حقوق (یا آخر ماه) نمی‌رسد، جمله «اوضاع آرومه» نمی‌گوید:
+ * می‌گوید بودجه جا دارد و کارت موجودیِ زیرش را ببین (attention، آیکون هشدار).
  */
 fun moodOf(s: MonthSummary, nowMillis: Long, forecast: BalanceForecast? = null): MoodLine {
     val line = budgetMood(s, nowMillis)
     if (line.mood != Mood.CALM) return line
     val short = forecast != null && !forecast.enough && s.month == JalaliMonth.of(nowMillis)
-    if (!short) return line
-    // بی‌بودجه، همان دعوت به گذاشتن سقف می‌ماند؛ فقط رنگ با کارت پیش‌بینی هم‌نظر می‌شود
-    if (s.overallBudgetRial?.takeIf { it > 0 } == null) return line.copy(mood = Mood.WARN)
+    // بی‌بودجه، همان دعوت به گذاشتن سقف می‌ماند؛ کارت پیش‌بینی خودش کم آمدن را می‌گوید
+    if (!short || s.overallBudgetRial?.takeIf { it > 0 } == null) return line
     return MoodLine(
-        Mood.WARN,
+        Mood.CALM,
         if (forecast.paydayMillis != null) R.string.hero_balance_short_salary else R.string.hero_balance_short_month,
+        attention = true,
     )
 }
 

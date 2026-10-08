@@ -487,8 +487,8 @@
     <string name="hero_warn_pace">یه کم تند می‌ری؛ با همین ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی.</string>
     <string name="hero_warn_pace_fast">تند می‌ری؛ با همین ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی.</string>
     <string name="hero_warn_pace_far">خیلی تند می‌ری؛ با این ریتم آخر ماه %1$s بیشتر از بودجه خرج می‌کنی، یعنی حدود %2$d برابرش.</string>
-    <string name="hero_balance_short_salary">بودجه‌ت جا داره، ولی موجودی حسابت تا حقوق نمی‌رسه.</string>
-    <string name="hero_balance_short_month">بودجه‌ت جا داره، ولی موجودی حسابت تا آخر ماه نمی‌رسه.</string>
+    <string name="hero_balance_short_salary">بودجه‌ت جا داره؛ ولی موجودی حسابت تا حقوق نمی‌رسه، پایین رو ببین.</string>
+    <string name="hero_balance_short_month">بودجه‌ت جا داره؛ ولی موجودی حسابت تا آخر ماه نمی‌رسه، پایین رو ببین.</string>
     <string name="hero_today">امروز</string>
     <string name="hero_calm">اوضاع آرومه؛ با همین ریتم آخر ماه %1$s اضافه میاری.</string>
     <string name="hero_calm_on_track">اوضاع آرومه؛ درست طبق برنامه پیش می‌ری.</string>
