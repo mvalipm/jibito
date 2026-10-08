@@ -102,8 +102,6 @@ class ForecastScreenshotTest : ScreenshotTestBase() {
                 summary(7_200_000),
                 onPickMonth = {},
                 onEditBudget = {},
-                dark = false,
-                onToggleDark = {},
                 onToggleHidden = {},
                 nowMillis = now,
                 forecast = forecast(today),

@@ -251,7 +251,7 @@ abstract class ScreenshotTestBase {
     /** سرصفحه‌ی «خلاصه»، ۹ روز از مهر گذشته */
     @Composable
     protected fun Hero(spentToman: Long) {
-        SummaryHero(summary(spentToman), onPickMonth = {}, onEditBudget = {}, dark = false, onToggleDark = {}, onToggleHidden = {}, nowMillis = now)
+        SummaryHero(summary(spentToman), onPickMonth = {}, onEditBudget = {}, onToggleHidden = {}, nowMillis = now)
     }
 
     @Composable

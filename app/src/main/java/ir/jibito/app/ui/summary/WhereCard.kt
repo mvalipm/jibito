@@ -49,7 +49,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
 import ir.jibito.app.data.repository.CategorySpend
 import ir.jibito.app.data.repository.MonthSummary
@@ -58,6 +57,7 @@ import ir.jibito.app.ui.common.amount
 import ir.jibito.app.ui.theme.CategoryStyle
 import ir.jibito.app.ui.theme.CategoryTint
 import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.util.Jalali
@@ -95,7 +95,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                 Text(
                     stringResource(R.string.glance_no_spend),
                     modifier = Modifier.padding(top = 12.dp),
-                    fontSize = 14.sp,
+                    style = JibitoText.action,
                     color = t.muted,
                 )
                 OneOffNote(s.oneOffRial)
@@ -174,7 +174,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                     ) {
                         Box(Modifier.size(8.dp).clip(CircleShape).background(slice.tint.fg))
                         Spacer(Modifier.width(6.dp))
-                        Text(slice.name, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.onBackground, maxLines = 1)
+                        Text(slice.name, style = JibitoText.body, fontWeight = FontWeight.Medium, color = colors.onBackground, maxLines = 1)
                     }
                 }
             }
@@ -186,7 +186,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                     .clip(RoundedCornerShape(12.dp))
                     .clickable(role = Role.Button, onClick = onShowAll)
                     .padding(vertical = 14.dp, horizontal = 2.dp),
-                fontSize = 14.sp,
+                style = JibitoText.action,
                 fontWeight = FontWeight.Bold,
                 color = colors.primary,
             )
@@ -220,30 +220,30 @@ private fun SelectedRow(slice: Slice, total: Long, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(
                 slice.name,
-                fontSize = 18.sp,
+                style = JibitoText.sectionTitle,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             noteFor(slice.spend)?.let { note ->
-                Text(note, fontSize = 13.sp, color = t.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(note, style = JibitoText.body, color = t.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Spacer(Modifier.width(8.dp))
         Column(Modifier.padding(end = 6.dp), horizontalAlignment = Alignment.Start) {
             Text(
                 Jalali.toPersianDigits(share(slice.amount, total)),
-                fontSize = 24.sp,
+                style = JibitoText.figure,
                 fontWeight = FontWeight.Black,
                 color = slice.tint.fg,
             )
-            Text(amount(Money.compact(slice.amount)), fontSize = 12.sp, color = t.muted)
+            Text(amount(Money.compact(slice.amount)), style = JibitoText.small, color = t.muted)
             // خرج یک‌باره‌ی همین دسته، جدا از سهمش
             slice.spend?.oneOffRial?.takeIf { it > 0 }?.let { oneOff ->
                 Text(
                     amount(stringResource(R.string.day_one_off, Money.compact(oneOff))),
-                    fontSize = 12.sp,
+                    style = JibitoText.small,
                     fontWeight = FontWeight.Bold,
                     color = t.sugFg,
                 )
@@ -259,7 +259,7 @@ private fun OneOffNote(oneOffRial: Long) {
     Text(
         Jalali.toPersianDigits(stringResource(R.string.where_one_off, amount(Money.compact(oneOffRial)))),
         modifier = Modifier.padding(top = 8.dp),
-        fontSize = 12.sp,
+        style = JibitoText.small,
         fontWeight = FontWeight.Bold,
         color = JibitoTheme.colors.sugFg,
     )

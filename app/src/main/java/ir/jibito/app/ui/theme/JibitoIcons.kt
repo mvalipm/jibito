@@ -84,6 +84,15 @@ object JibitoIcons {
         }
     }
 
+    /** ویرایش (مداد): کنار «X از بودجه‌ی Y» در سرصفحه‌ی خلاصه */
+    val Pencil: ImageVector by lazy {
+        lineIcon("pencil") {
+            moveTo(4f, 20f); lineTo(4.6f, 16.2f); lineTo(15.8f, 5f)
+            lineTo(19f, 8.2f); lineTo(7.8f, 19.4f); close()
+            moveTo(13.6f, 7.2f); lineTo(16.8f, 10.4f)
+        }
+    }
+
     val Check: ImageVector by lazy {
         lineIcon("check") {
             moveTo(5f, 12.5f); lineTo(10f, 17.5f); lineTo(19f, 7f)

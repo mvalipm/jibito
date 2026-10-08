@@ -49,3 +49,39 @@ val JibitoTypography: Typography = Typography().run {
         labelSmall = labelSmall.persian(),
     )
 }
+
+/**
+ * اندازه‌های متن صفحه‌ها، با اسم به‌جای عدد (فعلاً صفحه‌ی «خلاصه»؛ بقیه‌ی صفحه‌ها کم‌کم).
+ * فقط اندازه، ارتفاع خط و فونت را می‌گویند؛ وزن و رنگ را هر متن خودش می‌دهد.
+ * ارتفاع خط حدود ۱٫۵ برابر اندازه است؛ بدون آن، متن ارتفاع خط bodyLarge (۲۸sp) را می‌گرفت و متن ریز دورش جای خالی داشت.
+ */
+object JibitoText {
+    private fun style(size: Int, line: Int) = TextStyle(fontFamily = Vazirmatn, fontSize = size.sp, lineHeight = line.sp, letterSpacing = 0.em)
+
+    /** عنوان صفحه (۲۲) */
+    val screenTitle = style(22, 32)
+
+    /** عدد برجسته کنار متن، مثل سهم دسته (۲۴) */
+    val figure = style(24, 32)
+
+    /** عنوان بخش (۱۸) */
+    val sectionTitle = style(18, 28)
+
+    /** متن اصلی و جمله‌ها (۱۵) */
+    val lead = style(15, 24)
+
+    /** دکمه‌ی متنی و پیوند (۱۴) */
+    val action = style(14, 22)
+
+    /** متن بدنه‌ی کوچک (۱۳) */
+    val body = style(13, 20)
+
+    /** توضیح زیر عدد (۱۲) */
+    val small = style(12, 18)
+
+    /** برچسب ریز (۱۱) */
+    val tiny = style(11, 16)
+
+    /** ریزترین برچسب، مثل «تا امروز» زیر ستون (۱۰) */
+    val micro = style(10, 14)
+}

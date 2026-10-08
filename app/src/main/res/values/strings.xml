@@ -469,7 +469,7 @@
     <string name="dark_mode_light">روشن</string>
     <string name="dark_mode_dark">تیره</string>
     <string name="settings_dark_title">روشن یا تیره</string>
-    <string name="cd_toggle_dark">روشن یا تیره</string>
+    <string name="summary_loading">خلاصه داره آماده می‌شه</string>
     <string name="cd_hide_amounts">پنهان کردن مبلغ‌ها</string>
     <string name="cd_show_amounts">نشون دادن مبلغ‌ها</string>
 

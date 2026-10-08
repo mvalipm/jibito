@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import ir.jibito.app.ui.permission.SmsPermissionScreen
+import ir.jibito.app.ui.summary.SummaryHero
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.welcome.WelcomeScreen
@@ -41,6 +42,14 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
         for ((style, dark) in variants) shot("hero", style, dark, padded = false) { Hero(7_200_000) }
         shot("hero_warn", AppThemeStyle.DEFAULT, dark = false, padded = false) { Hero(26_400_000) }
         shot("hero_over", AppThemeStyle.DEFAULT, dark = false, padded = false) { Hero(33_600_000) }
+    }
+
+    /** هنوز هیچ تراکنشی نیست: فقط ردیف بالای سرصفحه، بی «۰ تومان» */
+    @Test
+    fun heroEmpty() {
+        shot("hero_empty", AppThemeStyle.DEFAULT, dark = false, padded = false) {
+            SummaryHero(summary(0), onPickMonth = {}, onEditBudget = {}, onToggleHidden = {}, nowMillis = now, compact = true)
+        }
     }
 
     @Test

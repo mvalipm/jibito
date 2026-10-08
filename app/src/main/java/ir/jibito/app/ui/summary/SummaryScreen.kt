@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -38,16 +37,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.ui.common.EmptyStart
 import ir.jibito.app.ui.common.rememberNoTransactions
 import ir.jibito.app.ui.common.rememberSmsAccess
+import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
-import ir.jibito.app.ui.theme.DarkMode
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.ui.common.CategoryIconTile
@@ -121,7 +121,7 @@ fun SummaryScreen(
     ) {
         val s = summary
         if (s == null || s.month != month) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            SummarySkeleton()
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
@@ -135,12 +135,11 @@ fun SummaryScreen(
                         s,
                         onPickMonth = viewModel::setMonth,
                         onEditBudget = { editingOverall = true },
-                        dark = t.dark,
-                        onToggleDark = { themeSettings.setDarkMode(if (t.dark) DarkMode.LIGHT else DarkMode.DARK) },
                         onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
                         onOpenSettings = onOpenSettings,
                         forecast = forecastState?.forecast,
                         onOpenForecast = onOpenForecast,
+                        compact = noTransactions == true,
                     )
                 }
                 // هنوز هیچ تراکنشی نیست: به‌جای عددهای صفر، چرا خالی است و قدم بعدی
@@ -189,7 +188,7 @@ fun SummaryScreen(
                 Spacer(Modifier.size(8.dp))
                 Text(
                     stringResource(R.string.glance_all_title),
-                    fontSize = 22.sp,
+                    style = JibitoText.screenTitle,
                     fontWeight = FontWeight.Black,
                     color = colors.onBackground,
                 )
@@ -202,13 +201,13 @@ fun SummaryScreen(
                     Column(Modifier.padding(top = 14.dp, start = 4.dp, end = 4.dp)) {
                         Text(
                             stringResource(R.string.summary_categories) + " · " + s.month.title,
-                            fontSize = 18.sp,
+                            style = JibitoText.sectionTitle,
                             fontWeight = FontWeight.Black,
                             color = colors.onBackground,
                         )
                         Text(
                             stringResource(R.string.summary_tap_for_detail),
-                            fontSize = 13.sp,
+                            style = JibitoText.body,
                             color = t.muted,
                         )
                     }
@@ -230,7 +229,7 @@ fun SummaryScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable { showIdle = !showIdle }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
-                            fontSize = 14.sp,
+                            style = JibitoText.action,
                             fontWeight = FontWeight.Bold,
                             color = colors.primary,
                         )
@@ -248,7 +247,7 @@ fun SummaryScreen(
                         Text(
                             stringResource(R.string.summary_income_categories),
                             modifier = Modifier.padding(top = 18.dp, start = 4.dp, end = 4.dp),
-                            fontSize = 18.sp,
+                            style = JibitoText.sectionTitle,
                             fontWeight = FontWeight.Black,
                             color = colors.onBackground,
                         )
@@ -414,5 +413,31 @@ private fun IncomeRow(colorHex: String?, icon: String?, name: String, amountRial
             fontWeight = FontWeight.Black,
             color = JibitoTheme.colors.income,
         )
+    }
+}
+
+/**
+ * تا عددهای ماه برسند: شکل سرصفحه و دو ردیف کم‌رنگ، به‌جای چرخنده‌ی وسط صفحه‌ی خالی
+ * (صفحه سر جایش می‌ماند و با رسیدن عددها فقط پر می‌شود). برای TalkBack یک «در حال آماده شدن».
+ */
+@Composable
+private fun SummarySkeleton() {
+    val t = JibitoTheme.colors
+    val loading = stringResource(R.string.summary_loading)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .clearAndSetSemantics { contentDescription = loading },
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(340.dp)
+                .background(t.chip, RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+        )
+        Spacer(Modifier.height(28.dp))
+        Box(Modifier.padding(horizontal = 20.dp).size(width = 110.dp, height = 20.dp).background(t.chip, RoundedCornerShape(10.dp)))
+        Spacer(Modifier.height(16.dp))
+        Box(Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(34.dp).background(t.chip, RoundedCornerShape(10.dp)))
     }
 }

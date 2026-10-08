@@ -28,6 +28,7 @@ import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.ui.reports.daysShortBeforePayday
 import ir.jibito.app.ui.reports.dateLabel
 import ir.jibito.app.ui.theme.JibitoIcons
+import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.Money
@@ -69,7 +70,7 @@ internal fun HeroForecastLine(f: BalanceForecast, onClick: () -> Unit) {
             Jalali.toPersianDigits(text),
             modifier = Modifier.weight(1f),
             color = fg,
-            fontSize = 13.sp,
+            style = JibitoText.body,
             fontWeight = FontWeight.Bold,
             lineHeight = 21.sp,
         )
