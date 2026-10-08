@@ -102,7 +102,6 @@ fun SmsListScreen(
     val messages by viewModel.transactions.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val categories by viewModel.categories.collectAsState()
-    val transferSuggestions by viewModel.transferSuggestions.collectAsState()
     val bankBalances by viewModel.bankBalances.collectAsState()
     // حساب‌هایی که کاربر از «موجودی همه‌ی حساب‌ها» کنار گذاشته
     val walletSettings = app.container.walletSettings
@@ -159,7 +158,6 @@ fun SmsListScreen(
     val byId = remember(categories) { categories.associateBy { it.id } }
     // نکته‌های یک‌باره: انجام دادن خود کار هم یعنی «فهمیدم»
     val uncatTip = rememberTip(Tip.UNCATEGORIZED)
-    val transferTip = rememberTip(Tip.TRANSFER)
     fun pickCategory(sms: Transaction, categoryId: Long?) {
         if (categoryId != null) uncatTip.dismiss()
         haptics.confirm()
@@ -213,11 +211,6 @@ fun SmsListScreen(
     if (!showWallet) walletFull[0] = 0
     val titleSize by animateFloatAsState(if (collapsed && showWallet) 21f else 30f, tween(220), label = "titleSize")
 
-    // اگر کاربر هنوز دست به فهرست نزده، بالای آن دیده شود (کارت انتقال که دیرتر از دیتابیس می‌رسد، بالای فهرست پنهان نماند)
-    var userScrolled by remember { mutableStateOf(false) }
-    LaunchedEffect(listState.isScrollInProgress) { if (listState.isScrollInProgress) userScrolled = true }
-    val hasSuggestion = transferSuggestions.isNotEmpty() && !showSearch
-    LaunchedEffect(hasSuggestion, visible?.list?.isNotEmpty()) { if (!userScrolled) listState.scrollToItem(0) }
     // فیلتر یا جست‌وجوی تازه: از اول فهرست
     LaunchedEffect(onlyUncategorized, search) { listState.scrollToItem(0) }
 
@@ -321,30 +314,14 @@ fun SmsListScreen(
             searchActive = search.isActive,
             highlight = search.text.takeIf { showSearch },
             listState = listState,
-            transferSuggestion = transferSuggestions.firstOrNull()?.takeIf { !showSearch },
-            transferCount = transferSuggestions.size,
-            onConfirmTransfer = { suggestion ->
-                transferTip.dismiss()
-                haptics.confirm()
-                viewModel.confirmTransfer(suggestion)
-            },
-            onRejectTransfer = { suggestion ->
-                transferTip.dismiss()
-                haptics.reject()
-                viewModel.rejectTransfer(suggestion)
-            },
             categories = categories,
             byId = byId,
             displayDepth = displayDepth,
             hiddenRoots = hiddenRoots,
             onOpen = { sms -> selectedId = sms.id },
             onPick = { sms, categoryId -> pickCategory(sms, categoryId) },
-            // پیشنهاد انتقال بالای فهرست است؛ نکته‌اش مهم‌تر از نکته‌ی دسته
             tip = when {
                 showSearch -> null
-                hasSuggestion && transferTip.visible -> {
-                    { TipCard(stringResource(R.string.tip_transfer), onDismiss = transferTip.dismiss) }
-                }
                 uncategorizedCount > 0 && uncatTip.visible -> {
                     { TipCard(stringResource(R.string.tip_uncategorized), onDismiss = uncatTip.dismiss) }
                 }

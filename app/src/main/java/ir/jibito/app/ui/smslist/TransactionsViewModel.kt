@@ -11,7 +11,6 @@ import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.category.CreateCategoryResult
-import ir.jibito.app.domain.TransferSuggestion
 import ir.jibito.app.domain.BankBalance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,10 +61,6 @@ class TransactionsViewModel(
 
     /** آخرین مانده‌ی هر بانک */
     val bankBalances: StateFlow<List<BankBalance>> = repository.observeBankBalances()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    /** پیشنهادهای «انتقال بین حساب‌های خودم» */
-    val transferSuggestions: StateFlow<List<TransferSuggestion>> = repository.observeTransferSuggestions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
@@ -144,14 +139,6 @@ class TransactionsViewModel(
 
     fun setOneOff(transactionId: Long, isOneOff: Boolean) {
         viewModelScope.launch { repository.setOneOff(transactionId, isOneOff) }
-    }
-
-    fun confirmTransfer(suggestion: TransferSuggestion) {
-        viewModelScope.launch { repository.confirmTransfer(suggestion) }
-    }
-
-    fun rejectTransfer(suggestion: TransferSuggestion) {
-        viewModelScope.launch { repository.rejectTransfer(suggestion) }
     }
 
     companion object {

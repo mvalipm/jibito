@@ -29,7 +29,6 @@
     <string name="start_empty_allow_sms">اجازه‌ی خوندن پیامک بانکی</string>
     <string name="tip_got_it">فهمیدم</string>
     <string name="tip_uncategorized">خرجی که دسته نداره رو بزن و بگو مال چی بود. چند بار که برای یه فروشگاه بگی، از اون به بعد خودم دسته‌ش رو می‌ذارم.</string>
-    <string name="tip_transfer">اگه این پول رو بین کارت‌های خودت جابه‌جا کردی، «آره» بزن تا نه خرج حساب بشه نه درآمد.</string>
     <string name="tip_review">اینا پیامک‌هایی‌اند که مطمئن نیستم تراکنش باشن. مبلغ رو توی خود پیامک بزن تا ثبت بشه؛ از دفعه‌ی بعد پیامک‌های همین شکلی رو خودم می‌خونم.</string>
     <string name="tip_reports_thin">این اولین ماهیه که خرج‌هات رو می‌بینم. از ماه بعد، مقایسه با ماه قبل و پیش‌بینی آخر ماه هم اینجا میاد.</string>
     <string name="help_title">راهنما</string>
@@ -130,11 +129,6 @@
     <string name="search_result_count">%1$d تراکنش</string>
     <string name="search_result_spent">خرج</string>
     <string name="search_result_income">درآمد</string>
-    <string name="transfer_question_short">انتقال به حساب خودت بوده؟</string>
-    <string name="transfer_yes_short">آره</string>
-    <string name="transfer_progress">۱ از %1$d</string>
-    <string name="transfer_details">جزئیات</string>
-    <string name="transfer_less">بستن</string>
     <string name="balances_today">مانده‌ی امروز</string>
     <string name="tx_manual_expense">خرج نقدی</string>
     <string name="tx_manual_income">درآمد نقدی</string>
@@ -202,9 +196,6 @@
     <string name="sheet_receipt_balance">مانده</string>
     <string name="sheet_receipt_fee">کارمزد</string>
     <string name="sheet_receipt_rial">%1$s ریال</string>
-    <string name="transfer_explain">این برداشت و واریز هم‌مبلغ‌اند. اگه پول رو از یه حسابت به حساب دیگه‌ت فرستادی، نه خرجه نه درآمد.</string>
-    <string name="transfer_withdrawal_line">↑ برداشت از %1$s</string>
-    <string name="transfer_deposit_line">↓ واریز به %1$s</string>
     <string name="transfer_no">نه</string>
     <string name="sheet_title">مال چی بود؟</string>
     <string name="sheet_suggested">پیشنهاد</string>

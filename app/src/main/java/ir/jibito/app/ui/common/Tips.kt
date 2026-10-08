@@ -40,8 +40,6 @@ enum class Tip(val key: String) {
     UNCATEGORIZED("uncategorized"),
     /** اولین بار در صندوق «بررسی» */
     REVIEW("review"),
-    /** اولین پیشنهاد «انتقال به خودت؟» */
-    TRANSFER("transfer"),
     /** «گزارش‌ها» وقتی هنوز ماه قبلی برای مقایسه نیست */
     REPORTS_THIN("reports_thin"),
 }
