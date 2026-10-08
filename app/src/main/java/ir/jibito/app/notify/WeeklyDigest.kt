@@ -114,8 +114,9 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
     companion object {
         const val CHANNEL_ID = "weekly_digest"
         private const val NOTIFICATION_ID = 700_000_001
-        private const val PREFS = "weekly_digest"
-        private const val KEY_ENABLED = "enabled"
+        /** از این فایل فقط [KEY_ENABLED] در پشتیبان‌گیری ذخیره می‌شود (BackupManager.BACKED_UP_PREFS) */
+        const val PREFS = "weekly_digest"
+        const val KEY_ENABLED = "enabled"
         private const val KEY_LAST_SLOT = "last_slot"
     }
 }
