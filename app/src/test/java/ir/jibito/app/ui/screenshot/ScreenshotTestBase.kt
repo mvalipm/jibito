@@ -128,10 +128,8 @@ abstract class ScreenshotTestBase {
         tx(8, 30, 1_200_000_000, merchant = "لوازم خانگی سامان", oneOff = true),
     ).sortedByDescending { it.dateMillis }
 
-    /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */
-    @Composable
     /** یک پیشنهاد انتقال با پیامک‌هایش (رمز دوم، کسر، واریز): در کارت «کارها» و برگه‌ی پیامک‌ها */
-    protected val transferPage get() = TodoPage(
+    protected fun transferPage() = TodoPage(
         "t1",
         "۵ میلیون تومان از ملت به سامان · دیروز. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.",
         listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {}),
@@ -142,6 +140,8 @@ abstract class ScreenshotTestBase {
         ),
     )
 
+    /** «کارهای لازم»: رنگ‌ها از پوسته‌ی فعلی، پس داخل خود تصویر ساخته می‌شوند */
+    @Composable
     protected fun stories(): List<TodoStory> {
         val t = JibitoTheme.colors
         val cafe = categoryTint(CategoryPalette.LIGHT[1], "☕")
@@ -152,7 +152,7 @@ abstract class ScreenshotTestBase {
             TodoStory(
                 "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟",
                 pages = listOf(
-                    transferPage,
+                    transferPage(),
                     TodoPage("t2", "۲ میلیون تومان از ملت به پاسارگاد · ۳ مهر", listOf(TodoAction("آره، مال خودمه") {}, TodoAction("نه") {})),
                 ),
             ) {},

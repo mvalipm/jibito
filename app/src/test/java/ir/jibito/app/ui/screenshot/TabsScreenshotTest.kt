@@ -88,7 +88,7 @@ class TabsScreenshotTest : ScreenshotTestBase() {
     fun todoSmsSheet() {
         for (dark in listOf(false, true)) shot("todosms", AppThemeStyle.DEFAULT, dark, padded = false) {
             Box(Modifier.fillMaxWidth().background(JibitoTheme.colors.sheet).padding(vertical = 20.dp)) {
-                TodoSmsContent("انتقال به خودت؟", transferPage, onAnswered = {})
+                TodoSmsContent("انتقال به خودت؟", transferPage(), onAnswered = {})
             }
         }
     }
