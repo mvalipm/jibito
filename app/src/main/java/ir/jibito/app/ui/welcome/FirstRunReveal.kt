@@ -108,7 +108,12 @@ private const val COUNT_MILLIS = 2800
  * چند واقعیت کوتاه (چند ماه، چند بانک، بیشترین خرج) یکی‌یکی می‌آیند. روی همه‌چیز می‌نشیند تا «بزن بریم».
  */
 @Composable
-fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
+fun FirstRunReveal(
+    stats: RevealStats,
+    onDone: () -> Unit,
+    /** چند پیامک که مطمئن نبودم تراکنش‌اند؛ این‌جا فقط گفته می‌شود و بعداً از «کارها» بررسی می‌شوند */
+    unsure: Int = 0,
+) {
     BackHandler(onBack = onDone)
     // هر بار «دوباره ببین»، یک دور تازه
     var round by remember { mutableIntStateOf(0) }
@@ -177,7 +182,7 @@ fun FirstRunReveal(stats: RevealStats, onDone: () -> Unit) {
                     }
                 }
                 if (cells.isNotEmpty()) PopIn(done, delayMillis = 0) { StatsCard(cells, Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp)) }
-                PopIn(done, delayMillis = 160) { NextHint(Modifier.padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 12.dp)) }
+                PopIn(done, delayMillis = 160) { NextHint(unsure, Modifier.padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 12.dp)) }
             }
 
             Row(
@@ -323,9 +328,9 @@ private fun StatsCard(cells: List<StatCell>, modifier: Modifier) {
     }
 }
 
-/** قدم بعد: از این به بعد چه می‌شود */
+/** قدم بعد: از این به بعد چه می‌شود؛ و اگر پیامکی مبهم ماند، این‌که بعداً از «کارها» */
 @Composable
-private fun NextHint(modifier: Modifier) {
+private fun NextHint(unsure: Int, modifier: Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Box(
             Modifier.padding(top = 2.dp).size(28.dp).clip(RoundedCornerShape(9.dp)).background(TintGold.copy(alpha = 0.14f)),
@@ -333,7 +338,8 @@ private fun NextHint(modifier: Modifier) {
         ) { Icon(SparkleIcon, contentDescription = null, tint = TintGold, modifier = Modifier.size(16.dp)) }
         Spacer(Modifier.width(10.dp))
         Text(
-            stringResource(R.string.reveal_next),
+            stringResource(R.string.reveal_next) +
+                if (unsure > 0) "\n" + Jalali.toPersianDigits(stringResource(R.string.reveal_unsure, unsure)) else "",
             color = Color.White.copy(alpha = 0.62f),
             fontSize = 13.5.sp,
             lineHeight = 23.sp,

@@ -1,6 +1,9 @@
 package ir.jibito.app.ui.main
 
 import android.Manifest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.os.Build
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 
@@ -174,6 +177,15 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var whatsNew by remember { mutableStateOf<List<Changelog.Release>>(emptyList()) }
 
     val appContext = LocalContext.current.applicationContext
+    // اجازه‌ی نوتیفیکیشن (اندروید ۱۳ به بعد، اختیاری): بعد از دیدن فایده‌ی اپ، نه پشت سر اجازه‌ی پیامک
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    fun askNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     LaunchedEffect(Unit) {
         whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
     }
@@ -181,6 +193,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         // خطای همگام‌سازی نباید اپ را موقع باز شدن ببندد (وگرنه هر بار باز کردن = بسته شدن)؛ ثبت می‌شود
         // «فعلاً دستی»: بدون اجازه‌ی پیامک چیزی برای خواندن نیست (و خطای بی‌جا هم ثبت نشود)
         val canReadSms = ContextCompat.checkSelfPermission(appContext, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+        val firstRun = !container.firstRun.done
         try {
             if (canReadSms) syncWithReveal(container)
         } catch (e: CancellationException) {
@@ -188,10 +201,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         } catch (e: Exception) {
             ErrorLog.record(appContext, "sync on open", e)
         }
+        // بار اول: اگر «جیبت رو شناختم» هست، نوتیفیکیشن بعد از «بزن بریم» پرسیده می‌شود؛ وگرنه همین حالا
+        if (firstRun && container.firstRun.done && container.firstRun.pending.value == null) askNotifications()
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
+            // بار اول «بررسی» خودش باز نمی‌شود: کاربر اول «جیبت رو شناختم» و «خلاصه» را می‌بیند؛ پیامک‌های مبهم در «کارها» می‌مانند.
             // اگر کاربر از نوتیفیکیشن یک تراکنش آمده، همان مهم‌تر است
-            if (pendingOpen == null) openReview()
+            if (!firstRun && pendingOpen == null) openReview()
         }
     }
 
@@ -311,7 +327,17 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
             )
         }
 
-        reveal?.let { stats -> FirstRunReveal(stats, onDone = { container.firstRun.pending.value = null }) }
+        reveal?.let { stats ->
+            FirstRunReveal(
+                stats,
+                unsure = pending.size,
+                onDone = {
+                    container.firstRun.pending.value = null
+                    // «از این به بعد هر خرج تازه…» را تازه خوانده: بهترین لحظه برای پرسیدن اجازه‌ی نوتیفیکیشن
+                    askNotifications()
+                },
+            )
+        }
         if (whatsNew.isNotEmpty() && reveal == null) {
             WhatsNewDialog(whatsNew, onDismiss = {
                 container.whatsNewSeen.markSeen(installedVersion(appContext))
