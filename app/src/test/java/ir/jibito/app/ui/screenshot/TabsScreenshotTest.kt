@@ -43,6 +43,10 @@ import ir.jibito.app.ui.common.TipCard
 import androidx.compose.foundation.layout.Spacer
 import ir.jibito.app.ui.todo.FirstStepsUi
 import ir.jibito.app.ui.todo.TodoList
+import ir.jibito.app.ui.todo.TodoSmsContent
+import ir.jibito.app.ui.theme.JibitoTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 
 /** اسکرین‌شات‌های تب‌های اصلی، گزارش‌ها و حساب‌ها (پایه‌ی مشترک: ScreenshotTestBase) */
 @RunWith(RobolectricTestRunner::class)
@@ -75,6 +79,16 @@ class TabsScreenshotTest : ScreenshotTestBase() {
                     TodoList(stories(), Modifier.hazeSource(haze))
                 }
                 TabBar(selected = 3, haze = haze)
+            }
+        }
+    }
+
+    /** لمس یک انتقال در «کارها»: پیامک رمز دوم، کسر و واریز همان تراکنش، با دکمه‌های جواب */
+    @Test
+    fun todoSmsSheet() {
+        for (dark in listOf(false, true)) shot("todosms", AppThemeStyle.DEFAULT, dark, padded = false) {
+            Box(Modifier.fillMaxWidth().background(JibitoTheme.colors.sheet).padding(vertical = 20.dp)) {
+                TodoSmsContent("انتقال به خودت؟", transferPage, onAnswered = {})
             }
         }
     }

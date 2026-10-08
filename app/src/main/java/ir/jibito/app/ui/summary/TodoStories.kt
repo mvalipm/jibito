@@ -78,8 +78,14 @@ data class TodoStory(
 /** یک دکمه‌ی داخل کارت کار */
 data class TodoAction(val label: String, val onClick: () -> Unit)
 
-/** یک مورد از کارت چندتایی: توضیح و دکمه‌های خودش. key پایدار (مثلاً شناسه‌ی تراکنش) تا بعد از جواب، جای بقیه نپرد. */
-data class TodoPage(val key: String, val detail: String, val actions: List<TodoAction>)
+/**
+ * یک مورد از کارت چندتایی: توضیح و دکمه‌های خودش. key پایدار (مثلاً شناسه‌ی تراکنش) تا بعد از جواب، جای بقیه نپرد.
+ * @param sms پیامک‌های همین مورد (رمز دوم، کسر، واریز)؛ با لمس مورد نشان داده می‌شوند تا کاربر خودش ببیند و تصمیم بگیرد
+ */
+data class TodoPage(val key: String, val detail: String, val actions: List<TodoAction>, val sms: List<TodoSms> = emptyList())
+
+/** یک پیامک در برگه‌ی «پیامک‌های این تراکنش»: برچسب (مثلاً «پیامک رمز دوم»)، زمان اگر معلوم است، و متن خام */
+data class TodoSms(val label: String, val dateMillis: Long?, val body: String)
 
 fun isUrgentTodo(id: String): Boolean = id == "review" || id == "uncat" || id.startsWith("budget-")
 

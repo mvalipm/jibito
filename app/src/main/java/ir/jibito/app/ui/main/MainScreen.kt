@@ -159,7 +159,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         pendingReview = pending.size,
         onOpenReview = {},
         onOpenUncategorized = {},
-        onOpenTransactions = {},
         onOpenSettings = {},
         onOpenCategory = {},
     ).count { it.urgent }
