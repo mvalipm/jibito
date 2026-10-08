@@ -1,6 +1,7 @@
 package ir.jibito.app.data.linking
 
 import ir.jibito.app.data.bank.BankDirectory
+import ir.jibito.app.data.category.CategorySuggester
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.parser.PurchaseOtp
@@ -29,6 +30,34 @@ class PasargadTransferTest {
         assertEquals(10_000_000L, otp!!.amountRial)
         assertTrue(otp.isTransfer)
         assertTrue(otp.merchant.orEmpty().contains("2805"))
+    }
+
+    /** نمونه‌ی واقعی خرید پاسارگاد: اسم فروشگاه بدون کلید، خطِ بعد از «خرید» */
+    private val purchaseOtpSms = "پاسارگاد\nخرید\nاسنپ مارکت\nمبلغ:12,321,000\nرمز: 04720\n09:57:36"
+    private val purchaseWithdrawalSms = "777.888.16305454.1\n-12,321,000\n07/16_09:57\nمانده: 13,451,930"
+
+    @Test
+    fun `رمز خرید پاسارگاد - فروشگاه در خط بعد از خرید`() {
+        assertNull(TransactionParser.parse(pasargad, purchaseOtpSms)) // رمز، تراکنش نیست
+        val otp = TransactionParser.parseOtp(purchaseOtpSms)!!
+        assertEquals("اسنپ مارکت", otp.merchant)
+        assertEquals(12_321_000L, otp.amountRial)
+        assertTrue(!otp.isTransfer)
+    }
+
+    @Test
+    fun `خرید اسنپ مارکت پاسارگاد - وصل به برداشت و پیشنهاد سوپرمارکت`() {
+        val tx = TransactionParser.parse(pasargad, purchaseWithdrawalSms)!!
+        assertEquals(FlowType.WITHDRAWAL, tx.type)
+        assertEquals(12_321_000L, tx.amountRial)
+        val otp = TransactionParser.parseOtp(purchaseOtpSms)!!
+        val linked = PurchaseLinker.link(
+            listOf(TxRecord(2, 20_000, 12, tx)),
+            listOf(OtpRecord(1, 0, 12, otp)),
+        ).single()
+        assertEquals("اسنپ مارکت", linked.merchant)
+        assertNull(linked.feeRial)
+        assertEquals("سوپرمارکت", CategorySuggester.suggest(linked.merchant))
     }
 
     @Test

@@ -26,11 +26,28 @@ object OtpParser {
         val inToman = text.contains("تومان") && !text.contains("ریال")
         val amount = amountRaw?.takeIf { it > 0 }?.let { if (inToman) it * 10 else it }
 
-        val merchant = MerchantExtractor.find(text)
+        val merchant = MerchantExtractor.find(text) ?: merchantAfterPurchaseLine(text)
 
         // کد فعال‌سازی و ورود نه مبلغ دارد نه مقصد — رمز خرید نیست
         if (amount == null && merchant == null) return null
         val isTransfer = transferWords.any { text.contains(it) }
         return PurchaseOtp(amount, merchant, isTransfer)
+    }
+
+    /** خطی که فقط «نوع رمز» است و اسم فروشگاه خط بعدش می‌آید */
+    private val purchaseLines = setOf("خرید", "خرید اینترنتی", "خرید کالا", "پرداخت", "پرداخت اینترنتی")
+
+    /**
+     * قالب پاسارگاد (و بانک‌های مشابه): اسم فروشگاه بدون کلید، در خطِ بعد از «خرید»:
+     * «پاسارگاد / خرید / اسنپ مارکت / مبلغ:12,321,000 / رمز: 04720».
+     */
+    private fun merchantAfterPurchaseLine(text: String): String? {
+        val lines = text.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        val at = lines.indexOfFirst { it in purchaseLines }
+        if (at < 0) return null
+        val next = lines.getOrNull(at + 1) ?: return null
+        // خطِ عددی (مبلغ، رمز، ساعت) اسم فروشگاه نیست
+        if (next.any { it.isDigit() }) return null
+        return MerchantExtractor.clean(next)
     }
 }
