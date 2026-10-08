@@ -15,6 +15,7 @@ import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.review.LearnedTemplate
 import kotlinx.coroutines.flow.map
 import ir.jibito.app.data.category.CategorySeeder
+import ir.jibito.app.data.category.CategorySuggester
 
 /**
  * خواندن پیامک‌ها و نوشتن تراکنش‌ها در دیتابیس (یک بار همگام‌سازی).
@@ -43,6 +44,8 @@ internal class SmsSync(
             templates = reviewDao.templates().groupBy({ it.sender }) {
                 LearnedTemplate(it.skeleton, it.numberCount, it.amountPos, it.balancePos, it.typeMode)
             },
+            merchantRules = reviewDao.merchantRules().sortedByDescending { it.createdAt }
+                .groupBy({ it.bankId }) { it.skeleton },
         )
         val items = scan.transactions
         val now = System.currentTimeMillis()
@@ -65,8 +68,14 @@ internal class SmsSync(
             val toInsert = mutableListOf<TransactionFlowEntity>()
             val toUpdate = mutableListOf<TransactionFlowEntity>()
 
-            for (item in items) {
-                val old = match.matches[item.id]?.let { rowsById[it] }
+            for (scanned in items) {
+                val old = match.matches[scanned.id]?.let { rowsById[it] }
+                // اسمی که کاربر خودش نوشته («خودم می‌نویسم») با خواندنی که اسمی پیدا نمی‌کند پاک نمی‌شود
+                val item = if (scanned.merchant == null && old?.merchant != null) {
+                    scanned.copy(merchant = old.merchant, suggestedCategory = CategorySuggester.suggest(old.merchant))
+                } else {
+                    scanned
+                }
                 if (old != null && (old.categoryId != null || old.transferState == TransactionFlowEntity.TRANSFER_SELF)) {
                     // دسته و وضعیت «انتقال به خودم» که قبلاً گذاشته شده حفظ می‌شود؛ بقیه‌ی ستون‌ها از نتیجه‌ی تازه می‌آیند
                     toUpdate += item.toEntity(
@@ -185,6 +194,7 @@ internal class SmsSync(
         dateEpoch = dateMillis,
         merchant = merchant,
         suggestedCategory = learnedSuggestion ?: suggestedCategory,
+        otpBody = otpBody,
         isFailedPurchase = refundDateMillis != null,
         categoryId = categoryId,
         // ستون description برای پیامک‌ها: کارمزد انتقال (به ریال)، اگر معلوم باشد

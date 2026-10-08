@@ -15,6 +15,7 @@ object WrongReadingReport {
     enum class Reason(val label: String) {
         AMOUNT("مبلغ غلطه"),
         TYPE("نوع غلطه"),
+        MERCHANT_MISSING("اسم فروشگاه رو نخوند"),
         MERCHANT("طرف حساب غلطه"),
         SHOULD_BE_TRANSFER("باید انتقال باشه"),
         OTHER("چیز دیگه"),
@@ -37,6 +38,12 @@ object WrongReadingReport {
         t.merchant?.let { appendLine("طرف حساب: ${maskDigits(it)}") }
         appendLine("———")
         append(labelAndMask(t.body, t.transaction.amountRial, t.transaction.balanceRial))
+        // پیامک رمز دومِ وصل‌شده: اسم فروشگاه معمولاً همین‌جاست (رمز و بقیه‌ی رقم‌ها پوشیده)
+        t.otpBody?.takeIf { it.isNotBlank() }?.let { otp ->
+            appendLine()
+            appendLine("——— پیامک رمز دوم")
+            append(labelAndMask(otp, t.transaction.amountRial, null))
+        }
     }
 
     /** عدد مبلغ و مانده (به ریال یا تومان) برچسب می‌خورند؛ بقیه‌ی رقم‌ها # می‌شوند */

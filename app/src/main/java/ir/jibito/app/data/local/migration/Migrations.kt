@@ -186,9 +186,25 @@ object Migrations {
         }
     }
 
+    /**
+     * نسخه‌ی ۱۶ ← ۱۷: «اسم فروشگاه کدومه؟». ستون otpBody (متن رمز دومِ وصل‌شده؛ ردیف‌های قبلی در خواندن کامل بعدی پر می‌شوند)
+     * و جدول merchant_rules (شکل پیامکی که کاربر جای اسم فروشگاهش را یاد داده).
+     */
+    val MIGRATION_16_17 = object : Migration(16, 17) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE transaction_flows ADD COLUMN otpBody TEXT DEFAULT NULL")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `merchant_rules` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bankId` INTEGER NOT NULL, " +
+                    "`skeleton` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)"
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_merchant_rules_bankId` ON `merchant_rules` (`bankId`)")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
         MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14,
-        MIGRATION_14_15, MIGRATION_15_16,
+        MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17,
     )
 }
