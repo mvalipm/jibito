@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.core.content.edit
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.notify.NotificationStyleSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -168,7 +169,13 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         private const val MAX_BACKUP_BYTES = 300L * 1024 * 1024
 
         /** تنظیماتی که همراه داده‌ها منتقل می‌شوند (نه وضعیت همگام‌سازی، نه قفل اپ — آن‌ها مال همین گوشی‌اند) */
-        val BACKED_UP_PREFS = listOf("ui_prefs", "category_display", "custom_institutions", NotificationStyleSettings.PREFS)
+        val BACKED_UP_PREFS = listOf(
+            "ui_prefs",
+            "category_display",
+            "custom_institutions",
+            NotificationStyleSettings.PREFS,
+            SalarySettings.PREFS,
+        )
 
         /** وضعیت همگام‌سازی پیامک؛ بعد از بازگردانی پاک می‌شود تا کل صندوق دوباره و درست خوانده شود */
         private const val SYNC_PREFS = "sms_sync_state"

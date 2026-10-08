@@ -6,6 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
+import ir.jibito.app.data.wallet.Salary
+import ir.jibito.app.data.wallet.SalarySettings
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,12 +30,14 @@ class BackupManagerTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val password = "my-secret".toCharArray()
+    private val salary = Salary("1|شرکت نمونه", bankId = 1, amountRial = 400_000_000, dayOfMonth = 25)
     private lateinit var db: AppDatabase
 
     @Before
     fun setUp() {
         context.deleteDatabase(AppDatabase.NAME)
         File(context.filesDir, "pending_restore").deleteRecursively()
+        prefs(SalarySettings.PREFS).edit().clear().commit()
         db = AppDatabase.build(context)
     }
 
@@ -52,6 +56,10 @@ class BackupManagerTest {
         prefs("custom_institutions").edit().putStringSet("institutions", setOf("1001|کارگزاری")).commit()
         prefs("sms_sync_state").edit().putLong("last_sms_id", 999).commit()
         prefs("security").edit().putBoolean("app_lock_enabled", true).commit()
+        SalarySettings(context).apply {
+            confirm(salary)
+            dismiss("2|شرکت قبلی")
+        }
 
         val manager = BackupManager(context, db)
         val file = ByteArrayOutputStream().also { manager.export(it, password) }.toByteArray()
@@ -59,6 +67,7 @@ class BackupManagerTest {
         // بعد از پشتیبان: داده‌ها عوض می‌شوند
         db.transactionFlowDao().insert(tx(smsId = 12, amount = 5, categoryId = null))
         prefs("ui_prefs").edit().putString("theme", "WARM").commit()
+        SalarySettings(context).dismiss(salary.key)
 
         val summary = manager.stageRestore(ByteArrayInputStream(file), password)
         assertEquals(2, summary.transactionCount)
@@ -75,6 +84,10 @@ class BackupManagerTest {
         assertEquals(categoryId, restoredCategory)
         assertEquals("COOL", prefs("ui_prefs").getString("theme", null))
         assertEquals(setOf("1001|کارگزاری"), prefs("custom_institutions").getStringSet("institutions", null))
+        // جواب «این واریز حقوقته؟» هم برمی‌گردد و سؤال دوباره نمی‌آید
+        val salaryChoice = SalarySettings(context).choice.value
+        assertEquals(salary, salaryChoice.confirmed)
+        assertEquals(setOf("2|شرکت قبلی"), salaryChoice.dismissed)
         // وضعیت همگام‌سازی پاک شد تا پیامک‌ها از نو خوانده شوند
         assertEquals(0L, prefs("sms_sync_state").getLong("last_sms_id", 0L))
         // قفل اپ مال همین گوشی است و با بازگردانی عوض نمی‌شود
