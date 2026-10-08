@@ -27,7 +27,7 @@ interface TransactionFlowDao {
     fun observeAll(): Flow<List<TransactionWithCategory>>
 
     /** همه‌ی ردیف‌های پیامکی (ثبت دستی نه)؛ smsId ردیفی که شناسه‌اش آزاد شده null است */
-    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, categorizedAt, note, oneOffState FROM transaction_flows WHERE source != 'MANUAL'")
+    @Query("SELECT id, smsId, categoryId, isDeleted, notifiedAt, isAutoCategorized, source, dateEpoch, transferState, transferPairId, categorizedAt, note, oneOffState, merchant FROM transaction_flows WHERE source != 'MANUAL'")
     suspend fun smsKeys(): List<SmsFlowKey>
 
     /** «زمان + متن» ردیف‌های پیامکی، برای پیدا کردن ردیف قبلی وقتی شناسه‌ی پیامک‌ها عوض شده (گوشی تازه) */
@@ -78,6 +78,14 @@ interface TransactionFlowDao {
 
     @Query("SELECT * FROM transaction_flows WHERE id = :id")
     suspend fun byId(id: Long): TransactionFlowEntity?
+
+    /** «اسم فروشگاه کدومه؟»: اسم طرف حساب و دسته‌ی پیشنهادی‌اش */
+    @Query("UPDATE transaction_flows SET merchant = :merchant, suggestedCategory = :suggested, updatedAt = :now WHERE id = :id")
+    suspend fun setMerchant(id: Long, merchant: String, suggested: String?, now: Long)
+
+    /** تراکنش‌های پیامکیِ یک بانک که هنوز اسم طرف حساب ندارند (برای اعمال شکلی که کاربر تازه یاد داده) */
+    @Query("SELECT * FROM transaction_flows WHERE bankId = :bankId AND merchant IS NULL AND isDeleted = 0 AND source != 'MANUAL'")
+    suspend fun withoutMerchant(bankId: Int): List<TransactionFlowEntity>
 
     /**
      * یادگیری: دسته‌هایی که «خود کاربر» برای این طرف حساب انتخاب کرده، تازه‌ترین انتخاب اول

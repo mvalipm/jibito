@@ -5,8 +5,11 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.core.content.edit
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.data.wallet.SalarySettings
+import ir.jibito.app.data.wallet.WalletSettings
 import ir.jibito.app.notify.NotificationStyleSettings
+import ir.jibito.app.notify.WeeklyDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -168,13 +171,35 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         private const val READY_MARK = "ready"
         private const val MAX_BACKUP_BYTES = 300L * 1024 * 1024
 
-        /** تنظیماتی که همراه داده‌ها منتقل می‌شوند (نه وضعیت همگام‌سازی، نه قفل اپ — آن‌ها مال همین گوشی‌اند) */
-        val BACKED_UP_PREFS = listOf(
-            "ui_prefs",
-            "category_display",
-            "custom_institutions",
-            NotificationStyleSettings.PREFS,
-            SalarySettings.PREFS,
+        /**
+         * تنظیماتی که همراه داده‌ها منتقل می‌شوند: اسم فایل ← کلیدهایی که ذخیره می‌شوند (null = همه‌ی فایل).
+         * فایلی که فقط چند کلیدش ذخیره می‌شود، بقیه‌ی کلیدهایش مال همین گوشی است و با بازگردانی دست نمی‌خورد.
+         * هر فایل تنظیمات تازه باید یا این‌جا بیاید یا در [DEVICE_ONLY_PREFS] (PrefsBackupCoverageTest).
+         */
+        val BACKED_UP_PREFS: Map<String, Set<String>?> = mapOf(
+            "ui_prefs" to null,
+            "category_display" to null,
+            "custom_institutions" to null,
+            NotificationStyleSettings.PREFS to null,
+            SalarySettings.PREFS to null,
+            WalletSettings.PREFS to null,
+            RecurringSuggestions.PREFS to null,
+            // «آخرین خلاصه‌ی فرستاده‌شده» مال همین گوشی است؛ فقط روشن/خاموش بودن منتقل می‌شود
+            WeeklyDigest.PREFS to setOf(WeeklyDigest.KEY_ENABLED),
+        )
+
+        /** تنظیماتی که عمداً پشتیبان گرفته نمی‌شوند: وضعیت همین گوشی یا همین نصب، نه انتخاب کاربر */
+        val DEVICE_ONLY_PREFS: Set<String> = setOf(
+            SYNC_PREFS, // شناسه‌ی پیامک‌ها در هر گوشی فرق دارد
+            "security", // قفل اپ
+            STATE_PREFS, // تاریخ آخرین پشتیبانِ همین گوشی
+            "onboarding", // «فعلاً دستی ثبت می‌کنم» به اجازه‌ی پیامکِ همین گوشی بسته است
+            "ui_prompts", // زمان آخرین یادآوری اجازه‌ی نوتیفیکیشن
+            "whats_new",
+            "first_run",
+            "first_steps",
+            "tips",
+            "report_sections",
         )
 
         /** وضعیت همگام‌سازی پیامک؛ بعد از بازگردانی پاک می‌شود تا کل صندوق دوباره و درست خوانده شود */
@@ -260,9 +285,10 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
 
         internal fun prefsToJson(context: Context): JSONObject {
             val root = JSONObject()
-            for (name in BACKED_UP_PREFS) {
+            for ((name, keys) in BACKED_UP_PREFS) {
                 val values = JSONObject()
                 for ((key, value) in context.getSharedPreferences(name, Context.MODE_PRIVATE).all) {
+                    if (keys != null && key !in keys) continue
                     val typed = when (value) {
                         is Boolean -> JSONObject().put("t", "b").put("v", value)
                         is Int -> JSONObject().put("t", "i").put("v", value)
@@ -282,11 +308,13 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
         // commit عمدی: applyPendingRestore بلافاصله بعدش پوشه‌ی بازگردانی را پاک می‌کند
         @SuppressLint("ApplySharedPref")
         internal fun jsonToPrefs(context: Context, root: JSONObject) {
-            for (name in BACKED_UP_PREFS) {
+            for ((name, keys) in BACKED_UP_PREFS) {
                 val values = root.optJSONObject(name) ?: continue
                 context.getSharedPreferences(name, Context.MODE_PRIVATE).edit(commit = true) {
-                    clear()
+                    // کلیدی که در پشتیبان نیست، یعنی آن موقع پیش‌فرض بود
+                    if (keys == null) clear() else keys.forEach { remove(it) }
                     for (key in values.keys()) {
+                        if (keys != null && key !in keys) continue
                         val typed = values.optJSONObject(key) ?: continue
                         when (typed.optString("t")) {
                             "b" -> putBoolean(key, typed.getBoolean("v"))

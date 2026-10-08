@@ -111,6 +111,8 @@ fun SmsListScreen(
     val displayDepth by app.container.categoryDisplay.depth.collectAsState()
     val hiddenRoots by app.container.categoryDisplay.hiddenRoots.collectAsState()
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // «اسم فروشگاه کدومه؟» برای همین تراکنش (روی برگه‌ی دسته)
+    var teachingId by rememberSaveable { mutableStateOf<Long?>(null) }
     // از نوتیفیکیشن: وقتی تراکنش‌ها آمدند، برگه‌ی دسته‌ی همان تراکنش باز می‌شود
     LaunchedEffect(openTransactionId, messages) {
         val id = openTransactionId ?: return@LaunchedEffect
@@ -430,7 +432,15 @@ fun SmsListScreen(
                     onResult(result)
                 }
             },
+            onTeachMerchant = { teachingId = selected.id },
             onDismiss = { selectedId = null },
+        )
+    }
+    messages?.firstOrNull { it.id == teachingId }?.let { teaching ->
+        TeachMerchantFlow(
+            transaction = teaching,
+            teach = { name, lesson, onDone -> viewModel.teachMerchant(teaching.id, name, lesson, onDone) },
+            onClose = { teachingId = null },
         )
     }
 

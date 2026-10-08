@@ -16,6 +16,7 @@ import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.RecurringPaymentEntity
 import ir.jibito.app.data.local.entity.BudgetEntity
 import ir.jibito.app.data.local.entity.AccountLinkEntity
+import ir.jibito.app.data.local.entity.MerchantRuleEntity
 import ir.jibito.app.data.local.dao.AccountDao
 import ir.jibito.app.data.local.dao.TransactionFlowDao
 import ir.jibito.app.data.local.entity.CategoryEntity
@@ -42,6 +43,7 @@ import ir.jibito.app.data.local.migration.Migrations
         OverallBudgetEntity::class,
         RecurringPaymentEntity::class,
         AccountLinkEntity::class,
+        MerchantRuleEntity::class,
     ],
     version = AppDatabase.VERSION,
     exportSchema = true,
@@ -57,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /** نسخه‌ی فعلی ساختار دیتابیس (برای Migration ها، پشتیبان‌گیری و تست‌ها) */
-        const val VERSION = 16
+        const val VERSION = 17
 
         /** اسم فایل دیتابیس روی گوشی */
         const val NAME = "jibito.db"

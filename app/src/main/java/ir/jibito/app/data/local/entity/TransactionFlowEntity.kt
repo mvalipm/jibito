@@ -84,6 +84,11 @@ data class TransactionFlowEntity(
      * ۰ = عادی، ۱ = یک‌باره، ۲ = کاربر گفته «یک‌باره نیست» (دیگر پیشنهاد نشود). با خواندن دوباره‌ی پیامک‌ها حفظ می‌شود.
      */
     @ColumnInfo(defaultValue = "0") val oneOffState: Int = ONE_OFF_NONE,
+    /**
+     * متن پیامک «رمز دوم» که به این برداشت وصل شد (از نسخه‌ی ۱۷ دیتابیس)؛ برای «اسم فروشگاه کدومه؟»
+     * و گزارش «اشتباه خونده شده». با خواندن دوباره‌ی پیامک‌ها از نو پر می‌شود.
+     */
+    @ColumnInfo(defaultValue = "NULL") val otpBody: String? = null,
 ) {
     companion object {
         const val TRANSFER_NONE = 0
@@ -118,6 +123,8 @@ data class SmsFlowKey(
     val categorizedAt: Long?,
     val note: String?,
     val oneOffState: Int,
+    /** اسم طرف حساب فعلی (اگر کاربر خودش نوشته باشد، با خواندن دوباره‌ای که اسمی پیدا نمی‌کند پاک نمی‌شود) */
+    val merchant: String?,
 )
 
 /** برای پیدا کردن ردیف قبلیِ یک پیامک از روی زمان و متنش */

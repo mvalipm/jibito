@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class WalletSettings(context: Context) {
 
-    private val prefs = context.getSharedPreferences("wallet", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private val _excluded = MutableStateFlow(load())
 
@@ -45,9 +45,11 @@ class WalletSettings(context: Context) {
         return current.orEmpty() + legacy
     }
 
-    private companion object {
-        const val KEY_EXCLUDED = "excluded_accounts"
+    companion object {
+        /** در پشتیبان‌گیری هم ذخیره می‌شود (BackupManager.BACKED_UP_PREFS) */
+        const val PREFS = "wallet"
+        private const val KEY_EXCLUDED = "excluded_accounts"
         /** کلید نسخه‌های قبل (شناسه‌ی بانک‌ها) */
-        const val KEY_LEGACY = "excluded_banks"
+        private const val KEY_LEGACY = "excluded_banks"
     }
 }

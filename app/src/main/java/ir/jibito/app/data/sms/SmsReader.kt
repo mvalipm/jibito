@@ -19,6 +19,7 @@ import ir.jibito.app.data.parser.TransactionParser
 import ir.jibito.app.data.review.LearnedTemplate
 import ir.jibito.app.data.review.ReviewDetector
 import ir.jibito.app.data.review.TemplateMatcher
+import ir.jibito.app.data.parser.MerchantRules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -40,6 +41,8 @@ data class TransactionItem(
     val feeRial: Long? = null,
     /** شماره حساب/کارتِ خود پیامک (AccountExtractor)، اگر در متن بود */
     val account: String? = null,
+    /** متن پیامک رمز دومی که به این برداشت وصل شد */
+    val otpBody: String? = null,
 )
 
 /**
@@ -91,6 +94,8 @@ class SmsReader(private val context: Context) {
         /** تاریخ آخرین پیامک پردازش‌شده؛ برای حاشیه‌ی زمانی اسکن افزایشی */
         afterSmsDate: Long = 0L,
         knownOtpSenders: Set<String> = emptySet(),
+        /** «اسم فروشگاه کدومه؟»‌هایی که کاربر یاد داده: شناسه‌ی بانک ← شکل‌ها (تازه‌ترین اول) */
+        merchantRules: Map<Int, List<String>> = emptyMap(),
     ): ScanResult = withContext(Dispatchers.IO) {
         val reviewSince = System.currentTimeMillis() - REVIEW_WINDOW_MILLIS
         val candidates = mutableListOf<ReviewCandidate>()
@@ -110,6 +115,7 @@ class SmsReader(private val context: Context) {
         val raws = HashMap<Long, Raw>()
         val txRecords = mutableListOf<TxRecord>()
         val otpRecords = mutableListOf<OtpRecord>()
+        val otpBodies = HashMap<Long, String>()
 
         val projection = arrayOf(
             Telephony.Sms._ID,
@@ -198,6 +204,7 @@ class SmsReader(private val context: Context) {
                 val otp = TransactionParser.parseOtp(body)
                 if (otp != null) {
                     otpRecords += OtpRecord(raw.id, raw.date, raw.bank.id, otp)
+                    otpBodies[raw.id] = body
                     continue
                 }
                 // فرستنده بانک است ولی متن خوانده نشد: اگر شبیه تراکنش بود ← صندوق بررسی
@@ -217,8 +224,14 @@ class SmsReader(private val context: Context) {
 
         val transactions = PurchaseLinker.link(txRecords, otpRecords).map { linked ->
             val raw = raws.getValue(linked.record.id)
-            // طرف حساب: اول از پیامک رمز دوم، وگرنه از متن خود پیامک (مثلاً «خرید از فروشگاه ...» یا «انتقال به کارت ...»)
-            val merchant = linked.merchant ?: MerchantExtractor.find(SmsTextNormalizer.normalize(raw.body))
+            val otpBody = linked.otpId?.let { otpBodies[it] }
+            // طرف حساب: اول جایی که خود کاربر یاد داده (در رمز دوم یا خود پیامک)، بعد از پیامک رمز دوم،
+            // وگرنه از متن خود پیامک (مثلاً «خرید از فروشگاه ...» یا «انتقال به کارت ...»)
+            val rules = merchantRules[raw.bank.id].orEmpty()
+            val merchant = MerchantRules.find(otpBody, rules)
+                ?: MerchantRules.find(raw.body, rules)
+                ?: linked.merchant
+                ?: MerchantExtractor.find(SmsTextNormalizer.normalize(raw.body))
             TransactionItem(
                 id = raw.id,
                 bank = raw.bank,
@@ -231,6 +244,7 @@ class SmsReader(private val context: Context) {
                 refundDateMillis = linked.refund?.timeMillis,
                 feeRial = linked.feeRial,
                 account = linked.record.account,
+                otpBody = otpBody,
             )
         }
         ScanResult(

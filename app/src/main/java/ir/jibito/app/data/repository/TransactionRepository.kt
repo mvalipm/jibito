@@ -50,6 +50,12 @@ interface TransactionRepository {
     suspend fun setNote(transactionId: Long, note: String?)
 
     /**
+     * «اسم فروشگاه کدومه؟»: اسم طرف حساب این تراکنش. با [lesson]، شکل پیامک هم یاد گرفته می‌شود
+     * و تراکنش‌های بی‌اسمِ هم‌شکلِ همان بانک هم اسم می‌گیرند. @return تعداد همان تراکنش‌های دیگر
+     */
+    suspend fun teachMerchant(transactionId: Long, merchant: String, lesson: MerchantLesson?): Int
+
+    /**
      * نوشته‌ی جعبه‌ی «بنویس» نوتیفیکیشن: همیشه یادداشت می‌شود، و اگر با اطمینان به یک دسته رسید
      * (ReplyCategoryMatcher) دسته هم می‌گیرد (مثل انتخاب خود کاربر، با یادگیری). متن خالی ← null و هیچ تغییری.
      * @param maxDepth چند لایه‌ی دسته که کاربر در تنظیمات می‌بیند؛ دسته‌ی جورشده تا همان لایه بالا می‌رود («سوخت» ← «حمل‌ونقل»)

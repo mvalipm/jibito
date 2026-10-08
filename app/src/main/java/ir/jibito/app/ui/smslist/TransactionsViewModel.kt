@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import ir.jibito.app.data.repository.TransactionRepository
+import ir.jibito.app.data.repository.MerchantLesson
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.Transaction
 import ir.jibito.app.data.parser.FlowType
@@ -130,6 +131,11 @@ class TransactionsViewModel(
 
     fun setNote(transactionId: Long, note: String) {
         viewModelScope.launch { repository.setNote(transactionId, note) }
+    }
+
+    /** «اسم فروشگاه کدومه؟»؛ [onDone] با تعداد تراکنش‌های دیگری که با همین درس اسم گرفتند */
+    fun teachMerchant(transactionId: Long, merchant: String, lesson: MerchantLesson?, onDone: (Int) -> Unit) {
+        viewModelScope.launch { onDone(repository.teachMerchant(transactionId, merchant, lesson)) }
     }
 
     fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {

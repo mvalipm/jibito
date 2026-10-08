@@ -46,6 +46,7 @@ internal fun WrongReadingDialog(transaction: Transaction, onDismiss: () -> Unit)
     val labels = mapOf(
         WrongReadingReport.Reason.AMOUNT to R.string.report_reason_amount,
         WrongReadingReport.Reason.TYPE to R.string.report_reason_type,
+        WrongReadingReport.Reason.MERCHANT_MISSING to R.string.report_reason_merchant_missing,
         WrongReadingReport.Reason.MERCHANT to R.string.report_reason_merchant,
         WrongReadingReport.Reason.SHOULD_BE_TRANSFER to R.string.report_reason_transfer,
         WrongReadingReport.Reason.OTHER to R.string.report_reason_other,

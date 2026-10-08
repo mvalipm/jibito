@@ -6,8 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
+import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.data.wallet.Salary
 import ir.jibito.app.data.wallet.SalarySettings
+import ir.jibito.app.data.wallet.WalletSettings
+import ir.jibito.app.notify.WeeklyDigest
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -37,7 +40,7 @@ class BackupManagerTest {
     fun setUp() {
         context.deleteDatabase(AppDatabase.NAME)
         File(context.filesDir, "pending_restore").deleteRecursively()
-        prefs(SalarySettings.PREFS).edit().clear().commit()
+        for (name in BackupManager.BACKED_UP_PREFS.keys) prefs(name).edit().clear().commit()
         db = AppDatabase.build(context)
     }
 
@@ -60,6 +63,9 @@ class BackupManagerTest {
             confirm(salary)
             dismiss("2|شرکت قبلی")
         }
+        WalletSettings(context).set(setOf("1:1234"))
+        prefs(RecurringSuggestions.PREFS).edit().putStringSet(RecurringSuggestions.KEY_DISMISSED, setOf("اجاره")).commit()
+        prefs(WeeklyDigest.PREFS).edit().putBoolean(WeeklyDigest.KEY_ENABLED, false).putLong("last_slot", 100).commit()
 
         val manager = BackupManager(context, db)
         val file = ByteArrayOutputStream().also { manager.export(it, password) }.toByteArray()
@@ -68,6 +74,9 @@ class BackupManagerTest {
         db.transactionFlowDao().insert(tx(smsId = 12, amount = 5, categoryId = null))
         prefs("ui_prefs").edit().putString("theme", "WARM").commit()
         SalarySettings(context).dismiss(salary.key)
+        WalletSettings(context).set(emptySet())
+        prefs(RecurringSuggestions.PREFS).edit().clear().commit()
+        prefs(WeeklyDigest.PREFS).edit().putBoolean(WeeklyDigest.KEY_ENABLED, true).putLong("last_slot", 200).commit()
 
         val summary = manager.stageRestore(ByteArrayInputStream(file), password)
         assertEquals(2, summary.transactionCount)
@@ -88,6 +97,12 @@ class BackupManagerTest {
         val salaryChoice = SalarySettings(context).choice.value
         assertEquals(salary, salaryChoice.confirmed)
         assertEquals(setOf("2|شرکت قبلی"), salaryChoice.dismissed)
+        // حساب‌های بیرون از «موجودی همه‌ی حساب‌ها» و «نه» به پیشنهاد پرداخت تکراری هم برمی‌گردند
+        assertEquals(setOf("1:1234"), WalletSettings(context).excluded.value)
+        assertEquals(setOf("اجاره"), prefs(RecurringSuggestions.PREFS).getStringSet(RecurringSuggestions.KEY_DISMISSED, null))
+        // خلاصه‌ی هفتگی: خاموش بودن برمی‌گردد، ولی «آخرین خلاصه‌ی فرستاده‌شده» مال همین گوشی می‌ماند
+        assertFalse(prefs(WeeklyDigest.PREFS).getBoolean(WeeklyDigest.KEY_ENABLED, true))
+        assertEquals(200L, prefs(WeeklyDigest.PREFS).getLong("last_slot", 0L))
         // وضعیت همگام‌سازی پاک شد تا پیامک‌ها از نو خوانده شوند
         assertEquals(0L, prefs("sms_sync_state").getLong("last_sms_id", 0L))
         // قفل اپ مال همین گوشی است و با بازگردانی عوض نمی‌شود
@@ -96,6 +111,20 @@ class BackupManagerTest {
         db.close()
         assertFalse(BackupManager.applyPendingRestore(context))
         db = AppDatabase.build(context)
+    }
+
+    @Test
+    fun partialPrefsFileKeepsOnlyChosenKeys() {
+        prefs(WeeklyDigest.PREFS).edit().putLong("last_slot", 100).commit()
+        val json = BackupManager.prefsToJson(context)
+        // فقط کلید روشن/خاموش در پشتیبان می‌رود، و چون پیش‌فرض بود، چیزی از این فایل ذخیره نشد
+        assertEquals(0, json.getJSONObject(WeeklyDigest.PREFS).length())
+
+        prefs(WeeklyDigest.PREFS).edit().putBoolean(WeeklyDigest.KEY_ENABLED, false).putLong("last_slot", 200).commit()
+        BackupManager.jsonToPrefs(context, json)
+        // پیش‌فرضِ زمان پشتیبان برمی‌گردد (روشن) و کلید مال گوشی دست نمی‌خورد
+        assertFalse(prefs(WeeklyDigest.PREFS).contains(WeeklyDigest.KEY_ENABLED))
+        assertEquals(200L, prefs(WeeklyDigest.PREFS).getLong("last_slot", 0L))
     }
 
     @Test

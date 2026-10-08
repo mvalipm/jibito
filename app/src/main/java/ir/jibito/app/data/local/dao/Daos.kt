@@ -10,6 +10,7 @@ import ir.jibito.app.data.local.entity.CategorySum
 import ir.jibito.app.data.local.entity.ReviewSmsEntity
 import ir.jibito.app.data.local.entity.SenderRuleEntity
 import ir.jibito.app.data.local.entity.SmsTemplateEntity
+import ir.jibito.app.data.local.entity.MerchantRuleEntity
 import ir.jibito.app.data.wallet.AccountBalanceRow
 import ir.jibito.app.data.wallet.BalancePointRow
 import ir.jibito.app.data.wallet.FlowAccountRow
@@ -212,6 +213,17 @@ interface ReviewDao {
 
     @Insert
     suspend fun insertTemplate(template: SmsTemplateEntity)
+
+    /** «اسم فروشگاه کدومه؟»‌هایی که کاربر یاد داده */
+    @Query("SELECT * FROM merchant_rules")
+    suspend fun merchantRules(): List<MerchantRuleEntity>
+
+    @Insert
+    suspend fun insertMerchantRule(rule: MerchantRuleEntity)
+
+    /** همان شکل پیامک دوباره یاد داده شد ← قبلی کنار می‌رود (جای اسم ممکن است عوض شده باشد) */
+    @Query("DELETE FROM merchant_rules WHERE bankId = :bankId AND skeleton = :skeleton")
+    suspend fun deleteMerchantRule(bankId: Int, skeleton: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSenderRule(rule: SenderRuleEntity)

@@ -95,6 +95,8 @@ fun CategoryPickerSheet(
     depth: Int = 3,
     /** دسته‌های اصلی پنهان */
     hiddenRoots: Set<Long> = emptySet(),
+    /** «اسم فروشگاه کدومه؟»؛ null یعنی نوار «یادم بده» نشان داده نشود */
+    onTeachMerchant: (() -> Unit)? = null,
 ) {
     var creating by remember { mutableStateOf<CreateTarget?>(null) }
     val colors = MaterialTheme.colorScheme
@@ -176,6 +178,10 @@ fun CategoryPickerSheet(
                 if (showSms) {
                     Spacer(Modifier.height(12.dp))
                     SmsReceipt(transaction)
+                }
+                // خرجِ پیامکی که اسم طرف حسابش خوانده نشد ← «یادم بده»
+                if (onTeachMerchant != null && !isDeposit && !transaction.isManual && transaction.merchant == null) {
+                    TeachMerchantBar(onTeachMerchant)
                 }
 
                 Text(

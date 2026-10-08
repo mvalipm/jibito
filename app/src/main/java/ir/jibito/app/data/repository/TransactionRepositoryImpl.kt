@@ -119,6 +119,7 @@ class TransactionRepositoryImpl(
                     note = f.note,
                     isOneOff = f.oneOffState == TransactionFlowEntity.ONE_OFF_YES,
                     isOneOffRejected = f.oneOffState == TransactionFlowEntity.ONE_OFF_REJECTED,
+                    otpBody = f.otpBody,
                 )
             }
         }
@@ -399,6 +400,9 @@ class TransactionRepositoryImpl(
         }
         onCategoryChanged()
     }
+
+    override suspend fun teachMerchant(transactionId: Long, merchant: String, lesson: MerchantLesson?): Int =
+        MerchantTeaching(db).teach(transactionId, merchant, lesson)
 
     override suspend fun setNote(transactionId: Long, note: String?) {
         dao.setNote(transactionId, TransactionNotes.clean(note), System.currentTimeMillis())

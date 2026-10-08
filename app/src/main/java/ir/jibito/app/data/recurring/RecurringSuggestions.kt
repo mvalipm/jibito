@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.flowOn
 
 /**
  * پیشنهاد «این پرداخت ماهانه است، یادآوری‌اش را بسازم؟» (RecurringDetector) +
- * فهرست پیشنهادهایی که کاربر گفته «نه» (روی همین گوشی نگه داشته می‌شود).
+ * فهرست پیشنهادهایی که کاربر گفته «نه» (در پشتیبان‌گیری هم ذخیره می‌شود: BackupManager.BACKED_UP_PREFS).
  */
 class RecurringSuggestions(
     context: Context,
@@ -39,7 +39,8 @@ class RecurringSuggestions(
         dismissed.value = next
     }
 
-    private companion object {
+    companion object {
+        /** در پشتیبان‌گیری هم ذخیره می‌شود (BackupManager.BACKED_UP_PREFS) */
         const val PREFS = "recurring_suggestions"
         const val KEY_DISMISSED = "dismissed"
     }

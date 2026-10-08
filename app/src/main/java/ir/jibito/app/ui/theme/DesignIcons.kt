@@ -112,6 +112,7 @@ object DesignIcons {
     val Star by lazy { svg("star", STAR) }
     val Failed by lazy { svg("failed", FAILED) }
     val Message by lazy { svg("message", MESSAGE) }
+    val Tag by lazy { svg("tag", TAG) }
     val Fingerprint by lazy { svg("fingerprint", FINGERPRINT) }
     val Shield by lazy { svg("shield", SHIELD) }
     val Grocery by lazy { svg("grocery", GROCERY) }
