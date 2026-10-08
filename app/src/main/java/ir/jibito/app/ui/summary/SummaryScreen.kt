@@ -54,6 +54,7 @@ import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.common.StatusBarOnColor
 import ir.jibito.app.ui.common.amount
 import ir.jibito.app.data.parser.FlowType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.remember
 import androidx.activity.compose.BackHandler
@@ -71,6 +72,9 @@ import ir.jibito.app.ui.theme.JibitoIcons
  * «کارهای لازم» اینجا نیست (تب خودش را دارد) تا خلاصه خلوت بماند.
  * فهرست کامل دسته‌ها، بودجه‌ها و درآمدها یک لمس دورتر است («همه‌ی دسته‌ها و بودجه‌ها»).
  */
+/** اولین باز شدن «خلاصه»: حداکثر این‌قدر منتظر پیش‌بینی موجودی می‌ماند */
+private const val FORECAST_WAIT_MS = 1_500L
+
 @Composable
 fun SummaryScreen(
     /** دکمه‌ی تنظیمات بالای سرصفحه */
@@ -85,7 +89,14 @@ fun SummaryScreen(
     onOpenForecast: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
-    val forecastState by app.container.forecastRepository.state.collectAsState(initial = null)
+    val forecastState by app.container.forecastRepository.state.collectAsState()
+    // پیش‌بینی موجودی رنگ سرصفحه را عوض می‌کند؛ اولین بار کمی صبر کن تا برسد (نه بیشتر از FORECAST_WAIT_MS)،
+    // تا سرصفحه اول «آروم» و بعد رنگ دیگر نشود. دفعه‌های بعد پیش‌بینی قبلی همان اول هست.
+    var forecastWaitOver by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(FORECAST_WAIT_MS)
+        forecastWaitOver = true
+    }
     val viewModel: SummaryViewModel = viewModel(
         factory = SummaryViewModel.factory(app.container.budgetRepository)
     )
@@ -120,7 +131,7 @@ fun SummaryScreen(
             .background(colors.background)
     ) {
         val s = summary
-        if (s == null || s.month != month) {
+        if (s == null || s.month != month || (forecastState == null && !forecastWaitOver)) {
             SummarySkeleton()
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید

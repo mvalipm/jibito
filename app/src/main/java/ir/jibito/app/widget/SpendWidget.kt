@@ -24,6 +24,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -193,7 +194,7 @@ class SpendWidget : AppWidgetProvider() {
          * (پیش‌بینی نداشتن یعنی «کم نمی‌آید»، مثل سرصفحه وقتی هنوز پیش‌بینی نرسیده).
          */
         private suspend fun balanceShort(container: AppContainer): Boolean = try {
-            withTimeoutOrNull(FORECAST_TIMEOUT_MS) { container.forecastRepository.state.first() }?.forecast?.enough == false
+            withTimeoutOrNull(FORECAST_TIMEOUT_MS) { container.forecastRepository.state.filterNotNull().first() }?.forecast?.enough == false
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

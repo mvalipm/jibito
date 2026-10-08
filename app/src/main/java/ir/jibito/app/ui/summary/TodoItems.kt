@@ -57,7 +57,7 @@ fun rememberTodoStories(
     val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
     val accountQuestionFlow = remember { app.container.accountRepository.observeQuestion() }
     val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
-    val forecastState by app.container.forecastRepository.state.collectAsState(initial = null)
+    val forecastState by app.container.forecastRepository.state.collectAsState()
     val notificationPrompt = rememberNotificationPrompt()
     val scope = rememberCoroutineScope()
 

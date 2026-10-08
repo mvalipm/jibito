@@ -12,11 +12,11 @@ import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.util.JalaliMonth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
 
 /**
  * @param forecast null یعنی پیش‌بینی ممکن نیست (موجودی امروز معلوم نیست یا هنوز پایه‌ای برای الگو نیست)
@@ -32,8 +32,12 @@ class ForecastRepository(
     private val salarySettings: SalarySettings,
     appScope: CoroutineScope,
 ) {
-    /** یک بار حساب می‌شود و بین صفحه‌ها مشترک است */
-    val state: Flow<ForecastState> = combine(
+    /**
+     * یک بار حساب می‌شود و بین صفحه‌ها مشترک است. null یعنی «هنوز حساب نشده».
+     * StateFlow است تا آخرین پیش‌بینی بعد از رفتن به صفحه‌ی دیگر بماند: با برگشتن به «خلاصه»
+     * سرصفحه از همان اول رنگ درست را دارد، نه اول «آروم» و بعد از رسیدن پیش‌بینی، رنگ دیگر.
+     */
+    val state: StateFlow<ForecastState?> = combine(
         balance.observeSource(),
         // شش ماه برای تشخیص حقوق (پیش‌بینی فقط ماه قبل و همین ماه را لازم دارد)
         db.accountDao().observeFlowsSince(JalaliMonth.current().plus(-SalaryDetector.MIN_MONTHS * 2).startMillis()),
@@ -58,7 +62,7 @@ class ForecastRepository(
         ForecastState(forecast, suggestion)
     }
         .flowOn(Dispatchers.Default)
-        .shareIn(appScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+        .stateIn(appScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** «آره، حقوقمه» */
     fun confirmSalary(salary: Salary) = salarySettings.confirm(salary)
