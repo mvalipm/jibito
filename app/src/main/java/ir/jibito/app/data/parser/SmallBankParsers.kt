@@ -325,7 +325,12 @@ object SepahParser : SmsParser {
         }
         val tokens = t.split(Regex(" +"))
         val at = tokens.indexOf("مبلغ")
-        if (at >= 0) acc.amount = num(tokens.getOrNull(at + 1))
+        acc.amount = when {
+            at >= 0 -> num(tokens.getOrNull(at + 1))
+            // قالب «برداشت:385,000,000» (سرشماره‌ی SEPAH BANK): مبلغ بعد از دونقطه در همان خط
+            acc.type != null && t.contains(":") -> num(t.substringAfter(":"))
+            else -> null
+        }
         for (j in 1 until l.size - 1) {
             if (l[j].split(":", limit = 2)[0].trim() == "مانده") acc.balance = num(l[j])
         }

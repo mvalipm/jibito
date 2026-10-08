@@ -44,6 +44,17 @@ class AllBankParsersTest {
     @Test fun `سپه - علامت‌دار`() =
         check(SepahParser, "بانک سپه\n+3,000,000\nحساب 123\nمانده 4,000,000\n12:30 1405,07,09", FlowType.DEPOSIT, 3_000_000, 4_000_000)
 
+    @Test fun `سپه - برداشت با دونقطه از سرشماره‌ی SEPAH BANK`() {
+        val sms = "بانک سپه\nبرداشت:385,000,000\nحساب : 3120004675145 \nمانده:841,462\n6/30-14:49\nانتقال وجه پايا"
+        check(SepahParser, sms, FlowType.WITHDRAWAL, 385_000_000, 841_462)
+        val bank = BankDirectory.findBySender("SEPAH BANK")
+        assertEquals("بانک سپه", bank?.name)
+        val t = TransactionParser.parse(bank!!, sms)
+        assertEquals(FlowType.WITHDRAWAL, t?.type)
+        assertEquals(385_000_000L, t?.amountRial)
+        assertEquals(841_462L, t?.balanceRial)
+    }
+
     @Test fun `رفاه - پارسر عمومی`() =
         check(GenericParser, "بانک رفاه\n2,000,000+\nمانده:7,000,000\n0709-12:30", FlowType.DEPOSIT, 2_000_000, 7_000_000)
 
