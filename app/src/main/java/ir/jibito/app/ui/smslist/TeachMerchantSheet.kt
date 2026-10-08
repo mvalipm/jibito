@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -102,15 +103,17 @@ internal fun TeachMerchantFlow(
     onClose: () -> Unit,
 ) {
     val context = LocalContext.current
+    // متن‌ها از LocalResources (با تغییر پیکربندی به‌روز می‌ماند)
+    val resources = LocalResources.current
     TeachMerchantSheet(
         transaction = transaction,
         onConfirm = { name, lesson ->
             teach(name, lesson) { others ->
                 if (lesson != null) {
                     val text = if (others > 0) {
-                        context.getString(R.string.teach_learned_more, Jalali.toPersianDigits(others.toString()))
+                        resources.getString(R.string.teach_learned_more, Jalali.toPersianDigits(others.toString()))
                     } else {
-                        context.getString(R.string.teach_learned)
+                        resources.getString(R.string.teach_learned)
                     }
                     Toast.makeText(context, text, Toast.LENGTH_LONG).show()
                 }
