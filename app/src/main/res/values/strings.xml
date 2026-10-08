@@ -208,6 +208,7 @@
     <string name="transfer_no">نه</string>
     <string name="sheet_title">مال چی بود؟</string>
     <string name="sheet_suggested">پیشنهاد</string>
+    <string name="sheet_frequent">پرکاربرد</string>
     <string name="sheet_clear">بدون دسته</string>
     <string name="sheet_show_sms">پیامک</string>
     <string name="sheet_hide_sms">بستن</string>
