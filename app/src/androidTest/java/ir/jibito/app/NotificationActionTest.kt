@@ -65,7 +65,8 @@ class NotificationActionTest {
         val pickedNotice = TestSupport.waitFor {
             notificationFor(id)?.takeIf { n -> n.actions.orEmpty().any { it.title.toString() == undoLabel } }
         }
-        assertNotNull("بعد از انتخاب، نوتیفیکیشن «رفت تو …» با «برگردون» باید بیاید", pickedNotice)
+        val nowShown = notificationFor(id)?.extras?.getCharSequence(Notification.EXTRA_TITLE)
+        assertNotNull("بعد از انتخاب، نوتیفیکیشن «رفت تو …» با «برگردون» باید بیاید (حالا: $nowShown)", pickedNotice)
         delay(HUMAN_PAUSE_MILLIS)
         pickedNotice!!.actions.first { it.title.toString() == undoLabel }.actionIntent.send()
 

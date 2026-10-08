@@ -13,6 +13,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** وقتی کاربر روی یکی از دکمه‌های دسته در نوتیفیکیشن می‌زند، یا در جعبه‌ی «بنویس» چیزی می‌نویسد. */
@@ -42,8 +43,16 @@ class CategoryActionReceiver : BroadcastReceiver() {
                     repository.setCategory(transactionId, categoryId)
                     val name = container.database.categoryDao().byId(categoryId)?.name
                     val merchant = container.database.transactionFlowDao().byId(transactionId)?.merchant
-                    if (name != null) notifier.showPicked(transactionId, name, merchant)
-                    else NotificationManagerCompat.from(context).cancel(TransactionNotifier.notificationId(transactionId))
+                    if (name != null) {
+                        notifier.showPicked(transactionId, name, merchant)
+                        // اگر اندروید «رفت تو …» را دور ریخت، سؤال با دکمه‌هایش می‌ماند و کاربر فکر می‌کند ثبت نشد
+                        delay(PICKED_RECHECK_MILLIS)
+                        // (مگر این‌که همین حالا «برگردون» را زده باشد)
+                        val stillPicked = container.database.transactionFlowDao().byId(transactionId)?.categoryId == categoryId
+                        if (stillPicked && notifier.isQuestionStillShown(transactionId)) notifier.showPicked(transactionId, name, merchant)
+                    } else {
+                        NotificationManagerCompat.from(context).cancel(TransactionNotifier.notificationId(transactionId))
+                    }
                 }
             } finally {
                 pending.finish()
@@ -86,6 +95,8 @@ class CategoryActionReceiver : BroadcastReceiver() {
     companion object {
         /** کلید متن جعبه‌ی «بنویس» در RemoteInput */
         const val KEY_REPLY = "reply_text"
+        /** فاصله‌ی دوباره نگاه کردن به «رفت تو …»؛ بیشتر از سقف حدود ۵ به‌روزرسانی در ثانیه‌ی اندروید */
+        private const val PICKED_RECHECK_MILLIS = 1_000L
         private const val ACTION = "ir.jibito.app.SET_CATEGORY"
         private const val ACTION_UNDO = "ir.jibito.app.UNDO_CATEGORY"
         private const val ACTION_REPLY = "ir.jibito.app.REPLY_NOTE"

@@ -13,6 +13,7 @@ import ir.jibito.app.data.local.entity.SmsTemplateEntity
 import ir.jibito.app.data.wallet.AccountBalanceRow
 import ir.jibito.app.data.wallet.BalancePointRow
 import ir.jibito.app.data.wallet.FlowAccountRow
+import ir.jibito.app.data.wallet.FlowRow
 import ir.jibito.app.data.local.entity.AccountLinkEntity
 import ir.jibito.app.data.wallet.KnownAccountRow
 import ir.jibito.app.data.local.entity.OverallBudgetEntity
@@ -265,6 +266,16 @@ interface AccountDao {
         """
     )
     fun observeBalancePoints(): Flow<List<BalancePointRow>>
+
+    /**
+     * «پولم تا حقوق می‌رسه؟»: تراکنش‌های بانکی از [from] به بعد (بدون انتقال به خودم و خرید ناموفق)،
+     * برای الگوی برداشت‌ها و تشخیص حقوق (BalanceForecastCalc، SalaryDetector).
+     */
+    @Query(
+        "SELECT id, bankId, account, flowType, amount, dateEpoch, merchant, oneOffState = 1 AS isOneOff FROM transaction_flows " +
+            "WHERE " + COUNTED_FLOWS + " AND bankId IS NOT NULL AND dateEpoch >= :from"
+    )
+    fun observeFlowsSince(from: Long): Flow<List<FlowRow>>
 
     /** شماره حسابِ هر تراکنشِ یک بانک (صفحه‌ی جزئیات حساب: کدام تراکنش‌ها مال این حساب‌اند) */
     @Query("SELECT id, account FROM transaction_flows WHERE isDeleted = 0 AND bankId = :bankId")

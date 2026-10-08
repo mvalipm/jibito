@@ -146,6 +146,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var pendingOpen by rememberSaveable { mutableStateOf<Long?>(null) }
     // «ثبت اولین خرج» در «خلاصه» ← برگه‌ی ثبت دستی در «تراکنش‌ها»
     var pendingManual by rememberSaveable { mutableStateOf(false) }
+    // «پولت تا حقوق می‌رسه؟» در «خلاصه» ← کارت موجودی در «گزارش‌ها»
+    var pendingBalance by rememberSaveable { mutableStateOf(false) }
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
@@ -244,6 +246,10 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpenSettings = ::openSettings,
                                 openCategoryId = openCategory,
                                 onCategoryOpened = { openCategory = null },
+                                onOpenForecast = {
+                                    pendingBalance = true
+                                    go(Tab.Reports)
+                                },
                                 onAddManual = {
                                     onlyUncategorized = false
                                     pendingManual = true
@@ -261,7 +267,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onManualOpened = { pendingManual = false },
                             )
                         }
-                        composable(Tab.Reports.route) { ReportsScreen(onOpenAccount = ::openAccount) }
+                        composable(Tab.Reports.route) {
+                            ReportsScreen(
+                                onOpenAccount = ::openAccount,
+                                openBalance = pendingBalance,
+                                onBalanceOpened = { pendingBalance = false },
+                            )
+                        }
                         composable(Tab.Todo.route) {
                             TodoScreen(
                                 pendingReview = pending.size,

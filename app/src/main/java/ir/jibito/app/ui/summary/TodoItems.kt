@@ -57,6 +57,7 @@ fun rememberTodoStories(
     val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
     val accountQuestionFlow = remember { app.container.accountRepository.observeQuestion() }
     val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
+    val forecastState by app.container.forecastRepository.state.collectAsState(initial = null)
     val notificationPrompt = rememberNotificationPrompt()
     val scope = rememberCoroutineScope()
 
@@ -212,6 +213,28 @@ fun rememberTodoStories(
                 )
             )
         }
+        forecastState?.suggestion?.let { salary ->
+            val bank = BankDirectory.byId(salary.bankId)?.name?.let(::shortBankName).orEmpty()
+            add(
+                TodoStory(
+                    "salary", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Bank, null,
+                    label = stringResource(R.string.todo_salary),
+                    detail = Jalali.toPersianDigits(
+                        stringResource(
+                            R.string.todo_salary_detail,
+                            if (hidden) HIDDEN_AMOUNT else Money.compact(salary.amountRial),
+                            salary.dayOfMonth,
+                            bank,
+                        )
+                    ),
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.salary_yes)) { app.container.forecastRepository.confirmSalary(salary) },
+                        TodoAction(stringResource(R.string.salary_no)) { app.container.forecastRepository.rejectSalary(salary) },
+                    ),
+                    onClick = {},
+                )
+            )
+        }
         recurringSuggestions.firstOrNull()?.let { r ->
             add(
                 TodoStory(
@@ -237,7 +260,7 @@ fun todoPriority(id: String): Int = when {
     id == "transfer" -> 3
     id == "oneoff" -> 3
     id == "account" -> 4
-    id == "rec" -> 5
+    id == "rec" || id == "salary" -> 5
     else -> 6
 }
 

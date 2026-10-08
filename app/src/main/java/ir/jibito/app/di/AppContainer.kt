@@ -13,6 +13,8 @@ import ir.jibito.app.data.repository.AccountRepository
 import ir.jibito.app.data.repository.BudgetRepository
 import ir.jibito.app.data.repository.BudgetRepositoryImpl
 import ir.jibito.app.data.repository.BalanceRepository
+import ir.jibito.app.data.repository.ForecastRepository
+import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.data.repository.ReportRepository
 import ir.jibito.app.data.repository.RecurringRepository
 import ir.jibito.app.data.repository.ReviewRepository
@@ -113,6 +115,11 @@ class AppContainer(context: Context) {
 
     /** «روند موجودی» از روی مانده‌ی پیامک‌ها (تب «گزارش‌ها» و صفحه‌ی جزئیات حساب) */
     val balanceRepository: BalanceRepository by lazy { BalanceRepository(database, walletSettings) }
+
+    /** «پولم تا حقوق بعدی می‌رسه؟» و «این واریز حقوقته؟» */
+    val forecastRepository: ForecastRepository by lazy {
+        ForecastRepository(database, balanceRepository, recurringRepository, SalarySettings(appContext), appScope)
+    }
 
     /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت */
     suspend fun onDataChanged() {
