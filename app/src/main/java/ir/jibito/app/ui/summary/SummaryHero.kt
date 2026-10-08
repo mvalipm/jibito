@@ -204,10 +204,12 @@ fun SummaryHero(
             // جمله‌ی حال جیب
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    when (line.mood) {
-                        Mood.CALM -> DesignIcons.Calm
-                        Mood.WARN -> DesignIcons.Warn
-                        Mood.OVER -> DesignIcons.Over
+                    when {
+                        // بودجه آروم ولی موجودی کم: رنگ آروم، آیکون هشدار (جمله می‌گوید کارت پایین را ببین)
+                        line.attention -> DesignIcons.Warn
+                        line.mood == Mood.CALM -> DesignIcons.Calm
+                        line.mood == Mood.WARN -> DesignIcons.Warn
+                        else -> DesignIcons.Over
                     },
                     contentDescription = null,
                     tint = Color.White,

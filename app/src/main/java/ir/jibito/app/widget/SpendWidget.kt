@@ -15,18 +15,14 @@ import ir.jibito.app.MainActivity
 import ir.jibito.app.R
 import ir.jibito.app.data.category.SpendRollup
 import ir.jibito.app.data.parser.FlowType
-import ir.jibito.app.di.AppContainer
 import ir.jibito.app.util.ErrorLog
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Calendar
 
 /**
@@ -55,8 +51,6 @@ class SpendWidget : AppWidgetProvider() {
         val overallBudgetRial: Long?,
         /** چه مقدار از monthRial خرج یک‌باره است (از بودجه کم نمی‌شود) */
         val monthOneOffRial: Long = 0,
-        /** پیش‌بینی موجودی: تا حقوق (یا آخر ماه) نمی‌رسد */
-        val balanceShort: Boolean = false,
     ) {
         /** خرجی که از بودجه‌ی کل کم می‌شود */
         val budgetSpentRial: Long get() = monthRial - monthOneOffRial
@@ -86,7 +80,7 @@ class SpendWidget : AppWidgetProvider() {
             val container = (context.applicationContext as JibitoApplication).container
             val locked = container.appLockSettings.enabled.value
             val now = System.currentTimeMillis()
-            val n = if (locked) null else numbers(container.database, now).copy(balanceShort = balanceShort(container))
+            val n = if (locked) null else numbers(container.database, now)
             return views(context, n, now)
         }
 
@@ -96,18 +90,15 @@ class SpendWidget : AppWidgetProvider() {
         /** کمتر از این فاصله بین «خرج» و «زمان» یعنی «طبق برنامه» (مثل صفحه‌ی خلاصه) */
         private const val ON_TRACK_MARGIN = 0.05
 
-        /**
-         * مثل صفحه‌ی خلاصه، کم آمدن موجودی هم دست‌کم «یواش‌تر» است (حتی بی‌بودجه)، تا ویجت «آروم» نگوید وقتی اپ هشدار می‌دهد.
-         */
+        /** رنگ فقط از بودجه، مثل سرصفحه‌ی خلاصه (موجودی حساب رنگ را عوض نمی‌کند) */
         internal fun moodOf(n: Numbers, now: Long): Mood {
-            val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return if (n.balanceShort) Mood.WARN else Mood.NONE
+            val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return Mood.NONE
             val month = JalaliMonth.of(now)
             val time = (now - month.startMillis()).toDouble() / (month.endMillis() - month.startMillis())
             val spent = n.budgetSpentRial.toDouble() / budget
             return when {
                 n.budgetSpentRial >= budget -> Mood.OVER
                 spent >= 0.8 || spent - time >= ON_TRACK_MARGIN -> Mood.WARN
-                n.balanceShort -> Mood.WARN
                 else -> Mood.CALM
             }
         }
@@ -187,20 +178,6 @@ class SpendWidget : AppWidgetProvider() {
             views.setContentDescription(R.id.widget_ring_box, context.getString(R.string.widget_ring_cd, percentText))
             return views
         }
-
-        /**
-         * همان پیش‌بینی موجودیِ صفحه‌ی خلاصه. اگر چند ثانیه طول بکشد یا خطا بدهد، ویجت بدون آن کشیده می‌شود
-         * (پیش‌بینی نداشتن یعنی «کم نمی‌آید»، مثل سرصفحه وقتی هنوز پیش‌بینی نرسیده).
-         */
-        private suspend fun balanceShort(container: AppContainer): Boolean = try {
-            withTimeoutOrNull(FORECAST_TIMEOUT_MS) { container.forecastRepository.state.first() }?.forecast?.enough == false
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            false
-        }
-
-        private const val FORECAST_TIMEOUT_MS = 5_000L
 
         /** متن کم‌رنگ روی زمینه‌ی رنگی: سفید ۸۵٪ */
         private const val MUTED_ON_MOOD = 0xD9FFFFFF.toInt()

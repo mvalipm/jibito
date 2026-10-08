@@ -114,7 +114,7 @@ fun ReportsScreen(
     val categories by remember { app.container.transactionRepository.observeCategories() }.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val forecastRepository = app.container.forecastRepository
-    val forecastState by forecastRepository.state.collectAsState(initial = null)
+    val forecastState by forecastRepository.state.collectAsState()
     val prefs = remember { ReportSectionPrefs(context) }
     var open by rememberSaveable { mutableStateOf<ReportSection?>(prefs.favorite()) }
     var seen by remember { mutableStateOf(prefs.seenInsights) }

@@ -6,6 +6,8 @@ import ir.jibito.app.data.wallet.BalanceForecast
 import ir.jibito.app.data.wallet.ForecastBasis
 import ir.jibito.app.util.JalaliMonth
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MoodTest {
@@ -75,9 +77,10 @@ class MoodTest {
     }
 
     @Test
-    fun `موجودی کم بیاید، بودجه‌ی آروم هم یواش‌تر می‌شود`() {
+    fun `موجودی کم بیاید، رنگ همان بودجه است ولی جمله و آیکون هشدار می‌دهند`() {
         val month = moodOf(summary(7_000_000, 30_000_000), now, forecast(enough = false))
-        assertEquals(Mood.WARN, month.mood)
+        assertEquals(Mood.CALM, month.mood)
+        assertTrue(month.attention)
         assertEquals(R.string.hero_balance_short_month, month.sentence)
         val salary = moodOf(summary(7_000_000, 30_000_000), now, forecast(enough = false, payday = now + 5 * 86_400_000L))
         assertEquals(R.string.hero_balance_short_salary, salary.sentence)
@@ -88,13 +91,22 @@ class MoodTest {
         val line = moodOf(summary(7_000_000, 30_000_000), now, forecast(enough = true))
         assertEquals(Mood.CALM, line.mood)
         assertEquals(R.string.hero_calm, line.sentence)
+        assertFalse(line.attention)
     }
 
     @Test
-    fun `بی‌بودجه با موجودی کم، دعوت به سقف می‌ماند ولی رنگ یواش‌تر است`() {
+    fun `بی‌بودجه با موجودی کم، همان دعوت به سقف می‌ماند`() {
         val line = moodOf(summary(7_000_000, null), now, forecast(enough = false))
-        assertEquals(Mood.WARN, line.mood)
+        assertEquals(Mood.CALM, line.mood)
         assertEquals(R.string.hero_no_budget, line.sentence)
+    }
+
+    @Test
+    fun `بیشتر کردن بودجه رنگ را عوض می‌کند، حتی با موجودی کم`() {
+        val tight = moodOf(summary(15_000_000, 30_000_000), now, forecast(enough = false))
+        val roomy = moodOf(summary(15_000_000, 60_000_000), now, forecast(enough = false))
+        assertEquals(Mood.WARN, tight.mood)
+        assertEquals(Mood.CALM, roomy.mood)
     }
 
     @Test
