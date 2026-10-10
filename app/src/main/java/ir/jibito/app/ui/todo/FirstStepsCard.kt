@@ -164,7 +164,8 @@ private fun StepRow(step: FirstStep) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // برچسب پیشرفت کنار خط اول عنوان، حتی اگر عنوان دو خط شود
+            Row(verticalAlignment = Alignment.Top) {
                 Text(
                     step.label,
                     modifier = Modifier.weight(1f, fill = false),
@@ -175,7 +176,7 @@ private fun StepRow(step: FirstStep) {
                 )
                 if (!step.done && step.progress != null) {
                     Spacer(Modifier.width(6.dp))
-                    ProgressPill(step.progress)
+                    Box(Modifier.padding(top = 2.dp)) { ProgressPill(step.progress) }
                 }
             }
             if (!step.done) {
