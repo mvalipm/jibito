@@ -16,21 +16,20 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import ir.jibito.app.ui.todo.FirstStepsCard
+import ir.jibito.app.ui.todo.rememberFirstSteps
+import ir.jibito.app.ui.todo.rememberFirstStepsOnSummary
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,22 +47,13 @@ import ir.jibito.app.ui.common.rememberNoTransactions
 import ir.jibito.app.ui.common.rememberSmsAccess
 import ir.jibito.app.ui.theme.JibitoText
 import ir.jibito.app.ui.theme.JibitoTheme
-import ir.jibito.app.ui.theme.DesignIcons
-import ir.jibito.app.ui.theme.categoryTint
-import ir.jibito.app.ui.common.CategoryIconTile
 import ir.jibito.app.ui.common.StatusBarOnColor
-import ir.jibito.app.ui.common.amount
-import ir.jibito.app.data.parser.FlowType
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.map
 import androidx.compose.runtime.remember
 import androidx.activity.compose.BackHandler
 import ir.jibito.app.ui.main.LocalBottomBarSpace
-import ir.jibito.app.data.repository.CategorySpend
-import ir.jibito.app.notify.BudgetLevel
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
-import ir.jibito.app.util.Money
 import ir.jibito.app.ui.theme.JibitoIcons
 
 /**
@@ -87,6 +77,10 @@ fun SummaryScreen(
     onAddManual: () -> Unit = {},
     /** لمس «پولت تا حقوق می‌رسه؟» ← کارت موجودی در «گزارش‌ها» */
     onOpenForecast: () -> Unit = {},
+    /** «جیبت رو مرتب کنیم»: خرج‌های بی‌دسته، همه‌ی تراکنش‌ها، و برگه‌ی «مال چی بود؟» یک تراکنش */
+    onOpenUncategorized: () -> Unit = {},
+    onOpenTransactions: () -> Unit = {},
+    onOpenTransaction: (Long) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val forecastState by app.container.forecastRepository.state.collectAsState()
@@ -117,6 +111,17 @@ fun SummaryScreen(
     BackHandler(enabled = showAll) { showAll = false }
     val noTransactions = rememberNoTransactions()
     val smsAccess = rememberSmsAccess()
+    // «جیبت رو مرتب کنیم» روزهای اول این‌جاست؛ بعد در «کارها»
+    val stepsOnSummary = rememberFirstStepsOnSummary()
+    val firstSteps = rememberFirstSteps(
+        summary,
+        averageSpendRial = trend?.averageRial,
+        onOpenUncategorized = onOpenUncategorized,
+        onOpenTransactions = onOpenTransactions,
+        onOpenTransaction = onOpenTransaction,
+        onEditBudget = { editingOverall = true },
+        onSetBudget = viewModel::setOverallBudget,
+    ).takeIf { stepsOnSummary }
     LaunchedEffect(openCategoryId) {
         val id = openCategoryId ?: return@LaunchedEffect
         viewModel.setMonth(JalaliMonth.current())
@@ -163,6 +168,12 @@ fun SummaryScreen(
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
                             card = true,
                         )
+                    }
+                }
+                // فقط ماه جاری، و وقتی تراکنشی هست (بی تراکنش، کارت «ثبت اولین خرج» همان کار را می‌کند)
+                if (firstSteps != null && noTransactions == false && s.month == JalaliMonth.current()) {
+                    item(key = "first-steps") {
+                        FirstStepsCard(firstSteps, Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp))
                     }
                 }
                 // «کجا رفت؟» بی هیچ تراکنشی فقط یک «خرجی نیومده»ی تکراری است
@@ -309,121 +320,6 @@ fun SummaryScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun CategoryRow(c: CategorySpend, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val tint = categoryTint(c.colorHex, c.icon)
-    val base = tint.fg
-    val budget = c.budgetRial
-    // خرج یک‌باره از بودجه کم نمی‌شود
-    val level = if (budget != null) BudgetLevel.of(c.budgetSpentRial, budget) else 0
-    val barColor = when (level) {
-        100 -> JibitoTheme.colors.alert
-        80 -> JibitoTheme.colors.amber
-        else -> base
-    }
-    val idle = c.spentRial == 0L && budget == null
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CategoryIconTile(tint, size = 44.dp, radius = 15.dp, iconSize = 22.dp)
-                Spacer(Modifier.size(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        c.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (idle) colors.onSurfaceVariant else colors.onSurface,
-                    )
-                    Text(
-                        text = when {
-                            budget == null -> stringResource(R.string.summary_no_budget)
-                            level == 100 -> stringResource(R.string.summary_over_budget, amount(Money.toman(c.budgetSpentRial - budget)))
-                            else -> stringResource(R.string.summary_remaining, amount(Money.toman(budget - c.budgetSpentRial)))
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (level == 100) colors.error else colors.onSurfaceVariant,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        amount(Money.toman(c.spentRial)),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Black,
-                        color = if (idle) colors.onSurfaceVariant else colors.onSurface,
-                    )
-                    if (budget != null) {
-                        Text(
-                            stringResource(R.string.summary_of_budget, amount(Money.toman(budget))),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = colors.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-            if (budget != null && budget > 0) {
-                Spacer(Modifier.height(10.dp))
-                val fraction = (c.budgetSpentRial.toFloat() / budget.toFloat()).coerceIn(0f, 1f)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(
-                        progress = { fraction },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(8.dp),
-                        color = barColor,
-                        trackColor = barColor.copy(alpha = 0.15f),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    )
-                    Spacer(Modifier.size(10.dp))
-                    val percent = (c.budgetSpentRial * 100 / budget).coerceAtMost(999)
-                    Text(
-                        Jalali.toPersianDigits("$percent٪"),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = barColor,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun IncomeRow(colorHex: String?, icon: String?, name: String, amountRial: Long) {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(colors.surface, RoundedCornerShape(22.dp))
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CategoryIconTile(categoryTint(colorHex, icon), size = 44.dp, radius = 15.dp, iconSize = 22.dp)
-        Spacer(Modifier.size(12.dp))
-        Text(
-            name,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSurface,
-        )
-        Text(
-            amount("+ " + Money.toman(amountRial)),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Black,
-            color = JibitoTheme.colors.income,
-        )
     }
 }
 
