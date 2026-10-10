@@ -325,8 +325,15 @@ object SepahParser : SmsParser {
         }
         val tokens = t.split(Regex(" +"))
         val at = tokens.indexOf("مبلغ")
+        // قالب «برداشت از:3120004675145 / مبلغ:326,000,000ریال»: مبلغ در خط جدا است
+        val amountLine = l.drop(1).firstNotNullOfOrNull { line ->
+            kv(line.trim(), COLON)?.takeIf { it.first == "مبلغ" }?.second
+        }
         acc.amount = when {
             at >= 0 -> num(tokens.getOrNull(at + 1))
+            amountLine != null -> num(amountLine)
+            // «برداشت از:<شماره حساب>» مبلغ ندارد؛ فقط خط «برداشت:385,000,000» مبلغ است
+            t.trim().startsWith("برداشت از") || t.trim().startsWith("واریز به") -> null
             // قالب «برداشت:385,000,000» (سرشماره‌ی SEPAH BANK): مبلغ بعد از دونقطه در همان خط
             acc.type != null && t.contains(":") -> num(t.substringAfter(":"))
             else -> null
