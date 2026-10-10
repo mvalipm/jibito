@@ -9,6 +9,7 @@ import ir.jibito.app.ui.summary.SummaryHero
 import ir.jibito.app.ui.summary.WhereSection
 import ir.jibito.app.ui.theme.AppThemeStyle
 import ir.jibito.app.ui.welcome.WelcomeScreen
+import ir.jibito.app.ui.welcome.NotificationIntroScreen
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import androidx.compose.foundation.layout.Box
@@ -83,7 +84,12 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
     fun onboarding() {
         for (dark in listOf(false, true)) {
             shot("welcome", AppThemeStyle.DEFAULT, dark, padded = false) { WelcomeScreen(onStart = {}) }
-            shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}) }
+            shot("permission", AppThemeStyle.DEFAULT, dark, padded = false) { SmsPermissionScreen(wasDenied = false, onAllowClick = {}, onManualClick = {}) }
+            shot("notification_intro", AppThemeStyle.DEFAULT, dark, padded = false) { NotificationIntroScreen(onAllow = {}, onLater = {}) }
+            // بعد از لمس یک دسته: همان «رفت تو غذا»ی نوتیف واقعی و «ثبت شد!»
+            shot("notification_intro_picked", AppThemeStyle.DEFAULT, dark, padded = false) {
+                NotificationIntroScreen(onAllow = {}, onLater = {}, initialPick = 0)
+            }
         }
         for ((style, dark) in variants) {
             shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}) }

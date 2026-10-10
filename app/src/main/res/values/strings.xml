@@ -11,9 +11,17 @@
     <string name="perm_title">پیامک‌های بانکت رو بخونم؟</string>
     <string name="perm_body">فقط برای اینکه خرج‌هات خودکار ثبت بشن.</string>
     <string name="perm_promise_offline">همه‌چیز فقط روی گوشی خودت می‌مونه</string>
+    <string name="notif_intro_title">همون لحظه بپرسم\n«مال چی بود؟»</string>
+    <string name="notif_intro_body">هر خرجی کردی، یه نوتیف میاد. یه دکمه می‌زنی و تمام؛ لازم نیست اپ رو باز کنی.</string>
+    <string name="notif_intro_done">✓ ثبت شد! بدون باز کردن اپ.</string>
+    <string name="notif_intro_promise">فقط درباره‌ی پول خودت؛ تبلیغ هیچ‌وقت.</string>
+    <string name="notif_intro_allow">آره، خبرم کن</string>
+    <string name="notif_intro_later">بعداً</string>
+    <string name="notif_intro_now">الان</string>
     <string name="perm_promise_bank_only">فقط پیامک‌های بانکی</string>
     <string name="perm_promise_bank_only_sub">پیامک‌های شخصیت دیده نمی‌شن</string>
-    <string name="perm_promise_no_send">هیچ پیامکی جایی فرستاده نمی‌شه</string>
+    <!-- راست است تا وقتی اپ اجازه‌ی INTERNET ندارد؛ CI («Check app has no internet permission») روی APK نهایی چکش می‌کند -->
+    <string name="perm_promise_no_internet">جیبیتو اصلاً اجازه‌ی اینترنت نداره.</string>
     <string name="perm_manual">فعلاً دستی ثبت می‌کنم</string>
     <string name="perm_allow">اجازه می‌دم</string>
     <string name="perm_denied">بدون این اجازه، جیبیتو نمی‌تونه خرج‌ها رو خودکار ثبت کنه. اگه پنجره‌ی اجازه دیگه باز نمی‌شه، از تنظیمات اپ، «پیامک» رو روشن کن.</string>

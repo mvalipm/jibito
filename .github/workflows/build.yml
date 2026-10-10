@@ -128,6 +128,18 @@ jobs:
           ./gradlew assembleRelease --stacktrace 2>&1 | tee -a build.log
           rm -f "$RUNNER_TEMP/release.jks"
 
+      # صفحه‌ی اجازه‌ی پیامک قول می‌دهد «جیبیتو اصلاً اجازه‌ی اینترنت نداره»؛ اگر کتابخانه‌ای بی‌صدا INTERNET اضافه کند، این قول دروغ می‌شود.
+      # پس فهرست مجوزهای همان APK نهایی (بعد از ادغام manifest کتابخانه‌ها) چک می‌شود
+      - name: Check app has no internet permission
+        run: |
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          "$AAPT2" dump permissions "$APK" | tee permissions.txt
+          if grep -q "android.permission.INTERNET" permissions.txt; then
+            echo "::error::APK نهایی اجازه‌ی INTERNET دارد، ولی صفحه‌ی اجازه‌ی پیامک می‌گوید ندارد. کتابخانه‌ای که اضافه‌اش کرده را پیدا کن (یا متن perm_promise_no_internet را عوض کن)."
+            exit 1
+          fi
+
       # اگر ساخت شکست خورد، خطاهای کامپایل و تست‌های ردشده را به‌صورت خلاصه بالای صفحه‌ی گیت‌هاب نشان می‌دهد
       - name: Show errors summary
         if: failure()
