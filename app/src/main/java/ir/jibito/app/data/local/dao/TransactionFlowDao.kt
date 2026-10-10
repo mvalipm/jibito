@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import ir.jibito.app.data.local.entity.DatedAmount
+import ir.jibito.app.data.local.entity.MerchantChoice
 import ir.jibito.app.data.local.entity.SmsContentKey
 import ir.jibito.app.data.local.entity.SmsFlowKey
 import ir.jibito.app.data.local.entity.OwnAccountEntity
@@ -101,6 +103,32 @@ interface TransactionFlowDao {
         """
     )
     suspend fun userChoices(merchant: String, flowType: Int, limit: Int): List<Long>
+
+    /**
+     * همه‌ی (طرف حساب، دسته)هایی که خود کاربر انتخاب کرده، تازه‌ترین اول و هر جفت یک بار؛ بدون دسته‌های بایگانی‌شده.
+     * خوراک MerchantWordModel (حدس دسته برای طرف حسابِ تازه از روی کلمه‌های مشترک).
+     */
+    @Query(
+        """
+        SELECT t.merchant AS merchant, t.categoryId AS categoryId FROM transaction_flows t
+        JOIN categories c ON c.id = t.categoryId AND c.isArchived = 0
+        WHERE t.merchant IS NOT NULL AND t.flowType = :flowType
+          AND t.isAutoCategorized = 0 AND t.isDeleted = 0 AND t.transferState != 1
+        GROUP BY t.merchant, t.categoryId
+        ORDER BY MAX(COALESCE(t.categorizedAt, t.dateEpoch)) DESC LIMIT :limit
+        """
+    )
+    suspend fun merchantChoices(flowType: Int, limit: Int): List<MerchantChoice>
+
+    /** برداشت‌های عادی به یک طرف حساب از زمان [from]؛ مبلغ و زمان (برای حدس اجاره‌ی کارت‌به‌کارت) */
+    @Query(
+        """
+        SELECT categoryId, amount, dateEpoch, 0 AS isOneOff FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = 2 AND dateEpoch >= :from
+          AND isDeleted = 0 AND isFailedPurchase = 0 AND transferState != 1
+        """
+    )
+    suspend fun paymentsTo(merchant: String, from: Long): List<DatedAmount>
 
     /** اپ مطمئن شده ← تراکنش‌های بی‌دسته‌ی همین طرف حساب این دسته را (خودکار) می‌گیرند. */
     @Query(
