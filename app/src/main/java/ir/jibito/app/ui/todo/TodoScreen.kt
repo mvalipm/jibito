@@ -1,13 +1,10 @@
 package ir.jibito.app.ui.todo
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,26 +12,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -42,9 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
@@ -56,13 +44,10 @@ import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.main.LocalBottomBarSpace
 import ir.jibito.app.ui.summary.BudgetDialog
 import ir.jibito.app.ui.summary.SummaryViewModel
-import ir.jibito.app.ui.summary.TodoAction
 import ir.jibito.app.ui.summary.TodoPage
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.summary.todoPriority
-import ir.jibito.app.ui.theme.DesignIcons
-import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.delay
@@ -77,7 +62,6 @@ fun TodoScreen(
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
     onOpenTransactions: () -> Unit,
-    onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
     /** برگه‌ی «مال چی بود؟» یک تراکنش (فروشگاه‌های «جیبت رو مرتب کنیم») */
     onOpenTransaction: (Long) -> Unit = {},
@@ -100,7 +84,6 @@ fun TodoScreen(
         pendingReview = pendingReview,
         onOpenReview = onOpenReview,
         onOpenUncategorized = onOpenUncategorized,
-        onOpenSettings = onOpenSettings,
         onOpenCategory = onOpenCategory,
         onToast = { toast = it },
     )
@@ -196,6 +179,8 @@ fun TodoList(
                         fontSize = 14.sp,
                         color = t.muted,
                     )
+                } else if (items.isNotEmpty()) {
+                    Text(stringResource(R.string.todo_no_urgent), fontSize = 14.sp, color = t.muted)
                 }
             }
         }
@@ -213,6 +198,10 @@ fun TodoList(
             item(key = "sec-sug") { SectionLabel(stringResource(R.string.todo_section_suggestions), t.muted) }
             items(suggestions, key = { it.id }) { TodoCard(it, onOpenSms) }
         }
+        // «خرج بی‌دسته» هیچ‌وقت تمام نمی‌شود؛ اگر فقط همین مانده، به‌جای فضای خالی بگو بقیه تمام است
+        if (firstSteps == null && items.isNotEmpty() && items.all { it.id == "uncat" }) {
+            item(key = "rest-done") { RestDone() }
+        }
     }
 }
 
@@ -229,149 +218,18 @@ private fun SectionLabel(text: String, color: Color) {
     )
 }
 
-/**
- * یک کار: آیکون در مربع گرد (مثل بقیه‌ی اپ)، عنوان و یک جمله توضیح.
- * کارهای یک‌لمسی دکمه‌های خودشان را همین‌جا دارند.
- * کارت چندتایی (pages): توضیح و دکمه‌ها ورق می‌خورند؛ کاربر چپ و راست می‌کشد و هر مورد را که خواست جواب می‌دهد.
- * لمس توضیح یک مورد، پیامک‌های همان تراکنش را نشان می‌دهد (رمز دوم، کسر، واریز) تا کاربر خودش ببیند و تصمیم بگیرد.
- */
+/** فقط کارِ همیشگیِ «خرج بی‌دسته» مانده */
 @Composable
-private fun TodoCard(s: TodoStory, onOpenSms: (TodoStory, TodoPage) -> Unit) {
-    val pager = if (s.pages.isNotEmpty()) rememberPagerState(pageCount = { s.pages.size }) else null
-    val t = JibitoTheme.colors
-    val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(22.dp)
+private fun RestDone() {
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(t.sheet)
-            .border(1.dp, t.border, shape)
-            .clickable(onClick = s.onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(top = 34.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(s.bg),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (s.icon != null) {
-                    Icon(s.icon, contentDescription = null, tint = s.fg, modifier = Modifier.size(22.dp))
-                } else {
-                    Text(s.text.orEmpty(), color = s.fg, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                }
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.label, modifier = Modifier.weight(1f, fill = false), fontSize = 16.sp, fontWeight = FontWeight.Black, color = colors.onBackground)
-                    // «۲ از ۵» برای کارت چندتایی
-                    if (pager != null && s.pages.size > 1) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            Jalali.toPersianDigits(
-                                stringResource(R.string.todo_page_of, (pager.currentPage + 1).coerceAtMost(s.pages.size), s.pages.size)
-                            ),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(s.bg)
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = s.fg,
-                        )
-                    }
-                }
-                if (pager == null) {
-                    s.detail?.let {
-                        Spacer(Modifier.height(2.dp))
-                        Text(it, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
-                    }
-                }
-            }
-            if (s.actions.isEmpty() && pager == null) {
-                Spacer(Modifier.width(8.dp))
-                Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = t.faint, modifier = Modifier.size(20.dp))
-            }
-        }
-        if (pager != null) {
-            HorizontalPager(
-                state = pager,
-                key = { s.pages.getOrNull(it)?.key ?: it },
-                pageSpacing = 16.dp,
-                verticalAlignment = Alignment.Top,
-            ) { page ->
-                val p = s.pages.getOrNull(page) ?: return@HorizontalPager
-                Column {
-                    Spacer(Modifier.height(8.dp))
-                    if (p.sms.isEmpty()) {
-                        Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
-                    } else {
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onOpenSms(s, p) }
-                        ) {
-                            Text(p.detail, fontSize = 13.sp, lineHeight = 21.sp, color = t.muted)
-                            Row(Modifier.padding(top = 4.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(DesignIcons.Message, contentDescription = null, tint = colors.primary, modifier = Modifier.size(15.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(stringResource(R.string.todo_show_sms), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    ActionButtons(p.actions)
-                }
-            }
-            if (s.pages.size > 1) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    stringResource(R.string.todo_page_hint),
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 11.sp,
-                    color = t.faint,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        } else if (s.actions.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            ActionButtons(s.actions)
-        }
-    }
-}
-
-/** دکمه‌های یک کار؛ اولی دکمه‌ی اصلی است */
-@Composable
-internal fun ActionButtons(actions: List<TodoAction>) {
-    val t = JibitoTheme.colors
-    val colors = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        actions.forEachIndexed { i, a ->
-            val primary = i == 0
-            Box(
-                Modifier
-                    .weight(1f)
-                    .heightIn(min = 40.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(if (primary) t.btnBg else t.chip)
-                    .clickable(role = Role.Button, onClick = a.onClick)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    a.label,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (primary) t.btnFg else colors.onBackground,
-                    maxLines = 1,
-                )
-            }
-        }
+        Mascot(76.dp, face = MascotFace.HAPPY)
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.todo_rest_done), fontSize = 14.sp, color = JibitoTheme.colors.muted)
     }
 }
 

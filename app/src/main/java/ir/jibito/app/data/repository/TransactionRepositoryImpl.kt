@@ -150,24 +150,38 @@ class TransactionRepositoryImpl(
             }.sortedByDescending { it.withdrawal.dateMillis }
         }
 
-    override suspend fun confirmTransfer(suggestion: TransferSuggestion) {
+    override suspend fun confirmTransfer(suggestion: TransferSuggestion): UndoSnapshot {
         val now = System.currentTimeMillis()
-        db.withTransaction {
+        val merchant = suggestion.withdrawal.merchant
+        val snapshot = db.withTransaction {
+            // پیش از تغییر: دو طرف انتقال، برداشت‌های دیگرِ همین مقصد (که یادگیری انتقالشان می‌کند) و اینکه مقصد از قبل «کارت خودم» بود یا نه
+            val rows = buildList {
+                dao.byId(suggestion.withdrawal.id)?.let { add(it) }
+                dao.byId(suggestion.deposit.id)?.let { add(it) }
+                merchant?.let { addAll(dao.selfTransferCandidates(it)) }
+            }.distinctBy { it.id }
+            val knewIt = merchant != null && merchant in dao.ownAccounts()
             dao.setTransfer(suggestion.withdrawal.id, TransactionFlowEntity.TRANSFER_SELF, suggestion.deposit.id, now)
             dao.setTransfer(suggestion.deposit.id, TransactionFlowEntity.TRANSFER_SELF, suggestion.withdrawal.id, now)
-            suggestion.withdrawal.merchant?.let { learnOwnAccount(it, now) }
+            merchant?.let { learnOwnAccount(it, now) }
+            UndoSnapshot(rows, forgetOwnAccount = merchant.takeUnless { knewIt })
         }
         onCategoryChanged()
+        return snapshot
     }
 
-    override suspend fun rejectTransfer(suggestion: TransferSuggestion) {
+    override suspend fun rejectTransfer(suggestion: TransferSuggestion): UndoSnapshot {
+        val snapshot = UndoSnapshot(listOfNotNull(dao.byId(suggestion.withdrawal.id)))
         dao.setTransfer(suggestion.withdrawal.id, TransactionFlowEntity.TRANSFER_REJECTED, null, System.currentTimeMillis())
+        return snapshot
     }
 
-    override suspend fun setOneOff(transactionId: Long, isOneOff: Boolean) {
+    override suspend fun setOneOff(transactionId: Long, isOneOff: Boolean): UndoSnapshot {
+        val snapshot = UndoSnapshot(listOfNotNull(dao.byId(transactionId)))
         val state = if (isOneOff) TransactionFlowEntity.ONE_OFF_YES else TransactionFlowEntity.ONE_OFF_REJECTED
         dao.setOneOff(transactionId, state, System.currentTimeMillis())
         onCategoryChanged()
+        return snapshot
     }
 
     override suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean) {
@@ -273,15 +287,16 @@ class TransactionRepositoryImpl(
     }
 
     override suspend fun restore(snapshot: UndoSnapshot) {
-        if (snapshot.rows.isEmpty()) return
+        if (snapshot.rows.isEmpty() && snapshot.forgetOwnAccount == null) return
         val now = System.currentTimeMillis()
         db.withTransaction {
             snapshot.rows.forEach {
                 dao.restoreUserState(
                     it.id, it.categoryId, it.isAutoCategorized, it.suggestedCategory,
-                    it.transferState, it.transferPairId, it.isDeleted, it.categorizedAt, now,
+                    it.transferState, it.transferPairId, it.isDeleted, it.categorizedAt, it.oneOffState, now,
                 )
             }
+            snapshot.forgetOwnAccount?.let { dao.deleteOwnAccount(it) }
         }
         onCategoryChanged()
     }

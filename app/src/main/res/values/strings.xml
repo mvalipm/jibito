@@ -540,7 +540,6 @@
     <string name="todo_one_off_detail">%1$s تومان · %2$s. خیلی بیشتر از معمول؛ اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
     <string name="todo_one_off_detail_named">%1$s تومان برای «%2$s» · %3$s. خیلی بیشتر از معمول؛ اگه یک‌باره بود، میانگین و بودجه‌ت رو به هم نمی‌زنه.</string>
     <string name="todo_page_of">%1$d از %2$d</string>
-    <string name="todo_page_hint">برای بعدی بکش</string>
     <string name="todo_show_sms">پیامک‌هاش رو ببین</string>
     <string name="todo_sms_title">پیامک‌های این تراکنش</string>
     <string name="todo_sms_otp">پیامک رمز دوم</string>
@@ -555,6 +554,17 @@
     <string name="todo_transfer_page">%1$s تومان از %2$s به %3$s · %4$s. اگه بین کارت‌های خودت جابه‌جا کردی، خرج حساب نمی‌شه.</string>
     <string name="todo_recurring_detail">اگه ماهانه‌ست، قبل از موعدش یادت میندازم.</string>
     <string name="todo_all_clear">کاری نمونده. هر وقت چیزی کارت داشت، اینجا نشونت می‌دم.</string>
+    <string name="todo_no_urgent">کار فوری نداری</string>
+    <string name="todo_rest_done">بقیه‌ی کارها تموم شده</string>
+    <string name="todo_uncategorized_progress">%1$d از %2$d خرج این ماه دسته دارد</string>
+    <string name="todo_transfer_yes_done">ثبت شد: انتقال به خودت</string>
+    <string name="todo_transfer_no_done">ثبت شد: انتقال نبود</string>
+    <string name="todo_one_off_yes_done">ثبت شد: خرج یک‌باره</string>
+    <string name="todo_one_off_no_done">ثبت شد: یک‌باره نیست</string>
+    <string name="salary_yes_done">ثبت شد: این حقوقته</string>
+    <string name="salary_no_done">ثبت شد: حقوق نیست</string>
+    <string name="recurring_suggest_yes_done">یادآور ساخته شد</string>
+    <string name="recurring_suggest_no_done">ثبت شد: دیگه نمی‌پرسم</string>
 
     <!-- کجا رفت؟ و روند -->
     <string name="where_title">کجا رفت؟</string>

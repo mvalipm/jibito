@@ -46,6 +46,26 @@ class SalarySettings(context: Context) {
         _choice.value = load()
     }
 
+    /** «برگردون»: جواب‌های ذخیره‌شده دقیقاً همان‌طور که پیش از جواب دادن بود */
+    fun restore(previous: SalaryChoice) {
+        prefs.edit {
+            val confirmed = previous.confirmed
+            if (confirmed == null) {
+                remove(KEY_KEY)
+                remove(KEY_BANK)
+                remove(KEY_AMOUNT)
+                remove(KEY_DAY)
+            } else {
+                putString(KEY_KEY, confirmed.key)
+                putInt(KEY_BANK, confirmed.bankId)
+                putLong(KEY_AMOUNT, confirmed.amountRial)
+                putInt(KEY_DAY, confirmed.dayOfMonth)
+            }
+            putStringSet(KEY_DISMISSED, previous.dismissed)
+        }
+        _choice.value = load()
+    }
+
     private fun load(): SalaryChoice {
         val key = prefs.getString(KEY_KEY, null)
         val confirmed = key?.let {

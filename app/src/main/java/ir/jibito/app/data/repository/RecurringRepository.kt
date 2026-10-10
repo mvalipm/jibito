@@ -12,10 +12,11 @@ class RecurringRepository(private val db: AppDatabase) {
 
     fun observeAll(): Flow<List<RecurringPaymentEntity>> = db.recurringDao().observeAll()
 
-    suspend fun add(title: String, amountRial: Long, dayOfMonth: Int, now: Long = System.currentTimeMillis()) {
+    /** شناسه‌ی پرداختِ ساخته‌شده (برای «برگردون») */
+    suspend fun add(title: String, amountRial: Long, dayOfMonth: Int, now: Long = System.currentTimeMillis()): Long {
         val cal = Calendar.getInstance().apply { timeInMillis = now }
         val (y, m, d) = Jalali.fromGregorian(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
-        db.recurringDao().insert(
+        return db.recurringDao().insert(
             RecurringPaymentEntity(
                 title = title.trim().take(MAX_TITLE),
                 amountRial = amountRial,

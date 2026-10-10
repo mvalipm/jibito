@@ -23,8 +23,14 @@ const val SOURCE_MANUAL = "MANUAL"
 /** پیشوند ذخیره‌ی کارمزد انتقال در ستون description */
 const val FEE_PREFIX = "fee:"
 
-/** حالت چند تراکنش پیش از یک تغییر، برای «برگردان». صفحه‌ها فقط نگهش می‌دارند و به restore می‌دهند. */
-class UndoSnapshot internal constructor(internal val rows: List<TransactionFlowEntity>)
+/**
+ * حالت چند تراکنش پیش از یک تغییر، برای «برگردان». صفحه‌ها فقط نگهش می‌دارند و به restore می‌دهند.
+ * @param forgetOwnAccount مقصدی که همان تغییر «کارت خودم» یادش گرفته؛ با restore فراموش می‌شود
+ */
+class UndoSnapshot internal constructor(
+    internal val rows: List<TransactionFlowEntity>,
+    internal val forgetOwnAccount: String? = null,
+)
 
 /**
  * تنها راه صفحه‌ها برای رسیدن به تراکنش‌ها (قانون سند معماری: ViewModel هرگز مستقیم Room نمی‌بیند).
@@ -84,17 +90,23 @@ interface TransactionRepository {
     /** جفت‌های «برداشت ← واریزِ هم‌مبلغ» (قانون‌ها در TransferMatcher) که شاید انتقال بین حساب‌های خود کاربر باشند (تازه‌ترها اول) */
     fun observeTransferSuggestions(): Flow<List<TransferSuggestion>>
 
-    /** «بله، انتقال به خودم بود»: هر دو تراکنش از خرج و درآمد بیرون می‌روند و کارت مقصد یاد گرفته می‌شود. */
-    suspend fun confirmTransfer(suggestion: TransferSuggestion)
+    /**
+     * «بله، انتقال به خودم بود»: هر دو تراکنش از خرج و درآمد بیرون می‌روند و کارت مقصد یاد گرفته می‌شود.
+     * حالت پیش از تغییر را برمی‌گرداند (برای [restore]).
+     */
+    suspend fun confirmTransfer(suggestion: TransferSuggestion): UndoSnapshot
 
-    /** «نه»: این برداشت دیگر به‌عنوان انتقال پیشنهاد نمی‌شود. */
-    suspend fun rejectTransfer(suggestion: TransferSuggestion)
+    /** «نه»: این برداشت دیگر به‌عنوان انتقال پیشنهاد نمی‌شود. حالت پیش از تغییر را برمی‌گرداند (برای [restore]). */
+    suspend fun rejectTransfer(suggestion: TransferSuggestion): UndoSnapshot
 
     /** علامت زدن/برداشتن دستیِ «انتقال به خودم» برای یک تراکنش */
     suspend fun setSelfTransfer(transactionId: Long, isSelfTransfer: Boolean)
 
-    /** علامت زدن/برداشتن «خرج یک‌باره»؛ برداشتنِ علامت یعنی «یک‌باره نیست» (دیگر پیشنهاد نمی‌شود) */
-    suspend fun setOneOff(transactionId: Long, isOneOff: Boolean)
+    /**
+     * علامت زدن/برداشتن «خرج یک‌باره»؛ برداشتنِ علامت یعنی «یک‌باره نیست» (دیگر پیشنهاد نمی‌شود).
+     * حالت پیش از تغییر را برمی‌گرداند (برای [restore]).
+     */
+    suspend fun setOneOff(transactionId: Long, isOneOff: Boolean): UndoSnapshot
 
     /** خریدهای اخیرِ خیلی بزرگ‌تر از معمول که شاید «خرج یک‌باره» باشند (قانون‌ها در OneOffDetector)؛ بزرگ‌ترین اول */
     fun observeOneOffSuggestions(): Flow<List<Transaction>>

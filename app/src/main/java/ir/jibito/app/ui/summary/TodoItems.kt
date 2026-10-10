@@ -11,7 +11,6 @@ import androidx.compose.ui.res.stringResource
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.data.bank.BankDirectory
-import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.wallet.AccountGrouping
 import ir.jibito.app.data.repository.MonthSummary
 import ir.jibito.app.domain.Transaction
@@ -26,13 +25,14 @@ import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
  * همه‌ی «کارهای لازم» در یک جا: هم استوری‌های «خلاصه» و هم فهرست تب «کارها» از همین ساخته می‌شوند.
  * @param s خلاصه‌ی ماه (برای بودجه‌های نزدیک سقف)؛ null یعنی هنوز بارگذاری نشده
- * @param onToast پیام کوتاه بعد از جواب دادن (با «برگردون»)، مثلاً بعد از سؤال «دو حساب یکی‌اند یا جدا؟»
+ * @param onToast پیام کوتاه بعد از جواب دادن (با «برگردون»)، بعد از هر سؤال: انتقال، یک‌باره، دو حساب، حقوق و ماهانه
  */
 @Composable
 fun rememberTodoStories(
@@ -40,7 +40,6 @@ fun rememberTodoStories(
     pendingReview: Int,
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
-    onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
     onToast: (ToastMessage) -> Unit = {},
 ): List<TodoStory> {
@@ -54,12 +53,16 @@ fun rememberTodoStories(
     val recurringFlow = remember { app.container.recurringSuggestions.observe() }
     val recurringSuggestions by recurringFlow.collectAsState(initial = emptyList())
     val uncategorizedFlow = remember { uncategorizedThisMonth(app) }
-    val uncategorizedCount by uncategorizedFlow.collectAsState(initial = 0)
+    val uncategorized by uncategorizedFlow.collectAsState(initial = UncatProgress(open = 0, total = 0, unseen = 0))
     val accountQuestionFlow = remember { app.container.accountRepository.observeQuestion() }
     val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
     val forecastState by app.container.forecastRepository.state.collectAsState()
     val notificationPrompt = rememberNotificationPrompt()
     val scope = rememberCoroutineScope()
+    val undoLabel = stringResource(R.string.undo)
+    /** «ثبت شد · برگردون» بعد از جواب دادن؛ [undo] وقتی کاربر «برگردون» را می‌زند اجرا می‌شود */
+    fun answered(text: String, undo: suspend () -> Unit) =
+        onToast(ToastMessage(text, undoLabel, onAction = { scope.launch { undo() } }))
 
     return buildList {
         if (notificationPrompt.visible) {
@@ -73,14 +76,24 @@ fun rememberTodoStories(
                 )
             )
         }
-        if (uncategorizedCount > 0 && (s == null || s.month == JalaliMonth.current())) {
+        if (uncategorized.open > 0 && (s == null || s.month == JalaliMonth.current())) {
             add(
                 TodoStory(
                     "uncat", t.coral, t.uncatBg, t.uncatFg, null,
-                    Jalali.toPersianDigits(uncategorizedCount.coerceAtMost(99).toString()),
+                    Jalali.toPersianDigits(uncategorized.open.coerceAtMost(99).toString()),
                     label = stringResource(R.string.todo_uncategorized),
                     detail = stringResource(R.string.todo_uncategorized_detail),
-                    onClick = onOpenUncategorized,
+                    progress = TodoProgress(
+                        uncategorized.fraction,
+                        Jalali.toPersianDigits(stringResource(R.string.todo_uncategorized_progress, uncategorized.done, uncategorized.total)),
+                    ),
+                    // هیچ‌وقت صفر نمی‌شود، پس فقط وقتی فوری است که مورد تازه‌ای آمده باشد
+                    urgent = uncategorized.unseen > 0,
+                    onClick = {
+                        // فهرست را که باز کرد، همین‌هایی که هستند «دیده‌شده»اند (مثل «فعلاً نه»)
+                        scope.launch { app.container.uncategorizedBadge.markSeen(app.container.transactionRepository.observeTransactions().first()) }
+                        onOpenUncategorized()
+                    },
                 )
             )
         }
@@ -119,6 +132,8 @@ fun rememberTodoStories(
             val repository = app.container.transactionRepository
             val yes = stringResource(R.string.todo_transfer_yes)
             val no = stringResource(R.string.transfer_no)
+            val yesDone = stringResource(R.string.todo_transfer_yes_done)
+            val noDone = stringResource(R.string.todo_transfer_no_done)
             val unknown = stringResource(R.string.bank_unknown)
             val otpLabel = stringResource(R.string.todo_sms_otp)
             // همه‌ی پیشنهادها در یک کارت ورق‌خور (تازه‌ترها اول)؛ هر کدام همان‌جا جواب داده می‌شود
@@ -137,8 +152,18 @@ fun rememberTodoStories(
                         )
                     ),
                     actions = listOf(
-                        TodoAction(yes) { scope.launch { repository.confirmTransfer(suggestion) } },
-                        TodoAction(no) { scope.launch { repository.rejectTransfer(suggestion) } },
+                        TodoAction(yes) {
+                            scope.launch {
+                                val before = repository.confirmTransfer(suggestion)
+                                answered(yesDone) { repository.restore(before) }
+                            }
+                        },
+                        TodoAction(no) {
+                            scope.launch {
+                                val before = repository.rejectTransfer(suggestion)
+                                answered(noDone) { repository.restore(before) }
+                            }
+                        },
                     ),
                     sms = smsOf(w, otpLabel, stringResource(R.string.todo_sms_withdrawal, w.bank?.name ?: unknown)) +
                         smsOf(d, otpLabel, stringResource(R.string.todo_sms_deposit, d.bank?.name ?: unknown)),
@@ -150,7 +175,6 @@ fun rememberTodoStories(
                     label = stringResource(R.string.todo_transfer),
                     pages = pages,
                     // این سؤال فقط همین‌جا پرسیده می‌شود (نه بالای «تراکنش‌ها»)؛ لمس هر مورد پیامک‌هایش را نشان می‌دهد
-                    onClick = {},
                 )
             )
         }
@@ -158,6 +182,8 @@ fun rememberTodoStories(
             val repository = app.container.transactionRepository
             val yes = stringResource(R.string.todo_one_off_yes)
             val no = stringResource(R.string.todo_one_off_no)
+            val yesDone = stringResource(R.string.todo_one_off_yes_done)
+            val noDone = stringResource(R.string.todo_one_off_no_done)
             val unknown = stringResource(R.string.bank_unknown)
             val otpLabel = stringResource(R.string.todo_sms_otp)
             // همه‌ی پیشنهادها در یک کارت؛ کاربر چپ و راست می‌کشد و هر کدام را که خواست جواب می‌دهد (بزرگ‌ترین اول)
@@ -171,10 +197,20 @@ fun rememberTodoStories(
                         if (name != null) stringResource(R.string.todo_one_off_detail_named, amountText, name, date)
                         else stringResource(R.string.todo_one_off_detail, amountText, date)
                     ),
-                    // «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود
+                    // «نه» یعنی دیگر درباره‌ی همین خرید پرسیده نمی‌شود (مگر «برگردون» را بزند)
                     actions = listOf(
-                        TodoAction(yes) { scope.launch { repository.setOneOff(tx.id, true) } },
-                        TodoAction(no) { scope.launch { repository.setOneOff(tx.id, false) } },
+                        TodoAction(yes) {
+                            scope.launch {
+                                val before = repository.setOneOff(tx.id, true)
+                                answered(yesDone) { repository.restore(before) }
+                            }
+                        },
+                        TodoAction(no) {
+                            scope.launch {
+                                val before = repository.setOneOff(tx.id, false)
+                                answered(noDone) { repository.restore(before) }
+                            }
+                        },
                     ),
                     sms = smsOf(tx, otpLabel, stringResource(R.string.todo_sms_withdrawal, tx.bank?.name ?: unknown)),
                 )
@@ -185,7 +221,6 @@ fun rememberTodoStories(
                     label = stringResource(R.string.todo_one_off),
                     pages = pages,
                     // لمس هر مورد پیامک‌هایش را نشان می‌دهد (نه کل فهرست تراکنش‌ها)
-                    onClick = {},
                 )
             )
         }
@@ -194,11 +229,10 @@ fun rememberTodoStories(
             val bankName = BankDirectory.byId(q.bankId)?.name?.let(::shortBankName).orEmpty()
             val sameText = stringResource(R.string.account_answered_same)
             val separateText = stringResource(R.string.account_answered_separate)
-            val undoLabel = stringResource(R.string.undo)
             fun answer(same: Boolean) {
                 scope.launch {
                     val undo = accounts.answer(q, same)
-                    onToast(ToastMessage(if (same) sameText else separateText, undoLabel, onAction = { scope.launch { accounts.undo(undo) } }))
+                    answered(if (same) sameText else separateText) { accounts.undo(undo) }
                 }
             }
             add(
@@ -216,12 +250,14 @@ fun rememberTodoStories(
                         TodoAction(stringResource(R.string.account_question_same)) { answer(same = true) },
                         TodoAction(stringResource(R.string.account_question_separate)) { answer(same = false) },
                     ),
-                    onClick = onOpenSettings,
                 )
             )
         }
         forecastState?.suggestion?.let { salary ->
             val bank = BankDirectory.byId(salary.bankId)?.name?.let(::shortBankName).orEmpty()
+            val forecast = app.container.forecastRepository
+            val yesDone = stringResource(R.string.salary_yes_done)
+            val noDone = stringResource(R.string.salary_no_done)
             add(
                 TodoStory(
                     "salary", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Bank, null,
@@ -235,24 +271,41 @@ fun rememberTodoStories(
                         )
                     ),
                     actions = listOf(
-                        TodoAction(stringResource(R.string.salary_yes)) { app.container.forecastRepository.confirmSalary(salary) },
-                        TodoAction(stringResource(R.string.salary_no)) { app.container.forecastRepository.rejectSalary(salary) },
+                        TodoAction(stringResource(R.string.salary_yes)) {
+                            val before = forecast.salaryChoice()
+                            forecast.confirmSalary(salary)
+                            answered(yesDone) { forecast.restoreSalary(before) }
+                        },
+                        TodoAction(stringResource(R.string.salary_no)) {
+                            val before = forecast.salaryChoice()
+                            forecast.rejectSalary(salary)
+                            answered(noDone) { forecast.restoreSalary(before) }
+                        },
                     ),
-                    onClick = {},
                 )
             )
         }
         recurringSuggestions.firstOrNull()?.let { r ->
+            val suggestions = app.container.recurringSuggestions
+            val yesDone = stringResource(R.string.recurring_suggest_yes_done)
+            val noDone = stringResource(R.string.recurring_suggest_no_done)
             add(
                 TodoStory(
                     "rec", t.teal, t.tealTint, t.tealTintFg, DesignIcons.Repeat, null,
                     label = stringResource(R.string.todo_recurring, r.title),
                     detail = stringResource(R.string.todo_recurring_detail),
                     actions = listOf(
-                        TodoAction(stringResource(R.string.recurring_suggest_yes)) { scope.launch { app.container.recurringSuggestions.accept(r) } },
-                        TodoAction(stringResource(R.string.recurring_suggest_no)) { app.container.recurringSuggestions.dismiss(r) },
+                        TodoAction(stringResource(R.string.recurring_suggest_yes)) {
+                            scope.launch {
+                                val id = suggestions.accept(r)
+                                answered(yesDone) { suggestions.undoAccept(id) }
+                            }
+                        },
+                        TodoAction(stringResource(R.string.recurring_suggest_no)) {
+                            suggestions.dismiss(r)
+                            answered(noDone) { suggestions.undoDismiss(r) }
+                        },
                     ),
-                    onClick = onOpenSettings,
                 )
             )
         }
@@ -277,14 +330,11 @@ private fun smsOf(tx: Transaction, otpLabel: String, label: String): List<TodoSm
     tx.body.takeIf { it.isNotBlank() && !tx.isManual }?.let { TodoSms(label, tx.dateMillis, it) },
 )
 
-/** چند خرج این ماه هنوز دسته ندارند */
-private fun uncategorizedThisMonth(app: Context) =
-    (app as JibitoApplication).container.transactionRepository.observeTransactions().map { list ->
-        val m = JalaliMonth.current()
-        val from = m.startMillis()
-        val to = m.endMillis()
-        list.count {
-            it.categoryId == null && !it.isSelfTransfer && !it.isFailedPurchase &&
-                it.transaction.type == FlowType.WITHDRAWAL && it.dateMillis in from until to
-        }
-    }
+/** خرج‌های این ماه و چندتایشان هنوز دسته ندارند (و چندتا تازه‌اند: [UncatProgress]) */
+private fun uncategorizedThisMonth(app: Context) = (app as JibitoApplication).container.let { container ->
+    combine(
+        container.transactionRepository.observeTransactions(),
+        container.uncategorizedBadge.enabled,
+        container.uncategorizedBadge.seenUntil,
+    ) { list, enabled, seenUntil -> uncatProgress(list, JalaliMonth.current(), enabled, seenUntil) }
+}

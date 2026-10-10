@@ -86,6 +86,16 @@ class TabsScreenshotTest : ScreenshotTestBase() {
         }
     }
 
+    /** فقط «خرج بی‌دسته» مانده و مورد تازه ندارد: فوری نیست، زیر «پیشنهادها» با نوار پیشرفت و پیام «بقیه تموم شده» */
+    @Test
+    fun todoQuiet() {
+        for (dark in listOf(false, true)) shot("todoquiet", AppThemeStyle.DEFAULT, dark, padded = false) {
+            Box(Modifier.fillMaxWidth().height(520.dp)) {
+                TodoList(stories().filter { it.id == "uncat" }.map { it.copy(urgent = false) })
+            }
+        }
+    }
+
     /** لمس یک انتقال در «کارها»: پیامک رمز دوم، کسر و واریز همان تراکنش، با دکمه‌های جواب */
     @Test
     fun todoSmsSheet() {

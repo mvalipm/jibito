@@ -204,12 +204,12 @@ interface TransactionFlowDao {
     @Query("UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 1, updatedAt = :now WHERE id IN (:ids)")
     suspend fun applyAutoCategory(ids: List<Long>, categoryId: Long, now: Long)
 
-    /** «برگردان»: دسته، پیشنهاد، وضعیت انتقال و حذف یک تراکنش را به حالت قبل برمی‌گرداند */
+    /** «برگردان»: دسته، پیشنهاد، وضعیت انتقال، «یک‌باره» و حذف یک تراکنش را به حالت قبل برمی‌گرداند */
     @Query(
         """
         UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = :isAuto,
             suggestedCategory = :suggested, transferState = :transferState, transferPairId = :transferPairId,
-            isDeleted = :isDeleted, categorizedAt = :categorizedAt, updatedAt = :now
+            isDeleted = :isDeleted, categorizedAt = :categorizedAt, oneOffState = :oneOffState, updatedAt = :now
         WHERE id = :id
         """
     )
@@ -222,8 +222,18 @@ interface TransactionFlowDao {
         transferPairId: Long?,
         isDeleted: Boolean,
         categorizedAt: Long?,
+        oneOffState: Int,
         now: Long,
     )
+
+    /** برداشت‌های عادیِ یک مقصد که «کارت خودم» شدنش آن‌ها را هم انتقال به خودم می‌کند (برای «برگردان») */
+    @Query(
+        """
+        SELECT * FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = 2 AND transferState = 0 AND isDeleted = 0
+        """
+    )
+    suspend fun selfTransferCandidates(merchant: String): List<TransactionFlowEntity>
 
     /** وضعیت انتقال یک تراکنش (۰ عادی، ۱ انتقال به خودم، ۲ «انتقال نیست»). انتقال به خودم دسته ندارد. */
     @Query(
