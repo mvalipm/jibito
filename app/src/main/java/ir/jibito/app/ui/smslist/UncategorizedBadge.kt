@@ -40,7 +40,7 @@ class UncategorizedBadgeSettings(context: Context) {
 
     companion object {
         const val PREFS = "uncat_badge"
-        private const val KEY_ENABLED = "enabled"
+        const val KEY_ENABLED = "enabled"
         private const val KEY_SEEN_UNTIL = "seen_until"
     }
 }

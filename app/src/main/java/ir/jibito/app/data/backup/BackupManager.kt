@@ -8,6 +8,7 @@ import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.data.wallet.WalletSettings
+import ir.jibito.app.ui.smslist.UncategorizedBadgeSettings
 import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.WeeklyDigest
 import kotlinx.coroutines.Dispatchers
@@ -186,6 +187,8 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             RecurringSuggestions.PREFS to null,
             // «آخرین خلاصه‌ی فرستاده‌شده» مال همین گوشی است؛ فقط روشن/خاموش بودن منتقل می‌شود
             WeeklyDigest.PREFS to setOf(WeeklyDigest.KEY_ENABLED),
+            // «فعلاً نه» (seen_until) مال همین گوشی است؛ فقط روشن/خاموش بودن عدد منتقل می‌شود
+            UncategorizedBadgeSettings.PREFS to setOf(UncategorizedBadgeSettings.KEY_ENABLED),
         )
 
         /** تنظیماتی که عمداً پشتیبان گرفته نمی‌شوند: وضعیت همین گوشی یا همین نصب، نه انتخاب کاربر */
