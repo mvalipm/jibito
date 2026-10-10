@@ -317,6 +317,16 @@ private fun SettingsHub(
                 value = stringResource(R.string.settings_digest_hint),
                 trailing = RowTrailing.Toggle(checked = digestOn, onChange = digest::setEnabled),
             )
+            RowDivider()
+            val uncatBadge = container.uncategorizedBadge
+            val uncatBadgeOn by uncatBadge.enabled.collectAsState()
+            SettingsRow(
+                icon = SettingsIcons.Weekly,
+                tint = tones.transfer,
+                title = stringResource(R.string.settings_uncat_badge),
+                value = stringResource(R.string.settings_uncat_badge_hint),
+                trailing = RowTrailing.Toggle(checked = uncatBadgeOn, onChange = uncatBadge::setEnabled),
+            )
         }
         GroupGap()
 

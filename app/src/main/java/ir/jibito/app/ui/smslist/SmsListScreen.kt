@@ -180,9 +180,14 @@ fun SmsListScreen(
             onAction = { walletSettings.set(before) },
         )
     }
-    val uncategorizedCount = remember(messages) {
-        messages.orEmpty().count(::isUncategorizedSpend)
+    val badgeSettings = app.container.uncategorizedBadge
+    val badgeOn by badgeSettings.enabled.collectAsState()
+    val badgeSeenUntil by badgeSettings.seenUntil.collectAsState()
+    val uncategorizedCount = remember(messages, badgeOn, badgeSeenUntil) {
+        uncategorizedBadgeCount(messages.orEmpty(), badgeOn, badgeSeenUntil)
     }
+    // فیلتر «بی‌دسته» و نکته‌ی اول به خود تراکنش‌ها نگاه می‌کنند، نه به عدد
+    val hasUncategorized = remember(messages) { messages.orEmpty().any(::isUncategorizedSpend) }
 
     // فهرست؛ و کارت «کیف پول» که با اسکرول رو به بالا جمع می‌شود (جمعش کنار عنوان می‌ماند) و با کشیدن در بالای فهرست باز می‌شود
     val listState = rememberLazyListState()
@@ -322,8 +327,17 @@ fun SmsListScreen(
             onPick = { sms, categoryId -> pickCategory(sms, categoryId) },
             tip = when {
                 showSearch -> null
-                uncategorizedCount > 0 && uncatTip.visible -> {
+                hasUncategorized && uncatTip.visible -> {
                     { TipCard(stringResource(R.string.tip_uncategorized), onDismiss = uncatTip.dismiss) }
+                }
+                uncategorizedCount > 0 && !onlyUncategorized -> {
+                    {
+                        UncategorizedNudge(
+                            count = uncategorizedCount,
+                            onOpen = { onFilterChange(true) },
+                            onLater = { badgeSettings.markSeen(messages.orEmpty()) },
+                        )
+                    }
                 }
                 else -> null
             },
