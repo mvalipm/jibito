@@ -27,14 +27,25 @@ class RecurringSuggestions(
             RecurringDetector.detect(all, existing.map { it.title }, no)
         }.flowOn(Dispatchers.Default)
 
-    /** «بله، یادم بنداز» */
-    suspend fun accept(s: RecurringSuggestion) {
+    /** «بله، یادم بنداز»؛ شناسه‌ی یادآورِ ساخته‌شده را برمی‌گرداند (برای [undoAccept]) */
+    suspend fun accept(s: RecurringSuggestion): Long =
         recurring.add(s.title, s.amountRial, s.dayOfMonth)
+
+    /** «برگردون» بعد از «بله»: یادآور ساخته‌شده پاک می‌شود و پیشنهاد دوباره می‌آید */
+    suspend fun undoAccept(id: Long) {
+        recurring.delete(id)
     }
 
     /** «نه»: این طرف حساب دیگر پیشنهاد نمی‌شود */
     fun dismiss(s: RecurringSuggestion) {
         val next = dismissed.value + s.key
+        prefs.edit { putStringSet(KEY_DISMISSED, next) }
+        dismissed.value = next
+    }
+
+    /** «برگردون» بعد از «نه»: این طرف حساب دوباره پیشنهاد می‌شود */
+    fun undoDismiss(s: RecurringSuggestion) {
+        val next = dismissed.value - s.key
         prefs.edit { putStringSet(KEY_DISMISSED, next) }
         dismissed.value = next
     }

@@ -22,6 +22,7 @@ import ir.jibito.app.ui.smslist.TransactionRow
 import ir.jibito.app.ui.summary.SummaryHero
 import ir.jibito.app.ui.summary.TodoAction
 import ir.jibito.app.ui.summary.TodoPage
+import ir.jibito.app.ui.summary.TodoProgress
 import ir.jibito.app.ui.summary.TodoSms
 import ir.jibito.app.ui.summary.TodoStory
 import ir.jibito.app.ui.theme.DesignIcons
@@ -147,7 +148,10 @@ abstract class ScreenshotTestBase {
         val cafe = categoryTint(CategoryPalette.LIGHT[1], "☕")
         return listOf(
             TodoStory("review", t.coral, t.uncatBg, t.uncatFg, DesignIcons.Message, null, "۲ پیامک مبهم", "کمکم کن، دفعه‌ی بعد خودم می‌فهمم.") {},
-            TodoStory("uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.") {},
+            TodoStory(
+                "uncat", t.coral, t.uncatBg, t.uncatFg, null, "۳", "خرج بی‌دسته", "دسته بده تا «کجا رفت؟» درست نشونت بده.",
+                progress = TodoProgress(0.75f, "۹ از ۱۲ خرج این ماه دسته دارد"),
+            ) {},
             TodoStory("budget-2", t.alert, cafe.bg, cafe.fg, cafe.icon, cafe.glyph, "کافه ۱۱۲٪", "۳٫۴ میلیون از بودجه‌ی ۳ میلیونی") {},
             TodoStory(
                 "transfer", t.teal, t.transferBg, t.transferFg, DesignIcons.Transfer, null, "انتقال به خودت؟",

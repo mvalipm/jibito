@@ -66,14 +66,20 @@ data class TodoStory(
      * هر کدام را که خواست جواب می‌دهد. وقتی پر است، detail و actions خود کارت به کار نمی‌روند.
      */
     val pages: List<TodoPage> = emptyList(),
-    val onClick: () -> Unit,
-) {
+    /** نوار پیشرفت زیر کارت (مثلاً «۲۳ از ۸۸ خرج این ماه دسته دارد») */
+    val progress: TodoProgress? = null,
     /**
      * کار فوری: تا انجام نشود عددهای اپ غلط یا ناقص است (پیامک مبهم، خرج بی‌دسته، بودجه‌ی نزدیک سقف).
-     * فقط این‌ها روی تب «کارها» شمرده می‌شوند؛ بقیه پیشنهادند.
+     * فقط این‌ها روی تب «کارها» شمرده می‌شوند؛ بقیه پیشنهادند. پیش‌فرض از روی نوع کار است (isUrgentTodo)؛
+     * «خرج بی‌دسته» که هیچ‌وقت صفر نمی‌شود، فقط وقتی مورد تازه دارد فوری است.
      */
-    val urgent: Boolean get() = isUrgentTodo(id)
-}
+    val urgent: Boolean = isUrgentTodo(id),
+    /** لمس بدنه‌ی کارت؛ null یعنی فقط دکمه‌های خود کارت کار می‌کنند */
+    val onClick: (() -> Unit)? = null,
+)
+
+/** نوار پیشرفت یک کار: [fraction] بین ۰ و ۱ و متنِ زیرش */
+data class TodoProgress(val fraction: Float, val label: String)
 
 /** یک دکمه‌ی داخل کارت کار */
 data class TodoAction(val label: String, val onClick: () -> Unit)

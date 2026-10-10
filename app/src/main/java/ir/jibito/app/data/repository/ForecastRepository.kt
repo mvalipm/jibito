@@ -7,6 +7,7 @@ import ir.jibito.app.data.wallet.BalanceHistory
 import ir.jibito.app.data.wallet.DayGrid
 import ir.jibito.app.data.wallet.PlannedPayment
 import ir.jibito.app.data.wallet.Salary
+import ir.jibito.app.data.wallet.SalaryChoice
 import ir.jibito.app.data.wallet.SalaryDetector
 import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.util.JalaliMonth
@@ -69,4 +70,10 @@ class ForecastRepository(
 
     /** «نه» یا «این حقوقم نیست» */
     fun rejectSalary(salary: Salary) = salarySettings.dismiss(salary.key)
+
+    /** جواب‌های فعلیِ حقوق، پیش از جواب دادن، برای [restoreSalary] */
+    fun salaryChoice(): SalaryChoice = salarySettings.choice.value
+
+    /** «برگردون» بعد از «آره، حقوقمه» یا «نه» */
+    fun restoreSalary(previous: SalaryChoice) = salarySettings.restore(previous)
 }

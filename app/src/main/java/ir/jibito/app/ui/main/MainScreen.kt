@@ -162,7 +162,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         pendingReview = pending.size,
         onOpenReview = {},
         onOpenUncategorized = {},
-        onOpenSettings = {},
         onOpenCategory = {},
     ).count { it.urgent }
 
@@ -303,7 +302,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 onOpenUncategorized = ::openUncategorized,
                                 onOpenTransactions = ::openTransactions,
                                 onOpenTransaction = ::openTransaction,
-                                onOpenSettings = ::openSettings,
                                 // جزئیات دسته (و تغییر بودجه‌اش) در «خلاصه» است
                                 onOpenCategory = {
                                     openCategory = it
