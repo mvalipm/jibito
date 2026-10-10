@@ -77,6 +77,8 @@ import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ir.jibito.app.ui.welcome.FirstRunReveal
+import ir.jibito.app.ui.welcome.NotificationIntroScreen
+import ir.jibito.app.ui.welcome.notificationIntroNeeded
 import ir.jibito.app.ui.welcome.syncWithReveal
 
 private enum class Tab(val route: String, val label: Int) {
@@ -178,14 +180,14 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var whatsNew by remember { mutableStateOf<List<Changelog.Release>>(emptyList()) }
 
     val appContext = LocalContext.current.applicationContext
-    // اجازه‌ی نوتیفیکیشن (اندروید ۱۳ به بعد، اختیاری): بعد از دیدن فایده‌ی اپ، نه پشت سر اجازه‌ی پیامک
-    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    // اجازه‌ی نوتیفیکیشن (اندروید ۱۳ به بعد، اختیاری): بعد از دیدن فایده‌ی اپ، نه پشت سر اجازه‌ی پیامک؛
+    // اول صفحه‌ی توضیحش (NotificationIntroScreen)، و پنجره‌ی اندروید فقط با «آره، خبرم کن»
+    var notificationIntro by rememberSaveable { mutableStateOf(false) }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { notificationIntro = false }
     fun askNotifications() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
+        if (Build.VERSION.SDK_INT < 33) return
+        val granted = ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        if (notificationIntroNeeded(Build.VERSION.SDK_INT, granted)) notificationIntro = true
     }
     LaunchedEffect(Unit) {
         whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
@@ -349,7 +351,15 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 },
             )
         }
-        if (whatsNew.isNotEmpty() && reveal == null) {
+        if (notificationIntro && reveal == null) {
+            NotificationIntroScreen(
+                onAllow = {
+                    if (Build.VERSION.SDK_INT >= 33) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) else notificationIntro = false
+                },
+                onLater = { notificationIntro = false },
+            )
+        }
+        if (whatsNew.isNotEmpty() && reveal == null && !notificationIntro) {
             WhatsNewDialog(whatsNew, onDismiss = {
                 container.whatsNewSeen.markSeen(installedVersion(appContext))
                 whatsNew = emptyList()

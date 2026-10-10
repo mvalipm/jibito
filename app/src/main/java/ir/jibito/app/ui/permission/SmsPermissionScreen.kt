@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,8 +45,8 @@ import ir.jibito.app.ui.theme.JibitoTheme
 /**
  * اجازه‌ی پیامک (قدم ۲ از ۲): جیبی کنجکاو وسط صفحه، یک سؤال کوتاه، و دو قول اصلی در یک کارت
  * (آیکون فیروزه‌ای = حال خوب، نه رنگ هشدار).
- * دکمه‌ها همیشه پایین صفحه‌اند؛ کسی که هنوز اعتماد نکرده می‌تواند «فعلاً دستی» وارد اپ شود.
- * اجازه‌ی نوتیفیکیشن اینجا پرسیده نمی‌شود: بعد از اجازه‌ی پیامک، جدا و با توضیح خودش.
+ * نقطه‌های قدم و دکمه‌ها همیشه پایین صفحه‌اند؛ کسی که هنوز اعتماد نکرده می‌تواند با دکمه‌ی هم‌قدِ «فعلاً دستی» وارد اپ شود.
+ * اجازه‌ی نوتیفیکیشن اینجا پرسیده نمی‌شود: بعد از «جیبت رو شناختم»، با صفحه‌ی خودش ([ir.jibito.app.ui.welcome.NotificationIntroScreen]).
  * اگر قبلاً رد شده، یک یادداشت نرم و دکمه‌ی تنظیمات اپ.
  *
  * @param onManualClick بدون اجازه وارد اپ شود (فقط ثبت دستی)؛ null یعنی این راه نشان داده نشود
@@ -68,7 +67,6 @@ fun SmsPermissionScreen(
             .background(colors.background)
             .safeDrawingPadding(),
     ) {
-        StepDots(current = 2, total = 2, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp))
         Column(
             Modifier
                 .weight(1f)
@@ -76,7 +74,7 @@ fun SmsPermissionScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(44.dp))
             PocketMascot(MascotFace.CURIOUS, size = 84.dp)
             Spacer(Modifier.height(18.dp))
             Text(
@@ -103,7 +101,7 @@ fun SmsPermissionScreen(
                     .border(1.dp, t.border, RoundedCornerShape(22.dp))
                     .padding(horizontal = 16.dp, vertical = 4.dp),
             ) {
-                PromiseRow(DesignIcons.Shield, stringResource(R.string.perm_promise_offline), stringResource(R.string.perm_promise_no_send))
+                PromiseRow(DesignIcons.Shield, stringResource(R.string.perm_promise_offline), stringResource(R.string.perm_promise_no_internet))
                 HorizontalDivider(color = t.border)
                 PromiseRow(DesignIcons.Message, stringResource(R.string.perm_promise_bank_only), stringResource(R.string.perm_promise_bank_only_sub))
             }
@@ -123,8 +121,15 @@ fun SmsPermissionScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        // دکمه‌ها همیشه پایین صفحه
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 12.dp)) {
+        // نقطه‌های قدم و دکمه‌ها همیشه پایین صفحه، مثل خوش‌آمد
+        StepDots(
+            current = 2,
+            total = 2,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 4.dp, bottom = 4.dp),
+        )
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 16.dp)) {
             Button(
                 onClick = onAllowClick,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp),
@@ -148,12 +153,15 @@ fun SmsPermissionScreen(
                     Text(stringResource(R.string.perm_open_settings), fontWeight = FontWeight.Bold)
                 }
             }
+            // «فعلاً دستی» هم‌قد دکمه‌ی اصلی: کسی که هنوز اعتماد نکرده، نباید فکر کند راه دیگری ندارد
             if (onManualClick != null) {
-                TextButton(
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(
                     onClick = onManualClick,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp),
+                    shape = RoundedCornerShape(50),
                 ) {
-                    Text(stringResource(R.string.perm_manual), color = colors.onBackground)
+                    Text(stringResource(R.string.perm_manual), color = colors.onBackground, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

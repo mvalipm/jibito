@@ -394,7 +394,7 @@ private fun DemoRow(picked: Int?) {
 
 /** سه دسته‌ی نمونه؛ لمس یکی، ثبتش می‌کند */
 @Composable
-private fun DemoChips(picked: Int?, onPick: (Int) -> Unit) {
+internal fun DemoChips(picked: Int?, onPick: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -429,7 +429,7 @@ private fun DemoChips(picked: Int?, onPick: (Int) -> Unit) {
 }
 
 /** ایموجی دسته (کلید آیکون خطی و رنگش در CategoryStyle) و اسم دسته‌های نمونه */
-private val DemoCategories = listOf(
+internal val DemoCategories = listOf(
     "🍽" to R.string.cat_food,
     "🚕" to R.string.cat_transport,
     "🛍" to R.string.cat_shopping,
