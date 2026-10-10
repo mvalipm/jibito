@@ -142,6 +142,7 @@ fun SmsListScreen(
     val categorizedMessage = stringResource(R.string.undo_categorized)
     val uncategorizedMessage = stringResource(R.string.undo_uncategorized)
     val deletedMessage = stringResource(R.string.undo_deleted)
+    val similarDoneMessage = stringResource(R.string.similar_done)
     fun offerUndo(message: String, snapshot: UndoSnapshot) {
         toast = ToastMessage(message, undoLabel, onAction = {
             haptics.tick()
@@ -158,13 +159,21 @@ fun SmsListScreen(
     val byId = remember(categories) { categories.associateBy { it.id } }
     // نکته‌های یک‌باره: انجام دادن خود کار هم یعنی «فهمیدم»
     val uncatTip = rememberTip(Tip.UNCATEGORIZED)
+    var similarAsk by remember { mutableStateOf<SimilarAsk?>(null) }
     fun pickCategory(sms: Transaction, categoryId: Long?) {
         if (categoryId != null) uncatTip.dismiss()
         haptics.confirm()
         val name = categoryId?.let { byId[it]?.name }
-        viewModel.setCategory(sms, categoryId) { before ->
-            offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
-        }
+        viewModel.setCategory(
+            sms,
+            categoryId,
+            onDone = { before ->
+                offerUndo(if (name != null) categorizedMessage.format(name) else uncategorizedMessage, before)
+            },
+            onSimilar = { count ->
+                if (categoryId != null && name != null) similarAsk = SimilarAsk(sms.id, sms.merchant.orEmpty(), categoryId, name, count)
+            },
+        )
     }
     val toggledOffMessage = stringResource(R.string.balances_toggled_off)
     val toggledOnMessage = stringResource(R.string.balances_toggled_on)
@@ -425,6 +434,19 @@ fun SmsListScreen(
             },
             onTeachMerchant = { teachingId = selected.id },
             onDismiss = { selectedId = null },
+        )
+    }
+    similarAsk?.let { ask ->
+        SimilarCategoryDialog(
+            ask = ask,
+            onYes = {
+                similarAsk = null
+                viewModel.recategorizeSimilar(ask.transactionId, ask.categoryId) { result ->
+                    haptics.confirm()
+                    offerUndo(similarDoneMessage.format(result.count, ask.categoryName), result.undo)
+                }
+            },
+            onNo = { similarAsk = null },
         )
     }
     messages?.firstOrNull { it.id == teachingId }?.let { teaching ->
