@@ -78,6 +78,15 @@ interface TransactionRepository {
     /** «برگردان»: تراکنش‌های داخل snapshot را به همان حالت برمی‌گرداند */
     suspend fun restore(snapshot: UndoSnapshot)
 
+    /**
+     * چند تراکنش دیگرِ همین طرف حساب (بی‌دسته یا با دسته‌ی خودکار) با [recategorizeSimilar] دسته‌ی [categoryId] را می‌گیرند.
+     * دسته‌ی دستیِ کاربر و انتقال به شخص حساب نمی‌شود.
+     */
+    suspend fun countSimilar(transactionId: Long, categoryId: Long): Int
+
+    /** همان تراکنش‌های [countSimilar] را (خودکار) به [categoryId] می‌برد. null یعنی چیزی عوض نشد. */
+    suspend fun recategorizeSimilar(transactionId: Long, categoryId: Long): RecategorizeResult?
+
     /** جفت‌های «برداشت ← واریزِ هم‌مبلغ» (قانون‌ها در TransferMatcher) که شاید انتقال بین حساب‌های خود کاربر باشند (تازه‌ترها اول) */
     fun observeTransferSuggestions(): Flow<List<TransferSuggestion>>
 
