@@ -76,6 +76,7 @@ import ir.jibito.app.util.Changelog
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ir.jibito.app.ui.todo.recordFirstStepsOpenDay
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.NotificationIntroScreen
 import ir.jibito.app.ui.welcome.notificationIntroNeeded
@@ -165,6 +166,21 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         onOpenCategory = {},
     ).count { it.urgent }
 
+    fun openUncategorized() {
+        onlyUncategorized = true
+        go(Tab.Transactions)
+    }
+    fun openTransactions() {
+        onlyUncategorized = false
+        go(Tab.Transactions)
+    }
+    // برگه‌ی «مال چی بود؟» یک تراکنش در «تراکنش‌ها» (مثل لمس نوتیفیکیشن)
+    fun openTransaction(id: Long) {
+        onlyUncategorized = false
+        pendingOpen = id
+        go(Tab.Transactions)
+    }
+
     LaunchedEffect(openTransactionId) {
         val id = openTransactionId ?: return@LaunchedEffect
         onlyUncategorized = false
@@ -190,6 +206,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         if (notificationIntroNeeded(Build.VERSION.SDK_INT, granted)) notificationIntro = true
     }
     LaunchedEffect(Unit) {
+        // «جیبت رو مرتب کنیم» چند روزِ اول باز کردن اپ بالای «خلاصه» می‌ماند
+        recordFirstStepsOpenDay(appContext)
         whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
     }
     LaunchedEffect(Unit) {
@@ -256,6 +274,9 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                     pendingManual = true
                                     go(Tab.Transactions)
                                 },
+                                onOpenUncategorized = ::openUncategorized,
+                                onOpenTransactions = ::openTransactions,
+                                onOpenTransaction = ::openTransaction,
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -279,14 +300,9 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                             TodoScreen(
                                 pendingReview = pending.size,
                                 onOpenReview = ::openReview,
-                                onOpenUncategorized = {
-                                    onlyUncategorized = true
-                                    go(Tab.Transactions)
-                                },
-                                onOpenTransactions = {
-                                    onlyUncategorized = false
-                                    go(Tab.Transactions)
-                                },
+                                onOpenUncategorized = ::openUncategorized,
+                                onOpenTransactions = ::openTransactions,
+                                onOpenTransaction = ::openTransaction,
                                 onOpenSettings = ::openSettings,
                                 // جزئیات دسته (و تغییر بودجه‌اش) در «خلاصه» است
                                 onOpenCategory = {
@@ -302,11 +318,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 key = entry.arguments?.getString("key") ?: ACCOUNT_ALL,
                                 onBack = { nav.popBackStack() },
                                 // همان برگه‌ی تراکنش در «تراکنش‌ها» (مثل لمس نوتیفیکیشن)
-                                onOpenTransaction = { id ->
-                                    onlyUncategorized = false
-                                    pendingOpen = id
-                                    go(Tab.Transactions)
-                                },
+                                onOpenTransaction = ::openTransaction,
                                 onOpenAccount = { openAccount(it) },
                             )
                         }

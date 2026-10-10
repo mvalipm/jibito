@@ -79,11 +79,14 @@ fun TodoScreen(
     onOpenTransactions: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenCategory: (Long) -> Unit,
+    /** برگه‌ی «مال چی بود؟» یک تراکنش (فروشگاه‌های «جیبت رو مرتب کنیم») */
+    onOpenTransaction: (Long) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     // خلاصه‌ی همین ماه، برای بودجه‌های نزدیک سقف
     val viewModel: SummaryViewModel = viewModel(factory = SummaryViewModel.factory(app.container.budgetRepository))
     val summary by viewModel.summary.collectAsState()
+    val trend by viewModel.trend.collectAsState()
     // «ثبت شد · برگردون» بعد از جواب دادن به یک کار (مثلاً «دو حساب یکی‌اند یا جدا؟»)
     var toast by remember { mutableStateOf<ToastMessage?>(null) }
     LaunchedEffect(toast) {
@@ -104,12 +107,17 @@ fun TodoScreen(
     var editingBudget by remember { mutableStateOf(false) }
     // مورد لمس‌شده‌ی یک کارت چندتایی: پیامک‌هایش در برگه‌ی پایین (کلیدش، تا بعد از جواب دادن جای دیگر هم بسته بماند)
     var smsPage by remember { mutableStateOf<Pair<String, TodoPage>?>(null) }
+    // «جیبت رو مرتب کنیم» روزهای اول بالای «خلاصه» است؛ بعد این‌جا
+    val stepsOnSummary = rememberFirstStepsOnSummary()
     val firstSteps = rememberFirstSteps(
         summary,
+        averageSpendRial = trend?.averageRial,
         onOpenUncategorized = onOpenUncategorized,
         onOpenTransactions = onOpenTransactions,
+        onOpenTransaction = onOpenTransaction,
         onEditBudget = { editingBudget = true },
-    )
+        onSetBudget = viewModel::setOverallBudget,
+    ).takeUnless { stepsOnSummary }
     Box(Modifier.fillMaxSize()) {
         TodoList(
             stories.sortedBy { todoPriority(it.id) },
