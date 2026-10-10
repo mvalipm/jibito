@@ -28,6 +28,7 @@ import ir.jibito.app.notify.BudgetAlerter
 import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.wallet.WalletSettings
+import ir.jibito.app.ui.smslist.UncategorizedBadgeSettings
 import ir.jibito.app.ui.theme.ThemeSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.notify.NotificationStyleSettings
@@ -52,6 +53,9 @@ class AppContainer(context: Context) {
 
     /** حساب‌هایی که در «موجودی همه‌ی حساب‌ها» جمع نمی‌شوند */
     val walletSettings: WalletSettings by lazy { WalletSettings(appContext) }
+
+    /** عدد کنار «بی‌دسته» در تراکنش‌ها: روشن/خاموش و «فعلاً نه» */
+    val uncategorizedBadge: UncategorizedBadgeSettings by lazy { UncategorizedBadgeSettings(appContext) }
 
     /** بانک‌ها و موسسه‌هایی که کاربر خودش اضافه کرده */
     val customInstitutions: CustomInstitutions by lazy { CustomInstitutions(appContext) }

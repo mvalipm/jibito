@@ -100,17 +100,51 @@ private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modif
                     .height(20.dp)
                     .defaultMinSize(minWidth = 20.dp)
                     .clip(CircleShape)
-                    .background(t.badge)
+                    .background(t.muted.copy(alpha = 0.16f))
                     .padding(horizontal = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     Jalali.toPersianDigits(if (badge > 99) "99+" else badge.toString()),
-                    color = t.badgeFg,
+                    color = t.muted,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
+        }
+    }
+}
+
+/** کارت آرام بالای فهرست: «۱۴ خرج منتظر دسته‌اند ←» و «فعلاً نه» که عدد را می‌بندد */
+@Composable
+internal fun UncategorizedNudge(count: Int, onOpen: () -> Unit, onLater: () -> Unit) {
+    val t = JibitoTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(t.chip)
+            .padding(start = 14.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(R.string.uncat_nudge, Jalali.toPersianDigits(if (count > 99) "99+" else count.toString())) + " ←",
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onOpen)
+                .padding(vertical = 14.dp),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Box(
+            Modifier
+                .defaultMinSize(minHeight = 48.dp)
+                .clip(RoundedCornerShape(50))
+                .clickable(onClick = onLater)
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(stringResource(R.string.uncat_nudge_later), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = t.muted)
         }
     }
 }
