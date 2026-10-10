@@ -286,6 +286,12 @@ class TransactionRepositoryImpl(
         onCategoryChanged()
     }
 
+    override suspend fun countSimilar(transactionId: Long, categoryId: Long): Int =
+        SimilarRecategorizer(db).count(transactionId, categoryId)
+
+    override suspend fun recategorizeSimilar(transactionId: Long, categoryId: Long): RecategorizeResult? =
+        SimilarRecategorizer(db).applyTo(transactionId, categoryId)?.also { onCategoryChanged() }
+
     override suspend fun deleteManual(transactionId: Long) {
         val row = dao.byId(transactionId) ?: return
         if (row.source != SOURCE_MANUAL) return

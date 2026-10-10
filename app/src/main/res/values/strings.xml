@@ -420,6 +420,11 @@
     <string name="undo_categorized">رفت تو %1$s</string>
     <string name="undo_uncategorized">دسته‌ش برداشته شد</string>
     <string name="undo_deleted">پاک شد</string>
+    <string name="similar_title">%1$s تراکنش دیگرِ همین طرف‌حساب را هم عوض کنم؟</string>
+    <string name="similar_body">«%1$s» در تراکنش‌های دیگرت هنوز بی‌دسته است یا دسته‌اش را خود جیبیتو حدس زده. همه را بگذارم «%2$s»؟ دسته‌هایی که خودت گذاشته‌ای دست نمی‌خورند.</string>
+    <string name="similar_yes">بله، همه</string>
+    <string name="similar_no">نه، فقط این</string>
+    <string name="similar_done">%1$d تراکنش دیگر هم رفت تو %2$s</string>
 
     <!-- توضیح آیکون‌ها برای صفحه‌خوان (TalkBack) -->
     <string name="cd_search">جست‌وجو</string>

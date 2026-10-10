@@ -186,6 +186,24 @@ interface TransactionFlowDao {
     )
     suspend fun uncategorizedSameMerchant(merchant: String, flowType: Int): List<TransactionFlowEntity>
 
+    /**
+     * «تراکنش‌های مشابه هم عوض شود؟»: دیگر تراکنش‌های همین طرف حساب که یا بی‌دسته‌اند یا دسته‌ی «خودکار» (غیر از دسته‌ی تازه) دارند.
+     * دسته‌ای که خود کاربر گذاشته هیچ‌وقت در این فهرست نیست.
+     */
+    @Query(
+        """
+        SELECT * FROM transaction_flows
+        WHERE merchant = :merchant AND flowType = :flowType AND id != :excludeId AND isDeleted = 0
+          AND transferState != 1
+          AND (categoryId IS NULL OR (isAutoCategorized = 1 AND categoryId != :categoryId))
+        """
+    )
+    suspend fun similarToRecategorize(excludeId: Long, merchant: String, flowType: Int, categoryId: Long): List<TransactionFlowEntity>
+
+    /** دسته‌ی «خودکار» (نه انتخاب کاربر، پس در یادگیری شمرده نمی‌شود) برای چند تراکنش */
+    @Query("UPDATE transaction_flows SET categoryId = :categoryId, isAutoCategorized = 1, updatedAt = :now WHERE id IN (:ids)")
+    suspend fun applyAutoCategory(ids: List<Long>, categoryId: Long, now: Long)
+
     /** «برگردان»: دسته، پیشنهاد، وضعیت انتقال و حذف یک تراکنش را به حالت قبل برمی‌گرداند */
     @Query(
         """

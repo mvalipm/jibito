@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ir.jibito.app.data.repository.RecategorizeResult
 import ir.jibito.app.data.repository.UndoSnapshot
 
 class TransactionsViewModel(
@@ -67,12 +68,27 @@ class TransactionsViewModel(
      * دسته‌ی یک تراکنش را عوض می‌کند (null = بدون دسته). فهرست خودش از دیتابیس به‌روز می‌شود.
      * اگر تراکنش «انتقال به خودم» بود، با انتخاب دسته دیگر انتقال حساب نمی‌شود.
      */
-    fun setCategory(transaction: Transaction, categoryId: Long?, onDone: (UndoSnapshot) -> Unit = {}) {
+    fun setCategory(
+        transaction: Transaction,
+        categoryId: Long?,
+        onDone: (UndoSnapshot) -> Unit = {},
+        onSimilar: (Int) -> Unit = {},
+    ) {
         viewModelScope.launch {
             val before = repository.snapshotForUndo(transaction.id)
             if (transaction.isSelfTransfer) repository.setSelfTransfer(transaction.id, false)
             repository.setCategory(transaction.id, categoryId)
             onDone(before)
+            // تراکنش‌های قبلیِ همین طرف حساب هم می‌توانند همراه شوند (اگر دست‌کم MIN_SIMILAR تا باشند)
+            val similar = categoryId?.let { repository.countSimilar(transaction.id, it) } ?: 0
+            if (similar >= MIN_SIMILAR) onSimilar(similar)
+        }
+    }
+
+    /** «بله، بقیه هم»: دسته‌ی تراکنش‌های مشابه را عوض می‌کند و راه برگرداندنش را می‌دهد */
+    fun recategorizeSimilar(transactionId: Long, categoryId: Long, onDone: (RecategorizeResult) -> Unit) {
+        viewModelScope.launch {
+            repository.recategorizeSimilar(transactionId, categoryId)?.let(onDone)
         }
     }
 
@@ -142,6 +158,9 @@ class TransactionsViewModel(
     }
 
     companion object {
+        /** کم‌تر از این تعداد تراکنش مشابه، پرسیدن اضافه است */
+        const val MIN_SIMILAR = 2
+
         fun factory(repository: TransactionRepository): ViewModelProvider.Factory = viewModelFactory {
             initializer { TransactionsViewModel(repository) }
         }
