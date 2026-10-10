@@ -39,17 +39,47 @@ object CategoryLearner {
         merchant.startsWith("کارت") || merchant.startsWith("حساب")
 }
 
-/** همان منطق، با خواندن از دیتابیس؛ نتیجه‌ها در طول یک همگام‌سازی کش می‌شوند. */
+/**
+ * همان منطق، با خواندن از دیتابیس؛ نتیجه‌ها در طول یک همگام‌سازی کش می‌شوند.
+ *
+ * ترتیب: ۱) انتخاب‌های خود کاربر برای همین طرف حساب (CategoryLearner)، ۲) فقط اگر چیزی یاد نگرفته بود، حدس
+ * (همیشه «پیشنهاد»، هیچ‌وقت خودکار): برای فروشگاه از کلمه‌های مشترک با فروشگاه‌های قبلی (MerchantWordModel)،
+ * و برای کارت یک شخص از ماهانه بودن مبلغ‌های بزرگ (RentGuess).
+ * حدس فروشگاه فقط وقتی است که فهرست کلمه‌های ثابت (CategorySuggester) هم جوابی ندارد؛ آن فهرست دقیق‌تر است.
+ */
 class CategoryLearning(private val db: AppDatabase) {
 
     private val cache = HashMap<Pair<String, Int>, LearnedDecision?>()
+    private val wordModels = HashMap<Int, MerchantWordModel>()
 
     suspend fun decide(merchant: String?, flowType: Int): LearnedDecision? {
         if (merchant == null) return null
         return cache.getOrPut(merchant to flowType) {
             val choices = db.transactionFlowDao().userChoices(merchant, flowType, CategoryLearner.AUTO_THRESHOLD + 2)
-            CategoryLearner.decide(choices, merchant)
+            CategoryLearner.decide(choices, merchant) ?: guess(merchant, flowType)
         }
+    }
+
+    private suspend fun guess(merchant: String, flowType: Int): LearnedDecision? {
+        val categoryId = if (CategoryLearner.isPersonTransfer(merchant)) {
+            rentCategoryIfMonthly(merchant, flowType)
+        } else if (CategorySuggester.suggest(merchant) == null) {
+            wordModels.getOrPut(flowType) {
+                MerchantWordModel(db.transactionFlowDao().merchantChoices(flowType, MAX_TRAINING_CHOICES).map { it.merchant to it.categoryId })
+            }.predict(merchant)
+        } else {
+            null
+        }
+        return categoryId?.let { LearnedDecision(it, auto = false) }
+    }
+
+    /** برداشت ماهانه‌ی بزرگ به یک کارت ← «اجاره و مسکن»، اگر آن دسته هست و بایگانی نشده */
+    private suspend fun rentCategoryIfMonthly(merchant: String, flowType: Int): Long? {
+        if (flowType != EXPENSE) return null
+        val now = System.currentTimeMillis()
+        val payments = db.transactionFlowDao().paymentsTo(merchant, RentGuess.windowStart(now))
+        if (!RentGuess.looksLikeRent(payments.map { it.amount to it.dateEpoch }, now)) return null
+        return db.categoryDao().byCode(RENT_CODE)?.takeIf { !it.isArchived }?.id
     }
 
     private val names = HashMap<Long, String?>()
@@ -57,4 +87,10 @@ class CategoryLearning(private val db: AppDatabase) {
     /** اسم دسته (برای ستون suggestedCategory) */
     suspend fun nameOf(categoryId: Long): String? =
         names.getOrPut(categoryId) { db.categoryDao().byId(categoryId)?.name }
+
+    private companion object {
+        const val EXPENSE = 2
+        const val RENT_CODE = "home.rent"
+        const val MAX_TRAINING_CHOICES = 3000
+    }
 }
