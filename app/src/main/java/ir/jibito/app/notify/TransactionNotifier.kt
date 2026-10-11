@@ -295,7 +295,8 @@ class TransactionNotifier(
     companion object {
         const val CHANNEL_ID = "transactions"
         const val AUTO_CHANNEL_ID = "auto_categorized"
-        private const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
+        /** پیامکی که دیرتر از این پیدا شود «مال چی بود؟» نمی‌گیرد (SleepWatch همین را «دیر» می‌شمارد) */
+        internal const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
         /** نوتیفیکیشن «رفت تو …» بعد از این مدت خودش بسته می‌شود */
         private const val PICKED_TIMEOUT_MILLIS = 6_000L
         /** نشانه‌ی نوتیفیکیشن «رفت تو …» در extras (برای isQuestionStillShown) */

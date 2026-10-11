@@ -9,6 +9,7 @@ import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.parser.ParsedTransaction
 import ir.jibito.app.data.sms.SmsReader
+import ir.jibito.app.data.sms.SleepWatch
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.domain.Category
 import ir.jibito.app.domain.CategoryTree
@@ -48,6 +49,8 @@ class TransactionRepositoryImpl(
     private val db: AppDatabase,
     smsReader: SmsReader,
     syncState: SyncState,
+    /** خرج‌های دیرپیداشده («گوشی منو خوابونده؟»)؛ null در تست‌ها */
+    sleepWatch: SleepWatch? = null,
     /** بعد از تعیین دسته صدا زده می‌شود (برای بررسی هشدار بودجه) */
     private val onCategoryChanged: suspend () -> Unit = {},
     /** بعد از هر همگام‌سازی پیامک‌ها (مثلاً برای به‌روز کردن ویجت) */
@@ -57,7 +60,7 @@ class TransactionRepositoryImpl(
 ) : TransactionRepository {
 
     private val dao = db.transactionFlowDao()
-    private val smsSync = SmsSync(db, smsReader, syncState)
+    private val smsSync = SmsSync(db, smsReader, syncState, sleepWatch)
     private val syncMutex = Mutex()
     private val _isSyncing = MutableStateFlow(false)
     override val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()

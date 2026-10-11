@@ -2,6 +2,7 @@ package ir.jibito.app.ui.summary
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import ir.jibito.app.ui.sleep.rememberSleepAlert
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ fun rememberTodoStories(
     onOpenUncategorized: () -> Unit,
     onOpenCategory: (Long) -> Unit,
     onToast: (ToastMessage) -> Unit = {},
+    /** «درستش کنیم» در «گوشی منو خوابونده؟» ← برگه‌ی «بیدار نگهم دار» */
+    onFixSleep: () -> Unit = {},
 ): List<TodoStory> {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val t = JibitoTheme.colors
@@ -58,6 +61,7 @@ fun rememberTodoStories(
     val accountQuestion by accountQuestionFlow.collectAsState(initial = null)
     val forecastState by app.container.forecastRepository.state.collectAsState()
     val notificationPrompt = rememberNotificationPrompt()
+    val sleepAlert = rememberSleepAlert()
     val scope = rememberCoroutineScope()
     val undoLabel = stringResource(R.string.undo)
     /** «ثبت شد · برگردون» بعد از جواب دادن؛ [undo] وقتی کاربر «برگردون» را می‌زند اجرا می‌شود */
@@ -65,6 +69,21 @@ fun rememberTodoStories(
         onToast(ToastMessage(text, undoLabel, onAction = { scope.launch { undo() } }))
 
     return buildList {
+        // گوشی اپ را می‌خواباند و «مال چی بود؟» به موقع نمی‌آید: اصل کار اپ خراب است، پس فوری
+        sleepAlert?.let { alert ->
+            add(
+                TodoStory(
+                    "sleep", t.amber, t.amberTint, t.amberTintFg, DesignIcons.Moon, null,
+                    label = stringResource(R.string.sleep_title),
+                    detail = Jalali.toPersianDigits(stringResource(R.string.sleep_todo_detail, alert.count)),
+                    actions = listOf(
+                        TodoAction(stringResource(R.string.sleep_fix), onFixSleep),
+                        TodoAction(stringResource(R.string.sleep_later)) { app.container.sleepWatch.snooze() },
+                    ),
+                    onClick = onFixSleep,
+                )
+            )
+        }
         if (notificationPrompt.visible) {
             add(
                 TodoStory(
@@ -314,6 +333,7 @@ fun rememberTodoStories(
 
 /** ترتیب تب «کارها»: اول چیزی که بدونش عددها غلط است، آخر تنظیمات */
 fun todoPriority(id: String): Int = when {
+    id == "sleep" -> 0
     id == "review" -> 0
     id == "uncat" -> 1
     id.startsWith("budget-") -> 2

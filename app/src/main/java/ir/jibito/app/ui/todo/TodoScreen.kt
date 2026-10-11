@@ -21,6 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import ir.jibito.app.ui.sleep.SleepSheet
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -79,6 +81,8 @@ fun TodoScreen(
             toast = null
         }
     }
+    // «گوشی منو خوابونده؟» ← برگه‌ی «بیدار نگهم دار»
+    var sleepSheet by rememberSaveable { mutableStateOf(false) }
     val stories = rememberTodoStories(
         summary,
         pendingReview = pendingReview,
@@ -86,6 +90,7 @@ fun TodoScreen(
         onOpenUncategorized = onOpenUncategorized,
         onOpenCategory = onOpenCategory,
         onToast = { toast = it },
+        onFixSleep = { sleepSheet = true },
     )
     var editingBudget by remember { mutableStateOf(false) }
     // مورد لمس‌شده‌ی یک کارت چندتایی: پیامک‌هایش در برگه‌ی پایین (کلیدش، تا بعد از جواب دادن جای دیگر هم بسته بماند)
@@ -114,6 +119,15 @@ fun TodoScreen(
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
                 .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+        )
+    }
+    if (sleepSheet) {
+        SleepSheet(
+            onDone = {
+                app.container.sleepWatch.markFixed()
+                sleepSheet = false
+            },
+            onDismiss = { sleepSheet = false },
         )
     }
     smsPage?.let { (title, page) ->
