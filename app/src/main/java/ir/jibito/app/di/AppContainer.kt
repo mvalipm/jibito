@@ -23,6 +23,7 @@ import ir.jibito.app.data.repository.ReviewRepositoryImpl
 import ir.jibito.app.data.repository.TransactionRepository
 import ir.jibito.app.data.repository.TransactionRepositoryImpl
 import ir.jibito.app.data.sms.SmsReader
+import ir.jibito.app.data.sms.SleepWatch
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.notify.BudgetAlerter
 import ir.jibito.app.data.bank.CustomInstitutions
@@ -92,11 +93,15 @@ class AppContainer(context: Context) {
         RecurringSuggestions(appContext, transactionRepository, recurringRepository)
     }
 
+    /** «گوشی منو خوابونده؟»: خرج‌هایی که دیرتر از نوتیفیکیشن پیدا شدند */
+    val sleepWatch: SleepWatch by lazy { SleepWatch(appContext) }
+
     val transactionRepository: TransactionRepository by lazy {
         TransactionRepositoryImpl(
             db = database,
             smsReader = SmsReader(appContext),
             syncState = SyncState(appContext),
+            sleepWatch = sleepWatch,
             onCategoryChanged = { onDataChanged() },
             onSynced = { SpendWidget.refresh(appContext) },
             appScope = appScope,

@@ -22,6 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import ir.jibito.app.ui.todo.FirstStepsCard
+import ir.jibito.app.ui.sleep.SleepCard
+import ir.jibito.app.ui.sleep.SleepSheet
+import ir.jibito.app.ui.sleep.rememberSleepAlert
 import ir.jibito.app.ui.todo.rememberFirstSteps
 import ir.jibito.app.ui.todo.rememberFirstStepsOnSummary
 import androidx.compose.runtime.getValue
@@ -111,6 +114,17 @@ fun SummaryScreen(
     BackHandler(enabled = showAll) { showAll = false }
     val noTransactions = rememberNoTransactions()
     val smsAccess = rememberSmsAccess()
+    val sleepAlert = rememberSleepAlert()
+    var sleepSheet by rememberSaveable { mutableStateOf(false) }
+    if (sleepSheet) {
+        SleepSheet(
+            onDone = {
+                app.container.sleepWatch.markFixed()
+                sleepSheet = false
+            },
+            onDismiss = { sleepSheet = false },
+        )
+    }
     // «جیبت رو مرتب کنیم» روزهای اول این‌جاست؛ بعد در «کارها»
     val stepsOnSummary = rememberFirstStepsOnSummary()
     val firstSteps = rememberFirstSteps(
@@ -167,6 +181,17 @@ fun SummaryScreen(
                             onAllowSms = smsAccess.allow,
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp),
                             card = true,
+                        )
+                    }
+                }
+                // گوشی اپ را می‌خواباند ← «مال چی بود؟» به موقع نمی‌آید؛ مهم‌تر از هر کارت دیگر
+                if (sleepAlert != null && s.month == JalaliMonth.current()) {
+                    item(key = "sleep") {
+                        SleepCard(
+                            sleepAlert,
+                            onFix = { sleepSheet = true },
+                            onLater = { app.container.sleepWatch.snooze() },
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
                         )
                     }
                 }

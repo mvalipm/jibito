@@ -8,6 +8,7 @@ import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.data.sms.SmsReader
 import ir.jibito.app.data.sms.SmsRowMatcher
+import ir.jibito.app.data.sms.SleepWatch
 import ir.jibito.app.data.sms.SyncState
 import ir.jibito.app.data.sms.TransactionItem
 import ir.jibito.app.data.local.entity.SmsFlowKey
@@ -25,6 +26,7 @@ internal class SmsSync(
     private val db: AppDatabase,
     private val smsReader: SmsReader,
     private val syncState: SyncState,
+    private val sleepWatch: SleepWatch? = null,
 ) {
     private val dao = db.transactionFlowDao()
 
@@ -51,6 +53,7 @@ internal class SmsSync(
         val now = System.currentTimeMillis()
 
         var inserted = 0
+        var newRows: List<TransactionFlowEntity> = emptyList()
         db.withTransaction {
             val rows = dao.smsKeys()
             val rowsById = rows.associateBy { it.id }
@@ -127,6 +130,7 @@ internal class SmsSync(
             if (toUpdate.isNotEmpty()) dao.updateAll(toUpdate)
             gone.chunked(500).forEach { dao.softDelete(it, now) }
             inserted = toInsert.size
+            newRows = toInsert
 
             // صندوق بررسی: پیامک‌های تازه‌ی خوانده‌نشده اضافه می‌شوند (تکراری‌ها نادیده)،
             // و آن‌هایی که حالا خودکار خوانده شده‌اند، دیگر منتظر نمی‌مانند
@@ -136,6 +140,8 @@ internal class SmsSync(
             })
             reviewDao.resolveAlreadyParsed(now)
         }
+        // فقط اسکن افزایشی: در اسکن کامل (بار اول، بعد از به‌روزرسانی، هفتگی) پیامک قدیمی پیدا کردن عادی است
+        if (!full) sleepWatch?.record(SleepWatch.lateFinds(newRows, now), now)
         syncState.save(
             maxId = scan.maxSmsId,
             maxDate = scan.maxSmsDate,

@@ -93,7 +93,7 @@ data class TodoPage(val key: String, val detail: String, val actions: List<TodoA
 /** یک پیامک در برگه‌ی «پیامک‌های این تراکنش»: برچسب (مثلاً «پیامک رمز دوم»)، زمان اگر معلوم است، و متن خام */
 data class TodoSms(val label: String, val dateMillis: Long?, val body: String)
 
-fun isUrgentTodo(id: String): Boolean = id == "review" || id == "uncat" || id.startsWith("budget-")
+fun isUrgentTodo(id: String): Boolean = id == "sleep" || id == "review" || id == "uncat" || id.startsWith("budget-")
 
 /** سرتیتر هر بخش «خلاصه»: عنوان درشت و یک یادداشت کوچک در طرف دیگر */
 @Composable

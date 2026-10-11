@@ -42,6 +42,15 @@ import ir.jibito.app.ui.common.EmptyStart
 import ir.jibito.app.ui.common.TipCard
 import androidx.compose.foundation.layout.Spacer
 import ir.jibito.app.ui.todo.FirstStepsUi
+import ir.jibito.app.R
+import ir.jibito.app.data.sms.LateFind
+import ir.jibito.app.data.sms.SleepAlert
+import ir.jibito.app.ui.sleep.PhoneBrand
+import ir.jibito.app.ui.sleep.SleepCard
+import ir.jibito.app.ui.sleep.SleepSheetContent
+import ir.jibito.app.ui.sleep.sleepSteps
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import ir.jibito.app.ui.todo.FirstStepsCard
 import ir.jibito.app.ui.todo.StepChip
 import ir.jibito.app.ui.todo.StepOffer
@@ -137,6 +146,23 @@ class TabsScreenshotTest : ScreenshotTestBase() {
         }
         val done = FirstStepsUi(steps.steps.map { it.copy(done = true) }, onHide = {}, celebrating = true)
         for (dark in listOf(false, true)) shot("firststeps_done", AppThemeStyle.DEFAULT, dark) { FirstStepsCard(done) }
+    }
+
+    /** «گوشی منو خوابونده؟»: کارت بالای «خلاصه» و برگه‌ی «بیدار نگهم دار» برای شیائومی (قدم باتری روشن است) */
+    @Test
+    fun sleep() {
+        val alert = SleepAlert(3, LateFind(0, 2 * 60 * 60_000L, "اسنپ"))
+        for (dark in listOf(false, true)) {
+            shot("sleep_card", AppThemeStyle.DEFAULT, dark) { SleepCard(alert, onFix = {}, onLater = {}) }
+            shot("sleep_sheet", AppThemeStyle.DEFAULT, dark) {
+                SleepSheetContent(
+                    body = stringResource(R.string.sleep_sheet_body_xiaomi),
+                    steps = sleepSteps(PhoneBrand.XIAOMI, batteryOk = true, LocalContext.current),
+                    onOpen = {},
+                    onDone = {},
+                )
+            }
+        }
     }
 
     /** کاربر بی هیچ تراکنشی: بی اجازه‌ی پیامک («فعلاً دستی»، وسط «تراکنش‌ها») و با اجازه ولی بی پیامک بانکی (کارت «خلاصه») */
