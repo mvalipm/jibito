@@ -87,7 +87,7 @@ class SleepWatchTest {
     }
 
     @Test
-    fun `روی گوشی: ثبت، «فعلاً نه» و «انجام دادم»`() {
+    fun `روی گوشی، ثبت و «انجام دادم» و «فعلاً نه»`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.getSharedPreferences("sleep_watch", Context.MODE_PRIVATE).edit().clear().commit()
         val watch = SleepWatch(context)
