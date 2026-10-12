@@ -99,11 +99,11 @@ fun isUrgentTodo(id: String): Boolean = id == "sleep" || id == "review" || id ==
 @Composable
 fun SectionHeader(
     title: String,
+    /** بعد از فاصله‌ی دو طرف اعمال می‌شود (مثلاً برای ثبت جای سرتیتر در راهنما) */
+    modifier: Modifier = Modifier,
     note: String? = null,
     noteColor: Color? = null,
     noteBold: Boolean = false,
-    /** بعد از فاصله‌ی دو طرف اعمال می‌شود (مثلاً برای ثبت جای سرتیتر در راهنما) */
-    modifier: Modifier = Modifier,
 ) {
     val t = JibitoTheme.colors
     Row(
