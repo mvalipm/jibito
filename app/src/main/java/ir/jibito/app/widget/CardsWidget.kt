@@ -60,7 +60,8 @@ class CardsWidget : AppWidgetProvider() {
 
     companion object {
         private const val ACTION_TOGGLE_HIDDEN = "ir.jibito.app.widget.TOGGLE_CARDS_HIDDEN"
-        private const val PREFS = "widget"
+        /** فقط همین گوشی (BackupManager.DEVICE_ONLY_PREFS) */
+        const val PREFS = "widget"
         private const val KEY_HIDDEN = "cards_hidden"
 
         /** بیشترین تعداد کارت (اندازه‌ی بزرگ) */
