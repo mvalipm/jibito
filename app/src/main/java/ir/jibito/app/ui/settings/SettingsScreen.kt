@@ -8,18 +8,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,8 +42,13 @@ import ir.jibito.app.domain.Category
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.common.PocketMascot
 import ir.jibito.app.ui.common.openSupportChat
-import ir.jibito.app.ui.main.LocalBottomBarSpace
+import ir.jibito.app.data.pro.ProStatus
+import ir.jibito.app.data.pro.unlocked
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.rememberProStatus
+import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoIcons
+import ir.jibito.app.ui.theme.shownWith
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.ErrorLog
 import ir.jibito.app.util.Jalali
@@ -103,23 +103,6 @@ fun SettingsScreen(onBack: (() -> Unit)? = null) {
         } else {
             SettingsPageScreen(current, categories, permissions, onBack = { page = null })
         }
-    }
-}
-
-/** صفحه‌ی اسکرول‌شونده‌ی تنظیمات با فاصله‌ی درست بالا و پایین (زیر نوار شناور) */
-@Composable
-private fun SettingsColumn(scroll: ScrollState, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .safeDrawingPadding()
-            .verticalScroll(scroll)
-            .padding(horizontal = 16.dp)
-    ) {
-        content()
-        // جای خالی زیر محتوا، تا آخرین بخش زیر نوار شناور گم نشود
-        Spacer(Modifier.height(LocalBottomBarSpace.current + 16.dp))
     }
 }
 
@@ -333,12 +316,14 @@ private fun SettingsHub(
         // ── ظاهر ──
         val style by container.themeSettings.style.collectAsState()
         val darkMode by container.themeSettings.darkMode.collectAsState()
+        // پوسته‌ای که واقعاً دیده می‌شود (پوسته‌ی «جیبیتوی کامل» بعد از ماه رایگان، پیش‌فرض است)
+        val shownStyle = style.shownWith(rememberProStatus().unlocked)
         SettingsGroup(stringResource(R.string.settings_group_look)) {
             SettingsRow(
                 icon = JibitoIcons.Palette,
                 tint = primary,
                 title = stringResource(R.string.settings_theme_title),
-                value = stringResource(R.string.settings_theme_sub, stringResource(style.label), stringResource(darkMode.label)),
+                value = stringResource(R.string.settings_theme_sub, stringResource(shownStyle.label), stringResource(darkMode.label)),
                 onClick = { onOpen(SettingsPage.Theme) },
             )
         }
@@ -347,7 +332,22 @@ private fun SettingsHub(
         // ── جیبیتو ──
         // بعد از «پاک کردن» در صفحه‌ی پیشرفته، با برگشتن به فهرست دوباره خوانده می‌شود
         val errorCount = remember { ErrorLog.count(context) }
+        val proStatus = rememberProStatus()
+        val openPro = LocalOpenPro.current
         SettingsGroup(stringResource(R.string.settings_group_about)) {
+            // «جیبیتوی کامل»: چند روز از ماه رایگان مانده، یا «مال توئه»؛ لمسش برگه‌ی خرید و «قبلاً خریدم»
+            SettingsRow(
+                icon = DesignIcons.Star,
+                tint = tones.amber,
+                title = stringResource(R.string.pro_name),
+                value = when (proStatus) {
+                    ProStatus.Owned -> stringResource(R.string.settings_pro_owned)
+                    is ProStatus.Trial -> Jalali.toPersianDigits(stringResource(R.string.settings_pro_trial, proStatus.daysLeft))
+                    ProStatus.Free -> stringResource(R.string.settings_pro_free)
+                },
+                onClick = { openPro(null) },
+            )
+            RowDivider()
             SettingsRow(
                 icon = SettingsIcons.Help,
                 tint = tones.teal,
@@ -433,61 +433,3 @@ private fun backupValue(lastExportAt: Long?): String {
 /** فاصله‌ی بین گروه‌ها */
 @Composable
 private fun GroupGap() = Spacer(Modifier.height(22.dp))
-
-@Composable
-private fun SettingsPageScreen(
-    page: SettingsPage,
-    categories: List<Category>,
-    permissions: SettingsPermissions,
-    onBack: () -> Unit,
-) {
-    val scroll = rememberScrollState()
-    // کارت‌هایی که عنوان خودشان را می‌دهند: عنوان در سربرگ صفحه، محتوا در کارت
-    val asPage: @Composable (String, @Composable () -> Unit) -> Unit = { title, content ->
-        SettingsPageHeader(title, onBack)
-        PageCard { content() }
-    }
-    SettingsColumn(scroll) {
-        when (page) {
-            SettingsPage.Backup -> BackupCard(asPage)
-            SettingsPage.Export -> ExportCard(asPage)
-            SettingsPage.Accounts -> {
-                SettingsPageHeader(stringResource(R.string.settings_accounts_title), onBack)
-                AccountsPageContent()
-            }
-            SettingsPage.Recurring -> RecurringCard(asPage)
-            SettingsPage.Theme -> {
-                SettingsPageHeader(stringResource(R.string.settings_theme_title), onBack)
-                ThemePageContent()
-            }
-            SettingsPage.CategoryDisplay -> {
-                SettingsPageHeader(stringResource(R.string.settings_display_title), onBack)
-                CategoryDisplayPageContent(categories)
-            }
-            SettingsPage.CustomCategories -> {
-                SettingsPageHeader(stringResource(R.string.settings_custom_title), onBack)
-                CustomCategoriesPageContent(categories)
-            }
-            SettingsPage.Privacy -> {
-                SettingsPageHeader(stringResource(R.string.settings_privacy_title), onBack)
-                PrivacyPageContent()
-            }
-            SettingsPage.Advanced -> {
-                SettingsPageHeader(stringResource(R.string.settings_advanced_title), onBack)
-                AdvancedPageContent(permissions.smsOk)
-            }
-            SettingsPage.NotificationStyle -> {
-                SettingsPageHeader(stringResource(R.string.settings_notif_style_title), onBack)
-                NotificationStylePageContent()
-            }
-            SettingsPage.WhatsNew -> {
-                SettingsPageHeader(stringResource(R.string.whats_new_title), onBack)
-                WhatsNewPageContent()
-            }
-            SettingsPage.Help -> {
-                SettingsPageHeader(stringResource(R.string.help_title), onBack)
-                HelpPageContent()
-            }
-        }
-    }
-}

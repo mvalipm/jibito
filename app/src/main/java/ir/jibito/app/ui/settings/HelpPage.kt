@@ -93,6 +93,7 @@ internal fun helpQuestions(): List<HelpQuestion> {
         HelpQuestion(stringResource(R.string.help_q_learn), stringResource(R.string.help_a_learn)),
         HelpQuestion(stringResource(R.string.help_q_transfer), stringResource(R.string.help_a_transfer)),
         HelpQuestion(stringResource(R.string.help_q_one_off), stringResource(R.string.help_a_one_off)),
+        HelpQuestion(stringResource(R.string.help_q_pro), stringResource(R.string.help_a_pro)),
     )
 }
 

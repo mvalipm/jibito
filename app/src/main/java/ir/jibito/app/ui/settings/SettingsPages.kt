@@ -46,6 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.data.pro.unlocked
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.rememberProStatus
+import ir.jibito.app.ui.theme.shownWith
 import ir.jibito.app.data.category.CreateCategoryResult
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.domain.Category
@@ -91,7 +96,15 @@ internal fun ThemePageContent() {
             onSelect = themeSettings::setDarkMode,
         )
         Spacer(Modifier.height(20.dp))
-        ThemePicker(style, onSelect = themeSettings::set)
+        // بعد از ماه رایگان: پوسته‌های «جیبیتوی کامل» قفل دارند و لمسشان برگه‌ی خرید را باز می‌کند
+        val unlocked = rememberProStatus().unlocked
+        val openPro = LocalOpenPro.current
+        ThemePicker(
+            style.shownWith(unlocked),
+            onSelect = themeSettings::set,
+            proLocked = !unlocked,
+            onLocked = { openPro(ProFeature.THEMES) },
+        )
     }
 }
 
@@ -362,6 +375,7 @@ internal fun PrivacyPageContent() {
         PromiseLine(JibitoIcons.Lock, stringResource(R.string.settings_privacy_backup))
         PromiseLine(JibitoIcons.Warning, stringResource(R.string.settings_privacy_errorlog))
         PromiseLine(DesignIcons.EyeOff, stringResource(R.string.settings_privacy_hide))
+        PromiseLine(DesignIcons.Star, stringResource(R.string.settings_privacy_store))
     }
 }
 

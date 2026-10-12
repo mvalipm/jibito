@@ -8,6 +8,9 @@ import kotlinx.coroutines.launch
 import ir.jibito.app.widget.WidgetKit
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.pro.BazaarStore
+import ir.jibito.app.data.pro.ProAccess
+import ir.jibito.app.data.pro.ProSettings
 import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.data.repository.AccountRepository
 import ir.jibito.app.data.repository.BudgetRepository
@@ -67,6 +70,9 @@ class AppContainer(context: Context) {
 
     /** پوسته‌ی اپ (مرجانی، گرم، سرد) */
     val themeSettings: ThemeSettings by lazy { ThemeSettings(appContext) }
+
+    /** «جیبیتوی کامل»: ماه اول رایگان، بعد یک بار خرید از کافه‌بازار */
+    val pro: ProAccess by lazy { ProAccess(ProSettings(appContext), BazaarStore(appContext), appScope) }
 
     /** قفل اپ با قفل گوشی */
     val appLockSettings: AppLockSettings by lazy { AppLockSettings(appContext) }

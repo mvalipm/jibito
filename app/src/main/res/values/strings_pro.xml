@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- «جیبیتوی کامل»: ماه اول رایگان، بعد یک بار خرید از کافه‌بازار -->
+    <string name="pro_name">جیبیتوی کامل</string>
+
+    <string name="pro_feature_notify">دسته دادن از نوتیف</string>
+    <string name="pro_feature_notify_desc">خرج تازه که میاد، همون‌جا در نوتیف با یک لمس دسته‌ش رو بزن.</string>
+    <string name="pro_feature_forecast">پولم تا حقوق می‌رسه؟</string>
+    <string name="pro_feature_forecast_desc">با همین ریتم خرج می‌گم تا حقوق بعدی چقدر می‌مونه، یا از کی کم میاری.</string>
+    <string name="pro_feature_balance">روند موجودی حساب‌ها</string>
+    <string name="pro_feature_balance_desc">بالا و پایین رفتن موجودی همه‌ی حساب‌هات، روزبه‌روز و ماه‌به‌ماه.</string>
+    <string name="pro_feature_nature">خرجت چه‌جور بود؟</string>
+    <string name="pro_feature_nature_desc">چقدر از خرجت اجباری بود، چقدر ضروری و چقدر دلخواه.</string>
+    <string name="pro_feature_long_range">نمودار ۶ و ۱۲ ماهه</string>
+    <string name="pro_feature_long_range_desc">خرج ماه‌های گذشته کنار هم، با میانگین ماهانه.</string>
+    <string name="pro_feature_themes">پوسته‌های رنگی</string>
+    <string name="pro_feature_themes_desc">ماچا لاته، لوندر، گیلاسی و غروب آینده.</string>
+    <string name="pro_feature_export">خروجی اکسل</string>
+    <string name="pro_feature_export_desc">تراکنش‌هات توی یه فایل که با اکسل یا Google Sheets باز می‌شه.</string>
+
+    <string name="pro_title_ended">ماه رایگانت تموم شد</string>
+    <string name="pro_title_owned">جیبیتوی کامل مال توئه</string>
+    <string name="pro_body_trial">ماه اولت همه‌ی این‌ها رایگان بازه؛ %1$d روز دیگه مونده. اگه به کارت اومد، با یک بار خرید برای همیشه مال توئه.</string>
+    <string name="pro_body_free">با یک بار خرید از کافه‌بازار، این‌ها برای همیشه باز می‌شن. اشتراک نداره، تبلیغ نداره.</string>
+    <string name="pro_body_ended">ثبت خودکار خرج، بودجه، پشتیبان و بقیه‌ی جیبیتو مثل همیشه رایگانه. فقط این‌ها از امروز بسته شدن؛ با یک بار خرید، برای همیشه باز می‌شن.</string>
+    <string name="pro_body_owned">همه‌ی این‌ها برای همیشه بازه. ممنون که حامی جیبیتو شدی!</string>
+    <string name="pro_buy">خرید از کافه‌بازار</string>
+    <string name="pro_buy_price">خرید از کافه‌بازار · %1$s</string>
+    <string name="pro_restore">قبلاً خریدم</string>
+    <string name="pro_later">فعلاً نه</string>
+    <string name="pro_close">باشه</string>
+    <string name="pro_note">پرداخت با خود کافه‌بازاره. جیبیتو هیچ داده‌ای براش نمی‌فرسته و باز هم اینترنت نمی‌خواد.</string>
+    <string name="pro_msg_no_store">کافه‌بازار روی گوشیت نیست (یا قدیمیه). برای خرید، نصب یا به‌روزش کن.</string>
+    <string name="pro_msg_failed">خرید انجام نشد. اگه پولی کم شده، «قبلاً خریدم» رو بزن.</string>
+    <string name="pro_msg_not_found">با این حساب کافه‌بازار خریدی پیدا نکردم. با همون حسابی که خریدی وارد بازار شو.</string>
+    <string name="pro_msg_unavailable">نشد از کافه‌بازار بپرسم. بازار نصبه و وارد حسابت شدی؟</string>
+    <string name="pro_msg_not_ready">خرید هنوز آماده نیست؛ به‌زودی!</string>
+
+    <string name="pro_locked_title">«%1$s» در جیبیتوی کامله</string>
+    <string name="pro_locked_button">ببین چی داره</string>
+    <string name="pro_locked_summary">در جیبیتوی کامل</string>
+    <string name="cd_pro_locked">بسته؛ در جیبیتوی کامل</string>
+
+    <!-- بعد از ماه رایگان، جای «مال چی بود؟» -->
+    <string name="notif_pro_invite">ثبتش کردم ✓ برای این‌که از همین‌جا دسته‌ش رو بزنی، جیبیتوی کامل رو ببین.</string>
+    <string name="notif_pro_invite_long">ثبتش کردم ✓ ماه رایگانت تموم شده و دسته دادن از نوتیف حالا مال جیبیتوی کامله. با یک بار خرید از کافه‌بازار، این نوتیف‌ها برمی‌گردن و پیش‌بینی «تا حقوق» و گزارش‌های کامل هم برای همیشه مال تو می‌شن. تا اون موقع، توی خود اپ دسته بده.</string>
+
+    <string name="hero_forecast_teaser">پولت تا حقوق می‌رسه؟ در جیبیتوی کامل می‌گم.</string>
+    <string name="cd_hero_forecast_teaser">پیش‌بینی موجودی، در جیبیتوی کامل. برای دیدن بزنید.</string>
+
+    <string name="settings_pro_trial">ماه اول رایگان: %1$d روز مونده</string>
+    <string name="settings_pro_owned">مال توئه؛ ممنون!</string>
+    <string name="settings_pro_free">یک بار بخر، برای همیشه</string>
+    <string name="settings_privacy_store">خرید «جیبیتوی کامل» با خود کافه‌بازاره؛ جیبیتو فقط از بازار می‌پرسه خریدی یا نه.</string>
+
+    <string name="help_q_pro">جیبیتوی کامل چیه؟</string>
+    <string name="help_a_pro">دسته دادن از نوتیف، پیش‌بینی «پولم تا حقوق می‌رسه؟»، روند موجودی حساب‌ها، «خرجت چه‌جور بود؟»، نمودار ۶ و ۱۲ ماهه، پوسته‌های رنگی و خروجی اکسل. ماه اول همه‌اش رایگان بازه؛ بعدش با یک بار خرید از کافه‌بازار برای همیشه مال توئه. ثبت خودکار خرج، دسته دادن در خود اپ، بودجه، پشتیبان و قفل اپ همیشه رایگانه. گوشیت رو عوض کردی؟ در تنظیمات، «جیبیتوی کامل» ← «قبلاً خریدم».</string>
+</resources>

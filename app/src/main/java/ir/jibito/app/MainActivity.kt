@@ -40,6 +40,8 @@ import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.DarkMode
+import ir.jibito.app.ui.theme.shownWith
+import ir.jibito.app.data.pro.unlocked
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.LocalStatusBarOnColor
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -71,6 +73,9 @@ class MainActivity : ComponentActivity() {
     /** حسابی که از ویجت «موجودی کارت‌ها» خواسته شده و هنوز باز نشده (کلید AccountRef) */
     private var openAccountKey by mutableStateOf<String?>(null)
 
+    /** نوتیف «ثبتش کردم؛ جیبیتوی کامل…» لمس شده و برگه‌ی خرید هنوز باز نشده */
+    private var openProRequested by mutableStateOf(false)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         readOpenRequest(intent)
@@ -80,6 +85,7 @@ class MainActivity : ComponentActivity() {
         val id = intent?.getLongExtra(EXTRA_TRANSACTION_ID, -1L) ?: -1L
         if (id > 0) openTransactionId = id
         intent?.getStringExtra(EXTRA_ACCOUNT_KEY)?.let { openAccountKey = it }
+        if (intent?.getBooleanExtra(EXTRA_OPEN_PRO, false) == true) openProRequested = true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +99,8 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) readOpenRequest(intent)
         setContent {
             val style by themeSettings.style.collectAsState()
+            // پوسته‌های «جیبیتوی کامل» بعد از ماه رایگان، تا خریدن، همان پیش‌فرض دیده می‌شوند (انتخاب کاربر می‌ماند)
+            val proStatus by container.pro.status.collectAsState()
             val darkMode by themeSettings.darkMode.collectAsState()
             val hideAmounts by themeSettings.hideAmounts.collectAsState()
             val dark = when (darkMode) {
@@ -113,7 +121,7 @@ class MainActivity : ComponentActivity() {
                 // وقتی قفل روشن است، تصویر اپ در «برنامه‌های اخیر» نشان داده نشود
                 if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(!lockEnabled)
             }
-            JibitoTheme(style = style, darkTheme = dark) {
+            JibitoTheme(style = style.shownWith(proStatus.unlocked), darkTheme = dark) {
                 // فعلاً کل اپ را راست‌به‌چپ می‌کنیم؛ سوییچ زبان را بعداً اضافه می‌کنیم
                 CompositionLocalProvider(
                     LocalLayoutDirection provides LayoutDirection.Rtl,
@@ -128,6 +136,8 @@ class MainActivity : ComponentActivity() {
                                 onOpenHandled = { openTransactionId = null },
                                 openAccountKey = openAccountKey,
                                 onAccountHandled = { openAccountKey = null },
+                                openPro = openProRequested,
+                                onOpenProHandled = { openProRequested = false },
                             )
                         }
                         if (locked) {
@@ -154,6 +164,8 @@ class MainActivity : ComponentActivity() {
         }
         session.backgroundedAt = 0
         refreshLock()
+        // روزهای ماه رایگان، و (حداکثر روزی یک بار) خرید قبلی از کافه‌بازار: نصب دوباره یا گوشی تازه
+        (application as JibitoApplication).container.pro.onAppVisible()
     }
 
     override fun onStop() {
@@ -173,6 +185,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_TRANSACTION_ID = "ir.jibito.app.extra.TRANSACTION_ID"
         const val EXTRA_ACCOUNT_KEY = "ir.jibito.app.extra.ACCOUNT_KEY"
+        private const val EXTRA_OPEN_PRO = "ir.jibito.app.extra.OPEN_PRO"
 
         /** باز کردن اپ روی یک تراکنش، با برگه‌ی انتخاب دسته (برای لمس نوتیفیکیشن) */
         fun openTransactionIntent(context: Context, transactionId: Long): Intent =
@@ -185,6 +198,12 @@ class MainActivity : ComponentActivity() {
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .putExtra(EXTRA_ACCOUNT_KEY, accountKey)
+
+        /** باز کردن اپ روی برگه‌ی «جیبیتوی کامل» (لمس نوتیف «ثبتش کردم» بعد از ماه رایگان) */
+        fun openProIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(EXTRA_OPEN_PRO, true)
     }
 }
 
@@ -200,6 +219,8 @@ private fun JibitoApp(
     onOpenHandled: () -> Unit,
     openAccountKey: String?,
     onAccountHandled: () -> Unit,
+    openPro: Boolean,
+    onOpenProHandled: () -> Unit,
 ) {
     val context = LocalContext.current
     fun granted(permission: String) =
@@ -265,6 +286,8 @@ private fun JibitoApp(
             onOpenHandled = onOpenHandled,
             openAccountKey = openAccountKey,
             onAccountHandled = onAccountHandled,
+            openPro = openPro,
+            onOpenProHandled = onOpenProHandled,
         )
     }
 }
