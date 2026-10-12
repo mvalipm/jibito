@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** کلید «عدد خرج‌های بی‌دسته» در تنظیمات: خاموش و روشن کردنش باید دیده شود، حتی بعد از «فعلاً نه» */
+/** کلید «عدد خرج‌های بی‌دسته» در تنظیمات و «فعلاً نه»: هر دو یک کلیدند و خاموش و روشن کردنش باید دیده شود */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class UncategorizedBadgeSettingsTest {
@@ -39,7 +39,7 @@ class UncategorizedBadgeSettingsTest {
     private fun count() = uncategorizedBadgeCount(all, settings.enabled.value, settings.seenUntil.value)
 
     @Test
-    fun `بعد از فعلاً نه، خاموش و روشن کردن عدد را برمی‌گرداند`() {
+    fun `بعد از دیده‌شدن، خاموش و روشن کردن عدد را برمی‌گرداند`() {
         settings.markSeen(all)
         assertEquals(0, count())
 
@@ -63,7 +63,7 @@ class UncategorizedBadgeSettingsTest {
     }
 
     @Test
-    fun `خاموش کردن فعلاً نه را پاک نمی‌کند و عدد صفر می‌ماند`() {
+    fun `خاموش کردن دیده‌شده‌ها را پاک نمی‌کند و عدد صفر می‌ماند`() {
         settings.markSeen(all)
         settings.setEnabled(false)
         assertFalse(settings.enabled.value)
@@ -72,10 +72,35 @@ class UncategorizedBadgeSettingsTest {
     }
 
     @Test
-    fun `روشن بودنِ از قبل، فعلاً نه را پاک نمی‌کند`() {
+    fun `روشن بودنِ از قبل، دیده‌شده‌ها را پاک نمی‌کند`() {
         settings.markSeen(all)
         settings.setEnabled(true)
         assertEquals(3_000L, settings.seenUntil.value)
         assertEquals(0, count())
+    }
+
+    @Test
+    fun `فعلاً نه کلید تنظیمات را خاموش می‌کند و یک بار روشن کردن عدد را برمی‌گرداند`() {
+        settings.turnOff()
+        assertFalse(settings.enabled.value)
+        assertFalse(UncategorizedBadgeSettings(context).enabled.value)
+        assertEquals(0, count())
+
+        settings.setEnabled(true)
+        assertEquals(3, count())
+    }
+
+    @Test
+    fun `برگردون بعد از فعلاً نه همان حالت قبل را برمی‌گرداند`() {
+        settings.markSeen(listOf(tx(1, 1_000)))
+        val undo = settings.turnOff()
+        undo()
+        assertTrue(settings.enabled.value)
+        assertEquals(1_000L, settings.seenUntil.value)
+        assertEquals(2, count())
+
+        val reopened = UncategorizedBadgeSettings(context)
+        assertTrue(reopened.enabled.value)
+        assertEquals(1_000L, reopened.seenUntil.value)
     }
 }

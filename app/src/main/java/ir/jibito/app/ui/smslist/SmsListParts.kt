@@ -115,7 +115,7 @@ private fun Segment(label: String, selected: Boolean, onClick: () -> Unit, modif
     }
 }
 
-/** کارت آرام بالای فهرست: «۱۴ خرج منتظر دسته‌اند ←» و «فعلاً نه» که عدد را می‌بندد */
+/** کارت آرام بالای فهرست: «۱۴ خرج منتظر دسته‌اند ←» و «فعلاً نه» که عدد را (همان کلید تنظیمات) خاموش می‌کند */
 @Composable
 internal fun UncategorizedNudge(count: Int, onOpen: () -> Unit, onLater: () -> Unit) {
     val t = JibitoTheme.colors

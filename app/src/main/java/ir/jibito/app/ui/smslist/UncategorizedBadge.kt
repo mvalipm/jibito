@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * عددِ کنار «بی‌دسته» در «تراکنش‌ها». کاربر می‌تواند با «فعلاً نه» آن را ببندد (مثل «خوانده‌شد» در پیامک):
- * خرج‌های قدیمیِ بی‌دسته دیگر عدد نمی‌سازند و فقط خرج‌های تازه‌تر از آن لحظه حساب می‌شوند.
- * در تنظیمات هم می‌شود عدد را کلاً خاموش کرد. خود تراکنش‌ها و فیلتر «بی‌دسته» دست نمی‌خورند.
+ * عددِ کنار «بی‌دسته» در «تراکنش‌ها». «فعلاً نه» روی کارت بالای فهرست همان کلید تنظیمات را خاموش می‌کند
+ * (و روشن کردن دوباره‌اش عدد همه را برمی‌گرداند). باز کردن فهرست از «کارها» خرج‌های فعلی را «دیده‌شده» می‌کند
+ * (مثل «خوانده‌شد» در پیامک) تا فقط خرج‌های تازه‌تر عدد بسازند. خود تراکنش‌ها و فیلتر «بی‌دسته» دست نمی‌خورند.
  */
 class UncategorizedBadgeSettings(context: Context) {
 
@@ -37,7 +37,24 @@ class UncategorizedBadgeSettings(context: Context) {
         if (turningOn) _seenUntil.value = 0L
     }
 
-    /** «فعلاً نه»: همه‌ی خرج‌های بی‌دسته‌ی تا الان دیده‌شده */
+    /**
+     * «فعلاً نه» روی کارت بالای تراکنش‌ها: همان کلید تنظیمات خاموش می‌شود.
+     * @return «برگردون»: حالت قبل، بی‌آنکه «دیده‌شده»های قبلی پاک شوند
+     */
+    fun turnOff(): () -> Unit {
+        val before = _seenUntil.value
+        setEnabled(false)
+        return {
+            prefs.edit {
+                putBoolean(KEY_ENABLED, true)
+                putLong(KEY_SEEN_UNTIL, before)
+            }
+            _seenUntil.value = before
+            _enabled.value = true
+        }
+    }
+
+    /** باز کردن فهرست بی‌دسته‌ها: همه‌ی خرج‌های بی‌دسته‌ی تا الان دیده‌شده */
     fun markSeen(all: List<Transaction>) {
         val newest = all.filter(::isUncategorizedSpend).maxOfOrNull { it.dateMillis } ?: return
         prefs.edit { putLong(KEY_SEEN_UNTIL, newest) }

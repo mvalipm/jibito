@@ -193,6 +193,7 @@ fun SmsListScreen(
     val badgeSettings = app.container.uncategorizedBadge
     val badgeOn by badgeSettings.enabled.collectAsState()
     val badgeSeenUntil by badgeSettings.seenUntil.collectAsState()
+    val badgeOffMessage = stringResource(R.string.uncat_badge_off)
     val uncategorizedCount = remember(messages, badgeOn, badgeSeenUntil) {
         uncategorizedBadgeCount(messages.orEmpty(), badgeOn, badgeSeenUntil)
     }
@@ -345,7 +346,7 @@ fun SmsListScreen(
                         UncategorizedNudge(
                             count = uncategorizedCount,
                             onOpen = { onFilterChange(true) },
-                            onLater = { badgeSettings.markSeen(messages.orEmpty()) },
+                            onLater = { toast = ToastMessage(badgeOffMessage, undoLabel, onAction = badgeSettings.turnOff()) },
                         )
                     }
                 }
