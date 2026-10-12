@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- نوار بودجه‌ی ماه: سه نوار هم‌جا، یکی به رنگ حال بودجه دیده می‌شود (رنگ نوار از کد عوض نمی‌شود) -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_progress_box"
+    android:layout_width="match_parent"
+    android:layout_height="12dp"
+    android:layout_marginTop="3dp"
+    android:visibility="gone">
+
+    <ProgressBar
+        android:id="@+id/widget_progress_calm"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:progressDrawable="@drawable/widget_progress_calm"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_warn"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:progressDrawable="@drawable/widget_progress_warn"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_over"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:progressDrawable="@drawable/widget_progress_over"
+        android:visibility="gone" />
+</FrameLayout>

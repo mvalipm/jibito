@@ -12,7 +12,11 @@ import kotlinx.coroutines.flow.asStateFlow
  * فقط روی جمع بالای صفحه‌ی تراکنش‌ها اثر دارد؛ خود حساب و تراکنش‌هایش دست نمی‌خورند.
  * کلیدها: WalletExclusion («بانک:شماره»، و «بانک:*» برای کل بانک).
  */
-class WalletSettings(context: Context) {
+class WalletSettings(
+    context: Context,
+    /** بعد از هر تغییر (ویجت «موجودی کارت‌ها» همان حساب‌های جمع را نشان می‌دهد) */
+    private val onChanged: () -> Unit = {},
+) {
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -34,6 +38,7 @@ class WalletSettings(context: Context) {
             remove(KEY_LEGACY)
         }
         _excluded.value = excluded
+        onChanged()
     }
 
     /** نسخه‌های قبل فقط شناسه‌ی بانک نگه می‌داشتند ← همان بانک، کامل، بیرون از جمع می‌ماند */

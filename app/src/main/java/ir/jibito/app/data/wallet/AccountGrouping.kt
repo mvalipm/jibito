@@ -18,6 +18,13 @@ data class AccountBalanceRow(
     val dateEpoch: Long,
 )
 
+/** تعداد تراکنش‌های یک (بانک، شماره حساب) در یک بازه */
+data class AccountUsageRow(
+    val bankId: Int,
+    val account: String?,
+    val count: Int,
+)
+
 /** شماره حسابی که در پیامک‌های یک بانک دیده شده، با زمان آخرین پیامکش */
 data class KnownAccountRow(
     val bankId: Int,

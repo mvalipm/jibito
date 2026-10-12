@@ -21,6 +21,8 @@ import ir.jibito.app.data.local.entity.OverallBudgetEntity
 import ir.jibito.app.data.local.entity.RecurringPaymentEntity
 import kotlinx.coroutines.flow.Flow
 import ir.jibito.app.data.local.entity.DatedAmount
+import ir.jibito.app.data.local.entity.RecentSpend
+import ir.jibito.app.data.wallet.AccountUsageRow
 
 @Dao
 interface CategoryDao {
@@ -127,6 +129,17 @@ interface SummaryDao {
             " AND flowType = :flowType AND dateEpoch >= :from AND dateEpoch < :to GROUP BY categoryId"
     )
     suspend fun sums(flowType: Int, from: Long, to: Long): List<CategorySum>
+
+    /** تازه‌ترین تراکنش‌ها با همان شرط‌های جمع‌ها (ویجت: «آخرین خرج‌ها») */
+    @Query(
+        "SELECT id, amount, dateEpoch, merchant, categoryId FROM transaction_flows WHERE " + COUNTED_FLOWS +
+            " AND flowType = :flowType ORDER BY dateEpoch DESC, id DESC LIMIT :limit"
+    )
+    suspend fun latest(flowType: Int, limit: Int): List<RecentSpend>
+
+    /** زمان اولین تراکنشِ حساب‌شده (ویجت: «یک روز معمولی» فقط با سابقه‌ی کافی) */
+    @Query("SELECT MIN(dateEpoch) FROM transaction_flows WHERE " + COUNTED_FLOWS + " AND flowType = :flowType")
+    suspend fun firstDate(flowType: Int): Long?
 
     @Query("SELECT * FROM budgets")
     fun observeBudgets(): Flow<List<BudgetEntity>>
@@ -282,6 +295,26 @@ interface AccountDao {
         """
     )
     fun observeBalancePoints(): Flow<List<BalancePointRow>>
+
+    /** همان پیامک‌های مانده‌دار، فقط از [from] به بعد (روند چندروزه‌ی ویجت کارت‌ها) */
+    @Query(
+        """
+        SELECT id, bankId, account, remainAfter, dateEpoch, flowType, amount FROM transaction_flows
+        WHERE isDeleted = 0 AND remainAfter IS NOT NULL AND bankId IS NOT NULL AND dateEpoch >= :from
+        ORDER BY dateEpoch, id
+        """
+    )
+    suspend fun balancePointsSince(from: Long): List<BalancePointRow>
+
+    /** «کارت‌های پرمصرف»: تعداد تراکنش هر (بانک، شماره حساب) از [from] به بعد */
+    @Query(
+        """
+        SELECT bankId, account, COUNT(*) AS count FROM transaction_flows
+        WHERE isDeleted = 0 AND bankId IS NOT NULL AND dateEpoch >= :from
+        GROUP BY bankId, account
+        """
+    )
+    suspend fun usageSince(from: Long): List<AccountUsageRow>
 
     /**
      * «پولم تا حقوق می‌رسه؟»: تراکنش‌های بانکی از [from] به بعد (بدون انتقال به خودم و خرید ناموفق)،

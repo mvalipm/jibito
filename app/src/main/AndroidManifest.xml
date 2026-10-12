@@ -46,7 +46,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- ویجت صفحه‌ی اصلی: خرج امروز و باقی‌مانده‌ی بودجه -->
+        <!-- ویجت صفحه‌ی اصلی: خرج امروز در برابر یک روز معمولی، نمودار هفته و بودجه‌ی ماه -->
         <receiver
             android:name=".widget.SpendWidget"
             android:exported="false"
@@ -57,6 +57,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_spend_info" />
+        </receiver>
+
+        <!-- ویجت صفحه‌ی اصلی: موجودی کارت‌های پرمصرف (دکمه‌ی چشمش هم به همین گیرنده می‌آید) -->
+        <receiver
+            android:name=".widget.CardsWidget"
+            android:exported="false"
+            android:label="@string/widget_cards_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_cards_info" />
         </receiver>
 
         <!-- دکمه‌های دسته در نوتیفیکیشن -->

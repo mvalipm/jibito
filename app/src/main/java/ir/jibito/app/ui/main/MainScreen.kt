@@ -117,9 +117,16 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
  *
  * @param openTransactionId تراکنشی که باید باز شود (لمس نوتیفیکیشن «این خرج مال چی بود؟»)
  * @param onOpenHandled بعد از رسیدگی به openTransactionId صدا زده می‌شود تا دوباره باز نشود
+ * @param openAccountKey حسابی که باید باز شود (لمس کارت در ویجت «موجودی کارت‌ها»؛ کلید AccountRef)
+ * @param onAccountHandled بعد از رسیدگی به openAccountKey
  */
 @Composable
-fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) {
+fun MainScreen(
+    openTransactionId: Long? = null,
+    onOpenHandled: () -> Unit = {},
+    openAccountKey: String? = null,
+    onAccountHandled: () -> Unit = {},
+) {
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
     val nav = rememberNavController()
     val backStackEntry by nav.currentBackStackEntryAsState()
@@ -192,6 +199,13 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         pendingOpen = id
         go(Tab.Transactions)
         onOpenHandled()
+    }
+
+    LaunchedEffect(openAccountKey) {
+        val key = openAccountKey ?: return@LaunchedEffect
+        go(Tab.Reports)
+        openAccount(AccountRef.parse(key))
+        onAccountHandled()
     }
 
     // «۳۴۲ تراکنش پیدا شد»: فقط بار اولی که پیامک‌های این گوشی خوانده می‌شوند (موقع باز شدن، یا بعداً با دادن اجازه)

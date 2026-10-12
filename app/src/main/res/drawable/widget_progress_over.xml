@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  نوار بودجه‌ی ماه (ProgressBar): progress = خرج‌شده، secondaryProgress = «امروز در ماه» (خط باریک روی نوار).
+  خط بعد از پُرشدگی آمده تا رویش دیده شود. scale (نه clip) تا سر نوار گرد بماند؛ start در راست‌به‌چپ یعنی راست.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@android:id/background"
+        android:height="6dp"
+        android:gravity="center_vertical|fill_horizontal">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_track" />
+            <corners android:radius="3dp" />
+        </shape>
+    </item>
+    <item
+        android:id="@android:id/progress"
+        android:height="6dp"
+        android:gravity="center_vertical|fill_horizontal">
+        <scale
+            android:scaleGravity="start|fill_vertical"
+            android:scaleWidth="100%">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/widget_over" />
+                <corners android:radius="3dp" />
+            </shape>
+        </scale>
+    </item>
+    <item android:id="@android:id/secondaryProgress">
+        <scale
+            android:scaleGravity="start|fill_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:width="2dp"
+                    android:gravity="end|fill_vertical">
+                    <shape android:shape="rectangle">
+                        <solid android:color="@color/widget_marker" />
+                        <corners android:radius="1dp" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+</layer-list>

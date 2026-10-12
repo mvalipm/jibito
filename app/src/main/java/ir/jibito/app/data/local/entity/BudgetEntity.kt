@@ -63,3 +63,12 @@ data class DatedAmount(
     /** خرج یک‌باره (خرید خانه…): در جمع‌ها هست، ولی پایه‌ی میانگین، مقایسه و پیش‌بینی نیست */
     val isOneOff: Boolean = false,
 )
+
+/** یک خرج برای فهرست «آخرین خرج‌ها»ی ویجت */
+data class RecentSpend(
+    val id: Long,
+    val amount: Long,
+    val dateEpoch: Long,
+    val merchant: String?,
+    val categoryId: Long?,
+)

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- زمینه‌ی هر دو ویجت: سفید (تیره در حالت تیره)؛ حال بودجه دیگر زمینه را رنگ نمی‌کند -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@color/widget_bg" />
-    <corners android:radius="28dp" />
+    <corners android:radius="26dp" />
 </shape>

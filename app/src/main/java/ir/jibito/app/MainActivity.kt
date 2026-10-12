@@ -68,6 +68,9 @@ class MainActivity : ComponentActivity() {
     /** تراکنشی که از نوتیفیکیشن خواسته شده و هنوز باز نشده */
     private var openTransactionId by mutableStateOf<Long?>(null)
 
+    /** حسابی که از ویجت «موجودی کارت‌ها» خواسته شده و هنوز باز نشده (کلید AccountRef) */
+    private var openAccountKey by mutableStateOf<String?>(null)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         readOpenRequest(intent)
@@ -76,6 +79,7 @@ class MainActivity : ComponentActivity() {
     private fun readOpenRequest(intent: Intent?) {
         val id = intent?.getLongExtra(EXTRA_TRANSACTION_ID, -1L) ?: -1L
         if (id > 0) openTransactionId = id
+        intent?.getStringExtra(EXTRA_ACCOUNT_KEY)?.let { openAccountKey = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -122,6 +126,8 @@ class MainActivity : ComponentActivity() {
                             JibitoApp(
                                 openTransactionId = openTransactionId,
                                 onOpenHandled = { openTransactionId = null },
+                                openAccountKey = openAccountKey,
+                                onAccountHandled = { openAccountKey = null },
                             )
                         }
                         if (locked) {
@@ -166,12 +172,19 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TRANSACTION_ID = "ir.jibito.app.extra.TRANSACTION_ID"
+        const val EXTRA_ACCOUNT_KEY = "ir.jibito.app.extra.ACCOUNT_KEY"
 
         /** باز کردن اپ روی یک تراکنش، با برگه‌ی انتخاب دسته (برای لمس نوتیفیکیشن) */
         fun openTransactionIntent(context: Context, transactionId: Long): Intent =
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .putExtra(EXTRA_TRANSACTION_ID, transactionId)
+
+        /** باز کردن اپ روی صفحه‌ی یک حساب (لمس کارت در ویجت «موجودی کارت‌ها»)؛ [accountKey] همان AccountRef.key */
+        fun openAccountIntent(context: Context, accountKey: String): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(EXTRA_ACCOUNT_KEY, accountKey)
     }
 }
 
@@ -182,7 +195,12 @@ private const val KEY_MANUAL_ONLY = "manual_only"
 private enum class Screen { Welcome, Permission, SmsList }
 
 @Composable
-private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
+private fun JibitoApp(
+    openTransactionId: Long?,
+    onOpenHandled: () -> Unit,
+    openAccountKey: String?,
+    onAccountHandled: () -> Unit,
+) {
     val context = LocalContext.current
     fun granted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -242,6 +260,11 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
                 screen = Screen.SmsList
             },
         )
-        Screen.SmsList -> MainScreen(openTransactionId = openTransactionId, onOpenHandled = onOpenHandled)
+        Screen.SmsList -> MainScreen(
+            openTransactionId = openTransactionId,
+            onOpenHandled = onOpenHandled,
+            openAccountKey = openAccountKey,
+            onAccountHandled = onAccountHandled,
+        )
     }
 }
