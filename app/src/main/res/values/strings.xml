@@ -388,16 +388,54 @@
     <string name="export_done">✓ %1$d تراکنش ذخیره شد.</string>
     <string name="export_failed">فایل ذخیره نشد. یه جای دیگه رو امتحان کن.</string>
 
-    <!-- ویجت -->
+    <!-- ویجت «خرج امروز» -->
     <string name="widget_name">خرج امروز</string>
-    <string name="widget_description">خرج امروز و این ماه، و باقی‌مانده‌ی بودجه</string>
+    <string name="widget_description">خرج امروز در برابر یک روز معمولی، نمودار هفته و بودجه‌ی ماه</string>
     <string name="widget_today">امروز</string>
-    <string name="widget_month">این ماه %1$s</string>
-    <string name="widget_left">%1$s مونده از بودجه‌ی ماه</string>
-    <string name="widget_over">این ماه %1$s از بودجه زدی بیرون</string>
-    <string name="widget_ring_label">ماه</string>
+    <string name="widget_date">· %1$s</string>
+    <string name="widget_times">%1$s برابر</string>
+    <string name="widget_less">%1$s٪ کمتر از</string>
+    <string name="widget_typical">یک روز معمولی</string>
+    <string name="widget_typical_short">روز معمولی</string>
+    <string name="widget_about_typical">حدود یک روز معمولی</string>
+    <string name="widget_typical_label">روز معمولی:</string>
+    <string name="widget_zero">امروز هنوز خرجی نکردی</string>
+    <string name="widget_zero_short">هنوز خرجی نکردی</string>
+    <string name="widget_this_month">این ماه</string>
+    <string name="widget_month_day">%1$s روز از %2$s</string>
+    <string name="widget_left">%1$s مونده</string>
+    <string name="widget_over_budget">%1$s بیشتر از بودجه</string>
+    <string name="widget_days_left">%1$s روز مونده</string>
+    <string name="widget_last_day">روز آخر ماه</string>
+    <string name="widget_mood_calm">طبق برنامه</string>
+    <string name="widget_mood_warn">نزدیک سقف</string>
+    <string name="widget_mood_over">%1$s بیرون زدی</string>
+    <string name="widget_progress_cd">%1$s بودجه‌ی ماه خرج شده</string>
+    <string name="widget_chart_title">خرج هفت روز اخیر</string>
+    <string name="widget_chart_cd">خرج هفت روز اخیر؛ امروز %1$s</string>
+    <string name="widget_recent_title">آخرین خرج‌ها</string>
+    <string name="widget_spend_fallback">خرج</string>
+    <string name="widget_today_at">امروز %1$s</string>
+    <string name="widget_yesterday">دیروز</string>
+    <string name="widget_days_ago">%1$s روز پیش</string>
     <string name="widget_locked_label">جیبیتو</string>
+    <string name="widget_locked_title">مبلغ‌ها پنهانه</string>
     <string name="widget_locked_hint">قفل اپ روشنه؛ برای دیدن بازش کن</string>
+
+    <!-- ویجت «موجودی کارت‌ها» -->
+    <string name="widget_cards_name">موجودی کارت‌ها</string>
+    <string name="widget_cards_description">موجودی کارت‌هایی که بیشتر با آن‌ها خرید می‌کنی، از روی پیامک بانک</string>
+    <string name="widget_cards_title">موجودی کارت‌ها</string>
+    <string name="widget_cards_short">کارت‌ها</string>
+    <string name="widget_cards_total">%1$s، جمع %2$s کارت</string>
+    <string name="widget_cards_delta">%1$s امروز</string>
+    <string name="widget_cards_source">از آخرین پیامک‌های بانک</string>
+    <string name="widget_cards_order">پرمصرف‌های ۳۰ روز اخیر</string>
+    <string name="widget_cards_locked">موجودی‌ها پنهانه</string>
+    <string name="widget_cards_empty_title">هنوز موجودی‌ای ندیدم</string>
+    <string name="widget_cards_empty_body">اولین پیامک بانک که موجودی داشته باشد، کارتش این‌جا می‌آید</string>
+    <string name="widget_cards_hide">پنهان کردن مبلغ‌ها</string>
+    <string name="widget_cards_show">نشان دادن مبلغ‌ها</string>
 
     <!-- پرداخت‌های ماهانه -->
     <string name="recurring_title">پرداخت‌های ماهانه</string>
@@ -686,7 +724,6 @@
     <string name="settings_banner_notify">نوتیف خاموشه؛ خرج تازه که بیاد نمی‌تونم بپرسم مال چی بود.</string>
     <string name="settings_banner_sms">جیبیتو نمی‌تونه پیامک‌های بانکت رو بخونه؛ خرج‌ها خودکار ثبت نمی‌شن.</string>
     <string name="tx_ask_expense">مال چی بود؟</string>
-    <string name="widget_ring_cd">%1$s بودجه‌ی ماه خرج شده</string>
     <string name="settings_roots_count">%1$d از %2$d</string>
 
     <!-- تنظیمات: صفحه‌ی اصلی (گروه‌ها و ردیف‌ها) و زیرصفحه‌ها -->

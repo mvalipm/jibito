@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- بالای ویجت «موجودی کارت‌ها»: نشان کارت، عنوان، و دکمه‌ی چشم (پنهان/نشان دادن مبلغ‌ها) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    tools:ignore="UseCompoundDrawables">
+
+    <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/widget_card_icon" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_bold"
+        android:maxLines="1"
+        android:text="@string/widget_cards_title"
+        android:textColor="@color/widget_text"
+        android:textSize="13sp" />
+
+    <ImageView
+        android:id="@+id/widget_eye"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/widget_eye_bg"
+        android:contentDescription="@string/widget_cards_hide"
+        android:padding="6dp"
+        android:src="@drawable/widget_eye" />
+</LinearLayout>

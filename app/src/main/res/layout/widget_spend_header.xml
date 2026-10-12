@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- بالای ویجت «خرج امروز»: جیبی، «امروز · دوشنبه ۲۰ مهر» و برچسب حال بودجه (طبق برنامه / نزدیک سقف / بیرون زدی) -->
+<!-- عکس جیبی با حال بودجه عوض می‌شود (setImageViewResource)، پس ImageView جدا می‌ماند -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    tools:ignore="UseCompoundDrawables">
+
+    <ImageView
+        android:id="@+id/widget_mascot"
+        android:layout_width="20dp"
+        android:layout_height="22dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/widget_mascot_happy" />
+
+    <TextView
+        android:id="@+id/widget_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:fontFamily="@font/vazirmatn_bold"
+        android:maxLines="1"
+        android:text="@string/widget_today"
+        android:textColor="@color/widget_text"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/widget_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_medium"
+        android:maxLines="1"
+        android:textColor="@color/widget_muted"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widget_chip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/widget_chip_calm"
+        android:fontFamily="@font/vazirmatn_bold"
+        android:maxLines="1"
+        android:paddingStart="9dp"
+        android:paddingTop="1dp"
+        android:paddingEnd="9dp"
+        android:paddingBottom="2dp"
+        android:textColor="@color/widget_calm"
+        android:textSize="11sp"
+        android:visibility="gone" />
+</LinearLayout>

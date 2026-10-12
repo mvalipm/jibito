@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- یک کارت در ویجت متوسط «موجودی کارت‌ها»، در یک خط: نوار رنگ بانک، اسم، زمان، روند، موجودی -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_row"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <ImageView
+        android:id="@+id/card_bar"
+        android:layout_width="6dp"
+        android:layout_height="18dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_round" />
+
+    <TextView
+        android:id="@+id/card_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_bold"
+        android:maxLines="1"
+        android:textColor="@color/widget_text"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/card_time"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_regular"
+        android:maxLines="1"
+        android:textColor="@color/widget_muted"
+        android:textSize="11sp" />
+
+    <ImageView
+        android:id="@+id/card_spark"
+        android:layout_width="40dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="6dp"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/card_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="@font/vazirmatn_black"
+        android:maxLines="1"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/card_unit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="3dp"
+        android:fontFamily="@font/vazirmatn_bold"
+        android:maxLines="1"
+        android:textColor="@color/widget_muted"
+        android:textSize="11sp" />
+</LinearLayout>

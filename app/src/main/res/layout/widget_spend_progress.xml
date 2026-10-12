@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  نوار بودجه‌ی ماه: سه نوار هم‌جا، یکی به رنگ حال بودجه دیده می‌شود (رنگ نوار از کد عوض نمی‌شود).
+  داخل FrameLayout با شناسه‌ی widget_progress_box می‌آید. ویجت همیشه راست‌به‌چپ است و جهت پُر شدن در خود drawable
+  ثابت شده (از راست)، پس mirrorForRtl خاموش است تا دوباره برعکس نشود.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ProgressBar
+        android:id="@+id/widget_progress_calm"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:mirrorForRtl="false"
+        android:progressDrawable="@drawable/widget_progress_calm"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_warn"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:mirrorForRtl="false"
+        android:progressDrawable="@drawable/widget_progress_warn"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_over"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:indeterminate="false"
+        android:max="100"
+        android:mirrorForRtl="false"
+        android:progressDrawable="@drawable/widget_progress_over"
+        android:visibility="gone" />
+</merge>

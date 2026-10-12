@@ -5,7 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import ir.jibito.app.widget.SpendWidget
+import ir.jibito.app.widget.WidgetKit
 import ir.jibito.app.data.backup.BackupManager
 import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.pro.BazaarStore
@@ -57,7 +57,7 @@ class AppContainer(context: Context) {
     val categoryDisplay: CategoryDisplaySettings by lazy { CategoryDisplaySettings(appContext) }
 
     /** حساب‌هایی که در «موجودی همه‌ی حساب‌ها» جمع نمی‌شوند */
-    val walletSettings: WalletSettings by lazy { WalletSettings(appContext) }
+    val walletSettings: WalletSettings by lazy { WalletSettings(appContext, onChanged = { refreshWidget() }) }
 
     /** عدد کنار «بی‌دسته» در تراکنش‌ها: روشن/خاموش و «فعلاً نه» */
     val uncategorizedBadge: UncategorizedBadgeSettings by lazy { UncategorizedBadgeSettings(appContext) }
@@ -113,7 +113,7 @@ class AppContainer(context: Context) {
             syncState = SyncState(appContext),
             sleepWatch = sleepWatch,
             onCategoryChanged = { onDataChanged() },
-            onSynced = { SpendWidget.refresh(appContext) },
+            onSynced = { WidgetKit.refreshAll(appContext) },
             appScope = appScope,
         )
     }
@@ -140,14 +140,14 @@ class AppContainer(context: Context) {
         ForecastRepository(database, balanceRepository, recurringRepository, SalarySettings(appContext), appScope)
     }
 
-    /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت */
+    /** بعد از هر تغییر در خرج‌ها یا بودجه‌ها: هشدار بودجه + به‌روز کردن ویجت‌ها */
     suspend fun onDataChanged() {
         budgetAlerter.check()
-        SpendWidget.refresh(appContext)
+        WidgetKit.refreshAll(appContext)
     }
 
-    /** ویجت را بیرون از صفحه‌ها به‌روز می‌کند (مثلاً بعد از روشن/خاموش کردن قفل اپ) */
+    /** ویجت‌ها را بیرون از صفحه‌ها به‌روز می‌کند (مثلاً بعد از روشن/خاموش کردن قفل اپ، یا حساب‌های کیف پول) */
     fun refreshWidget() {
-        appScope.launch { SpendWidget.refresh(appContext) }
+        appScope.launch { WidgetKit.refreshAll(appContext) }
     }
 }

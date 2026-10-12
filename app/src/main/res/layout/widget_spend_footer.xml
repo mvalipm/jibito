@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  پایین ویجت «خرج امروز» (متوسط و بزرگ): «این ماه ۱۰۱٫۲ میلیون · ۲۰ روز از مهر»،
+  یا با بودجه «۴۸٫۸ میلیون مونده · ۱۱ روز مونده» و نوار ماه به رنگ حال بودجه (یکی از سه نوار دیده می‌شود).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/widget_foot_lead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="4dp"
+            android:fontFamily="@font/vazirmatn_regular"
+            android:maxLines="1"
+            android:text="@string/widget_this_month"
+            android:textColor="@color/widget_muted"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_foot_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/vazirmatn_bold"
+            android:maxLines="1"
+            android:textColor="@color/widget_text"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_foot_tail"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="@font/vazirmatn_regular"
+            android:gravity="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_muted"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/widget_progress_box"
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        android:layout_marginTop="3dp"
+        android:visibility="gone">
+
+        <include layout="@layout/widget_spend_progress" />
+    </FrameLayout>
+</LinearLayout>

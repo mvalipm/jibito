@@ -1,33 +1,26 @@
 package ir.jibito.app.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.graphics.Color
-import android.view.View
-import android.widget.RemoteViews
-import androidx.core.content.ContextCompat
+import android.os.Bundle
 import ir.jibito.app.JibitoApplication
-import ir.jibito.app.MainActivity
-import ir.jibito.app.R
 import ir.jibito.app.data.category.SpendRollup
+import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.parser.FlowType
 import ir.jibito.app.util.ErrorLog
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
-import ir.jibito.app.util.Money
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 /**
- * ویجت صفحه‌ی اصلی: «امروز چقدر خرج کردم» + خرج این ماه + باقی‌مانده و حلقه‌ی بودجه‌ی کل ماه.
- * رنگ زمینه «حال جیب» است (آرام / نزدیک سقف / رد شده، مثل صفحه‌ی خلاصه) و جیبی کوچک کنار عنوان، رد شدن از بودجه نگران می‌شود.
+ * ویجت «خرج امروز»: خرج امروز در برابر یک روز معمولی، نمودار هفت روز، و خرج یا بودجه‌ی ماه.
+ * هر اندازه چیدمان خودش را دارد (WidgetSize، ظاهر: SpendViews). زمینه همراه حالت روشن/تیره‌ی گوشی است
+ * و حال بودجه (آرام / نزدیک سقف / رد شده) فقط برچسب و رنگ نوار ماه را عوض می‌کند.
  * بعد از هر همگام‌سازی و هر تغییر دسته به‌روز می‌شود (و هر ۳۰ دقیقه، توسط خود اندروید).
  * اگر قفل اپ روشن باشد، مبلغ‌ها روی صفحه‌ی اصلی نشان داده نمی‌شوند.
  */
@@ -44,6 +37,11 @@ class SpendWidget : AppWidgetProvider() {
         }
     }
 
+    /** پیش از اندروید ۱۲ چیدمان با اندازه عوض نمی‌شود، مگر خودمان دوباره بسازیم */
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        onUpdate(context, manager, intArrayOf(appWidgetId))
+    }
+
     /** اعداد ویجت (به ریال) */
     data class Numbers(
         val todayRial: Long,
@@ -51,10 +49,21 @@ class SpendWidget : AppWidgetProvider() {
         val overallBudgetRial: Long?,
         /** چه مقدار از monthRial خرج یک‌باره است (از بودجه کم نمی‌شود) */
         val monthOneOffRial: Long = 0,
+        /** خرج هر روز از شش روز پیش تا امروز (قدیمی‌ترین اول)؛ خالی یعنی نمودار نه */
+        val weekRial: List<Long> = emptyList(),
+        /** شروع همان روزها (برای حرف اول اسم روز زیر هر ستون) */
+        val weekStarts: List<Long> = emptyList(),
+        /** «یک روز معمولی»؛ null یعنی هنوز سابقه‌ی کافی نیست */
+        val typicalRial: Long? = null,
+        /** آخرین خرج‌ها (تازه‌ترین اول) برای اندازه‌ی بزرگ */
+        val recent: List<Recent> = emptyList(),
     ) {
         /** خرجی که از بودجه‌ی کل کم می‌شود */
         val budgetSpentRial: Long get() = monthRial - monthOneOffRial
     }
+
+    /** یک ردیف «آخرین خرج‌ها»: طرف‌حساب یا اسم دسته (null ← «خرج») و رنگ دسته‌ی اصلی */
+    data class Recent(val id: Long, val label: String?, val amountRial: Long, val dateMillis: Long, val colorHex: String?)
 
     companion object {
 
@@ -67,21 +76,15 @@ class SpendWidget : AppWidgetProvider() {
         }
 
         private suspend fun render(context: Context, manager: AppWidgetManager, ids: IntArray) {
-            val views = try {
-                build(context)
+            try {
+                val container = (context.applicationContext as JibitoApplication).container
+                val locked = container.appLockSettings.enabled.value
+                val now = System.currentTimeMillis()
+                val n = if (locked) null else numbers(container.database, now)
+                WidgetKit.deliver(context, manager, ids) { size -> SpendViews.build(context, n, now, size) }
             } catch (e: Exception) {
                 ErrorLog.record(context, "widget", e)
-                return
             }
-            for (id in ids) manager.updateAppWidget(id, views)
-        }
-
-        private suspend fun build(context: Context): RemoteViews {
-            val container = (context.applicationContext as JibitoApplication).container
-            val locked = container.appLockSettings.enabled.value
-            val now = System.currentTimeMillis()
-            val n = if (locked) null else numbers(container.database, now)
-            return views(context, n, now)
         }
 
         /** حال جیب، مثل بالای صفحه‌ی خلاصه */
@@ -90,7 +93,7 @@ class SpendWidget : AppWidgetProvider() {
         /** کمتر از این فاصله بین «خرج» و «زمان» یعنی «طبق برنامه» (مثل صفحه‌ی خلاصه) */
         private const val ON_TRACK_MARGIN = 0.05
 
-        /** رنگ فقط از بودجه، مثل سرصفحه‌ی خلاصه (موجودی حساب رنگ را عوض نمی‌کند) */
+        /** حال فقط از بودجه، مثل سرصفحه‌ی خلاصه (موجودی حساب اثری ندارد) */
         internal fun moodOf(n: Numbers, now: Long): Mood {
             val budget = n.overallBudgetRial?.takeIf { it > 0 } ?: return Mood.NONE
             val month = JalaliMonth.of(now)
@@ -103,101 +106,46 @@ class SpendWidget : AppWidgetProvider() {
             }
         }
 
-        /**
-         * ظاهر ویجت از روی عددها (بدون دیتابیس؛ تست اسکرین‌شات هم همین را می‌کشد).
-         * @param n null یعنی قفل اپ روشن است: مبلغ‌ها نشان داده نمی‌شوند
-         */
-        internal fun views(context: Context, n: Numbers?, now: Long): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_spend)
-            val open = PendingIntent.getActivity(
-                context,
-                0,
-                Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-            views.setOnClickPendingIntent(R.id.widget_root, open)
-
-            if (n == null) {
-                views.setTextViewText(R.id.widget_label, context.getString(R.string.widget_locked_label))
-                views.setTextViewText(R.id.widget_today, "🔒")
-                views.setViewVisibility(R.id.widget_unit, View.GONE)
-                views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_locked_hint))
-                return views
-            }
-
-            val mood = moodOf(n, now)
-            val onMood = mood != Mood.NONE
-            views.setInt(
-                R.id.widget_root,
-                "setBackgroundResource",
-                when (mood) {
-                    Mood.NONE -> R.drawable.widget_bg
-                    Mood.CALM -> R.drawable.widget_bg_calm
-                    Mood.WARN -> R.drawable.widget_bg_warn
-                    Mood.OVER -> R.drawable.widget_bg_over
-                },
-            )
-            val text = if (onMood) Color.WHITE else ContextCompat.getColor(context, R.color.widget_text)
-            val muted = if (onMood) MUTED_ON_MOOD else ContextCompat.getColor(context, R.color.widget_muted)
-            views.setImageViewResource(
-                R.id.widget_mascot,
-                if (mood == Mood.OVER) R.drawable.widget_mascot_worried else R.drawable.widget_mascot_happy,
-            )
-            views.setTextColor(R.id.widget_label, muted)
-
-            // «۶۰۵ هزار» ← عدد درشت + «هزار تومان» کوچک کنارش
-            val compact = Money.compact(n.todayRial)
-            val split = compact.lastIndexOf(' ')
-            val number = if (split > 0) compact.substring(0, split) else compact
-            val unit = listOfNotNull(compact.substring(split + 1).takeIf { split > 0 }, context.getString(R.string.unit_toman))
-                .joinToString(" ")
-            views.setTextViewText(R.id.widget_today, number)
-            views.setTextColor(R.id.widget_today, text)
-            views.setTextViewText(R.id.widget_unit, unit)
-            views.setTextColor(R.id.widget_unit, muted)
-            // یک خط زیر عدد (جای ویجت کوچک است): با بودجه «چقدر مونده»، بدون بودجه «خرج این ماه»
-            val budget = n.overallBudgetRial?.takeIf { it > 0 }
-            if (budget == null) {
-                views.setTextViewText(R.id.widget_month, context.getString(R.string.widget_month, Money.compact(n.monthRial)))
-                views.setTextColor(R.id.widget_month, muted)
-                views.setViewVisibility(R.id.widget_ring_box, View.GONE)
-                return views
-            }
-            val left = budget - n.budgetSpentRial
-            views.setTextViewText(
-                R.id.widget_month,
-                if (left >= 0) context.getString(R.string.widget_left, Money.compact(left))
-                else context.getString(R.string.widget_over, Money.compact(-left)),
-            )
-            views.setTextColor(R.id.widget_month, text)
-            val percent = (n.budgetSpentRial * 100 / budget).toInt()
-            val percentText = Jalali.toPersianDigits("${percent.coerceAtMost(999)}٪")
-            views.setViewVisibility(R.id.widget_ring_box, View.VISIBLE)
-            views.setProgressBar(R.id.widget_ring, 100, percent.coerceIn(0, 100), false)
-            views.setTextViewText(R.id.widget_percent, percentText)
-            views.setContentDescription(R.id.widget_ring_box, context.getString(R.string.widget_ring_cd, percentText))
-            return views
-        }
-
-        /** متن کم‌رنگ روی زمینه‌ی رنگی: سفید ۸۵٪ */
-        private const val MUTED_ON_MOOD = 0xD9FFFFFF.toInt()
+        /** چند ردیف «آخرین خرج‌ها» */
+        private const val RECENT = 3
 
         /** خرج امروز و این ماه با همان قانون‌های صفحه‌ی خلاصه (انتقال به خودم و دسته‌های «خرج نیست» حساب نمی‌شوند) */
-        suspend fun numbers(db: ir.jibito.app.data.local.AppDatabase, now: Long): Numbers {
+        suspend fun numbers(db: AppDatabase, now: Long): Numbers {
             val dao = db.summaryDao()
-            val categories = db.categoryDao().all().filter { it.flowType == FlowType.WITHDRAWAL.code }
-            val dayStart = Calendar.getInstance().apply {
-                timeInMillis = now
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val dayEnd = (dayStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
+            val withdrawal = FlowType.WITHDRAWAL.code
+            val categories = db.categoryDao().all().filter { it.flowType == withdrawal }
+            val todayStart = Jalali.startOfDay(now)
+            val todayEnd = SpendDays.nextDay(todayStart)
             val month = JalaliMonth.of(now)
-            val today = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, dayStart.timeInMillis, dayEnd.timeInMillis)).total
-            val monthSpend = SpendRollup.rollup(categories, dao.sums(FlowType.WITHDRAWAL.code, month.startMillis(), month.endMillis()))
-            return Numbers(today, monthSpend.total, dao.overallBudget()?.monthlyLimitRial, monthSpend.oneOffTotal)
+            val today = SpendRollup.rollup(categories, dao.sums(withdrawal, todayStart, todayEnd)).total
+            val monthSpend = SpendRollup.rollup(categories, dao.sums(withdrawal, month.startMillis(), month.endMillis()))
+
+            // سی روز پیش از امروز (برای «روز معمولی») و خود امروز
+            val days = SpendDays.dayStarts(todayStart, SpendDays.TYPICAL_DAYS + 1)
+            val rows = SpendRollup.spendsOnly(dao.amounts(withdrawal, days.first(), todayEnd), categories)
+            val week = days.takeLast(SpendDays.WEEK)
+
+            val byId = categories.associateBy { it.id }
+            val excluded = SpendRollup.excludedIds(categories)
+            val recent = dao.latest(withdrawal, RECENT * 4)
+                .filter { it.categoryId == null || it.categoryId !in excluded }
+                .take(RECENT)
+                .map { r ->
+                    val cat = r.categoryId?.let { byId[it] }
+                    val color = cat?.let { SpendRollup.rootOf(it, byId).colorHex ?: it.colorHex }
+                    Recent(r.id, r.merchant?.takeIf { it.isNotBlank() } ?: cat?.name, r.amount, r.dateEpoch, color)
+                }
+
+            return Numbers(
+                todayRial = today,
+                monthRial = monthSpend.total,
+                overallBudgetRial = dao.overallBudget()?.monthlyLimitRial,
+                monthOneOffRial = monthSpend.oneOffTotal,
+                weekRial = SpendDays.perDay(rows, week, todayEnd),
+                weekStarts = week,
+                typicalRial = SpendDays.typical(rows, days.dropLast(1), todayStart, dao.firstDate(withdrawal)),
+                recent = recent,
+            )
         }
     }
 }

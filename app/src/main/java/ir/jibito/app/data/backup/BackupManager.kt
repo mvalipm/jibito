@@ -9,6 +9,7 @@ import ir.jibito.app.data.pro.ProSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.data.wallet.WalletSettings
+import ir.jibito.app.widget.CardsWidget
 import ir.jibito.app.ui.smslist.UncategorizedBadgeSettings
 import ir.jibito.app.notify.NotificationStyleSettings
 import ir.jibito.app.notify.WeeklyDigest
@@ -206,6 +207,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             "first_run",
             "product_tour", // «راهنما را دیده‌ام»: مال همین نصب است؛ در نصب تازه، حتی با بازگردانی، راهنما یک بار نشان داده می‌شود
             "sleep_watch", // «گوشی منو خوابونده؟»: رفتار باتریِ همین گوشی، در گوشی تازه معنی ندارد
+            CardsWidget.PREFS, // دکمه‌ی چشم ویجت «موجودی کارت‌ها»: مال ویجتِ روی همین گوشی است
             "tips",
             "report_sections",
         )
