@@ -9,8 +9,9 @@ import ir.jibito.app.util.JalaliMonth
  * خرج‌های همین ماه (بدون انتقال به خودم و خرید ناموفق) و چندتایشان هنوز دسته ندارند.
  * @param unseen خرج‌های بی‌دسته‌ی «تازه»: بعد از «فعلاً نه» یا بعد از باز کردن فهرست آمده‌اند (UncategorizedBadgeSettings)؛
  * فقط وقتی صفر نباشد، کارت «خرج بی‌دسته» فوری است.
+ * @param showCount عدد روی کارت (تعداد خرج‌های بی‌دسته)؛ با خاموش کردن «عدد خرج‌های بی‌دسته» در تنظیمات، به‌جایش آیکون می‌آید.
  */
-data class UncatProgress(val open: Int, val total: Int, val unseen: Int) {
+data class UncatProgress(val open: Int, val total: Int, val unseen: Int, val showCount: Boolean = true) {
     val done: Int get() = total - open
 
     /** کسری از خرج‌های ماه که دسته گرفته‌اند (۰ تا ۱) */
@@ -27,5 +28,6 @@ fun uncatProgress(all: List<Transaction>, month: JalaliMonth, badgeEnabled: Bool
         open = spends.count { it.categoryId == null },
         total = spends.size,
         unseen = uncategorizedBadgeCount(all, badgeEnabled, seenUntil),
+        showCount = badgeEnabled,
     )
 }

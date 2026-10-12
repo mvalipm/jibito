@@ -98,8 +98,10 @@ fun rememberTodoStories(
         if (uncategorized.open > 0 && (s == null || s.month == JalaliMonth.current())) {
             add(
                 TodoStory(
-                    "uncat", t.coral, t.uncatBg, t.uncatFg, null,
-                    Jalali.toPersianDigits(uncategorized.open.coerceAtMost(99).toString()),
+                    "uncat", t.coral, t.uncatBg, t.uncatFg,
+                    // عدد خاموش (تنظیمات) ← به‌جای عدد، آیکون برچسب
+                    if (uncategorized.showCount) null else DesignIcons.Tag,
+                    if (uncategorized.showCount) Jalali.toPersianDigits(uncategorized.open.coerceAtMost(99).toString()) else null,
                     label = stringResource(R.string.todo_uncategorized),
                     detail = stringResource(R.string.todo_uncategorized_detail),
                     progress = TodoProgress(
