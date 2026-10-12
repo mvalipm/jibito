@@ -458,6 +458,7 @@
     <string name="settings_uncat_badge_hint">کنار «بی‌دسته» در تراکنش‌ها، کارت بالای فهرست، و روی کارت «خرج بی‌دسته» در کارها</string>
     <string name="uncat_nudge">%1$s خرج منتظر دسته‌اند</string>
     <string name="uncat_nudge_later">فعلاً نه</string>
+    <string name="uncat_badge_off">عدد خرج‌های بی‌دسته خاموش شد؛ از تنظیمات دوباره روشنش کن</string>
     <string name="settings_digest_hint">جمعه‌ها عصر یه نوتیف کوتاه از خرج‌های هفته</string>
 
     <!-- روند ماه‌ها -->
