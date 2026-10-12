@@ -7,8 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** پوسته‌های اپ. رنگ دسته‌ها در نمودار در همه یکی است (پالت اعتبارسنجی‌شده). */
-enum class AppThemeStyle(val label: Int, val hint: Int) {
+/**
+ * پوسته‌های اپ. رنگ دسته‌ها در نمودار در همه یکی است (پالت اعتبارسنجی‌شده).
+ * @param pro فقط با «جیبیتوی کامل»؛ سه پوسته‌ی اول همیشه رایگان‌اند
+ */
+enum class AppThemeStyle(val label: Int, val hint: Int, val pro: Boolean = false) {
     /** مرجانی (پیش‌فرض) */
     DEFAULT(R.string.theme_default, R.string.theme_default_hint),
     /** گرم: کرم، صورتی‌گلی، هلویی، با آبی خاکستری برای تعادل */
@@ -16,14 +19,20 @@ enum class AppThemeStyle(val label: Int, val hint: Int) {
     /** سرد: سرمه‌ای، آبی، یاسی */
     COOL(R.string.theme_cool, R.string.theme_cool_hint),
     /** ماچا لاته: سبز مریمی و کرم شیری */
-    MATCHA(R.string.theme_matcha, R.string.theme_matcha_hint),
+    MATCHA(R.string.theme_matcha, R.string.theme_matcha_hint, pro = true),
     /** لوندر دیجیتال: بنفش اسطوخودوسی با کمی صورتی */
-    LAVENDER(R.string.theme_lavender, R.string.theme_lavender_hint),
+    LAVENDER(R.string.theme_lavender, R.string.theme_lavender_hint, pro = true),
     /** گیلاسی: قرمز گیلاسی روی صورتی خیلی کم‌رنگ */
-    CHERRY(R.string.theme_cherry, R.string.theme_cherry_hint),
+    CHERRY(R.string.theme_cherry, R.string.theme_cherry_hint, pro = true),
     /** غروب آینده: نیلی و هلویی غروب */
-    DUSK(R.string.theme_dusk, R.string.theme_dusk_hint),
+    DUSK(R.string.theme_dusk, R.string.theme_dusk_hint, pro = true),
 }
+
+/**
+ * پوسته‌ای که واقعاً دیده می‌شود: پوسته‌ی «جیبیتوی کامل» بعد از تمام شدن ماه رایگان، تا خریدن، همان پیش‌فرض است.
+ * انتخاب کاربر پاک نمی‌شود؛ با خریدن، همان پوسته برمی‌گردد.
+ */
+fun AppThemeStyle.shownWith(proUnlocked: Boolean): AppThemeStyle = if (pro && !proUnlocked) AppThemeStyle.DEFAULT else this
 
 /** روشن یا تیره: مثل گوشی، یا همیشه یکی (دکمه‌ی ماه/خورشید بالای «خلاصه») */
 enum class DarkMode(val label: Int) {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.core.content.edit
 import ir.jibito.app.data.local.AppDatabase
+import ir.jibito.app.data.pro.ProSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
 import ir.jibito.app.data.wallet.SalarySettings
 import ir.jibito.app.data.wallet.WalletSettings
@@ -189,6 +190,9 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             WeeklyDigest.PREFS to setOf(WeeklyDigest.KEY_ENABLED),
             // «فعلاً نه» (seen_until) مال همین گوشی است؛ فقط روشن/خاموش بودن عدد منتقل می‌شود
             UncategorizedBadgeSettings.PREFS to setOf(UncategorizedBadgeSettings.KEY_ENABLED),
+            // فقط شروع ماه رایگان، تا بازگردانی روی گوشی تازه آن را از نو شروع نکند. «خریده» را خود کافه‌بازار
+            // روی گوشی تازه می‌گوید (از روی فایل پشتیبان نمی‌شود خرید ساخت)
+            ProSettings.PREFS to setOf(ProSettings.KEY_TRIAL_START),
         )
 
         /** تنظیماتی که عمداً پشتیبان گرفته نمی‌شوند: وضعیت همین گوشی یا همین نصب، نه انتخاب کاربر */

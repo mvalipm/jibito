@@ -1,37 +1,23 @@
 package ir.jibito.app.ui.reports
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,25 +32,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.data.pro.unlocked
 import ir.jibito.app.ui.common.Tip
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.ProLockedPanel
+import ir.jibito.app.ui.pro.rememberProStatus
 import ir.jibito.app.ui.common.TipCard
 import ir.jibito.app.ui.common.rememberTip
 import ir.jibito.app.data.repository.MonthReport
@@ -115,6 +99,8 @@ fun ReportsScreen(
     val scope = rememberCoroutineScope()
     val forecastRepository = app.container.forecastRepository
     val forecastState by forecastRepository.state.collectAsState()
+    val proStatus = rememberProStatus()
+    val openPro = LocalOpenPro.current
     val prefs = remember { ReportSectionPrefs(context) }
     var open by rememberSaveable { mutableStateOf<ReportSection?>(prefs.favorite()) }
     var seen by remember { mutableStateOf(prefs.seenInsights) }
@@ -152,6 +138,8 @@ fun ReportsScreen(
         categories = categories,
         onSetNature = { c, n -> scope.launch { app.container.transactionRepository.setCategoryNature(c.id, n) } },
         onNotSalary = forecastState?.forecast?.salary?.let { salary -> { forecastRepository.rejectSalary(salary) } },
+        unlocked = proStatus.unlocked,
+        onLocked = openPro,
     )
 }
 
@@ -183,6 +171,10 @@ fun ReportsContent(
     nature: NatureBreakdown? = null,
     categories: List<Category> = emptyList(),
     onSetNature: (Category, Int) -> Unit = { _, _ -> },
+    /** «جیبیتوی کامل» باز است؛ وگرنه موجودی، «خرجت چه‌جور بود؟» و نمودار ۶/۱۲ ماهه به‌جای داده می‌گویند چه دارند */
+    unlocked: Boolean = true,
+    /** لمس یک گزارش بسته ← برگه‌ی «جیبیتوی کامل» */
+    onLocked: (ProFeature) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     val t = JibitoTheme.colors
@@ -211,6 +203,9 @@ fun ReportsContent(
         }
     }
     val insights = report?.insights.orEmpty()
+    // نمودار ۶/۱۲ ماهه بسته است؛ بازه‌ی «این ماه» همیشه باز است
+    val longLocked = !unlocked && range != ReportRange.MONTH
+    val lockedSummary = stringResource(R.string.pro_locked_summary)
     LazyColumn(
         modifier
             .fillMaxSize()
@@ -225,13 +220,14 @@ fun ReportsContent(
                 icon = DesignIcons.NAV_REPORTS,
                 iconBg = t.tealTint,
                 iconFg = t.tealTintFg,
-                summary = spendSummary(range, report, months),
+                summary = if (longLocked) lockedSummary else spendSummary(range, report, months),
                 expanded = open == ReportSection.SPEND,
                 onToggle = { toggle(ReportSection.SPEND) },
             ) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 14.dp)) {
                     RangeSelector(range, onRange)
                     when {
+                        longLocked -> ProLockedPanel(ProFeature.LONG_RANGE, onOpen = { onLocked(ProFeature.LONG_RANGE) })
                         range == ReportRange.MONTH && report != null -> MonthChart(report.curve)
                         range != ReportRange.MONTH && months != null -> MonthsChart(months)
                         else -> Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -251,20 +247,25 @@ fun ReportsContent(
                 icon = DesignIcons.BANK,
                 iconBg = t.navInd,
                 iconFg = t.navOn,
-                summary = balanceSummary(balances),
+                summary = if (unlocked) balanceSummary(balances) else lockedSummary,
                 expanded = open == ReportSection.BALANCE,
+                locked = !unlocked,
                 onToggle = { toggle(ReportSection.BALANCE) },
             ) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 14.dp)) {
-                    RangeSelector(range, onRange)
-                    BalanceContent(
-                        balances,
-                        onOpenAccount,
-                        showTitle = false,
-                        forecast = forecast,
-                        forecastOnChart = range == ReportRange.MONTH,
-                        onNotSalary = onNotSalary,
-                    )
+                    if (!unlocked) {
+                        ProLockedPanel(ProFeature.BALANCE, onOpen = { onLocked(ProFeature.BALANCE) })
+                    } else {
+                        RangeSelector(range, onRange)
+                        BalanceContent(
+                            balances,
+                            onOpenAccount,
+                            showTitle = false,
+                            forecast = forecast,
+                            forecastOnChart = range == ReportRange.MONTH,
+                            onNotSalary = onNotSalary,
+                        )
+                    }
                 }
             }
         }
@@ -274,13 +275,18 @@ fun ReportsContent(
                 icon = DesignIcons.SHOP,
                 iconBg = t.uncatBg,
                 iconFg = t.uncatFg,
-                summary = natureSummary(nature),
+                summary = if (unlocked) natureSummary(nature) else lockedSummary,
                 expanded = open == ReportSection.NATURE,
+                locked = !unlocked,
                 onToggle = { toggle(ReportSection.NATURE) },
             ) {
                 Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 14.dp)) {
-                    RangeSelector(range, onRange)
-                    NatureContent(nature, categories, monthName(month.plus(-1)), onSetNature)
+                    if (!unlocked) {
+                        ProLockedPanel(ProFeature.NATURE, onOpen = { onLocked(ProFeature.NATURE) })
+                    } else {
+                        RangeSelector(range, onRange)
+                        NatureContent(nature, categories, monthName(month.plus(-1)), onSetNature)
+                    }
                 }
             }
         }
@@ -307,99 +313,6 @@ fun ReportsContent(
                     else -> InsightsRow(insights, month, PaddingValues(start = 18.dp, end = 18.dp, bottom = 16.dp))
                 }
             }
-        }
-    }
-}
-
-/** مدت باز/بسته شدن کارت‌ها */
-private const val EXPAND_MILLIS = 250
-
-/**
- * دکمه‌ی یک گزارش: آیکون، عنوان و (وقتی بسته است) خلاصه‌ی یک‌خطی؛ لمسش کارت زیرش را باز یا بسته می‌کند.
- * @param isNew نقطه‌ی رنگی کنار عنوان: چیز تازه‌ای هست که هنوز دیده نشده
- */
-@Composable
-private fun SectionCard(
-    title: String,
-    icon: String,
-    iconBg: Color,
-    iconFg: Color,
-    summary: String?,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    isNew: Boolean = false,
-    content: @Composable () -> Unit,
-) {
-    val t = JibitoTheme.colors
-    val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(24.dp)
-    val chevron = remember { DesignIcons.svg("chevron", DesignIcons.CHEVRON_DOWN) }
-    val turn by animateFloatAsState(if (expanded) 180f else 0f, tween(EXPAND_MILLIS), label = "chevron")
-    val state = stringResource(if (expanded) R.string.state_section_open else R.string.state_section_closed)
-    val newLabel = stringResource(R.string.cd_reports_new)
-    Column(
-        Modifier
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp)
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.surface)
-            .border(1.dp, t.border, shape)
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 72.dp)
-                .clickable(
-                    onClickLabel = stringResource(if (expanded) R.string.cd_section_close else R.string.cd_section_open),
-                    role = Role.Button,
-                    onClick = onToggle,
-                )
-                .padding(horizontal = 18.dp, vertical = 14.dp)
-                .clearAndSetSemantics {
-                    contentDescription = listOfNotNull(title, if (isNew && !expanded) newLabel else null, if (expanded) null else summary).joinToString("، ")
-                    stateDescription = state
-                    heading()
-                },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconTile(icon, iconBg, iconFg, size = 40.dp)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-                    if (isNew && !expanded) {
-                        Spacer(Modifier.width(6.dp))
-                        Box(Modifier.size(8.dp).clip(CircleShape).background(t.amber))
-                    }
-                }
-                AnimatedVisibility(visible = !expanded && summary != null) {
-                    Text(
-                        summary.orEmpty(),
-                        modifier = Modifier.padding(top = 2.dp),
-                        fontSize = 13.sp,
-                        lineHeight = 20.sp,
-                        color = t.muted,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Icon(
-                chevron,
-                contentDescription = null,
-                tint = t.muted,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(20.dp)
-                    .rotate(turn),
-            )
-        }
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(tween(EXPAND_MILLIS)) + fadeIn(tween(EXPAND_MILLIS)),
-            exit = shrinkVertically(tween(EXPAND_MILLIS)) + fadeOut(tween(EXPAND_MILLIS)),
-        ) {
-            Column { content() }
         }
     }
 }

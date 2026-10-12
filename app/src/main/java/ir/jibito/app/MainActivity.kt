@@ -40,6 +40,8 @@ import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.DarkMode
+import ir.jibito.app.ui.theme.shownWith
+import ir.jibito.app.data.pro.unlocked
 import ir.jibito.app.ui.common.LocalHideAmounts
 import ir.jibito.app.ui.common.LocalStatusBarOnColor
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -89,6 +91,8 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) readOpenRequest(intent)
         setContent {
             val style by themeSettings.style.collectAsState()
+            // پوسته‌های «جیبیتوی کامل» بعد از ماه رایگان، تا خریدن، همان پیش‌فرض دیده می‌شوند (انتخاب کاربر می‌ماند)
+            val proStatus by container.pro.status.collectAsState()
             val darkMode by themeSettings.darkMode.collectAsState()
             val hideAmounts by themeSettings.hideAmounts.collectAsState()
             val dark = when (darkMode) {
@@ -109,7 +113,7 @@ class MainActivity : ComponentActivity() {
                 // وقتی قفل روشن است، تصویر اپ در «برنامه‌های اخیر» نشان داده نشود
                 if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(!lockEnabled)
             }
-            JibitoTheme(style = style, darkTheme = dark) {
+            JibitoTheme(style = style.shownWith(proStatus.unlocked), darkTheme = dark) {
                 // فعلاً کل اپ را راست‌به‌چپ می‌کنیم؛ سوییچ زبان را بعداً اضافه می‌کنیم
                 CompositionLocalProvider(
                     LocalLayoutDirection provides LayoutDirection.Rtl,
@@ -148,6 +152,8 @@ class MainActivity : ComponentActivity() {
         }
         session.backgroundedAt = 0
         refreshLock()
+        // روزهای ماه رایگان، و (حداکثر روزی یک بار) خرید قبلی از کافه‌بازار: نصب دوباره یا گوشی تازه
+        (application as JibitoApplication).container.pro.onAppVisible()
     }
 
     override fun onStop() {

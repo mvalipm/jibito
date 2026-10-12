@@ -78,6 +78,9 @@ import ir.jibito.app.ui.tour.ProductTourOverlay
 import ir.jibito.app.ui.tour.TourAnchors
 import ir.jibito.app.ui.tour.TourStep
 import ir.jibito.app.util.Changelog
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.ProSheet
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -200,6 +203,20 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     // «چه چیزی تازه است»: بعد از به‌روزرسانی یک بار؛ «دیده‌شده» وقتی ثبت می‌شود که کاربر پنجره را ببندد
     var whatsNew by remember { mutableStateOf<List<Changelog.Release>>(emptyList()) }
 
+    // برگه‌ی «جیبیتوی کامل»: از هر امکان بسته (LocalOpenPro)، و یک بار خودش وقتی ماه رایگان تمام شد
+    var proSheet by rememberSaveable { mutableStateOf(false) }
+    var proFeature by rememberSaveable { mutableStateOf<ProFeature?>(null) }
+    var proTrialEnded by rememberSaveable { mutableStateOf(false) }
+    val proStatus by container.pro.status.collectAsState()
+    // یک بار ساخته می‌شود: LocalOpenPro ایستاست و مقدار تازه، همه‌ی صفحه‌ها را از نو می‌سازد
+    val openPro: (ProFeature?) -> Unit = remember {
+        { feature ->
+            proFeature = feature
+            proTrialEnded = false
+            proSheet = true
+        }
+    }
+
     val appContext = LocalContext.current.applicationContext
     // اجازه‌ی نوتیفیکیشن (اندروید ۱۳ به بعد، اختیاری): بعد از دیدن فایده‌ی اپ، نه پشت سر اجازه‌ی پیامک؛
     // اول صفحه‌ی توضیحش (NotificationIntroScreen)، و پنجره‌ی اندروید فقط با «آره، خبرم کن»
@@ -238,6 +255,17 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         }
     }
 
+    // «ماه رایگانت تموم شد»: یک بار، وقتی هیچ پنجره‌ی دیگری (آشنایی، نوتیف، تازه‌ها، راهنما) باز نیست
+    LaunchedEffect(proStatus, startupDone, reveal, notificationIntro, whatsNew, tourActive) {
+        val calm = startupDone && reveal == null && !notificationIntro && whatsNew.isEmpty() && !tourActive
+        if (calm && !proSheet && container.pro.trialEndNoticeDue) {
+            container.pro.markTrialEndNoticeSeen()
+            proFeature = null
+            proTrialEnded = true
+            proSheet = true
+        }
+    }
+
     // «دوباره نشان بده» از تنظیمات: راهنما روی «خلاصه» است، پس از تنظیمات برمی‌گردیم
     LaunchedEffect(tourActive, route) {
         if (tourActive && route == ROUTE_SETTINGS) nav.popBackStack(Tab.Summary.route, inclusive = false)
@@ -248,7 +276,11 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
 
     Box(Modifier.fillMaxSize()) {
         // محتوا: تا پایین صفحه کشیده می‌شود؛ فاصله‌ی پایین را خود صفحه‌ها با LocalBottomBarSpace می‌گذارند
-        CompositionLocalProvider(LocalBottomBarSpace provides bottomSpace, LocalTourAnchors provides tourAnchors) {
+        CompositionLocalProvider(
+            LocalBottomBarSpace provides bottomSpace,
+            LocalTourAnchors provides tourAnchors,
+            LocalOpenPro provides openPro,
+        ) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -383,6 +415,9 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 container.whatsNewSeen.markSeen(installedVersion(appContext))
                 whatsNew = emptyList()
             })
+        }
+        if (proSheet) {
+            ProSheet(proFeature, trialEnded = proTrialEnded, onDismiss = { proSheet = false })
         }
         ProductTourOverlay(
             tourAnchors,

@@ -26,6 +26,11 @@ import androidx.compose.ui.unit.dp
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
 import ir.jibito.app.data.export.CsvExport
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.data.pro.unlocked
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.ProLockedPanel
+import ir.jibito.app.ui.pro.rememberProStatus
 import ir.jibito.app.util.ErrorLog
 import ir.jibito.app.util.JalaliMonth
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +71,10 @@ fun ExportCard(card: @Composable (title: String, content: @Composable () -> Unit
         }
     }
 
+    // بعد از ماه رایگان، خروجی در «جیبیتوی کامل» است
+    val unlocked = rememberProStatus().unlocked
+    val openPro = LocalOpenPro.current
+
     card(stringResource(R.string.export_title)) {
         Text(
             stringResource(R.string.export_hint),
@@ -73,36 +82,40 @@ fun ExportCard(card: @Composable (title: String, content: @Composable () -> Unit
             color = colors.onSurfaceVariant,
         )
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = {
-                    val month = JalaliMonth.current()
-                    pendingMonth = month
-                    message = null
-                    launcher.launch("jibito-%04d-%02d.csv".format(Locale.US, month.year, month.month))
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.export_this_month)) }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(
-                onClick = {
-                    pendingMonth = null
-                    message = null
-                    launcher.launch("jibito-all.csv")
-                },
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.weight(1f),
-            ) { Text(stringResource(R.string.export_all)) }
-        }
-        message?.let {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                ir.jibito.app.util.Jalali.toPersianDigits(it),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.primary,
-                fontWeight = FontWeight.Bold,
-            )
+        if (!unlocked) {
+            ProLockedPanel(ProFeature.EXPORT, onOpen = { openPro(ProFeature.EXPORT) })
+        } else {
+            Row(Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = {
+                        val month = JalaliMonth.current()
+                        pendingMonth = month
+                        message = null
+                        launcher.launch("jibito-%04d-%02d.csv".format(Locale.US, month.year, month.month))
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.export_this_month)) }
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        pendingMonth = null
+                        message = null
+                        launcher.launch("jibito-all.csv")
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.export_all)) }
+            }
+            message?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    ir.jibito.app.util.Jalali.toPersianDigits(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
