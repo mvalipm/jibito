@@ -272,7 +272,7 @@ private fun SuggestionChips(suggestionName: String, onAccept: () -> Unit, onOthe
                 .clip(RoundedCornerShape(17.dp))
                 .background(t.sugBg)
                 .clickable(onClick = onAccept)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(DesignIcons.Check, contentDescription = null, tint = t.sugFg, modifier = Modifier.size(16.dp))
@@ -282,7 +282,7 @@ private fun SuggestionChips(suggestionName: String, onAccept: () -> Unit, onOthe
                 color = t.sugFg,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -292,7 +292,7 @@ private fun SuggestionChips(suggestionName: String, onAccept: () -> Unit, onOthe
                 .clip(RoundedCornerShape(17.dp))
                 .background(t.chip)
                 .clickable(onClick = onOther)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(

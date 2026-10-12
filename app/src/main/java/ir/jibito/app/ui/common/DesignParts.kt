@@ -198,7 +198,7 @@ fun JibiToast(message: ToastMessage?, onDismiss: () -> Unit, modifier: Modifier 
                 contentAlignment = Alignment.Center,
             ) { Icon(DesignIcons.CheckBold, contentDescription = null, tint = Color(0xFF0B302F), modifier = Modifier.size(16.dp)) }
             Spacer(Modifier.width(10.dp))
-            // پیام بلند به خط دوم می‌رود؛ جای «برگردون» را اول می‌گیرند و بعد پیام هر چه ماند
+            // پیام بلند به خط دوم و سوم می‌رود؛ جای «برگردون» را اول می‌گیرند و بعد پیام هر چه ماند
             Text(
                 m.text,
                 modifier = Modifier
@@ -207,7 +207,7 @@ fun JibiToast(message: ToastMessage?, onDismiss: () -> Unit, modifier: Modifier 
                 color = t.toastFg,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
             if (m.actionLabel != null) {
