@@ -44,7 +44,6 @@ import ir.jibito.app.ui.common.Mascot
 import ir.jibito.app.ui.common.ToastMessage
 import ir.jibito.app.ui.common.MascotFace
 import ir.jibito.app.ui.main.LocalBottomBarSpace
-import ir.jibito.app.ui.summary.BudgetDialog
 import ir.jibito.app.ui.summary.SummaryViewModel
 import ir.jibito.app.ui.summary.TodoPage
 import ir.jibito.app.ui.summary.TodoStory
@@ -63,16 +62,12 @@ fun TodoScreen(
     pendingReview: Int,
     onOpenReview: () -> Unit,
     onOpenUncategorized: () -> Unit,
-    onOpenTransactions: () -> Unit,
     onOpenCategory: (Long) -> Unit,
-    /** برگه‌ی «مال چی بود؟» یک تراکنش (فروشگاه‌های «جیبت رو مرتب کنیم») */
-    onOpenTransaction: (Long) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     // خلاصه‌ی همین ماه، برای بودجه‌های نزدیک سقف
     val viewModel: SummaryViewModel = viewModel(factory = SummaryViewModel.factory(app.container.budgetRepository))
     val summary by viewModel.summary.collectAsState()
-    val trend by viewModel.trend.collectAsState()
     // «ثبت شد · برگردون» بعد از جواب دادن به یک کار (مثلاً «دو حساب یکی‌اند یا جدا؟»)
     var toast by remember { mutableStateOf<ToastMessage?>(null) }
     LaunchedEffect(toast) {
@@ -92,24 +87,11 @@ fun TodoScreen(
         onToast = { toast = it },
         onFixSleep = { sleepSheet = true },
     )
-    var editingBudget by remember { mutableStateOf(false) }
     // مورد لمس‌شده‌ی یک کارت چندتایی: پیامک‌هایش در برگه‌ی پایین (کلیدش، تا بعد از جواب دادن جای دیگر هم بسته بماند)
     var smsPage by remember { mutableStateOf<Pair<String, TodoPage>?>(null) }
-    // «جیبت رو مرتب کنیم» روزهای اول بالای «خلاصه» است؛ بعد این‌جا
-    val stepsOnSummary = rememberFirstStepsOnSummary()
-    val firstSteps = rememberFirstSteps(
-        summary,
-        averageSpendRial = trend?.averageRial,
-        onOpenUncategorized = onOpenUncategorized,
-        onOpenTransactions = onOpenTransactions,
-        onOpenTransaction = onOpenTransaction,
-        onEditBudget = { editingBudget = true },
-        onSetBudget = viewModel::setOverallBudget,
-    ).takeUnless { stepsOnSummary }
     Box(Modifier.fillMaxSize()) {
         TodoList(
             stories.sortedBy { todoPriority(it.id) },
-            firstSteps = firstSteps,
             onOpenSms = { story, page -> smsPage = story.label to page },
         )
         JibiToast(
@@ -133,22 +115,6 @@ fun TodoScreen(
     smsPage?.let { (title, page) ->
         TodoSmsSheet(title = title, page = page, onDismiss = { smsPage = null })
     }
-    // قدم «بودجه‌ی ماهانه بذار»: همان پنجره‌ی بودجه‌ی کل «خلاصه»
-    val s = summary
-    if (editingBudget && s != null) {
-        BudgetDialog(
-            key = "overall",
-            title = stringResource(R.string.overall_dialog_title),
-            hint = stringResource(R.string.overall_dialog_hint),
-            initialRial = s.overallBudgetRial,
-            suggestionRial = s.categoryBudgetsSumRial.takeIf { it > 0 && it != s.overallBudgetRial },
-            onSave = { rial ->
-                viewModel.setOverallBudget(rial)
-                editingBudget = false
-            },
-            onDismiss = { editingBudget = false },
-        )
-    }
 }
 
 private const val TOAST_MILLIS = 4_000L
@@ -156,13 +122,11 @@ private const val TOAST_MILLIS = 4_000L
 /**
  * فهرست کارها (بدون وابستگی به داده، برای اسکرین‌شات هم) در دو گروه:
  * «الان» (کارهای فوری که روی تب شمرده می‌شوند) و «پیشنهادها».
- * [firstSteps]: کارت «قدم‌های اول» برای کاربر تازه، بالای همه.
  */
 @Composable
 fun TodoList(
     items: List<TodoStory>,
     modifier: Modifier = Modifier,
-    firstSteps: FirstStepsUi? = null,
     /** لمس یک مورد از کارت چندتایی که پیامک دارد */
     onOpenSms: (TodoStory, TodoPage) -> Unit = { _, _ -> },
 ) {
@@ -198,10 +162,7 @@ fun TodoList(
                 }
             }
         }
-        if (firstSteps != null) {
-            item(key = "first-steps") { FirstStepsCard(firstSteps) }
-        }
-        if (items.isEmpty() && firstSteps == null) {
+        if (items.isEmpty()) {
             item(key = "empty") { AllClear() }
         }
         if (urgent.isNotEmpty()) {
@@ -213,7 +174,7 @@ fun TodoList(
             items(suggestions, key = { it.id }) { TodoCard(it, onOpenSms) }
         }
         // «خرج بی‌دسته» هیچ‌وقت تمام نمی‌شود؛ اگر فقط همین مانده، به‌جای فضای خالی بگو بقیه تمام است
-        if (firstSteps == null && items.isNotEmpty() && items.all { it.id == "uncat" }) {
+        if (items.isNotEmpty() && items.all { it.id == "uncat" }) {
             item(key = "rest-done") { RestDone() }
         }
     }

@@ -97,12 +97,20 @@ fun isUrgentTodo(id: String): Boolean = id == "sleep" || id == "review" || id ==
 
 /** سرتیتر هر بخش «خلاصه»: عنوان درشت و یک یادداشت کوچک در طرف دیگر */
 @Composable
-fun SectionHeader(title: String, note: String? = null, noteColor: Color? = null, noteBold: Boolean = false) {
+fun SectionHeader(
+    title: String,
+    /** بعد از فاصله‌ی دو طرف اعمال می‌شود (مثلاً برای ثبت جای سرتیتر در راهنما) */
+    modifier: Modifier = Modifier,
+    note: String? = null,
+    noteColor: Color? = null,
+    noteBold: Boolean = false,
+) {
     val t = JibitoTheme.colors
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 20.dp)
+            .then(modifier),
         verticalAlignment = Alignment.Bottom,
     ) {
         Text(

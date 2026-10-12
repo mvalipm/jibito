@@ -98,9 +98,9 @@ internal fun MonthPill(month: JalaliMonth, background: Color, onPick: (JalaliMon
 }
 
 @Composable
-internal fun HeroButton(icon: ImageVector, label: String, onClick: () -> Unit, background: Color) {
+internal fun HeroButton(icon: ImageVector, label: String, onClick: () -> Unit, background: Color, modifier: Modifier = Modifier) {
     Box(
-        Modifier
+        modifier
             .size(48.dp)
             .clip(CircleShape)
             .background(background)
