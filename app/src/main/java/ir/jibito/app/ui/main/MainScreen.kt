@@ -120,9 +120,15 @@ val LocalBottomBarSpace = compositionLocalOf { 0.dp }
  *
  * @param openTransactionId تراکنشی که باید باز شود (لمس نوتیفیکیشن «این خرج مال چی بود؟»)
  * @param onOpenHandled بعد از رسیدگی به openTransactionId صدا زده می‌شود تا دوباره باز نشود
+ * @param openPro نوتیف «ثبتش کردم؛ جیبیتوی کامل…» لمس شده: برگه‌ی خرید، با «ماه رایگانت تموم شد»
  */
 @Composable
-fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) {
+fun MainScreen(
+    openTransactionId: Long? = null,
+    onOpenHandled: () -> Unit = {},
+    openPro: Boolean = false,
+    onOpenProHandled: () -> Unit = {},
+) {
     val container = (LocalContext.current.applicationContext as JibitoApplication).container
     val nav = rememberNavController()
     val backStackEntry by nav.currentBackStackEntryAsState()
@@ -209,7 +215,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     var proTrialEnded by rememberSaveable { mutableStateOf(false) }
     val proStatus by container.pro.status.collectAsState()
     // یک بار ساخته می‌شود: LocalOpenPro ایستاست و مقدار تازه، همه‌ی صفحه‌ها را از نو می‌سازد
-    val openPro: (ProFeature?) -> Unit = remember {
+    val showProSheet: (ProFeature?) -> Unit = remember {
         { feature ->
             proFeature = feature
             proTrialEnded = false
@@ -266,6 +272,16 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         }
     }
 
+    LaunchedEffect(openPro) {
+        if (!openPro) return@LaunchedEffect
+        // از نوتیف آمده: همان «ماه رایگانت تموم شد» (یک بار دیدنش کافی است)، با دسته دادن از نوتیف پررنگ
+        container.pro.markTrialEndNoticeSeen()
+        proFeature = ProFeature.NOTIFY
+        proTrialEnded = true
+        proSheet = true
+        onOpenProHandled()
+    }
+
     // «دوباره نشان بده» از تنظیمات: راهنما روی «خلاصه» است، پس از تنظیمات برمی‌گردیم
     LaunchedEffect(tourActive, route) {
         if (tourActive && route == ROUTE_SETTINGS) nav.popBackStack(Tab.Summary.route, inclusive = false)
@@ -279,7 +295,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         CompositionLocalProvider(
             LocalBottomBarSpace provides bottomSpace,
             LocalTourAnchors provides tourAnchors,
-            LocalOpenPro provides openPro,
+            LocalOpenPro provides showProSheet,
         ) {
             Column(
                 Modifier

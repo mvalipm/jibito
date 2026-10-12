@@ -51,6 +51,7 @@ fun rememberProStatus(): ProStatus {
 
 internal val ProFeature.title: Int
     get() = when (this) {
+        ProFeature.NOTIFY -> R.string.pro_feature_notify
         ProFeature.FORECAST -> R.string.pro_feature_forecast
         ProFeature.BALANCE -> R.string.pro_feature_balance
         ProFeature.NATURE -> R.string.pro_feature_nature
@@ -61,6 +62,7 @@ internal val ProFeature.title: Int
 
 internal val ProFeature.description: Int
     get() = when (this) {
+        ProFeature.NOTIFY -> R.string.pro_feature_notify_desc
         ProFeature.FORECAST -> R.string.pro_feature_forecast_desc
         ProFeature.BALANCE -> R.string.pro_feature_balance_desc
         ProFeature.NATURE -> R.string.pro_feature_nature_desc
@@ -71,6 +73,7 @@ internal val ProFeature.description: Int
 
 internal val ProFeature.icon: ImageVector
     get() = when (this) {
+        ProFeature.NOTIFY -> JibitoIcons.Bell
         ProFeature.FORECAST -> JibitoIcons.Calendar
         ProFeature.BALANCE -> JibitoIcons.Bank
         ProFeature.NATURE -> ProIcons.Nature

@@ -21,6 +21,8 @@ import ir.jibito.app.data.local.AppDatabase
 import ir.jibito.app.data.local.entity.CategoryEntity
 import ir.jibito.app.data.local.entity.TransactionFlowEntity
 import ir.jibito.app.data.parser.FlowType
+import ir.jibito.app.data.pro.ProSettings
+import ir.jibito.app.data.pro.unlocked
 import ir.jibito.app.util.Money
 
 /**
@@ -30,6 +32,8 @@ import ir.jibito.app.util.Money
  * قانون‌ها:
  * - فقط برای تراکنش‌های تازه (حداکثر ۳۰ دقیقه‌ی اخیر) که هنوز دسته ندارند و قبلاً نوتیفیکیشن نگرفته‌اند.
  * - اگر بعداً معلوم شد خرید ناموفق بوده (پول برگشته)، نوتیفیکیشنش پاک می‌شود.
+ * - بعد از ماه رایگان (و تا خریدن «جیبیتوی کامل») نه «مال چی بود؟» می‌آید نه «✓ خودکار»؛ خرج مثل همیشه ثبت
+ *   می‌شود و در اپ دسته می‌گیرد، و گاهی ([ProSettings.notifyInviteDue]) یک نوتیف می‌گوید ثبتش کردم و جیبیتوی کامل چه دارد.
  */
 class TransactionNotifier(
     private val context: Context,
@@ -42,6 +46,9 @@ class TransactionNotifier(
         val now = System.currentTimeMillis()
         val recent = dao.recentSmsFlows(since = now - RECENT_WINDOW_MILLIS)
         val manager = NotificationManagerCompat.from(context)
+        // تازه از روی تنظیمات خوانده می‌شود: اپ شاید روزهاست باز نشده و ماه رایگان همین وسط تمام شده
+        val pro = ProSettings(context, now)
+        val locked = !pro.status.value.unlocked
 
         for (flow in recent) {
             when {
@@ -51,6 +58,17 @@ class TransactionNotifier(
                     if (flow.notifiedAt == null) dao.markNotified(flow.id, now) else manager.cancel(notificationId(flow.id))
                 }
                 flow.notifiedAt != null -> Unit
+                // ماه رایگان تمام شده: به‌جای سؤال (یا «✓ خودکار»)، گاهی «ثبتش کردم؛ جیبیتوی کامل…»
+                locked -> {
+                    // بی‌دسته: همان رزرو یک‌قدمیِ سؤال، تا دو همگام‌سازی هم‌زمان دو بار خبر ندهند
+                    val claimed = if (flow.categoryId == null) {
+                        dao.claimQuestion(flow.id, now) == 1
+                    } else {
+                        dao.markNotified(flow.id, now)
+                        true
+                    }
+                    if (claimed && pro.notifyInviteDue(now) && showInvite(flow)) pro.markNotifyInvited(now)
+                }
                 // بی‌دسته ← «مال چی بود؟» با دکمه‌ها. فهرست بالا ممکن است کهنه باشد (همگام‌سازی دیگری یا
                 // لمس دکمه‌ی نوتیفیکیشن همین حالا کارش را کرده)؛ پس اول در یک قدم رزرو، بعد پرسیدن
                 flow.categoryId == null -> {
@@ -117,6 +135,44 @@ class TransactionNotifier(
         if (style.hasReply) builder.addAction(replyAction(flow.id, isDeposit))
 
         NotificationManagerCompat.from(context).notify(notificationId(flow.id), builder.build())
+        return true
+    }
+
+    /**
+     * بعد از ماه رایگان، جای «مال چی بود؟»: «−۱۸۵ هزار · کافه لمیز» و «ثبتش کردم…»، با لحن دعوت نه تهدید؛
+     * لمسش (یا «ببین چی داره») اپ را با برگه‌ی «جیبیتوی کامل» باز می‌کند. همیشه یک نوتیف، جای قبلی.
+     */
+    private fun showInvite(flow: TransactionFlowEntity): Boolean {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return false
+        }
+        val isDeposit = flow.flowType == FlowType.DEPOSIT.code
+        val amount = (if (isDeposit) "+" else "−") + Money.compact(flow.amount)
+        val kind = context.getString(if (isDeposit) R.string.tx_deposit else R.string.tx_withdrawal)
+        val title = listOf(amount, flow.merchant ?: BankDirectory.byId(flow.bankId)?.name ?: kind).joinToString(" · ")
+        val openPro = PendingIntent.getActivity(
+            context,
+            INVITE_NOTIFICATION_ID,
+            MainActivity.openProIntent(context),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_jibito)
+            .setContentTitle(title)
+            .setContentText(context.getString(R.string.notif_pro_invite))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notif_pro_invite_long)))
+            .setContentIntent(openPro)
+            .addAction(0, context.getString(R.string.pro_locked_button), openPro)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setColor(ContextCompat.getColor(context, R.color.jibito_primary))
+            .setWhen(flow.dateEpoch)
+            .setShowWhen(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(INVITE_NOTIFICATION_ID, notification)
         return true
     }
 
@@ -295,6 +351,9 @@ class TransactionNotifier(
     companion object {
         const val CHANNEL_ID = "transactions"
         const val AUTO_CHANNEL_ID = "auto_categorized"
+
+        /** نوتیف «ثبتش کردم؛ جیبیتوی کامل…» (بعد از ماه رایگان)؛ همیشه یکی، جای قبلی */
+        const val INVITE_NOTIFICATION_ID = 700_000_002
         /** پیامکی که دیرتر از این پیدا شود «مال چی بود؟» نمی‌گیرد (SleepWatch همین را «دیر» می‌شمارد) */
         internal const val RECENT_WINDOW_MILLIS = 30 * 60 * 1000L
         /** نوتیفیکیشن «رفت تو …» بعد از این مدت خودش بسته می‌شود */

@@ -16,10 +16,13 @@ sealed interface ProStatus {
 val ProStatus.unlocked: Boolean get() = this !is ProStatus.Free
 
 /**
- * امکانات «جیبیتوی کامل». بقیه‌ی جیبیتو (ثبت خودکار خرج، نوتیف، بودجه، تراکنش‌ها، کارها، ویجت،
- * قفل اپ، پشتیبان و بازگردانی) همیشه رایگان است: کار روزانه و داده‌ی خود کاربر هیچ‌وقت پشت پرداخت نمی‌رود.
+ * امکانات «جیبیتوی کامل». بقیه‌ی جیبیتو (ثبت خودکار خرج، دسته دادن در اپ، بودجه، تراکنش‌ها، کارها، ویجت،
+ * قفل اپ، پشتیبان و بازگردانی) همیشه رایگان است: داده‌ی خود کاربر هیچ‌وقت پشت پرداخت نمی‌رود.
  */
 enum class ProFeature {
+    /** نوتیف «مال چی بود؟» و دسته دادن از خود نوتیف (خرج‌ها همیشه خودکار ثبت می‌شوند و در اپ دسته می‌گیرند) */
+    NOTIFY,
+
     /** «پولم تا حقوق بعدی می‌رسه؟» */
     FORECAST,
 
@@ -46,6 +49,13 @@ object ProRules {
 
     /** پرسیدن خرید قبلی از بازار (نصب دوباره، گوشی تازه) حداکثر روزی یک بار، بدون این‌که کاربر بخواهد */
     const val CHECK_INTERVAL_MILLIS = DAY_MILLIS
+
+    /**
+     * بعد از ماه رایگان، به‌جای «مال چی بود؟» نوتیف کوتاهی می‌گوید خرج ثبت شد و جیبیتوی کامل چه دارد:
+     * روزی یک بار تا کاربر بفهمد ماه رایگان تمام شده (برگه‌ی «ماه رایگانت تموم شد» را در اپ ببیند)، بعد هفته‌ای یک بار.
+     */
+    fun notifyInviteDue(lastInviteAt: Long, endNoticeSeen: Boolean, now: Long): Boolean =
+        now - lastInviteAt >= if (endNoticeSeen) 7 * DAY_MILLIS else DAY_MILLIS
 
     fun status(owned: Boolean, trialStartedAt: Long, now: Long): ProStatus {
         if (owned) return ProStatus.Owned
