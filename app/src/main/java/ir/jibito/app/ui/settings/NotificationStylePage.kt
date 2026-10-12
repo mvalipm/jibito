@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.JibitoApplication
 import ir.jibito.app.R
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.data.pro.unlocked
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.ProLockedPanel
+import ir.jibito.app.ui.pro.rememberProStatus
 import ir.jibito.app.notify.NotificationStyle
 import ir.jibito.app.ui.theme.JibitoTheme
 
@@ -41,6 +46,12 @@ internal fun NotificationStylePageContent() {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val settings = app.container.notificationStyle
     val current by settings.style.collectAsState()
+    // بعد از ماه رایگان «مال چی بود؟» نمی‌آید؛ شکلش برای وقتی است که جیبیتوی کامل را بخری
+    if (!rememberProStatus().unlocked) {
+        val openPro = LocalOpenPro.current
+        ProLockedPanel(ProFeature.NOTIFY, onOpen = { openPro(ProFeature.NOTIFY) })
+        Spacer(Modifier.height(12.dp))
+    }
 
     PageCard {
         Text(

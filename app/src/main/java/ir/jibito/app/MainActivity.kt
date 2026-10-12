@@ -70,6 +70,9 @@ class MainActivity : ComponentActivity() {
     /** تراکنشی که از نوتیفیکیشن خواسته شده و هنوز باز نشده */
     private var openTransactionId by mutableStateOf<Long?>(null)
 
+    /** نوتیف «ثبتش کردم؛ جیبیتوی کامل…» لمس شده و برگه‌ی خرید هنوز باز نشده */
+    private var openProRequested by mutableStateOf(false)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         readOpenRequest(intent)
@@ -78,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private fun readOpenRequest(intent: Intent?) {
         val id = intent?.getLongExtra(EXTRA_TRANSACTION_ID, -1L) ?: -1L
         if (id > 0) openTransactionId = id
+        if (intent?.getBooleanExtra(EXTRA_OPEN_PRO, false) == true) openProRequested = true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -126,6 +130,8 @@ class MainActivity : ComponentActivity() {
                             JibitoApp(
                                 openTransactionId = openTransactionId,
                                 onOpenHandled = { openTransactionId = null },
+                                openPro = openProRequested,
+                                onOpenProHandled = { openProRequested = false },
                             )
                         }
                         if (locked) {
@@ -172,12 +178,19 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TRANSACTION_ID = "ir.jibito.app.extra.TRANSACTION_ID"
+        private const val EXTRA_OPEN_PRO = "ir.jibito.app.extra.OPEN_PRO"
 
         /** باز کردن اپ روی یک تراکنش، با برگه‌ی انتخاب دسته (برای لمس نوتیفیکیشن) */
         fun openTransactionIntent(context: Context, transactionId: Long): Intent =
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 .putExtra(EXTRA_TRANSACTION_ID, transactionId)
+
+        /** باز کردن اپ روی برگه‌ی «جیبیتوی کامل» (لمس نوتیف «ثبتش کردم» بعد از ماه رایگان) */
+        fun openProIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(EXTRA_OPEN_PRO, true)
     }
 }
 
@@ -188,7 +201,7 @@ private const val KEY_MANUAL_ONLY = "manual_only"
 private enum class Screen { Welcome, Permission, SmsList }
 
 @Composable
-private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
+private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit, openPro: Boolean, onOpenProHandled: () -> Unit) {
     val context = LocalContext.current
     fun granted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
@@ -248,6 +261,11 @@ private fun JibitoApp(openTransactionId: Long?, onOpenHandled: () -> Unit) {
                 screen = Screen.SmsList
             },
         )
-        Screen.SmsList -> MainScreen(openTransactionId = openTransactionId, onOpenHandled = onOpenHandled)
+        Screen.SmsList -> MainScreen(
+            openTransactionId = openTransactionId,
+            onOpenHandled = onOpenHandled,
+            openPro = openPro,
+            onOpenProHandled = onOpenProHandled,
+        )
     }
 }

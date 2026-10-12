@@ -40,6 +40,15 @@ class ProRulesTest {
     }
 
     @Test
+    fun `نوتیف دعوت روزی یک بار، و بعد از دیدن «ماه رایگانت تموم شد» هفته‌ای یک بار`() {
+        assertTrue(ProRules.notifyInviteDue(lastInviteAt = 0L, endNoticeSeen = false, now = start))
+        assertFalse(ProRules.notifyInviteDue(lastInviteAt = start, endNoticeSeen = false, now = start + day - 1))
+        assertTrue(ProRules.notifyInviteDue(lastInviteAt = start, endNoticeSeen = false, now = start + day))
+        assertFalse(ProRules.notifyInviteDue(lastInviteAt = start, endNoticeSeen = true, now = start + 6 * day))
+        assertTrue(ProRules.notifyInviteDue(lastInviteAt = start, endNoticeSeen = true, now = start + 7 * day))
+    }
+
+    @Test
     fun `فقط بعد از ماه رایگان و بدون خرید بسته است`() {
         assertTrue(ProStatus.Owned.unlocked)
         assertTrue(ProStatus.Trial(3).unlocked)

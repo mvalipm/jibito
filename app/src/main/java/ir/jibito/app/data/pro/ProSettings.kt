@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * وضعیت «جیبیتوی کامل» روی همین گوشی (SharedPreferences):
  * - شروع ماه رایگان: اولین باری که این نسخه باز می‌شود. در پشتیبان می‌رود، تا بازگردانی روی گوشی تازه ماه رایگان را از نو شروع نکند.
  * - «خریده»: فقط بعد از تأیید امضای کافه‌بازار (BazaarStore). در پشتیبان نمی‌رود؛ روی گوشی تازه، خود بازار می‌گوید خریده یا نه.
- * - آخرین پرسیدن از بازار و این‌که «ماه رایگانت تموم شد» یک بار دیده شده، مال همین گوشی است.
+ * - آخرین پرسیدن از بازار، این‌که «ماه رایگانت تموم شد» یک بار دیده شده و آخرین نوتیف دعوت به خرید، مال همین گوشی است.
  */
 class ProSettings(context: Context, now: Long = System.currentTimeMillis()) {
 
@@ -48,6 +48,13 @@ class ProSettings(context: Context, now: Long = System.currentTimeMillis()) {
 
     fun markTrialEndNoticeSeen() = prefs.edit { putBoolean(KEY_END_NOTICE_SEEN, true) }
 
+    /** وقت نوتیف «خرجت ثبت شد؛ جیبیتوی کامل…» است؟ (فقط وقتی بسته است؛ [ProRules.notifyInviteDue]) */
+    fun notifyInviteDue(now: Long = System.currentTimeMillis()): Boolean =
+        _status.value == ProStatus.Free &&
+            ProRules.notifyInviteDue(prefs.getLong(KEY_LAST_INVITE, 0L), prefs.getBoolean(KEY_END_NOTICE_SEEN, false), now)
+
+    fun markNotifyInvited(now: Long = System.currentTimeMillis()) = prefs.edit { putLong(KEY_LAST_INVITE, now) }
+
     private fun compute(now: Long): ProStatus =
         ProRules.status(prefs.getBoolean(KEY_OWNED, false), prefs.getLong(KEY_TRIAL_START, now), now)
 
@@ -57,5 +64,6 @@ class ProSettings(context: Context, now: Long = System.currentTimeMillis()) {
         private const val KEY_OWNED = "owned"
         private const val KEY_LAST_CHECK = "last_store_check"
         private const val KEY_END_NOTICE_SEEN = "trial_end_notice_seen"
+        private const val KEY_LAST_INVITE = "last_notify_invite"
     }
 }
