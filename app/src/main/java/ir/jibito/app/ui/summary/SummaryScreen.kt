@@ -42,6 +42,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.JibitoApplication
+import ir.jibito.app.data.pro.ProFeature
+import ir.jibito.app.data.pro.unlocked
+import ir.jibito.app.ui.pro.LocalOpenPro
+import ir.jibito.app.ui.pro.rememberProStatus
 import ir.jibito.app.R
 import ir.jibito.app.ui.common.EmptyStart
 import ir.jibito.app.ui.common.rememberNoTransactions
@@ -88,6 +92,11 @@ fun SummaryScreen(
         delay(FORECAST_WAIT_MS)
         forecastWaitOver = true
     }
+    // «پولت تا حقوق می‌رسه؟» در «جیبیتوی کامل» است: بعد از ماه رایگان، نه رنگ سرصفحه را عوض می‌کند نه خطش دیده می‌شود
+    val proUnlocked = rememberProStatus().unlocked
+    val openPro = LocalOpenPro.current
+    val forecast = forecastState?.forecast.takeIf { proUnlocked }
+    val lockedForecast = !proUnlocked && forecastState?.forecast != null
     val viewModel: SummaryViewModel = viewModel(
         factory = SummaryViewModel.factory(app.container.budgetRepository)
     )
@@ -144,7 +153,7 @@ fun SummaryScreen(
         } else if (!showAll) {
             // سرصفحه‌ی رنگی زیر نوار وضعیت می‌رود؛ آیکون‌های نوار وضعیت سفید
             StatusBarOnColor()
-            val heroLine = moodOf(s, System.currentTimeMillis(), forecastState?.forecast)
+            val heroLine = moodOf(s, System.currentTimeMillis(), forecast)
             LazyColumn(
                 Modifier.fillMaxSize(),
                 state = listState,
@@ -157,9 +166,10 @@ fun SummaryScreen(
                         onEditBudget = { editingOverall = true },
                         onToggleHidden = { themeSettings.setHideAmounts(!hidden) },
                         onOpenSettings = onOpenSettings,
-                        forecast = forecastState?.forecast,
+                        forecast = forecast,
                         onOpenForecast = onOpenForecast,
                         compact = noTransactions == true,
+                        onForecastLocked = if (lockedForecast) { { openPro(ProFeature.FORECAST) } } else null,
                     )
                 }
                 // هنوز هیچ تراکنشی نیست: به‌جای عددهای صفر، چرا خالی است و قدم بعدی

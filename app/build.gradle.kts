@@ -26,7 +26,7 @@ android {
         // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
         versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
         // هر PR که امکان یا migration تازه دارد این را بالا می‌برد و یک خط به CHANGELOG.md (ریشه‌ی ریپو) اضافه می‌کند
-        versionName = "0.70.1"
+        versionName = "0.71.0"
 
         // تست‌های روی گوشی/امولاتور (app/src/androidTest)؛ هر تست در فرایند خودش و با داده‌ی پاک (Orchestrator)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -170,6 +170,11 @@ dependencies {
     // پروفایل‌های آماده‌ی کتابخانه‌ها (Compose و…) را روی گوشی نصب می‌کند تا اپ سریع‌تر باز شود؛
     // مهم برای نصب از کافه‌بازار و مایکت که مثل گوگل‌پلی پروفایل ابری ندارند
     implementation(libs.androidx.profileinstaller)
+    // خرید «جیبیتوی کامل» از کافه‌بازار (کتابخانه‌ی رسمی بازار؛ با خود اپ بازار کار می‌کند و اینترنت نمی‌خواهد).
+    // stdlib قدیمیِ jdk7 که با خودش می‌آورد کنار گذاشته می‌شود: همه‌اش در stdlib خود ما هست (وگرنه کلاس تکراری)
+    implementation(libs.poolakey) {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
+    }
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

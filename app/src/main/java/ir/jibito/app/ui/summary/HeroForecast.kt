@@ -77,3 +77,34 @@ internal fun HeroForecastLine(f: BalanceForecast, onClick: () -> Unit) {
         Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = fg.copy(alpha = 0.8f), modifier = Modifier.padding(start = 6.dp).size(18.dp))
     }
 }
+
+/**
+ * جای [HeroForecastLine] وقتی پیش‌بینی در «جیبیتوی کامل» است: «پولت تا حقوق می‌رسه؟» با قفل کوچک؛
+ * لمسش برگه‌ی خرید را باز می‌کند. چیزی از خود پیش‌بینی (می‌رسد یا نه) لو نمی‌دهد.
+ */
+@Composable
+internal fun HeroForecastTeaser(onClick: () -> Unit) {
+    val t = JibitoTheme.colors
+    val bg = if (t.dark) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.14f)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(bg)
+            .clickable(onClickLabel = stringResource(R.string.cd_hero_forecast_teaser), role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(JibitoIcons.Lock, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(
+            stringResource(R.string.hero_forecast_teaser),
+            modifier = Modifier.weight(1f),
+            color = Color.White,
+            style = JibitoText.body,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 21.sp,
+        )
+        Icon(JibitoIcons.ChevronForward, contentDescription = null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(start = 6.dp).size(18.dp))
+    }
+}

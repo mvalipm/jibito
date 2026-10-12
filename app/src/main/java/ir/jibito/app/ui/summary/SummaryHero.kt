@@ -77,6 +77,8 @@ fun SummaryHero(
     forecast: BalanceForecast? = null,
     onOpenForecast: () -> Unit = {},
     compact: Boolean = false,
+    /** پیش‌بینی هست ولی در «جیبیتوی کامل» است (ماه رایگان تمام شده): جای آن، خطی که برگه‌ی خرید را باز می‌کند */
+    onForecastLocked: (() -> Unit)? = null,
 ) {
     val t = JibitoTheme.colors
     val hidden = LocalHideAmounts.current
@@ -236,7 +238,13 @@ fun SummaryHero(
                     lineHeight = 24.sp,
                 )
             }
-            if (forecast != null && isCurrent && !hidden) HeroForecastLine(forecast, onOpenForecast)
+            if (isCurrent && !hidden) {
+                if (forecast != null) {
+                    HeroForecastLine(forecast, onOpenForecast)
+                } else if (onForecastLocked != null) {
+                    HeroForecastTeaser(onForecastLocked)
+                }
+            }
         }
     }
 }
