@@ -16,17 +16,15 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import ir.jibito.app.ui.todo.FirstStepsCard
 import ir.jibito.app.ui.sleep.SleepCard
 import ir.jibito.app.ui.sleep.SleepSheet
 import ir.jibito.app.ui.sleep.rememberSleepAlert
-import ir.jibito.app.ui.todo.rememberFirstSteps
-import ir.jibito.app.ui.todo.rememberFirstStepsOnSummary
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
@@ -80,10 +78,6 @@ fun SummaryScreen(
     onAddManual: () -> Unit = {},
     /** لمس «پولت تا حقوق می‌رسه؟» ← کارت موجودی در «گزارش‌ها» */
     onOpenForecast: () -> Unit = {},
-    /** «جیبت رو مرتب کنیم»: خرج‌های بی‌دسته، همه‌ی تراکنش‌ها، و برگه‌ی «مال چی بود؟» یک تراکنش */
-    onOpenUncategorized: () -> Unit = {},
-    onOpenTransactions: () -> Unit = {},
-    onOpenTransaction: (Long) -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as JibitoApplication
     val forecastState by app.container.forecastRepository.state.collectAsState()
@@ -125,17 +119,12 @@ fun SummaryScreen(
             onDismiss = { sleepSheet = false },
         )
     }
-    // «جیبت رو مرتب کنیم» روزهای اول این‌جاست؛ بعد در «کارها»
-    val stepsOnSummary = rememberFirstStepsOnSummary()
-    val firstSteps = rememberFirstSteps(
-        summary,
-        averageSpendRial = trend?.averageRial,
-        onOpenUncategorized = onOpenUncategorized,
-        onOpenTransactions = onOpenTransactions,
-        onOpenTransaction = onOpenTransaction,
-        onEditBudget = { editingOverall = true },
-        onSetBudget = viewModel::setOverallBudget,
-    ).takeIf { stepsOnSummary }
+    // راهنمای کاربر تازه از بالای صفحه شروع می‌شود (جای بخش‌ها همان‌جاست که توضیح داده می‌شوند)
+    val tourActive by app.container.productTour.active.collectAsState()
+    val listState = rememberLazyListState()
+    LaunchedEffect(tourActive) {
+        if (tourActive) listState.scrollToItem(0)
+    }
     LaunchedEffect(openCategoryId) {
         val id = openCategoryId ?: return@LaunchedEffect
         viewModel.setMonth(JalaliMonth.current())
@@ -158,6 +147,7 @@ fun SummaryScreen(
             val heroLine = moodOf(s, System.currentTimeMillis(), forecastState?.forecast)
             LazyColumn(
                 Modifier.fillMaxSize(),
+                state = listState,
                 contentPadding = PaddingValues(bottom = 16.dp + LocalBottomBarSpace.current),
             ) {
                 item(key = "hero") {
@@ -193,12 +183,6 @@ fun SummaryScreen(
                             onLater = { app.container.sleepWatch.snooze() },
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
                         )
-                    }
-                }
-                // فقط ماه جاری، و وقتی تراکنشی هست (بی تراکنش، کارت «ثبت اولین خرج» همان کار را می‌کند)
-                if (firstSteps != null && noTransactions == false && s.month == JalaliMonth.current()) {
-                    item(key = "first-steps") {
-                        FirstStepsCard(firstSteps, Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp))
                     }
                 }
                 // «کجا رفت؟» بی هیچ تراکنشی فقط یک «خرجی نیومده»ی تکراری است
@@ -337,6 +321,7 @@ fun SummaryScreen(
                     hint = stringResource(R.string.overall_dialog_hint),
                     initialRial = s.overallBudgetRial,
                     suggestionRial = s.categoryBudgetsSumRial.takeIf { it > 0 && it != s.overallBudgetRial },
+                    averageSpendRial = trend?.averageRial,
                     onSave = { rial ->
                         viewModel.setOverallBudget(rial)
                         editingOverall = false

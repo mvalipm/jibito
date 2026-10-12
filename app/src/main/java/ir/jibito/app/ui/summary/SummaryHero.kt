@@ -53,6 +53,8 @@ import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.util.Jalali
 import ir.jibito.app.util.JalaliMonth
 import ir.jibito.app.util.Money
+import ir.jibito.app.ui.tour.TourStep
+import ir.jibito.app.ui.tour.tourAnchor
 /** خمیدگی پایین سرصفحه */
 private val CURVE = 40.dp
 
@@ -146,59 +148,68 @@ fun SummaryHero(
                 )
                 // تنظیمات دیگر تب نیست: گوشه‌ی بالا-چپ (در راست‌به‌چپ، ته ردیف)
                 Spacer(Modifier.width(8.dp))
-                HeroButton(NavIcons.Settings.normal, stringResource(R.string.settings_title), onOpenSettings, control)
+                HeroButton(
+                    NavIcons.Settings.normal,
+                    stringResource(R.string.settings_title),
+                    onOpenSettings,
+                    control,
+                    Modifier.tourAnchor(TourStep.SETTINGS),
+                )
             }
             if (compact) return@Column
 
-            // «خرج این ماه» و عدد درشت، وسط سرصفحه
-            Column(
-                Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    if (isCurrent) stringResource(R.string.hero_label_current) else stringResource(R.string.summary_spent, s.month.title),
-                    modifier = Modifier.semantics { heading() },
-                    color = Color.White,
-                    style = JibitoText.lead,
-                    fontWeight = FontWeight.Medium,
-                )
-                BigNumber(s.totalSpentRial, hidden, onEditBudget)
-            }
-
-            // نوار بودجه
-            if (budget != null) {
-                BudgetBar(
-                    spent = (s.budgetSpentRial.toFloat() / budget).coerceIn(0f, 1f),
-                    today = s.timeFraction(nowMillis),
-                    marker = moodColor,
-                )
-                BudgetLabels(s, budget, hidden, isCurrent, nowMillis, onEditBudget)
-                // خرج یک‌باره جدا از بودجه (عدد درشت بالا آن را دارد، نوار بودجه نه)
-                if (s.oneOffRial > 0) {
+            // عدد درشت تا نوار بودجه یک تکه است تا راهنمای کاربر تازه یک‌جا روشنش کند؛ فاصله‌هایش همان فاصله‌ی ستون بیرونی است
+            Column(Modifier.tourAnchor(TourStep.HERO), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // «خرج این ماه» و عدد درشت، وسط سرصفحه
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
-                        Jalali.toPersianDigits(
-                            stringResource(R.string.hero_one_off, if (hidden) HIDDEN_AMOUNT else Money.compact(s.oneOffRial))
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
+                        if (isCurrent) stringResource(R.string.hero_label_current) else stringResource(R.string.summary_spent, s.month.title),
+                        modifier = Modifier.semantics { heading() },
                         color = Color.White,
-                        style = JibitoText.small,
+                        style = JibitoText.lead,
                         fontWeight = FontWeight.Medium,
                     )
+                    BigNumber(s.totalSpentRial, hidden, onEditBudget)
                 }
-            } else {
-                Text(
-                    stringResource(R.string.overall_set_budget),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(control)
-                        .clickable(onClick = onEditBudget)
-                        .heightIn(min = 48.dp)
-                        .wrapContentHeight(Alignment.CenterVertically)
-                        .padding(horizontal = 16.dp),
-                    color = Color.White,
-                    style = JibitoText.action,
-                    fontWeight = FontWeight.Bold,
-                )
+
+                // نوار بودجه
+                if (budget != null) {
+                    BudgetBar(
+                        spent = (s.budgetSpentRial.toFloat() / budget).coerceIn(0f, 1f),
+                        today = s.timeFraction(nowMillis),
+                        marker = moodColor,
+                    )
+                    BudgetLabels(s, budget, hidden, isCurrent, nowMillis, onEditBudget)
+                    // خرج یک‌باره جدا از بودجه (عدد درشت بالا آن را دارد، نوار بودجه نه)
+                    if (s.oneOffRial > 0) {
+                        Text(
+                            Jalali.toPersianDigits(
+                                stringResource(R.string.hero_one_off, if (hidden) HIDDEN_AMOUNT else Money.compact(s.oneOffRial))
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White,
+                            style = JibitoText.small,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                } else {
+                    Text(
+                        stringResource(R.string.overall_set_budget),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(control)
+                            .clickable(onClick = onEditBudget)
+                            .heightIn(min = 48.dp)
+                            .wrapContentHeight(Alignment.CenterVertically)
+                            .padding(horizontal = 16.dp),
+                        color = Color.White,
+                        style = JibitoText.action,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
 
             // جمله‌ی حال جیب

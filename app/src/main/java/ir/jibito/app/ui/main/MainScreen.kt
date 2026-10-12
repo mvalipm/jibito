@@ -65,6 +65,7 @@ import ir.jibito.app.ui.review.ReviewScreen
 import ir.jibito.app.ui.settings.SettingsScreen
 import ir.jibito.app.ui.settings.WhatsNewDialog
 import ir.jibito.app.ui.settings.installedVersion
+import ir.jibito.app.ui.settings.isFreshInstall
 import ir.jibito.app.ui.settings.pendingWhatsNew
 import ir.jibito.app.ui.smslist.SmsListScreen
 import ir.jibito.app.ui.summary.SummaryScreen
@@ -72,11 +73,14 @@ import ir.jibito.app.ui.summary.SummaryViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.jibito.app.ui.summary.rememberTodoStories
 import ir.jibito.app.ui.todo.TodoScreen
+import ir.jibito.app.ui.tour.LocalTourAnchors
+import ir.jibito.app.ui.tour.ProductTourOverlay
+import ir.jibito.app.ui.tour.TourAnchors
+import ir.jibito.app.ui.tour.TourStep
 import ir.jibito.app.util.Changelog
 import ir.jibito.app.util.Jalali
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import ir.jibito.app.ui.todo.recordFirstStepsOpenDay
 import ir.jibito.app.ui.welcome.FirstRunReveal
 import ir.jibito.app.ui.welcome.NotificationIntroScreen
 import ir.jibito.app.ui.welcome.notificationIntroNeeded
@@ -154,6 +158,12 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
     val pendingFlow = remember { container.reviewRepository.observePending() }
     val pending by pendingFlow.collectAsState(initial = emptyList())
     val hazeState = remember { HazeState() }
+    // راهنمای کاربر تازه: جای دکمه‌ها و بخش‌ها را صفحه‌ها ثبت می‌کنند و راهنما روی همه‌شان می‌آید
+    val tour = container.productTour
+    val tourActive by tour.active.collectAsState()
+    val tourAnchors = remember { TourAnchors() }
+    // خواندن پیامک و پرسیدن اجازه‌ی نوتیفیکیشن (بار اول) تمام شده؛ راهنما بعد از آن می‌آید، نه زیرِ آن
+    var startupDone by remember { mutableStateOf(false) }
     // عدد روی تب «کارها»: فقط کارهای فوری (پیشنهادها شمرده نمی‌شوند تا عدد هیچ‌وقت عادی نشود)
     val todoSummaryVm: SummaryViewModel = viewModel(key = "todo-count", factory = SummaryViewModel.factory(container.budgetRepository))
     val todoSummary by todoSummaryVm.summary.collectAsState()
@@ -167,10 +177,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
 
     fun openUncategorized() {
         onlyUncategorized = true
-        go(Tab.Transactions)
-    }
-    fun openTransactions() {
-        onlyUncategorized = false
         go(Tab.Transactions)
     }
     // برگه‌ی «مال چی بود؟» یک تراکنش در «تراکنش‌ها» (مثل لمس نوتیفیکیشن)
@@ -205,8 +211,8 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         if (notificationIntroNeeded(Build.VERSION.SDK_INT, granted)) notificationIntro = true
     }
     LaunchedEffect(Unit) {
-        // «جیبت رو مرتب کنیم» چند روزِ اول باز کردن اپ بالای «خلاصه» می‌ماند
-        recordFirstStepsOpenDay(appContext)
+        // نصب تازه ← راهنمای کاربر تازه؛ به‌روزرسانی ← نه
+        tour.start(isFreshInstall(appContext))
         whatsNew = withContext(Dispatchers.IO) { pendingWhatsNew(appContext, container.whatsNewSeen) }
     }
     LaunchedEffect(Unit) {
@@ -223,6 +229,7 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         }
         // بار اول: اگر «جیبت رو شناختم» هست، نوتیفیکیشن بعد از «بزن بریم» پرسیده می‌شود؛ وگرنه همین حالا
         if (firstRun && container.firstRun.done && container.firstRun.pending.value == null) askNotifications()
+        startupDone = true
         if (container.reviewRepository.countNotYetShown() > 0) {
             container.reviewRepository.markAllShown()
             // بار اول «بررسی» خودش باز نمی‌شود: کاربر اول «جیبت رو شناختم» و «خلاصه» را می‌بیند؛ پیامک‌های مبهم در «کارها» می‌مانند.
@@ -231,12 +238,17 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         }
     }
 
+    // «دوباره نشان بده» از تنظیمات: راهنما روی «خلاصه» است، پس از تنظیمات برمی‌گردیم
+    LaunchedEffect(tourActive, route) {
+        if (tourActive && route == ROUTE_SETTINGS) nav.popBackStack(Tab.Summary.route, inclusive = false)
+    }
+
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomSpace = if (showBar) FloatingNavBarHeight + FloatingNavBarBottomMargin + navInset + 8.dp else navInset + 8.dp
 
     Box(Modifier.fillMaxSize()) {
         // محتوا: تا پایین صفحه کشیده می‌شود؛ فاصله‌ی پایین را خود صفحه‌ها با LocalBottomBarSpace می‌گذارند
-        CompositionLocalProvider(LocalBottomBarSpace provides bottomSpace) {
+        CompositionLocalProvider(LocalBottomBarSpace provides bottomSpace, LocalTourAnchors provides tourAnchors) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -273,9 +285,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                     pendingManual = true
                                     go(Tab.Transactions)
                                 },
-                                onOpenUncategorized = ::openUncategorized,
-                                onOpenTransactions = ::openTransactions,
-                                onOpenTransaction = ::openTransaction,
                             )
                         }
                         composable(Tab.Transactions.route) {
@@ -300,8 +309,6 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                                 pendingReview = pending.size,
                                 onOpenReview = ::openReview,
                                 onOpenUncategorized = ::openUncategorized,
-                                onOpenTransactions = ::openTransactions,
-                                onOpenTransaction = ::openTransaction,
                                 // جزئیات دسته (و تغییر بودجه‌اش) در «خلاصه» است
                                 onOpenCategory = {
                                     openCategory = it
@@ -336,18 +343,20 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
         )
 
         if (showBar) {
-            FloatingNavBar(
-                items = listOf(
-                    NavItem(NavIcons.Summary, stringResource(Tab.Summary.label)),
-                    NavItem(NavIcons.Transactions, stringResource(Tab.Transactions.label)),
-                    NavItem(NavIcons.Reports, stringResource(Tab.Reports.label)),
-                    NavItem(NavIcons.Todo, stringResource(Tab.Todo.label), badge = todoCount),
-                ),
-                selectedIndex = tab.ordinal,
-                onSelect = { go(Tab.entries[it]) },
-                hazeState = hazeState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            CompositionLocalProvider(LocalTourAnchors provides tourAnchors) {
+                FloatingNavBar(
+                    items = listOf(
+                        NavItem(NavIcons.Summary, stringResource(Tab.Summary.label)),
+                        NavItem(NavIcons.Transactions, stringResource(Tab.Transactions.label), tourStep = TourStep.TRANSACTIONS),
+                        NavItem(NavIcons.Reports, stringResource(Tab.Reports.label), tourStep = TourStep.REPORTS),
+                        NavItem(NavIcons.Todo, stringResource(Tab.Todo.label), badge = todoCount, tourStep = TourStep.TODO),
+                    ),
+                    selectedIndex = tab.ordinal,
+                    onSelect = { go(Tab.entries[it]) },
+                    hazeState = hazeState,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
         }
 
         reveal?.let { stats ->
@@ -375,5 +384,10 @@ fun MainScreen(openTransactionId: Long? = null, onOpenHandled: () -> Unit = {}) 
                 whatsNew = emptyList()
             })
         }
+        ProductTourOverlay(
+            tourAnchors,
+            enabled = tourActive && startupDone && reveal == null && !notificationIntro && whatsNew.isEmpty() && route == Tab.Summary.route,
+            onFinish = tour::finish,
+        )
     }
 }

@@ -58,6 +58,8 @@ import ir.jibito.app.ui.theme.CategoryStyle
 import ir.jibito.app.ui.theme.CategoryTint
 import ir.jibito.app.ui.theme.DesignIcons
 import ir.jibito.app.ui.theme.JibitoText
+import ir.jibito.app.ui.tour.TourStep
+import ir.jibito.app.ui.tour.tourAnchor
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.categoryTint
 import ir.jibito.app.util.Jalali
@@ -89,7 +91,7 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
         ?: spent.firstOrNull()?.categoryId
 
     Column(Modifier.padding(top = 22.dp)) {
-        SectionHeader(title = stringResource(R.string.where_title))
+        SectionHeader(title = stringResource(R.string.where_title), modifier = Modifier.tourAnchor(TourStep.WHERE, part = 0))
         Column(Modifier.padding(horizontal = 20.dp)) {
             if (total <= 0 || spent.isEmpty()) {
                 Text(
@@ -110,7 +112,9 @@ fun WhereSection(s: MonthSummary, onOpenCategory: (Long) -> Unit, onShowAll: () 
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
-                    .height(34.dp),
+                    .height(34.dp)
+                    // سرتیتر و نوار سهم‌ها با هم یک مرحله‌ی راهنمای کاربر تازه‌اند
+                    .tourAnchor(TourStep.WHERE, part = 1),
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

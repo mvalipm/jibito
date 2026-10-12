@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.jibito.app.R
+import ir.jibito.app.JibitoApplication
 import ir.jibito.app.data.bank.BankDirectory
 import ir.jibito.app.ui.common.TipStore
 import ir.jibito.app.ui.common.openSupportChat
@@ -53,6 +54,7 @@ internal fun HelpPageContent() {
     val context = LocalContext.current
     val resources = LocalResources.current
     val store = remember { TipStore(context.applicationContext) }
+    val tour = (context.applicationContext as JibitoApplication).container.productTour
     var tipsReset by rememberSaveable { mutableStateOf(false) }
     val version = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
@@ -64,6 +66,8 @@ internal fun HelpPageContent() {
             store.resetAll()
             tipsReset = true
         },
+        // MainScreen با روشن شدن راهنما از تنظیمات به «خلاصه» برمی‌گردد و راهنما همان‌جا نشان داده می‌شود
+        onShowTour = tour::restart,
         onAsk = {
             openSupportChat(
                 context,
@@ -98,6 +102,7 @@ internal fun HelpList(
     questions: List<HelpQuestion>,
     tipsReset: Boolean,
     onResetTips: () -> Unit,
+    onShowTour: () -> Unit,
     onAsk: () -> Unit,
     initiallyOpen: Int = -1,
 ) {
@@ -107,6 +112,18 @@ internal fun HelpList(
         questions.forEachIndexed { i, q ->
             if (i > 0) HorizontalDivider(color = JibitoTheme.colors.border)
             QuestionRow(q, expanded = open == i, onToggle = { open = if (open == i) -1 else i })
+        }
+    }
+    Spacer(Modifier.height(14.dp))
+    PageCard {
+        Text(
+            stringResource(R.string.help_tour_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        OutlinedButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.help_tour_show), fontWeight = FontWeight.Bold)
         }
     }
     Spacer(Modifier.height(14.dp))

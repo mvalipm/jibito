@@ -201,6 +201,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             "whats_new",
             "first_run",
             "first_steps",
+            "product_tour", // «راهنما را دیده‌ام»: مال همین نصب است؛ در نصب تازه، حتی با بازگردانی، راهنما یک بار نشان داده می‌شود
             "sleep_watch", // «گوشی منو خوابونده؟»: رفتار باتریِ همین گوشی، در گوشی تازه معنی ندارد
             "tips",
             "report_sections",

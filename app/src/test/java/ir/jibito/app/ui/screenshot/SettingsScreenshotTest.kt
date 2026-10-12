@@ -53,7 +53,7 @@ class SettingsScreenshotTest : ScreenshotTestBase() {
     fun help() {
         for (dark in listOf(false, true)) {
             shot("help", AppThemeStyle.DEFAULT, dark) {
-                HelpList(helpQuestions(), tipsReset = false, onResetTips = {}, onAsk = {}, initiallyOpen = 0)
+                HelpList(helpQuestions(), tipsReset = false, onResetTips = {}, onShowTour = {}, onAsk = {}, initiallyOpen = 0)
             }
         }
     }

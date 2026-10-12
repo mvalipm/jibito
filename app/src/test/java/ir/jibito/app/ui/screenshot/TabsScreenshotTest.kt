@@ -37,11 +37,9 @@ import androidx.compose.runtime.remember
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import ir.jibito.app.ui.main.LocalBottomBarSpace
-import ir.jibito.app.ui.todo.FirstStep
 import ir.jibito.app.ui.common.EmptyStart
 import ir.jibito.app.ui.common.TipCard
 import androidx.compose.foundation.layout.Spacer
-import ir.jibito.app.ui.todo.FirstStepsUi
 import ir.jibito.app.R
 import ir.jibito.app.data.sms.LateFind
 import ir.jibito.app.data.sms.SleepAlert
@@ -51,9 +49,6 @@ import ir.jibito.app.ui.sleep.SleepSheetContent
 import ir.jibito.app.ui.sleep.sleepSteps
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import ir.jibito.app.ui.todo.FirstStepsCard
-import ir.jibito.app.ui.todo.StepChip
-import ir.jibito.app.ui.todo.StepOffer
 import ir.jibito.app.ui.todo.TodoList
 import ir.jibito.app.ui.todo.TodoSmsContent
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -113,39 +108,6 @@ class TabsScreenshotTest : ScreenshotTestBase() {
                 TodoSmsContent("انتقال به خودت؟", transferPage(), onAnswered = {})
             }
         }
-    }
-
-    /**
-     * «جیبت رو مرتب کنیم» (بعد از ۷ روز در تب «کارها»): فروشگاه‌های پرتکرار (یکی یادداده)، پیشنهاد بودجه از میانگین،
-     * قفل، و نوتیفِ روشن‌شده؛ و جشن «جیبت آماده‌ست» وقتی همه انجام شد
-     */
-    @Test
-    fun todoFirstSteps() {
-        val steps = FirstStepsUi(
-            listOf(
-                FirstStep(
-                    "merchants", "۳ تا از فروشگاه‌های پرتکرارت رو بهم یاد بده", "بعدش خرج‌های این‌جاها خودشون دسته می‌گیرن.",
-                    done = false,
-                    progress = "۱ از ۳",
-                    chips = listOf(StepChip("اسنپ", 14, done = true) {}, StepChip("افق کوروش", 9, done = false) {}, StepChip("کافه لمیز", 6, done = false) {}),
-                ) {},
-                FirstStep("notif", "نوتیف رو روشن کن", "هر خرج تازه که اومد، همون‌جا می‌پرسم «مال چی بود؟».", done = true) {},
-                FirstStep(
-                    "budget", "بودجه‌ی ماهت رو بذار", "میانگین خرجت تو ماه‌های قبل حدود ۲۲ میلیون بوده؛ همین رو بذارم؟",
-                    done = false,
-                    offer = StepOffer("آره، ۲۲ میلیون", {}, "یه عدد دیگه", {}),
-                ) {},
-                FirstStep("lock", "قفل اپ رو روشن کن", "با همون قفل گوشی؛ کسی بی‌اجازه خرج‌هات رو نمی‌بینه.", done = false) {},
-            ),
-            onHide = {},
-        )
-        for (dark in listOf(false, true)) shot("todofirststeps", AppThemeStyle.DEFAULT, dark, padded = false) {
-            Box(Modifier.fillMaxWidth().height(960.dp)) {
-                TodoList(stories().take(2), firstSteps = steps)
-            }
-        }
-        val done = FirstStepsUi(steps.steps.map { it.copy(done = true) }, onHide = {}, celebrating = true)
-        for (dark in listOf(false, true)) shot("firststeps_done", AppThemeStyle.DEFAULT, dark) { FirstStepsCard(done) }
     }
 
     /** «گوشی منو خوابونده؟»: کارت بالای «خلاصه» و برگه‌ی «بیدار نگهم دار» برای شیائومی (قدم باتری روشن است) */

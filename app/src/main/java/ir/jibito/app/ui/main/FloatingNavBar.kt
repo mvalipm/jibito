@@ -54,6 +54,8 @@ import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.Vazirmatn
+import ir.jibito.app.ui.tour.TourStep
+import ir.jibito.app.ui.tour.tourAnchor
 import ir.jibito.app.util.Jalali
 
 /** یک دکمه‌ی نوار پایین */
@@ -62,6 +64,8 @@ data class NavItem(
     val label: String,
     /** عدد کوچک روی آیکون (مثلاً پیامک‌های منتظر بررسی)؛ ۰ یعنی نشان نده */
     val badge: Int = 0,
+    /** مرحله‌ای از راهنمای کاربر تازه که همین دکمه را روشن می‌کند */
+    val tourStep: TourStep? = null,
 )
 
 /** ارتفاع خود نوار (بدون فاصله از لبه‌ها) */
@@ -155,7 +159,8 @@ private fun NavButton(item: NavItem, selected: Boolean, onClick: () -> Unit, mod
                 role = Role.Tab,
                 onClick = onClick,
             )
-            .semantics { this.selected = selected },
+            .semantics { this.selected = selected }
+            .tourAnchor(item.tourStep),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

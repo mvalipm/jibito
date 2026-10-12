@@ -36,12 +36,15 @@ internal fun BudgetDialog(
     initialRial: Long?,
     /** پیشنهاد (مثلاً جمع بودجه‌ی دسته‌ها)؛ null یعنی نشان نده */
     suggestionRial: Long?,
+    /** میانگین خرج ماه‌های تمام‌شده (فقط بودجه‌ی کل)؛ null یعنی پیشنهادی از روی خرج نشان نده */
+    averageSpendRial: Long? = null,
     onSave: (Long?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val initial = initialRial?.let { (it / 10).toString() }.orEmpty()
     var text by rememberSaveable(key) { mutableStateOf(initial) }
     val toman = text.toLatinDigits().filter { it in '0'..'9' }.take(12).toLongOrNull()
+    val averageSuggestion = averageSpendRial?.let { suggestedBudgetRial(it) }?.takeIf { it != initialRial }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -66,17 +69,10 @@ internal fun BudgetDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 suggestionRial?.let { sum ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.overall_dialog_sum, Money.toman(sum)),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        TextButton(onClick = { text = (sum / 10).toString() }) {
-                            Text(stringResource(R.string.overall_dialog_use_sum))
-                        }
-                    }
+                    SuggestionRow(stringResource(R.string.overall_dialog_sum, Money.toman(sum))) { text = (sum / 10).toString() }
+                }
+                averageSuggestion?.let { average ->
+                    SuggestionRow(stringResource(R.string.overall_dialog_average, Money.toman(average))) { text = (average / 10).toString() }
                 }
             }
         },
@@ -97,6 +93,20 @@ internal fun BudgetDialog(
             }
         },
     )
+}
+
+/** یک پیشنهاد زیر خانه‌ی مبلغ با «همین رو بذار» */
+@Composable
+private fun SuggestionRow(label: String, onUse: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = onUse) { Text(stringResource(R.string.overall_dialog_use_sum)) }
+    }
 }
 
 internal fun String.toLatinDigits(): String = buildString {

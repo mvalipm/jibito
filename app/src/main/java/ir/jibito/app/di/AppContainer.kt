@@ -29,6 +29,7 @@ import ir.jibito.app.notify.BudgetAlerter
 import ir.jibito.app.data.bank.CustomInstitutions
 import ir.jibito.app.data.category.CategoryDisplaySettings
 import ir.jibito.app.data.wallet.WalletSettings
+import ir.jibito.app.ui.tour.ProductTour
 import ir.jibito.app.ui.smslist.UncategorizedBadgeSettings
 import ir.jibito.app.ui.theme.ThemeSettings
 import ir.jibito.app.data.recurring.RecurringSuggestions
@@ -81,6 +82,9 @@ class AppContainer(context: Context) {
 
     /** صفحه‌ی «N تراکنش پیدا شد» فقط یک بار */
     val firstRun: FirstRunFlag by lazy { FirstRunFlag(appContext) }
+
+    /** راهنمای کاربر تازه (خلاصه، تراکنش‌ها، گزارش‌ها، کارها) فقط یک بار */
+    val productTour: ProductTour by lazy { ProductTour(appContext) }
 
     /** «چه چیزی تازه است» بعد از به‌روزرسانی فقط یک بار */
     val whatsNewSeen: WhatsNewSeen by lazy { WhatsNewSeen(appContext) }
