@@ -26,9 +26,15 @@ class UncategorizedBadgeSettings(context: Context) {
     /** خرج‌های تا این زمان «دیده‌شده» حساب می‌شوند (۰ = هنوز بسته نشده) */
     val seenUntil: StateFlow<Long> = _seenUntil.asStateFlow()
 
+    /** روشن کردن دوباره یعنی «همه را دوباره نشانم بده»: «فعلاً نه»ی قبلی فراموش می‌شود تا عدد برگردد */
     fun setEnabled(on: Boolean) {
-        prefs.edit { putBoolean(KEY_ENABLED, on) }
+        val turningOn = on && !_enabled.value
+        prefs.edit {
+            putBoolean(KEY_ENABLED, on)
+            if (turningOn) remove(KEY_SEEN_UNTIL)
+        }
         _enabled.value = on
+        if (turningOn) _seenUntil.value = 0L
     }
 
     /** «فعلاً نه»: همه‌ی خرج‌های بی‌دسته‌ی تا الان دیده‌شده */

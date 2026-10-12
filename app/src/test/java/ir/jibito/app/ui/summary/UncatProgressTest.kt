@@ -74,4 +74,11 @@ class UncatProgressTest {
         assertEquals(1, p.open)
         assertEquals(2, p.total)
     }
+
+    @Test
+    fun `عدد روی کارت فقط با روشن بودن عدد خرج‌های بی‌دسته نشان داده می‌شود`() {
+        val all = listOf(tx(1))
+        assertEquals(true, uncatProgress(all, month, badgeEnabled = true, seenUntil = 0L).showCount)
+        assertEquals(false, uncatProgress(all, month, badgeEnabled = false, seenUntil = 0L).showCount)
+    }
 }

@@ -455,7 +455,7 @@
     <string name="digest_one_off">%1$s هم خرج یک‌باره بود که در مقایسه حساب نشده</string>
     <string name="settings_digest">خلاصه‌ی هفتگی</string>
     <string name="settings_uncat_badge">عدد خرج‌های بی‌دسته</string>
-    <string name="settings_uncat_badge_hint">کنار «بی‌دسته» در تراکنش‌ها و کارت بالای فهرست</string>
+    <string name="settings_uncat_badge_hint">کنار «بی‌دسته» در تراکنش‌ها، کارت بالای فهرست، و روی کارت «خرج بی‌دسته» در کارها</string>
     <string name="uncat_nudge">%1$s خرج منتظر دسته‌اند</string>
     <string name="uncat_nudge_later">فعلاً نه</string>
     <string name="settings_digest_hint">جمعه‌ها عصر یه نوتیف کوتاه از خرج‌های هفته</string>
