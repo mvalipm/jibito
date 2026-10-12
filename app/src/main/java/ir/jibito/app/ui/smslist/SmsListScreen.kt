@@ -67,6 +67,7 @@ import ir.jibito.app.ui.common.rememberHaptics
 import ir.jibito.app.ui.theme.JibitoIcons
 import ir.jibito.app.ui.theme.JibitoTheme
 import ir.jibito.app.ui.theme.DesignIcons
+import ir.jibito.app.util.Jalali
 import ir.jibito.app.ui.common.JibiToast
 import ir.jibito.app.ui.common.ToastMessage
 import ir.jibito.app.domain.Transaction
@@ -443,7 +444,7 @@ fun SmsListScreen(
                 similarAsk = null
                 viewModel.recategorizeSimilar(ask.transactionId, ask.categoryId) { result ->
                     haptics.confirm()
-                    offerUndo(similarDoneMessage.format(result.count, ask.categoryName), result.undo)
+                    offerUndo(Jalali.toPersianDigits(similarDoneMessage.format(result.count, ask.categoryName)), result.undo)
                 }
             },
             onNo = { similarAsk = null },

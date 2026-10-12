@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -184,7 +186,7 @@ fun JibiToast(message: ToastMessage?, onDismiss: () -> Unit, modifier: Modifier 
                 .shadow(16.dp, RoundedCornerShape(24.dp), ambientColor = Color.Black, spotColor = Color.Black)
                 .clip(RoundedCornerShape(24.dp))
                 .background(t.toastBg)
-                .height(48.dp)
+                .heightIn(min = 48.dp)
                 .padding(start = 20.dp, end = if (m.actionLabel != null) 6.dp else 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -196,29 +198,40 @@ fun JibiToast(message: ToastMessage?, onDismiss: () -> Unit, modifier: Modifier 
                 contentAlignment = Alignment.Center,
             ) { Icon(DesignIcons.CheckBold, contentDescription = null, tint = Color(0xFF0B302F), modifier = Modifier.size(16.dp)) }
             Spacer(Modifier.width(10.dp))
+            // پیام بلند به خط دوم می‌رود؛ جای «برگردون» را اول می‌گیرند و بعد پیام هر چه ماند
             Text(
                 m.text,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .padding(vertical = 8.dp),
                 color = t.toastFg,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             if (m.actionLabel != null) {
                 Spacer(Modifier.width(4.dp))
-                Text(
-                    m.actionLabel,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(18.dp))
-                        .clickable {
+                Box(
+                    Modifier
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable(role = Role.Button) {
                             m.onAction?.invoke()
                             onDismiss()
                         }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    color = if (t.dark) Color(0xFFB42318) else Color(0xFFFF9B7A),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                )
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        m.actionLabel,
+                        color = if (t.dark) Color(0xFFB42318) else Color(0xFFFF9B7A),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
             }
         }
     }

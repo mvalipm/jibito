@@ -8,13 +8,17 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -244,35 +248,61 @@ internal fun TransactionRow(
             }
         }
         if (uncategorized && onAcceptSuggestion != null && suggestionName != null) {
-            Row(Modifier.padding(start = 66.dp, bottom = 10.dp)) {
-                Row(
-                    Modifier
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(17.dp))
-                        .background(t.sugBg)
-                        .clickable(onClick = onAcceptSuggestion)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(DesignIcons.Check, contentDescription = null, tint = t.sugFg, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(suggestQuestion(suggestionName), color = t.sugFg, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(R.string.tx_suggest_other),
-                    modifier = Modifier
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(17.dp))
-                        .background(t.chip)
-                        .clickable(onClick = onClick)
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.onBackground,
-                    maxLines = 1,
-                )
-            }
+            SuggestionChips(suggestionName, onAccept = onAcceptSuggestion, onOther = onClick)
+        }
+    }
+}
+
+/**
+ * «سوپرمارکته؟ آره» و «یه چیز دیگه» زیر تراکنش. با اسم دسته‌ی بلند، گوشی باریک یا فونت بزرگ،
+ * دکمه‌ی دوم به خط بعد می‌رود (نمی‌ماند زیر لبه)؛ دکمه‌ها با فونت بزرگ بلندتر می‌شوند و متن نمی‌برد.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestionChips(suggestionName: String, onAccept: () -> Unit, onOther: () -> Unit) {
+    val t = JibitoTheme.colors
+    FlowRow(
+        Modifier.padding(start = 66.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            Modifier
+                .heightIn(min = 34.dp)
+                .clip(RoundedCornerShape(17.dp))
+                .background(t.sugBg)
+                .clickable(onClick = onAccept)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(DesignIcons.Check, contentDescription = null, tint = t.sugFg, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                suggestQuestion(suggestionName),
+                color = t.sugFg,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Box(
+            Modifier
+                .heightIn(min = 34.dp)
+                .clip(RoundedCornerShape(17.dp))
+                .background(t.chip)
+                .clickable(onClick = onOther)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                stringResource(R.string.tx_suggest_other),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
