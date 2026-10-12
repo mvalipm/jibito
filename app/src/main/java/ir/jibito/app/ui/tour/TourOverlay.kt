@@ -59,7 +59,7 @@ import ir.jibito.app.R
 import ir.jibito.app.util.Jalali
 
 /** پشت صفحه‌ی راهنما: تیره، ولی نه آن‌قدر که صفحه‌ی زیرش گم شود */
-private val Scrim = Color(0xFF0E0C12).copy(alpha = 0.82f)
+private val Scrim = Color(0xFF0E0C12).copy(alpha = 0.88f)
 
 /** فاصله‌ی متن راهنما از جای روشن */
 private val TipGap = 18.dp
