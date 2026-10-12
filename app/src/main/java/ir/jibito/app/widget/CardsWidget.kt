@@ -65,7 +65,7 @@ class CardsWidget : AppWidgetProvider() {
         private const val KEY_HIDDEN = "cards_hidden"
 
         /** بیشترین تعداد کارت (اندازه‌ی بزرگ) */
-        private const val MAX_CARDS = 5
+        private const val MAX_CARDS = 4
 
         /** «پرمصرف» یعنی بیشترین تراکنش در این چند روز */
         private const val USAGE_DAYS = 30

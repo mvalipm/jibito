@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   نوار بودجه‌ی ماه (ProgressBar): progress = خرج‌شده، secondaryProgress = «امروز در ماه» (خط باریک روی نوار).
-  خط بعد از پُرشدگی آمده تا رویش دیده شود. scale (نه clip) تا سر نوار گرد بماند؛ start در راست‌به‌چپ یعنی راست.
+  خط بعد از پُرشدگی آمده تا رویش دیده شود. scale (نه clip) تا سر نوار گرد بماند.
+  RtlHardcoded: ویجت همیشه راست‌به‌چپ است و start/end در drawable داخل RemoteViews همه‌جا درست حل نمی‌شود
+  (در اسکرین‌شات از چپ پُر می‌شد)؛ پس جهت صریح است: پُرشدگی از راست، خط «امروز» سمت چپِ بخش پُرشده.
 -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="RtlHardcoded">
     <item
         android:id="@android:id/background"
         android:height="6dp"
@@ -18,7 +22,7 @@
         android:height="6dp"
         android:gravity="center_vertical|fill_horizontal">
         <scale
-            android:scaleGravity="start|fill_vertical"
+            android:scaleGravity="right|fill_vertical"
             android:scaleWidth="100%">
             <shape android:shape="rectangle">
                 <solid android:color="@color/widget_over" />
@@ -28,12 +32,12 @@
     </item>
     <item android:id="@android:id/secondaryProgress">
         <scale
-            android:scaleGravity="start|fill_vertical"
+            android:scaleGravity="right|fill_vertical"
             android:scaleWidth="100%">
             <layer-list>
                 <item
                     android:width="2dp"
-                    android:gravity="end|fill_vertical">
+                    android:gravity="left|fill_vertical">
                     <shape android:shape="rectangle">
                         <solid android:color="@color/widget_marker" />
                         <corners android:radius="1dp" />

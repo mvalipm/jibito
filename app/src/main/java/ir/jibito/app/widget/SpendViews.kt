@@ -103,7 +103,9 @@ internal object SpendViews {
         }
         // اندازه‌ی یک‌ردیفه فقط یک خط کم‌رنگ دارد و با بودجه جایش به نوار ماه می‌رسد
         val slimRest = listOfNotNull(up ?: down, rest).joinToString(" ").takeIf { it.isNotEmpty() && n.overallBudgetRial == null }
-        WidgetKit.show(views, R.id.widget_vs, rest != null)
+        // ویجت کوچکِ بودجه‌دار جای مقایسه را ندارد (نوار ماه زیرش می‌آید)
+        val noRoom = size == WidgetSize.SMALL && n.overallBudgetRial != null
+        WidgetKit.show(views, R.id.widget_vs, rest != null && !noRoom)
         WidgetKit.show(views, R.id.widget_vs_up, up != null)
         WidgetKit.show(views, R.id.widget_vs_down, down != null)
         up?.let { views.setTextViewText(R.id.widget_vs_up, it) }

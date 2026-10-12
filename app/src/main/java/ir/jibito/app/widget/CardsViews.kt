@@ -13,7 +13,7 @@ import ir.jibito.app.util.Money
 
 /**
  * ظاهر ویجت «موجودی کارت‌ها» (بدون دیتابیس؛ تست اسکرین‌شات هم همین را می‌کشد).
- * یک‌ردیفه: سه کارت کنار هم. کوچک: دو کارت. متوسط: جمع و سه کارت فشرده با روند. بزرگ: جمع و پنج کارت کامل.
+ * یک‌ردیفه: سه کارت کنار هم. کوچک: دو کارت. متوسط: جمع و سه کارت فشرده با روند. بزرگ: جمع و چهار کارت کامل.
  */
 internal object CardsViews {
 
@@ -37,7 +37,7 @@ internal object CardsViews {
             WidgetSize.SLIM -> Triple(R.layout.widget_cards_slim, R.layout.widget_card_chip, 3)
             WidgetSize.SMALL -> Triple(R.layout.widget_cards_small, R.layout.widget_card_row, 2)
             WidgetSize.MEDIUM -> Triple(R.layout.widget_cards_medium, R.layout.widget_card_row_compact, 3)
-            WidgetSize.LARGE -> Triple(R.layout.widget_cards_large, R.layout.widget_card_row, 5)
+            WidgetSize.LARGE -> Triple(R.layout.widget_cards_large, R.layout.widget_card_row, 4)
         }
         val shown = lines.take(count)
         val views = RemoteViews(context.packageName, layout)
@@ -76,7 +76,10 @@ internal object CardsViews {
             row.setTextViewText(R.id.card_amount, WidgetKit.HIDDEN)
             WidgetKit.show(row, R.id.card_unit, false)
         } else {
-            val (number, unit) = Money.compactParts(line.balanceRial)
+            // ویجت کوچک جای «میلیون» کامل را ندارد: «۲۴٫۳ م» (مثل کپسول‌های کیف پول اپ)
+            val text = if (size == WidgetSize.SMALL) Money.short(line.balanceRial) else Money.compact(line.balanceRial)
+            val cut = text.lastIndexOf(' ')
+            val (number, unit) = if (cut < 0) text to "" else text.substring(0, cut) to text.substring(cut + 1)
             row.setTextViewText(R.id.card_amount, number)
             row.setTextViewText(R.id.card_unit, unit)
             WidgetKit.show(row, R.id.card_unit, unit.isNotEmpty())

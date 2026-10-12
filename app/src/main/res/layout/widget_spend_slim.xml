@@ -94,7 +94,15 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <include layout="@layout/widget_spend_progress" />
+        <FrameLayout
+            android:id="@+id/widget_progress_box"
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:layout_marginTop="3dp"
+            android:visibility="gone">
+
+            <include layout="@layout/widget_spend_progress" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
