@@ -22,6 +22,7 @@ androidxTestServices = "1.6.0"
 roborazzi = "1.76.0"
 profileinstaller = "1.4.1"
 poolakey = "2.2.0"
+fragment = "1.9.0"
 
 [libraries]
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -43,6 +44,7 @@ androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstall
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
 poolakey = { module = "com.github.cafebazaar.Poolakey:poolakey", version.ref = "poolakey" }
+androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }

@@ -176,7 +176,7 @@ internal fun ProSheetContent(
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(14.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ProFeature.entries.forEach { FeatureRow(it, highlighted = it == feature) }
         }
         Spacer(Modifier.height(16.dp))
@@ -249,7 +249,10 @@ private fun BuyButtons(
     }
 }
 
-/** یک امکان «جیبیتوی کامل» در فهرست برگه؛ امکانی که کاربر رویش زده زمینه‌ی رنگی دارد */
+/**
+ * یک امکان «جیبیتوی کامل» در فهرست برگه، یک‌خطی تا دکمه‌ی خرید بی‌اسکرول دیده شود؛
+ * امکانی که کاربر رویش زده زمینه‌ی رنگی و توضیح دارد
+ */
 @Composable
 private fun FeatureRow(feature: ProFeature, highlighted: Boolean) {
     val t = JibitoTheme.colors
@@ -258,22 +261,24 @@ private fun FeatureRow(feature: ProFeature, highlighted: Boolean) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(if (highlighted) t.tealTint else Color.Transparent)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = if (highlighted) 10.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
                 .background(if (highlighted) t.sheet else t.tealTint),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(feature.icon, contentDescription = null, tint = t.tealTintFg, modifier = Modifier.size(20.dp))
+            Icon(feature.icon, contentDescription = null, tint = t.tealTintFg, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(stringResource(feature.title), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text(stringResource(feature.description), fontSize = 13.sp, lineHeight = 20.sp, color = t.muted)
+            if (highlighted) {
+                Text(stringResource(feature.description), fontSize = 13.sp, lineHeight = 20.sp, color = t.muted)
+            }
         }
     }
 }

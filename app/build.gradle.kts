@@ -175,6 +175,9 @@ dependencies {
     implementation(libs.poolakey) {
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk7")
     }
+    // Poolakey با fragment 1.4.0 می‌آید که چک‌های لینتش با این نسخه‌ی لینت نمی‌خواند (ObsoleteLintCustomCheck)؛
+    // نسخه‌ی تازه‌تر (به پیشنهاد خود لینت) جایش را می‌گیرد
+    implementation(libs.androidx.fragment)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
