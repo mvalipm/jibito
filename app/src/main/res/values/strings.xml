@@ -677,8 +677,6 @@
     <string name="reveal_label_months">سابقه‌ی خرج</string>
     <string name="reveal_unit_banks">بانک</string>
     <string name="reveal_label_banks">حساب شناسایی‌شده</string>
-    <string name="reveal_label_top">بیشترین خرج</string>
-    <string name="reveal_label_top_share">%1$d٪ خرج‌ها</string>
 
     <!-- نوتیفیکیشن بعد از انتخاب دسته -->
     <string name="notif_picked_title">رفت تو %1$s</string>
