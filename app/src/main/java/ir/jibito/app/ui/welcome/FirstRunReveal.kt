@@ -88,8 +88,8 @@ private val OnCta = Color(0xFF2A0A00)
 private val GoIcon by lazy { DesignIcons.svg("go", "M19 12H5M11 6l-6 6 6 6", strokeWidth = 2.6f) }
 private val SparkleIcon by lazy { DesignIcons.svg("sparkle", DesignIcons.SPARKLE) }
 
-/** جیبی و حباب‌ها با نسبت ۰٫۴ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
-private const val HERO_MIN_SCALE = 0.4f
+/** جیبی و حباب‌ها با نسبت ۰٫۳۵ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
+private const val HERO_MIN_SCALE = 0.35f
 private const val HERO_MAX_SCALE = 1.2f
 
 /** یک دور شمارش (میلی‌ثانیه) */
