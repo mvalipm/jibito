@@ -10,9 +10,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** روی صفحه‌ی قفل مبلغ و اسم فروشگاه نباید دیده شود: نسخه‌ی عمومی نوتیف فقط یک اعلان کلی است. */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class NotificationPrivacyTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()

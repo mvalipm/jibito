@@ -8,9 +8,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** با قفل اپ، پنجره امن می‌شود (اسکرین‌شات و برنامه‌های اخیر)؛ بدون قفل دوباره عادی. */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ScreenPrivacyTest {
 
     private fun secure(activity: Activity) =
