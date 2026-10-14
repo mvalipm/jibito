@@ -26,31 +26,28 @@ android {
         // روی کامپیوتر (بدون GITHUB_RUN_NUMBER) همان عدد پایه است.
         versionCode = VERSION_CODE_BASE + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
         // هر PR که امکان یا migration تازه دارد این را بالا می‌برد و یک خط به CHANGELOG.md (ریشه‌ی ریپو) اضافه می‌کند
-        versionName = "0.73.1"
+        versionName = "0.74.1"
 
         // تست‌های روی گوشی/امولاتور (app/src/androidTest)؛ هر تست در فرایند خودش و با داده‌ی پاک (Orchestrator)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
-    // یک کلید ثابت برای نسخه‌ی آزمایشی، تا هر نسخه‌ی جدید روی قبلی نصب شود
-    // (بدون این، هر بار باید اپ قبلی را پاک کنید)
+    // کلید امضا فقط از متغیرهای محیطی (در GitHub Actions از Secrets) خوانده می‌شود و هرگز در گیت نیست.
+    // نسخه‌ی آزمایشی (debug) هم با همین کلید امضا می‌شود، تا هر نسخه‌ی تازه روی قبلی نصب شود؛ قبلاً یک کلید debug
+    // با رمز عمومی در گیت بود و هر کسی می‌توانست APKای با همان امضا بسازد و روی نصب آزمایشی «به‌روزرسانی» کند.
+    // بدون کلید (روی کامپیوتر توسعه‌دهنده، PR فورک، تست‌های امولاتور) همان کلید debug خودِ اندروید به کار می‌رود.
+    // راهنمای ساختن کلید و تنظیم Secrets: RELEASE.md
     signingConfigs {
-        getByName("debug") {
-            storeFile = file("app-debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
-        // کلید انتشار هرگز در گیت نیست: از متغیرهای محیطی (در GitHub Actions از Secrets) خوانده می‌شود.
-        // راهنمای ساختن کلید و تنظیم Secrets: RELEASE.md
         val releaseStore = System.getenv("JIBITO_KEYSTORE_FILE")
         if (!releaseStore.isNullOrBlank()) {
-            create("release") {
-                storeFile = file(releaseStore)
-                storePassword = System.getenv("JIBITO_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("JIBITO_KEY_ALIAS")
-                keyPassword = System.getenv("JIBITO_KEY_PASSWORD")
+            for (name in listOf("debug", "release")) {
+                maybeCreate(name).apply {
+                    storeFile = file(releaseStore)
+                    storePassword = System.getenv("JIBITO_KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("JIBITO_KEY_ALIAS")
+                    keyPassword = System.getenv("JIBITO_KEY_PASSWORD")
+                }
             }
         }
     }

@@ -110,6 +110,7 @@ class RecurringReminder(private val context: Context, private val db: AppDatabas
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(
                 if (lateDueDay == null) context.getString(R.string.recurring_notif_title, title)
                 else Jalali.toPersianDigits(context.getString(R.string.recurring_notif_title_late, title, lateDueDay))

@@ -26,11 +26,14 @@ object BackupCrypto {
     private const val KEY_BITS = 256
     private const val HEADER_BYTES = 8 + 1 + 4 + SALT_BYTES + IV_BYTES
 
-    /** حدود یک ثانیه روی گوشی متوسط؛ حدس زدن رمز را خیلی کند می‌کند */
-    const val DEFAULT_ITERATIONS = 150_000
+    /**
+     * توصیه‌ی OWASP برای PBKDF2-HMAC-SHA256؛ حدس زدن رمز از روی فایل پشتیبان را کند می‌کند.
+     * تعداد تکرار داخل فایل ذخیره می‌شود، پس پشتیبان‌های قدیمی‌تر (۱۵۰ هزار) هنوز باز می‌شوند.
+     */
+    const val DEFAULT_ITERATIONS = 600_000
 
     /** کمترین طول رمز پشتیبان */
-    const val MIN_PASSWORD_LENGTH = 6
+    const val MIN_PASSWORD_LENGTH = 8
 
     class WrongPasswordException : Exception("Wrong password or damaged file")
     class NotABackupException : Exception("Not a Jibito backup file")

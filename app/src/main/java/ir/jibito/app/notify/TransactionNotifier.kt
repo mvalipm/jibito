@@ -112,6 +112,7 @@ class TransactionNotifier(
         }
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(context.getString(question))
             .setContentIntent(openApp)
@@ -160,6 +161,7 @@ class TransactionNotifier(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(context.getString(R.string.notif_pro_invite))
             .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notif_pro_invite_long)))
@@ -195,6 +197,7 @@ class TransactionNotifier(
         )
         val notification = NotificationCompat.Builder(context, AUTO_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, AUTO_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(context.getString(R.string.notif_auto_text, category))
             .setContentIntent(openApp)
@@ -260,6 +263,7 @@ class TransactionNotifier(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notif_noted_title))
             .setContentText(context.getString(R.string.notif_noted_text, note))
             .setContentIntent(openApp)
@@ -287,6 +291,7 @@ class TransactionNotifier(
         ensureChannel()
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notif_picked_title, categoryName))
             .setContentText(
                 when {
