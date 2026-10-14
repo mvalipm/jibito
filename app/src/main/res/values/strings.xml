@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">جیبیتو</string>
     <string name="welcome_tagline">خرج‌هات خودشون ثبت می‌شن.</string>
+    <string name="welcome_trial">ماه اول همه‌ی امکانات جیبیتو رایگانه.</string>
     <string name="welcome_body">پیامک بانک رو خودش می‌خونه؛ تو فقط با یه لمس می‌گی خرجِ چی بوده.</string>
     <string name="sample_amount">۲۵۰٬۰۰۰</string>
     <string name="cat_food">غذا</string>

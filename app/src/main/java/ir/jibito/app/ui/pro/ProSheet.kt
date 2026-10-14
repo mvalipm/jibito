@@ -83,48 +83,53 @@ fun ProSheet(feature: ProFeature?, trialEnded: Boolean, onDismiss: () -> Unit) {
         containerColor = JibitoTheme.colors.sheet,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
     ) {
-        ProSheetContent(
-            status = status,
-            feature = feature,
-            trialEnded = trialEnded,
-            price = price,
-            busy = busy,
-            message = message,
-            onBuy = {
-                val registry = registryOwner?.activityResultRegistry
-                if (!pro.storeAvailable || registry == null) {
-                    message = R.string.pro_msg_not_ready
-                } else {
+        // فقط بالای برگه (توضیح و فهرست امکانات) اسکرول می‌شود؛ دکمه‌ها پایین ثابت می‌مانند.
+        // اسکرولِ کل برگه با کشیدنِ خود برگه (بستن با کشیدن) درگیر می‌شد و برگه می‌پرید.
+        Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
+            ProSheetHeader(
+                status = status,
+                feature = feature,
+                trialEnded = trialEnded,
+                modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+            )
+            Spacer(Modifier.height(16.dp))
+            ProSheetActions(
+                status = status,
+                price = price,
+                busy = busy,
+                message = message,
+                onBuy = {
+                    val registry = registryOwner?.activityResultRegistry
+                    if (!pro.storeAvailable || registry == null) {
+                        message = R.string.pro_msg_not_ready
+                    } else {
+                        busy = true
+                        message = null
+                        scope.launch {
+                            message = when (pro.purchase(registry)) {
+                                PurchaseResult.BOUGHT, PurchaseResult.CANCELED -> null
+                                PurchaseResult.NO_STORE -> R.string.pro_msg_no_store
+                                PurchaseResult.FAILED -> R.string.pro_msg_failed
+                            }
+                            busy = false
+                        }
+                    }
+                },
+                onRestore = {
                     busy = true
                     message = null
                     scope.launch {
-                        message = when (pro.purchase(registry)) {
-                            PurchaseResult.BOUGHT, PurchaseResult.CANCELED -> null
-                            PurchaseResult.NO_STORE -> R.string.pro_msg_no_store
-                            PurchaseResult.FAILED -> R.string.pro_msg_failed
+                        message = when (pro.restore()) {
+                            RestoreResult.FOUND -> null
+                            RestoreResult.NOT_FOUND -> R.string.pro_msg_not_found
+                            RestoreResult.UNAVAILABLE -> if (pro.storeAvailable) R.string.pro_msg_unavailable else R.string.pro_msg_not_ready
                         }
                         busy = false
                     }
-                }
-            },
-            onRestore = {
-                busy = true
-                message = null
-                scope.launch {
-                    message = when (pro.restore()) {
-                        RestoreResult.FOUND -> null
-                        RestoreResult.NOT_FOUND -> R.string.pro_msg_not_found
-                        RestoreResult.UNAVAILABLE -> if (pro.storeAvailable) R.string.pro_msg_unavailable else R.string.pro_msg_not_ready
-                    }
-                    busy = false
-                }
-            },
-            onClose = onDismiss,
-            modifier = Modifier
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(bottom = 16.dp),
-        )
+                },
+                onClose = onDismiss,
+            )
+        }
     }
 }
 
@@ -142,10 +147,20 @@ internal fun ProSheetContent(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    Column(modifier) {
+        ProSheetHeader(status, feature, trialEnded)
+        Spacer(Modifier.height(16.dp))
+        ProSheetActions(status, price, busy, message, onBuy, onRestore, onClose)
+    }
+}
+
+/** بالای برگه: جیبی، اسم، توضیح (چند روز مانده) و فهرست امکانات */
+@Composable
+private fun ProSheetHeader(status: ProStatus, feature: ProFeature?, trialEnded: Boolean, modifier: Modifier = Modifier) {
     val t = JibitoTheme.colors
     val colors = MaterialTheme.colorScheme
     val owned = status == ProStatus.Owned
-    Column(modifier.padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Mascot(56.dp, face = MascotFace.HAPPY)
         Spacer(Modifier.height(8.dp))
         Text(
@@ -179,8 +194,22 @@ internal fun ProSheetContent(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ProFeature.entries.forEach { FeatureRow(it, highlighted = it == feature) }
         }
-        Spacer(Modifier.height(16.dp))
-        if (owned) {
+    }
+}
+
+/** پایین برگه: «باشه» برای صاحب، وگرنه خرید و «قبلاً خریدم» */
+@Composable
+private fun ProSheetActions(
+    status: ProStatus,
+    price: String?,
+    busy: Boolean,
+    message: Int?,
+    onBuy: () -> Unit,
+    onRestore: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (status == ProStatus.Owned) {
             Button(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(50)) {
                 Text(stringResource(R.string.pro_close), fontSize = 17.sp, fontWeight = FontWeight.Black)
             }
