@@ -43,7 +43,7 @@ class RevealCountTest {
                     LocalLayoutDirection provides LayoutDirection.Rtl,
                     LocalLoopingMotion provides false,
                 ) {
-                    FirstRunReveal(RevealStats(count = count, months = 22, banks = 6, topCategory = "سوپرمارکت", topSharePercent = 18), onDone = {})
+                    FirstRunReveal(RevealStats(count = count, months = 22, banks = 6), onDone = {})
                 }
             }
         }

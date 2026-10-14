@@ -480,7 +480,7 @@
     <!-- گزارش پیامکی که اشتباه خوانده شده -->
     <!-- اولین آشنایی، بعد از اولین خواندن پیامک‌ها -->
     <string name="reveal_next">از این به بعد هر خرج تازه خودش ثبت می‌شه؛ تو فقط با یه لمس می‌گی مال چی بود.</string>
-    <string name="reveal_unsure">%1$d پیامک رو مطمئن نبودم تراکنش باشه؛ هر وقت خواستی از «کارها» کمکم کن.</string>
+    <string name="reveal_unsure">%1$d پیامک مبهم بود؛ از «کارها» کمکم کن.</string>
     <string name="reveal_go">بزن بریم</string>
 
     <!-- خلاصه‌ی هفتگی -->
@@ -678,8 +678,6 @@
     <string name="reveal_label_months">سابقه‌ی خرج</string>
     <string name="reveal_unit_banks">بانک</string>
     <string name="reveal_label_banks">حساب شناسایی‌شده</string>
-    <string name="reveal_label_top">بیشترین خرج</string>
-    <string name="reveal_label_top_share">%1$d٪ خرج‌ها</string>
 
     <!-- نوتیفیکیشن بعد از انتخاب دسته -->
     <string name="notif_picked_title">رفت تو %1$s</string>

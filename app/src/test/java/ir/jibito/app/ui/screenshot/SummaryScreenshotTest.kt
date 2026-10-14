@@ -81,19 +81,19 @@ class SummaryScreenshotTest : ScreenshotTestBase() {
             }
         }
         for ((style, dark) in variants) {
-            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}) }
+            shot("reveal", style, dark, padded = false) { FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3), onDone = {}) }
         }
         // عدد شش‌رقمی با فونت خیلی درشت: باید در یک خط بماند
         shot("reveal_big", AppThemeStyle.DEFAULT, dark = true, padded = false, fontScale = 2f) {
-            FirstRunReveal(RevealStats(count = 128_400, months = 22, banks = 6, topCategory = "تاکسی اینترنتی", topSharePercent = 18), onDone = {})
+            FirstRunReveal(RevealStats(count = 128_400, months = 22, banks = 6), onDone = {})
         }
         // چند پیامک مبهم: فقط یک خط («از «کارها» کمکم کن»)، نه باز شدن خودکار «بررسی»
         shot("reveal_unsure", AppThemeStyle.DEFAULT, dark = false, padded = false) {
-            FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3, topCategory = "سوپرمارکت", topSharePercent = 28), onDone = {}, unsure = 3)
+            FirstRunReveal(RevealStats(count = 342, months = 6, banks = 3), onDone = {}, unsure = 3)
         }
         // عددی که روی گوشی رقم آخرش افتاده بود («۱٬۴۰» به‌جای ۱٬۴۰۸)
         shot("reveal_1408", AppThemeStyle.DEFAULT, dark = true, padded = false) {
-            FirstRunReveal(RevealStats(count = 1_408, months = 22, banks = 6, topCategory = "پس‌انداز و سرمایه‌گذاری", topSharePercent = 0), onDone = {})
+            FirstRunReveal(RevealStats(count = 1_408, months = 22, banks = 6), onDone = {})
         }
     }
 }
