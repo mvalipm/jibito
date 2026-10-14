@@ -59,4 +59,16 @@ class BackupCryptoTest {
     fun randomFileIsNotABackup() {
         BackupCrypto.decrypt("hello, this is a photo".toByteArray() + ByteArray(100), "secret1".toCharArray())
     }
+
+    @Test
+    fun `تنظیمات پیش‌فرض به اندازه‌ی توصیه‌ی امروز سخت‌اند`() {
+        assertTrue(BackupCrypto.DEFAULT_ITERATIONS >= 600_000)
+        assertTrue(BackupCrypto.MIN_PASSWORD_LENGTH >= 8)
+    }
+
+    @Test
+    fun `پشتیبان قدیمی با ۱۵۰ هزار تکرار هنوز باز می‌شود`() {
+        val old = BackupCrypto.encrypt(data, "secret1".toCharArray(), 150_000)
+        assertArrayEquals(data, BackupCrypto.decrypt(old, "secret1".toCharArray()))
+    }
 }

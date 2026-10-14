@@ -33,6 +33,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # کلید امضا (اگر در Secrets هست) از همین اول آماده می‌شود تا نسخه‌ی آزمایشی هم با آن امضا شود
+      # (کلید debug عمومی دیگر در گیت نیست). PR فورک به Secrets دسترسی ندارد و با کلید debug خودِ اندروید ساخته می‌شود.
+      - name: Prepare signing key
+        if: env.HAS_RELEASE_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.JIBITO_KEYSTORE_BASE64 }}
+          JIBITO_KEYSTORE_PASSWORD: ${{ secrets.JIBITO_KEYSTORE_PASSWORD }}
+          JIBITO_KEY_ALIAS: ${{ secrets.JIBITO_KEY_ALIAS }}
+          JIBITO_KEY_PASSWORD: ${{ secrets.JIBITO_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "JIBITO_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "JIBITO_KEYSTORE_PASSWORD=$JIBITO_KEYSTORE_PASSWORD"
+            echo "JIBITO_KEY_ALIAS=$JIBITO_KEY_ALIAS"
+            echo "JIBITO_KEY_PASSWORD=$JIBITO_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       # هیچ فایل کاتلین بالای ۵۰۰ خط نباشد (بدهی فنی: فایل‌های بزرگ دوباره جمع نشوند)
       - name: Check Kotlin file sizes
         run: |
@@ -114,19 +132,9 @@ jobs:
 
       # نسخه‌ی انتشار (R8) همیشه ساخته می‌شود تا خرابی‌اش همان موقع معلوم شود؛ امضا فقط اگر کلید در Secrets باشد
       - name: Build release APK
-        env:
-          KEYSTORE_BASE64: ${{ secrets.JIBITO_KEYSTORE_BASE64 }}
-          JIBITO_KEYSTORE_PASSWORD: ${{ secrets.JIBITO_KEYSTORE_PASSWORD }}
-          JIBITO_KEY_ALIAS: ${{ secrets.JIBITO_KEY_ALIAS }}
-          JIBITO_KEY_PASSWORD: ${{ secrets.JIBITO_KEY_PASSWORD }}
         run: |
           set -o pipefail
-          if [ "$HAS_RELEASE_KEY" = "true" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-            export JIBITO_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
-          fi
           ./gradlew assembleRelease --stacktrace 2>&1 | tee -a build.log
-          rm -f "$RUNNER_TEMP/release.jks"
 
       # صفحه‌ی اجازه‌ی پیامک قول می‌دهد «جیبیتو اصلاً اجازه‌ی اینترنت نداره»؛ اگر کتابخانه‌ای بی‌صدا INTERNET اضافه کند، این قول دروغ می‌شود.
       # پس فهرست مجوزهای همان APK نهایی (بعد از ادغام manifest کتابخانه‌ها) چک می‌شود
@@ -155,6 +163,10 @@ jobs:
                   print(f"::error::TEST FAILED {tc.get('classname')}.{tc.get('name')}: {msg}")
           PY
           done
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Upload APK
         uses: actions/upload-artifact@v6

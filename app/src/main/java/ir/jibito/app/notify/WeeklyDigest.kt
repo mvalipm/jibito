@@ -88,6 +88,7 @@ class WeeklyDigest(private val context: Context, private val db: AppDatabase) {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.digest_title, Money.compact(d.thisWeekRial)))
             .apply { if (body.isNotBlank()) setContentText(body) }
             .setContentIntent(openApp)
