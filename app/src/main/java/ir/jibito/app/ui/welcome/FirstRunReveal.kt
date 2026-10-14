@@ -88,8 +88,8 @@ private val OnCta = Color(0xFF2A0A00)
 private val GoIcon by lazy { DesignIcons.svg("go", "M19 12H5M11 6l-6 6 6 6", strokeWidth = 2.6f) }
 private val SparkleIcon by lazy { DesignIcons.svg("sparkle", DesignIcons.SPARKLE) }
 
-/** جیبی و حباب‌ها با نسبت ۰٫۵ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
-private const val HERO_MIN_SCALE = 0.5f
+/** جیبی و حباب‌ها با نسبت ۰٫۴۵ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
+private const val HERO_MIN_SCALE = 0.45f
 private const val HERO_MAX_SCALE = 1.2f
 
 /** یک دور شمارش (میلی‌ثانیه) */
@@ -160,8 +160,8 @@ fun FirstRunReveal(
                             if (stats.months > 0) add(StatCell(Jalali.toPersianDigits(stats.months.toString()), stringResource(R.string.reveal_unit_months), stringResource(R.string.reveal_label_months), DesignIcons.Calendar, TintTeal))
                             if (stats.banks > 0) add(StatCell(Jalali.toPersianDigits(stats.banks.toString()), stringResource(R.string.reveal_unit_banks), stringResource(R.string.reveal_label_banks), DesignIcons.Bank, TintGold))
                         }
-                        if (cells.isNotEmpty()) PopIn(done, delayMillis = 0) { StatsCard(cells, Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp)) }
-                        PopIn(done, delayMillis = 160) { NextHint(unsure, Modifier.padding(start = 24.dp, end = 24.dp, top = 14.dp, bottom = 8.dp)) }
+                        if (cells.isNotEmpty()) PopIn(done, delayMillis = 0) { StatsCard(cells, Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp)) }
+                        PopIn(done, delayMillis = 160) { NextHint(unsure, Modifier.padding(start = 24.dp, end = 24.dp, top = 10.dp, bottom = 6.dp)) }
                     },
                 )
             }
@@ -240,10 +240,10 @@ private fun CountLine(value: Int, target: Int, maxSp: Float, modifier: Modifier)
 }
 
 private const val COUNT_MAX_SP = 88f
-private const val COUNT_MIN_SP = 56f
+private const val COUNT_MIN_SP = 48f
 
 /** اندازه‌ی عدد نسبت به ارتفاع جای محتوا، میان [COUNT_MIN_SP] و [COUNT_MAX_SP] */
-private const val COUNT_HEIGHT_RATIO = 0.115f
+private const val COUNT_HEIGHT_RATIO = 0.10f
 
 /** برای تست روی امولاتور */
 const val COUNT_TAG = "reveal_count"
@@ -274,7 +274,7 @@ private fun StatsCard(cells: List<StatCell>, modifier: Modifier) {
             .background(Color.White.copy(alpha = 0.06f))
             .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
             .height(IntrinsicSize.Min)
-            .padding(vertical = 14.dp, horizontal = 4.dp),
+            .padding(vertical = 12.dp, horizontal = 4.dp),
     ) {
         cells.forEachIndexed { i, c ->
             if (i > 0) Box(Modifier.padding(vertical = 8.dp).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.1f)))
