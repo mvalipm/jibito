@@ -88,8 +88,8 @@ private val OnCta = Color(0xFF2A0A00)
 private val GoIcon by lazy { DesignIcons.svg("go", "M19 12H5M11 6l-6 6 6 6", strokeWidth = 2.6f) }
 private val SparkleIcon by lazy { DesignIcons.svg("sparkle", DesignIcons.SPARKLE) }
 
-/** جیبی و حباب‌ها با نسبت ۰٫۴۵ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
-private const val HERO_MIN_SCALE = 0.45f
+/** جیبی و حباب‌ها با نسبت ۰٫۴ تا ۱٫۲ از طرح اصلی ([HERO_HEIGHT]) جا را پر می‌کنند */
+private const val HERO_MIN_SCALE = 0.4f
 private const val HERO_MAX_SCALE = 1.2f
 
 /** یک دور شمارش (میلی‌ثانیه) */
@@ -327,7 +327,7 @@ private fun NextHint(unsure: Int, modifier: Modifier) {
                 stringResource(R.string.reveal_next),
                 color = Color.White.copy(alpha = 0.62f),
                 fontSize = 13.5.sp,
-                lineHeight = 22.sp,
+                lineHeight = 20.sp,
             )
         }
         if (unsure > 0) {
@@ -335,15 +335,15 @@ private fun NextHint(unsure: Int, modifier: Modifier) {
             Text(
                 Jalali.toPersianDigits(stringResource(R.string.reveal_unsure, unsure)),
                 modifier = Modifier
-                    .padding(top = 10.dp)
+                    .padding(top = 6.dp)
                     .fillMaxWidth()
                     .clip(shape)
                     .background(TintGold.copy(alpha = 0.10f))
                     .border(1.dp, TintGold.copy(alpha = 0.22f), shape)
-                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
                 color = Color.White.copy(alpha = 0.85f),
                 fontSize = 12.5.sp,
-                lineHeight = 19.sp,
+                lineHeight = 17.sp,
             )
         }
     }
