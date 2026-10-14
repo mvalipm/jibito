@@ -205,6 +205,14 @@ fun WelcomeScreen(onStart: () -> Unit) {
             }
 
             // نقطه‌های قدم و دکمه همیشه پایین صفحه
+            Text(
+                text = stringResource(R.string.welcome_trial),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = colors.primary,
+                textAlign = TextAlign.Center,
+            )
             StepDots(
                 current = 1,
                 total = 2,
