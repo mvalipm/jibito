@@ -135,7 +135,7 @@ fun FirstRunReveal(
                 HeroFill(
                     viewport = maxHeight,
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-                    top = { Caption(done, Modifier.padding(top = 12.dp, start = 20.dp, end = 20.dp)) },
+                    top = { Caption(done, Modifier.padding(top = 8.dp, start = 20.dp, end = 20.dp)) },
                     hero = { RevealHero(done) },
                     bottom = {
                         CountLine(count.value.toInt(), stats.count, countMaxSp, Modifier.padding(top = 4.dp, start = 16.dp, end = 16.dp))
@@ -192,7 +192,7 @@ fun FirstRunReveal(
 @Composable
 private fun Caption(done: Boolean, modifier: Modifier) {
     // کمینه، نه ارتفاع ثابت: با فونت درشت گوشی کپسول بلندتر می‌شود و متن بریده نمی‌شود
-    Box(modifier.heightIn(min = 36.dp), contentAlignment = Alignment.Center) {
+    Box(modifier.heightIn(min = 32.dp), contentAlignment = Alignment.Center) {
         if (done) {
             Row(
                 Modifier
@@ -280,10 +280,10 @@ private fun StatsCard(cells: List<StatCell>, modifier: Modifier) {
             if (i > 0) Box(Modifier.padding(vertical = 8.dp).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.1f)))
             Column(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
-                    Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(c.tint.copy(alpha = 0.15f)),
+                    Modifier.size(32.dp).clip(RoundedCornerShape(11.dp)).background(c.tint.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(c.icon, contentDescription = null, tint = c.tint, modifier = Modifier.size(20.dp)) }
-                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Bottom) {
+                Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.Bottom) {
                     Text(
                         c.value,
                         modifier = Modifier.alignByBaseline(),
