@@ -36,6 +36,7 @@ import ir.jibito.app.data.security.AppLockSession
 import ir.jibito.app.data.security.AppLockSettings
 import ir.jibito.app.ui.lock.DeviceAuth
 import ir.jibito.app.ui.lock.LockScreen
+import ir.jibito.app.ui.lock.ScreenPrivacy
 import ir.jibito.app.ui.permission.SmsPermissionScreen
 import ir.jibito.app.ui.main.MainScreen
 import ir.jibito.app.ui.theme.JibitoTheme
@@ -120,6 +121,8 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(lockEnabled) {
                 // وقتی قفل روشن است، تصویر اپ در «برنامه‌های اخیر» نشان داده نشود
                 if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(!lockEnabled)
+                // اندروید ۱۲ و قبل‌تر آن تابع را ندارند؛ FLAG_SECURE همه‌جا هم اسکرین‌شات را می‌بندد
+                ScreenPrivacy.apply(window, lockEnabled)
             }
             JibitoTheme(style = style.shownWith(proStatus.unlocked), darkTheme = dark) {
                 // فعلاً کل اپ را راست‌به‌چپ می‌کنیم؛ سوییچ زبان را بعداً اضافه می‌کنیم

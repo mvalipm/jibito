@@ -104,6 +104,7 @@ class BudgetAlerter(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_jibito)
+            .hideOnLockScreen(context, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(openApp)

@@ -692,6 +692,7 @@
     <string name="notif_reply">✏️ بنویس</string>
     <string name="notif_reply_hint">مثلاً: اسنپ تا فرودگاه</string>
     <string name="notif_reply_hint_income">مثلاً: حقوق مهر</string>
+    <string name="notif_public_text">یک اعلان تازه؛ برای دیدنش قفل گوشی را باز کن</string>
     <string name="notif_noted_title">📝 یادداشت شد</string>
     <string name="notif_noted_text">«%1$s» — دسته‌اش رو بعداً تو اپ انتخاب کن</string>
 
